@@ -22,7 +22,7 @@ export function useProfile() {
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchProfile = async () => {
     if (!user) {
       setProfile(null);
       setRole(null);
@@ -30,32 +30,32 @@ export function useProfile() {
       return;
     }
 
-    const fetchProfile = async () => {
-      try {
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .maybeSingle();
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
 
-        if (profileError) throw profileError;
-        setProfile(profileData);
+      if (profileError) throw profileError;
+      setProfile(profileData);
 
-        const { data: roleData, error: roleError } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .maybeSingle();
+      const { data: roleData, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-        if (roleError) throw roleError;
-        setRole(roleData as UserRole);
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      if (roleError) throw roleError;
+      setRole(roleData as UserRole);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchProfile();
   }, [user]);
 
@@ -72,5 +72,5 @@ export function useProfile() {
     }
   };
 
-  return { profile, role, loading, updateCredits };
+  return { profile, role, loading, updateCredits, refetch: fetchProfile };
 }

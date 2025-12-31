@@ -240,6 +240,57 @@ export type Database = {
           },
         ]
       }
+      user_api_settings: {
+        Row: {
+          claude_api_key: string | null
+          claude_validated: boolean | null
+          created_at: string
+          elevenlabs_api_key: string | null
+          elevenlabs_validated: boolean | null
+          gemini_api_key: string | null
+          gemini_validated: boolean | null
+          id: string
+          openai_api_key: string | null
+          openai_validated: boolean | null
+          updated_at: string
+          user_id: string
+          youtube_api_key: string | null
+          youtube_validated: boolean | null
+        }
+        Insert: {
+          claude_api_key?: string | null
+          claude_validated?: boolean | null
+          created_at?: string
+          elevenlabs_api_key?: string | null
+          elevenlabs_validated?: boolean | null
+          gemini_api_key?: string | null
+          gemini_validated?: boolean | null
+          id?: string
+          openai_api_key?: string | null
+          openai_validated?: boolean | null
+          updated_at?: string
+          user_id: string
+          youtube_api_key?: string | null
+          youtube_validated?: boolean | null
+        }
+        Update: {
+          claude_api_key?: string | null
+          claude_validated?: boolean | null
+          created_at?: string
+          elevenlabs_api_key?: string | null
+          elevenlabs_validated?: boolean | null
+          gemini_api_key?: string | null
+          gemini_validated?: boolean | null
+          id?: string
+          openai_api_key?: string | null
+          openai_validated?: boolean | null
+          updated_at?: string
+          user_id?: string
+          youtube_api_key?: string | null
+          youtube_validated?: boolean | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
