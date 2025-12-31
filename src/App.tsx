@@ -3,8 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
 import VideoAnalyzer from "./pages/VideoAnalyzer";
 import ExploreNiche from "./pages/ExploreNiche";
 import Folders from "./pages/Folders";
@@ -27,33 +30,36 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/analyzer" element={<VideoAnalyzer />} />
-          <Route path="/explore" element={<ExploreNiche />} />
-          <Route path="/folders" element={<Folders />} />
-          <Route path="/channels" element={<MonitoredChannels />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/library" element={<ViralLibrary />} />
-          <Route path="/agents" element={<ViralAgents />} />
-          <Route path="/prompts" element={<PromptsImages />} />
-          <Route path="/voice" element={<VoiceGenerator />} />
-          <Route path="/batch-images" element={<BatchImages />} />
-          <Route path="/video-gen" element={<VideoGenerator />} />
-          <Route path="/youtube" element={<YouTubeIntegration />} />
-          <Route path="/search-channels" element={<SearchChannels />} />
-          <Route path="/viral-analysis" element={<ViralAnalysis />} />
-          <Route path="/srt" element={<SRTConverter />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/analyzer" element={<ProtectedRoute><VideoAnalyzer /></ProtectedRoute>} />
+            <Route path="/explore" element={<ProtectedRoute><ExploreNiche /></ProtectedRoute>} />
+            <Route path="/folders" element={<ProtectedRoute><Folders /></ProtectedRoute>} />
+            <Route path="/channels" element={<ProtectedRoute><MonitoredChannels /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+            <Route path="/library" element={<ProtectedRoute><ViralLibrary /></ProtectedRoute>} />
+            <Route path="/agents" element={<ProtectedRoute><ViralAgents /></ProtectedRoute>} />
+            <Route path="/prompts" element={<ProtectedRoute><PromptsImages /></ProtectedRoute>} />
+            <Route path="/voice" element={<ProtectedRoute><VoiceGenerator /></ProtectedRoute>} />
+            <Route path="/batch-images" element={<ProtectedRoute><BatchImages /></ProtectedRoute>} />
+            <Route path="/video-gen" element={<ProtectedRoute><VideoGenerator /></ProtectedRoute>} />
+            <Route path="/youtube" element={<ProtectedRoute><YouTubeIntegration /></ProtectedRoute>} />
+            <Route path="/search-channels" element={<ProtectedRoute><SearchChannels /></ProtectedRoute>} />
+            <Route path="/viral-analysis" element={<ProtectedRoute><ViralAnalysis /></ProtectedRoute>} />
+            <Route path="/srt" element={<ProtectedRoute><SRTConverter /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

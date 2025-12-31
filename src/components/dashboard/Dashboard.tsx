@@ -1,4 +1,6 @@
 import { Video, Eye, DollarSign, Coins, HardDrive, TrendingUp } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/hooks/useAuth";
 import { StatsCard } from "./StatsCard";
 import { MetricsCard } from "./MetricsCard";
 import { DirectivesCard } from "./DirectivesCard";
@@ -10,13 +12,21 @@ import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 
 export function Dashboard() {
+  const { user } = useAuth();
+  const { profile } = useProfile();
+
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "Usuário";
+  const credits = profile?.credits ?? 0;
+  const storageUsed = profile?.storage_used ?? 0;
+  const storageLimit = profile?.storage_limit ?? 1;
+
   return (
     <div className="flex-1 overflow-auto">
       <div className="p-6 lg:p-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Bem-vindo, Admin!
+            Bem-vindo, {displayName}!
           </h1>
           <p className="text-muted-foreground">
             Visão geral da sua execução ativa
@@ -28,25 +38,25 @@ export function Dashboard() {
           <StatsCard
             icon={Video}
             label="Total de Vídeos"
-            value={170}
+            value={0}
             subLabel="SEM DADOS"
           />
           <StatsCard
             icon={Eye}
             label="Total de Views"
-            value="5.6K"
+            value="0"
             subLabel="SEM DADOS"
           />
           <StatsCard
             icon={DollarSign}
             label="Receita Total"
-            value="$17"
+            value="$0"
             subLabel="SEM DADOS"
           />
           <StatsCard
             icon={Coins}
             label="Créditos Disponíveis"
-            value="9018"
+            value={credits.toLocaleString()}
             status="active"
             action={
               <Button size="sm" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
@@ -58,8 +68,8 @@ export function Dashboard() {
           <StatsCard
             icon={HardDrive}
             label="Armazenamento"
-            value="0.18 GB"
-            progress={{ value: 0.18, max: 1 }}
+            value={`${storageUsed.toFixed(2)} GB`}
+            progress={{ value: storageUsed, max: storageLimit }}
           />
           <StatsCard
             icon={TrendingUp}
@@ -77,9 +87,9 @@ export function Dashboard() {
               title="Métricas de Performance"
               metrics={[
                 { label: "CTR Médio", value: "0.0%" },
-                { label: "Total de Likes", value: "129" },
-                { label: "Total de Comentários", value: "7" },
-                { label: "RPM Médio", value: "$3.11" },
+                { label: "Total de Likes", value: "0" },
+                { label: "Total de Comentários", value: "0" },
+                { label: "RPM Médio", value: "$0.00" },
               ]}
             />
 
