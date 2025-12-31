@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,9 +20,66 @@ function extractVideoId(url: string): string | null {
   return null;
 }
 
+// Fetch video details from YouTube Data API
+async function fetchVideoDetailsFromYouTube(videoId: string, apiKey: string) {
+  console.log("Fetching video details from YouTube API for:", videoId);
+  
+  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${videoId}&key=${apiKey}`;
+  
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("YouTube API error:", response.status, errorText);
+    throw new Error(`YouTube API error: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  
+  if (!data.items || data.items.length === 0) {
+    throw new Error("Video not found");
+  }
+  
+  const video = data.items[0];
+  const snippet = video.snippet;
+  const statistics = video.statistics;
+  const contentDetails = video.contentDetails;
+  
+  // Parse duration (ISO 8601 format: PT1H2M3S)
+  const durationMatch = contentDetails.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  let durationSeconds = 0;
+  if (durationMatch) {
+    durationSeconds += parseInt(durationMatch[1] || '0') * 3600;
+    durationSeconds += parseInt(durationMatch[2] || '0') * 60;
+    durationSeconds += parseInt(durationMatch[3] || '0');
+  }
+  
+  // Calculate days since published
+  const publishedAt = new Date(snippet.publishedAt);
+  const now = new Date();
+  const daysAgo = Math.floor((now.getTime() - publishedAt.getTime()) / (1000 * 60 * 60 * 24));
+  
+  return {
+    title: snippet.title,
+    description: snippet.description,
+    channelTitle: snippet.channelTitle,
+    channelId: snippet.channelId,
+    publishedAt: snippet.publishedAt,
+    daysAgo,
+    thumbnail: snippet.thumbnails?.maxres?.url || snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url,
+    tags: snippet.tags || [],
+    categoryId: snippet.categoryId,
+    views: parseInt(statistics.viewCount || '0'),
+    likes: parseInt(statistics.likeCount || '0'),
+    comments: parseInt(statistics.commentCount || '0'),
+    duration: durationSeconds,
+    durationFormatted: contentDetails.duration,
+  };
+}
+
 // Fetch YouTube page and extract caption tracks
 async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription: string; language: string }> {
-  console.log("Fetching YouTube page for video:", videoId);
+  console.log("Fetching YouTube page for captions:", videoId);
   
   const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
     headers: {
@@ -52,7 +110,8 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription:
   const captions = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
   
   if (!captions || captions.length === 0) {
-    throw new Error("No captions available for this video. The video might not have subtitles enabled.");
+    console.log("No captions available for this video");
+    return { transcription: "", language: "none" };
   }
   
   console.log("Found caption tracks:", captions.length);
@@ -108,6 +167,25 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription:
   };
 }
 
+// Get user's YouTube API key from database
+async function getUserYouTubeApiKey(userId: string): Promise<string | null> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  
+  const { data, error } = await supabase
+    .from('user_api_settings')
+    .select('youtube_api_key')
+    .eq('user_id', userId)
+    .single();
+  
+  if (error || !data?.youtube_api_key) {
+    return null;
+  }
+  
+  return data.youtube_api_key;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -129,6 +207,40 @@ serve(async (req) => {
     
     console.log("Extracted video ID:", videoId);
 
+    // Get user ID from auth header
+    const authHeader = req.headers.get('Authorization');
+    let userId: string | null = null;
+    
+    if (authHeader) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseKey, {
+        global: { headers: { Authorization: authHeader } }
+      });
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id || null;
+    }
+
+    let videoDetails = null;
+    
+    // Try to fetch video details using YouTube API if user has API key
+    if (userId) {
+      const youtubeApiKey = await getUserYouTubeApiKey(userId);
+      
+      if (youtubeApiKey) {
+        try {
+          videoDetails = await fetchVideoDetailsFromYouTube(videoId, youtubeApiKey);
+          console.log("Video details fetched successfully:", videoDetails.title);
+        } catch (apiError) {
+          console.error("YouTube API error, falling back to scraping:", apiError);
+        }
+      } else {
+        console.log("No YouTube API key found for user, using scraping method");
+      }
+    }
+
+    // Fetch transcription
     const { transcription, language } = await fetchYouTubeTranscript(videoId);
 
     return new Response(
@@ -136,6 +248,7 @@ serve(async (req) => {
         transcription,
         language,
         videoId,
+        videoDetails,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
