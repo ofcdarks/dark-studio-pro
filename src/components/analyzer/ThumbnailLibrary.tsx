@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Image, 
   Upload, 
@@ -14,6 +15,11 @@ import {
   Trash2,
   Lightbulb,
   Wand2,
+  Download,
+  Eye,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,6 +44,16 @@ interface ThumbnailLibraryProps {
   currentSubNiche?: string;
   currentTitle?: string;
   onGenerateThumbnail?: (prompt: string, title: string) => void;
+}
+
+interface GeneratedThumbnail {
+  variationNumber: number;
+  imageBase64: string;
+  headline: string | null;
+  seoDescription: string;
+  seoTags: string;
+  prompt: string;
+  style: string;
 }
 
 export function ThumbnailLibrary({ 
@@ -74,6 +90,11 @@ export function ThumbnailLibrary({
   const [artStyle, setArtStyle] = useState("foto-realista");
   const [includeHeadline, setIncludeHeadline] = useState(true);
   const [useTitle, setUseTitle] = useState(false);
+  
+  // Generated thumbnails preview state
+  const [generatedThumbnails, setGeneratedThumbnails] = useState<GeneratedThumbnail[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [activePreviewIndex, setActivePreviewIndex] = useState(0);
 
   // Sync videoTitle when currentTitle changes (from selected title in VideoAnalyzer)
   useEffect(() => {
@@ -256,60 +277,109 @@ export function ThumbnailLibrary({
       return;
     }
 
-    const selectedThumb = savedThumbnails?.find((_, i) => String(i + 1) === selectedPrompt);
-    const basePrompt = selectedThumb?.extracted_prompt || "";
-    
-    // Get the selected style
     const selectedStyle = THUMBNAIL_STYLES.find(s => s.id === artStyle);
-    const stylePromptPrefix = selectedStyle?.promptPrefix || "";
     const styleName = selectedStyle?.name || artStyle;
 
     setGeneratingThumbnail(true);
+    setGeneratedThumbnails([]);
+    
     try {
-      // Generate adapted prompt based on title and reference
-      const response = await supabase.functions.invoke("ai-assistant", {
+      // Call the generate-thumbnail edge function
+      const response = await supabase.functions.invoke("generate-thumbnail", {
         body: {
-          type: "generate_thumbnail_prompt",
-          prompt: `Baseado neste prompt de referência de thumbnail:
-          "${basePrompt}"
-          
-          Adapte o prompt para o seguinte título de vídeo:
-          "${videoTitle}"
-          
-          Nicho: ${niche || "Geral"}
-          Subnicho: ${subNiche || "Geral"}
-          Estilo de arte: ${styleName}
-          Prefixo de estilo para usar: ${stylePromptPrefix}
-          Idioma: ${genLanguage}
-          ${includeHeadline ? `Incluir headline: "${useTitle ? videoTitle : 'Gerar headline de impacto'}"` : "Sem texto na imagem"}
-          
-          IMPORTANTE: Combine o prefixo de estilo com o prompt adaptado.
-          
-          Retorne um JSON com:
-          - adaptedPrompt: o prompt adaptado para gerar a thumbnail (DEVE incluir o prefixo de estilo)
-          - headline: a headline de impacto (se solicitado)
-          - seoDescription: descrição SEO da thumbnail
-          - tags: array de tags relevantes`,
+          videoTitle,
+          niche: niche || "Geral",
+          subNiche: subNiche || undefined,
+          style: styleName,
+          includeHeadline,
+          language: genLanguage === "pt-BR" ? "Português" : genLanguage === "es" ? "Español" : "English",
         },
       });
 
       if (response.error) throw response.error;
 
-      const result = response.data?.result;
-      if (result?.adaptedPrompt && onGenerateThumbnail) {
-        onGenerateThumbnail(result.adaptedPrompt, videoTitle);
+      const result = response.data;
+      if (result?.variations && result.variations.length > 0) {
+        setGeneratedThumbnails(result.variations);
+        setPreviewOpen(true);
+        setActivePreviewIndex(0);
+        toast({ title: "Thumbnails geradas!", description: `${result.variations.length} variações prontas` });
+        
+        if (onGenerateThumbnail && result.variations[0]?.prompt) {
+          onGenerateThumbnail(result.variations[0].prompt, videoTitle);
+        }
+      } else {
+        throw new Error("Nenhuma thumbnail foi gerada");
       }
-
-      toast({ title: "Prompt gerado!", description: "Use o prompt para gerar sua thumbnail" });
     } catch (error) {
       console.error("Generation error:", error);
       toast({
         title: "Erro na geração",
-        description: "Não foi possível gerar o prompt",
+        description: "Não foi possível gerar as thumbnails",
         variant: "destructive",
       });
     } finally {
       setGeneratingThumbnail(false);
+    }
+  };
+
+  const handleDownloadThumbnail = async (imageBase64: string, resolution: "1280x720" | "1920x1080", index: number) => {
+    try {
+      // Extract base64 data
+      const base64Data = imageBase64.includes(",") 
+        ? imageBase64.split(",")[1] 
+        : imageBase64.replace("data:image/png;base64,", "");
+      
+      // Convert base64 to blob
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: "image/png" });
+      
+      // Create canvas for resizing
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(blob);
+      
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+      
+      const canvas = document.createElement("canvas");
+      const [width, height] = resolution.split("x").map(Number);
+      canvas.width = width;
+      canvas.height = height;
+      
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob((resizedBlob) => {
+          if (resizedBlob) {
+            const url = URL.createObjectURL(resizedBlob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `thumbnail-${index + 1}-${resolution}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }
+        }, "image/png");
+      }
+      
+      URL.revokeObjectURL(img.src);
+      
+      toast({ title: "Download iniciado!", description: `Thumbnail ${resolution}` });
+    } catch (error) {
+      console.error("Download error:", error);
+      toast({
+        title: "Erro no download",
+        description: "Não foi possível baixar a thumbnail",
+        variant: "destructive",
+      });
     }
   };
 
@@ -682,10 +752,196 @@ export function ThumbnailLibrary({
             Gerar Thumbnail Completa
           </Button>
           <p className="text-xs text-muted-foreground text-center">
-            O sistema gerará 2 variações da thumbnail com headline, SEO e tags prontos
+            O sistema gerará 4 variações da thumbnail com headline, SEO e tags prontos
           </p>
+
+          {/* Generated Thumbnails Preview Grid */}
+          {generatedThumbnails.length > 0 && (
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-foreground">Thumbnails Geradas</h4>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setPreviewOpen(true);
+                    setActivePreviewIndex(0);
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Ver Todas
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {generatedThumbnails.map((thumb, index) => (
+                  <div key={index} className="relative group">
+                    <div className="aspect-video rounded-lg overflow-hidden bg-secondary border border-border">
+                      <img
+                        src={thumb.imageBase64}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover cursor-pointer"
+                        onClick={() => {
+                          setActivePreviewIndex(index);
+                          setPreviewOpen(true);
+                        }}
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 rounded-lg">
+                      <Badge className="bg-primary text-primary-foreground text-xs">
+                        {thumb.style}
+                      </Badge>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleDownloadThumbnail(thumb.imageBase64, "1280x720", index)}
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          720p
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleDownloadThumbnail(thumb.imageBase64, "1920x1080", index)}
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          1080p
+                        </Button>
+                      </div>
+                    </div>
+                    {thumb.headline && (
+                      <p className="text-xs text-muted-foreground mt-1 truncate text-center font-medium">
+                        "{thumb.headline}"
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </Card>
+
+      {/* Full Preview Modal */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-5xl w-full h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center justify-between">
+              <span>Preview da Thumbnail {activePreviewIndex + 1} de {generatedThumbnails.length}</span>
+              <Button variant="ghost" size="sm" onClick={() => setPreviewOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {generatedThumbnails[activePreviewIndex] && (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Main Image */}
+              <div className="flex-1 relative bg-secondary/30 rounded-lg overflow-hidden flex items-center justify-center">
+                <img
+                  src={generatedThumbnails[activePreviewIndex].imageBase64}
+                  alt={`Thumbnail ${activePreviewIndex + 1}`}
+                  className="max-w-full max-h-full object-contain"
+                />
+                
+                {/* Navigation Arrows */}
+                {generatedThumbnails.length > 1 && (
+                  <>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="absolute left-2 top-1/2 -translate-y-1/2"
+                      onClick={() => setActivePreviewIndex(prev => prev > 0 ? prev - 1 : generatedThumbnails.length - 1)}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="absolute right-2 top-1/2 -translate-y-1/2"
+                      onClick={() => setActivePreviewIndex(prev => prev < generatedThumbnails.length - 1 ? prev + 1 : 0)}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
+              
+              {/* Details Panel */}
+              <div className="flex-shrink-0 mt-4 space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <Badge className="bg-primary/10 text-primary border-primary/20">
+                      {generatedThumbnails[activePreviewIndex].style}
+                    </Badge>
+                    {generatedThumbnails[activePreviewIndex].headline && (
+                      <span className="ml-2 text-sm font-medium text-foreground">
+                        Headline: "{generatedThumbnails[activePreviewIndex].headline}"
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDownloadThumbnail(
+                        generatedThumbnails[activePreviewIndex].imageBase64, 
+                        "1280x720", 
+                        activePreviewIndex
+                      )}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download 1280x720
+                    </Button>
+                    <Button
+                      onClick={() => handleDownloadThumbnail(
+                        generatedThumbnails[activePreviewIndex].imageBase64, 
+                        "1920x1080", 
+                        activePreviewIndex
+                      )}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download 1920x1080
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* SEO Content */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="bg-secondary/30 p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Descrição SEO</p>
+                    <p className="text-foreground">{generatedThumbnails[activePreviewIndex].seoDescription}</p>
+                  </div>
+                  <div className="bg-secondary/30 p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Tags</p>
+                    <p className="text-foreground">{generatedThumbnails[activePreviewIndex].seoTags}</p>
+                  </div>
+                </div>
+                
+                {/* Thumbnails Strip */}
+                <div className="flex gap-2 overflow-x-auto py-2">
+                  {generatedThumbnails.map((thumb, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setActivePreviewIndex(index)}
+                      className={`flex-shrink-0 w-24 h-14 rounded-md overflow-hidden border-2 transition-all ${
+                        index === activePreviewIndex 
+                          ? "border-primary ring-2 ring-primary/20" 
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <img
+                        src={thumb.imageBase64}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
