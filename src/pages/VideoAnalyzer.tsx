@@ -82,6 +82,7 @@ const VideoAnalyzer = () => {
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
   const [generatedTitles, setGeneratedTitles] = useState<GeneratedTitle[]>([]);
   const [selectedTitles, setSelectedTitles] = useState<string[]>([]);
+  const [selectedTitleForThumbnail, setSelectedTitleForThumbnail] = useState<string>("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [currentFormula, setCurrentFormula] = useState<ScriptFormulaAnalysis | null>(null);
@@ -381,10 +382,56 @@ const VideoAnalyzer = () => {
     toast({ title: "Copiado!", description: "Título copiado para a área de transferência" });
   };
 
-  const toggleTitleSelection = (id: string) => {
-    setSelectedTitles((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
-    );
+  const toggleTitleSelection = async (id: string, titleText: string) => {
+    const isSelected = selectedTitles.includes(id);
+    const newSelected = isSelected 
+      ? selectedTitles.filter((t) => t !== id) 
+      : [...selectedTitles, id];
+    
+    setSelectedTitles(newSelected);
+    
+    // When selecting, set the title for thumbnail generation
+    if (!isSelected) {
+      setSelectedTitleForThumbnail(titleText);
+    }
+    
+    // Save to database
+    if (user) {
+      const titleData = generatedTitles.find(t => t.id === id);
+      if (titleData) {
+        // Check if already exists
+        const { data: existing } = await supabase
+          .from("generated_titles")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("title_text", titleData.title)
+          .single();
+        
+        if (existing) {
+          // Update is_favorite
+          await supabase
+            .from("generated_titles")
+            .update({ is_favorite: !isSelected })
+            .eq("id", existing.id);
+        } else {
+          // Insert new with is_favorite = true
+          await supabase
+            .from("generated_titles")
+            .insert({
+              user_id: user.id,
+              title_text: titleData.title,
+              formula: titleData.formula,
+              pontuacao: (titleData.quality + titleData.impact) / 2,
+              is_favorite: true,
+            });
+        }
+        
+        toast({
+          title: isSelected ? "Título desmarcado" : "Título salvo!",
+          description: isSelected ? "Título removido dos favoritos" : "Título marcado e adicionado ao gerador de thumbnail",
+        });
+      }
+    }
   };
 
   const handleCreateAgent = (formula: ScriptFormulaAnalysis | null, transcription: string) => {
@@ -662,8 +709,8 @@ const VideoAnalyzer = () => {
                     <div className="flex items-start gap-3">
                       <Checkbox
                         checked={selectedTitles.includes(title.id)}
-                        onCheckedChange={() => toggleTitleSelection(title.id)}
-                        className="mt-1"
+                        onCheckedChange={() => toggleTitleSelection(title.id, title.title)}
+                        className="mt-1 data-[state=checked]:bg-success data-[state=checked]:border-success"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -749,7 +796,7 @@ const VideoAnalyzer = () => {
               <ThumbnailLibrary
                 currentNiche={videoInfo.niche}
                 currentSubNiche={videoInfo.subNiche}
-                currentTitle={videoInfo.title}
+                currentTitle={selectedTitleForThumbnail || videoInfo.title}
               />
             </div>
           )}
