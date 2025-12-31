@@ -41,6 +41,77 @@ export type Database = {
         }
         Relationships: []
       }
+      analyzed_videos: {
+        Row: {
+          analysis_data_json: Json | null
+          analyzed_at: string | null
+          channel_id: string | null
+          created_at: string | null
+          detected_microniche: string | null
+          detected_niche: string | null
+          detected_subniche: string | null
+          folder_id: string | null
+          id: string
+          original_comments: number | null
+          original_days: number | null
+          original_thumbnail_url: string | null
+          original_title: string | null
+          original_views: number | null
+          translated_title: string | null
+          user_id: string
+          video_url: string
+          youtube_video_id: string | null
+        }
+        Insert: {
+          analysis_data_json?: Json | null
+          analyzed_at?: string | null
+          channel_id?: string | null
+          created_at?: string | null
+          detected_microniche?: string | null
+          detected_niche?: string | null
+          detected_subniche?: string | null
+          folder_id?: string | null
+          id?: string
+          original_comments?: number | null
+          original_days?: number | null
+          original_thumbnail_url?: string | null
+          original_title?: string | null
+          original_views?: number | null
+          translated_title?: string | null
+          user_id: string
+          video_url: string
+          youtube_video_id?: string | null
+        }
+        Update: {
+          analysis_data_json?: Json | null
+          analyzed_at?: string | null
+          channel_id?: string | null
+          created_at?: string | null
+          detected_microniche?: string | null
+          detected_niche?: string | null
+          detected_subniche?: string | null
+          folder_id?: string | null
+          id?: string
+          original_comments?: number | null
+          original_days?: number | null
+          original_thumbnail_url?: string | null
+          original_title?: string | null
+          original_views?: number | null
+          translated_title?: string | null
+          user_id?: string
+          video_url?: string
+          youtube_video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analyzed_videos_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_providers: {
         Row: {
           created_at: string | null
@@ -284,6 +355,53 @@ export type Database = {
             columns: ["agent_id"]
             isOneToOne: false
             referencedRelation: "script_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generated_titles: {
+        Row: {
+          created_at: string | null
+          explicacao: string | null
+          formula: string | null
+          id: string
+          is_favorite: boolean | null
+          model_used: string | null
+          pontuacao: number | null
+          title_text: string
+          user_id: string
+          video_analysis_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          explicacao?: string | null
+          formula?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          model_used?: string | null
+          pontuacao?: number | null
+          title_text: string
+          user_id: string
+          video_analysis_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          explicacao?: string | null
+          formula?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          model_used?: string | null
+          pontuacao?: number | null
+          title_text?: string
+          user_id?: string
+          video_analysis_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_titles_video_analysis_id_fkey"
+            columns: ["video_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyzed_videos"
             referencedColumns: ["id"]
           },
         ]
