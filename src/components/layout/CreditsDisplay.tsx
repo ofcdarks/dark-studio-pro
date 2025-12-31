@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getToolInfo, getModelName } from "@/lib/creditToolsMap";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,7 @@ type HistoryItem = {
 export function CreditsDisplay({ collapsed = false, showRefresh = true, className }: CreditsDisplayProps) {
   const { balance, loading, refreshBalance } = useCredits();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -180,6 +182,7 @@ export function CreditsDisplay({ collapsed = false, showRefresh = true, classNam
           variant="default" 
           size="sm" 
           className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={() => navigate("/plans")}
         >
           Comprar Créditos
         </Button>
