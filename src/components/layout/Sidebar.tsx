@@ -91,15 +91,19 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="p-4 flex items-center gap-3 border-b border-sidebar-border">
-        <img 
-          src={logo} 
-          alt="Logo" 
-          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-        />
+        <div className="relative flex-shrink-0">
+          <div className="w-14 h-14 rounded-full ring-2 ring-primary overflow-hidden">
+            <img 
+              src={logo} 
+              alt="Logo" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
         {!collapsed && (
           <div className="flex flex-col">
-            <span className="font-bold text-foreground">La Casa Dark</span>
-            <span className="text-primary text-sm font-semibold">CORE</span>
+            <span className="font-playfair text-lg font-semibold text-foreground tracking-wide">La Casa Dark</span>
+            <span className="text-primary text-sm font-bold tracking-widest">CORE</span>
           </div>
         )}
         <Button
