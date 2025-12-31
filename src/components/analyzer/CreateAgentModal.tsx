@@ -95,7 +95,7 @@ export const CreateAgentModal = ({
       
       // Navigate to the viral library agents tab
       setTimeout(() => {
-        navigate("/viral-library?tab=agents");
+        navigate("/library?tab=agents");
       }, 500);
     } catch (error) {
       console.error("Error saving agent:", error);
