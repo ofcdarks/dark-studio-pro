@@ -22,13 +22,12 @@ function calculateCreditCost(textLength: number): number {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { text, voiceId, speed, model, userId } = await req.json();
+    const { text, voiceId, speed } = await req.json();
 
     if (!text || text.trim().length === 0) {
       return new Response(
@@ -37,11 +36,19 @@ serve(async (req) => {
       );
     }
 
-    // Get user from token or userId
-    let userIdToUse = userId;
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "OpenAI API key not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get user from token
+    let userId: string | null = null;
     const authHeader = req.headers.get("Authorization");
     
-    if (authHeader && !userIdToUse) {
+    if (authHeader) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -49,26 +56,24 @@ serve(async (req) => {
       });
       
       const { data: { user } } = await supabase.auth.getUser();
-      userIdToUse = user?.id;
+      userId = user?.id || null;
     }
 
-    // Calculate credits needed
     const creditsNeeded = calculateCreditCost(text.length);
 
     // Check and debit credits if user is authenticated
-    if (userIdToUse) {
+    if (userId) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-      // Check balance
       const { data: credits, error: creditsError } = await supabaseAdmin
         .from("user_credits")
         .select("balance")
-        .eq("user_id", userIdToUse)
-        .single();
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      if (creditsError || !credits) {
+      if (creditsError) {
         console.error("Error fetching credits:", creditsError);
         return new Response(
           JSON.stringify({ error: "Unable to verify credits" }),
@@ -76,119 +81,86 @@ serve(async (req) => {
         );
       }
 
-      if (credits.balance < creditsNeeded) {
+      const currentBalance = credits?.balance || 0;
+      if (currentBalance < creditsNeeded) {
         return new Response(
           JSON.stringify({ 
             error: "Insufficient credits", 
             required: creditsNeeded, 
-            available: credits.balance 
+            available: currentBalance 
           }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       // Debit credits
-      const { error: updateError } = await supabaseAdmin
+      await supabaseAdmin
         .from("user_credits")
-        .update({ balance: credits.balance - creditsNeeded, updated_at: new Date().toISOString() })
-        .eq("user_id", userIdToUse);
-
-      if (updateError) {
-        console.error("Error updating credits:", updateError);
-      }
+        .update({ balance: currentBalance - creditsNeeded, updated_at: new Date().toISOString() })
+        .eq("user_id", userId);
 
       // Log credit usage
       await supabaseAdmin.from("credit_usage").insert({
-        user_id: userIdToUse,
+        user_id: userId,
         operation_type: "tts_generation",
         credits_used: creditsNeeded,
-        model_used: model || "tts-1",
-        details: { text_length: text.length, voice: voiceId }
+        model_used: "tts-1",
+        details: { text_length: text.length, voice: voiceId, speed }
       });
 
       // Log transaction
       await supabaseAdmin.from("credit_transactions").insert({
-        user_id: userIdToUse,
+        user_id: userId,
         amount: -creditsNeeded,
         transaction_type: "debit",
         description: `TTS: ${text.substring(0, 50)}...`
       });
     }
 
-    // Use Lovable AI Gateway for TTS generation (simulated via text response)
-    // Since Lovable AI doesn't support direct TTS, we'll use OpenAI TTS API
-    // But for demo purposes, return a structured response
+    // Generate audio using OpenAI TTS API
+    console.log("Generating TTS with OpenAI for text length:", text.length);
     
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
-    if (!LOVABLE_API_KEY) {
-      // Fallback: Generate a text-based response describing the audio
-      console.log("TTS: Generating audio for text:", text.substring(0, 100));
-      
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "TTS generation initiated",
-          audioUrl: null, // Would be populated if using actual TTS API
-          duration: Math.ceil(text.split(/\s+/).length / 2.5), // Estimated duration
-          creditsUsed: creditsNeeded,
-          voice: voiceId || "nova",
-          textLength: text.length,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // If we have Lovable AI, use it to generate a script optimization
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const ttsResponse = await fetch("https://api.openai.com/v1/audio/speech", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: "You are an audio script optimizer. Optimize the given text for natural speech, adding appropriate pauses and emphasis markers.",
-          },
-          {
-            role: "user",
-            content: `Optimize this text for TTS narration:\n\n${text}`,
-          },
-        ],
+        model: "tts-1",
+        input: text,
+        voice: voiceId || "nova",
+        speed: speed || 1.0,
+        response_format: "mp3",
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
-      
+    if (!ttsResponse.ok) {
+      const errorText = await ttsResponse.text();
+      console.error("OpenAI TTS error:", ttsResponse.status, errorText);
       return new Response(
-        JSON.stringify({
-          success: true,
-          audioUrl: null,
-          duration: Math.ceil(text.split(/\s+/).length / 2.5),
-          creditsUsed: creditsNeeded,
-          voice: voiceId || "nova",
-          optimizedText: text,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Failed to generate audio" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const aiResult = await response.json();
-    const optimizedText = aiResult.choices?.[0]?.message?.content || text;
+    // Convert audio to base64
+    const audioBuffer = await ttsResponse.arrayBuffer();
+    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+    
+    // Estimate duration (words / 2.5 words per second)
+    const estimatedDuration = Math.ceil(text.split(/\s+/).length / 2.5);
+
+    console.log("TTS generated successfully, audio size:", audioBuffer.byteLength);
 
     return new Response(
       JSON.stringify({
         success: true,
-        audioUrl: null, // Would be an actual audio URL if using OpenAI TTS
-        duration: Math.ceil(text.split(/\s+/).length / 2.5),
+        audioBase64: base64Audio,
+        audioUrl: `data:audio/mp3;base64,${base64Audio}`,
+        duration: estimatedDuration,
         creditsUsed: creditsNeeded,
         voice: voiceId || "nova",
-        optimizedText: optimizedText,
         textLength: text.length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
