@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { TranscriptionSection } from "@/components/analyzer/TranscriptionSection";
 import { CreateAgentModal } from "@/components/analyzer/CreateAgentModal";
+import { ThumbnailLibrary } from "@/components/analyzer/ThumbnailLibrary";
 
 interface GeneratedTitle {
   id: string;
@@ -739,6 +740,17 @@ const VideoAnalyzer = () => {
           {videoInfo && (
             <div className="mt-8">
               <TranscriptionSection onCreateAgent={handleCreateAgent} videoUrl={videoUrl} />
+            </div>
+          )}
+
+          {/* Thumbnail Library - Always visible after analysis */}
+          {videoInfo && (
+            <div className="mt-8">
+              <ThumbnailLibrary
+                currentNiche={videoInfo.niche}
+                currentSubNiche={videoInfo.subNiche}
+                currentTitle={videoInfo.title}
+              />
             </div>
           )}
 

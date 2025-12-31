@@ -577,6 +577,59 @@ export type Database = {
         }
         Relationships: []
       }
+      reference_thumbnails: {
+        Row: {
+          channel_name: string | null
+          created_at: string
+          description: string | null
+          extracted_prompt: string | null
+          folder_id: string | null
+          id: string
+          image_url: string
+          niche: string | null
+          style_analysis: Json | null
+          sub_niche: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_name?: string | null
+          created_at?: string
+          description?: string | null
+          extracted_prompt?: string | null
+          folder_id?: string | null
+          id?: string
+          image_url: string
+          niche?: string | null
+          style_analysis?: Json | null
+          sub_niche?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_name?: string | null
+          created_at?: string
+          description?: string | null
+          extracted_prompt?: string | null
+          folder_id?: string | null
+          id?: string
+          image_url?: string
+          niche?: string | null
+          style_analysis?: Json | null
+          sub_niche?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_thumbnails_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_prompts: {
         Row: {
           created_at: string | null
