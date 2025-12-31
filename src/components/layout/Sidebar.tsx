@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Home,
   Video,
@@ -24,6 +27,7 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -32,11 +36,10 @@ interface NavItem {
   icon: React.ElementType;
   label: string;
   href: string;
-  active?: boolean;
 }
 
 const mainNavItems: NavItem[] = [
-  { icon: Home, label: "Início", href: "/", active: true },
+  { icon: Home, label: "Início", href: "/" },
   { icon: Video, label: "Analisador de Vídeos", href: "/analyzer" },
   { icon: Compass, label: "Explorar Nicho", href: "/explore" },
   { icon: FolderOpen, label: "Pastas e Histórico", href: "/folders" },
@@ -57,9 +60,26 @@ const mainNavItems: NavItem[] = [
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const credits = 9018;
-  const storage = 0.18;
-  const maxStorage = 1;
+  const { signOut } = useAuth();
+  const { profile, role } = useProfile();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
+  const credits = profile?.credits ?? 0;
+  const storageUsed = profile?.storage_used ?? 0;
+  const storageLimit = profile?.storage_limit ?? 1;
+  const userRole = role?.role ?? "free";
+
+  const roleLabels = {
+    admin: "ADMIN",
+    pro: "PRO",
+    free: "FREE",
+  };
 
   return (
     <aside
@@ -93,19 +113,19 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto py-4 px-2">
         <div className="space-y-1">
           {mainNavItems.map((item) => (
-            <a
+            <button
               key={item.href}
-              href={item.href}
+              onClick={() => navigate(item.href)}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-                item.active
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                location.pathname === item.href
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
               )}
             >
               <item.icon className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
-            </a>
+              {!collapsed && <span className="text-sm font-medium text-left">{item.label}</span>}
+            </button>
           ))}
         </div>
       </nav>
@@ -136,9 +156,9 @@ export function Sidebar() {
               <div className="flex-1">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Armazenamento</span>
-                  <span className="text-foreground font-medium">{storage} GB</span>
+                  <span className="text-foreground font-medium">{storageUsed.toFixed(2)} GB</span>
                 </div>
-                <Progress value={(storage / maxStorage) * 100} className="h-1.5 mt-1" />
+                <Progress value={(storageUsed / storageLimit) * 100} className="h-1.5 mt-1" />
               </div>
             </div>
           </div>
@@ -150,25 +170,41 @@ export function Sidebar() {
           {!collapsed && (
             <div className="flex-1">
               <div className="text-sm text-muted-foreground">Plano Atual</div>
-              <div className="text-foreground font-semibold">ADMIN</div>
-              <Button className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90">
-                Fazer Upgrade
-              </Button>
+              <div className="text-foreground font-semibold">{roleLabels[userRole]}</div>
+              {userRole !== "admin" && (
+                <Button className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                  Fazer Upgrade
+                </Button>
+              )}
             </div>
           )}
         </div>
 
         {/* Admin Panel */}
-        <a
-          href="/admin"
+        {userRole === "admin" && (
+          <button
+            onClick={() => navigate("/admin")}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-primary hover:bg-sidebar-accent transition-colors",
+              collapsed && "justify-center"
+            )}
+          >
+            <Shield className="w-5 h-5" />
+            {!collapsed && <span className="text-sm font-medium">Painel Admin</span>}
+          </button>
+        )}
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
           className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-lg text-primary hover:bg-sidebar-accent transition-colors",
+            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-destructive hover:bg-destructive/10 transition-colors",
             collapsed && "justify-center"
           )}
         >
-          <Shield className="w-5 h-5" />
-          {!collapsed && <span className="text-sm font-medium">Painel Admin</span>}
-        </a>
+          <LogOut className="w-5 h-5" />
+          {!collapsed && <span className="text-sm font-medium">Sair</span>}
+        </button>
       </div>
     </aside>
   );
