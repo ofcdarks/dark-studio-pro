@@ -53,6 +53,18 @@ interface ScriptAgent {
   created_at: string;
 }
 
+interface GeneratedScript {
+  id: string;
+  title: string;
+  content: string;
+  duration: number;
+  language: string;
+  model_used: string | null;
+  credits_used: number;
+  created_at: string;
+  agent_id: string | null;
+}
+
 const ViralLibrary = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -63,6 +75,7 @@ const ViralLibrary = () => {
   const [showFavorites, setShowFavorites] = useState(false);
   const [videos, setVideos] = useState<ViralVideo[]>([]);
   const [agents, setAgents] = useState<ScriptAgent[]>([]);
+  const [scripts, setScripts] = useState<GeneratedScript[]>([]);
   const [loading, setLoading] = useState(true);
   const [newVideo, setNewVideo] = useState({ title: '', video_url: '', notes: '' });
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -75,6 +88,7 @@ const ViralLibrary = () => {
     if (user) {
       fetchVideos();
       fetchAgents();
+      fetchScripts();
     }
   }, [user]);
 
@@ -84,6 +98,20 @@ const ViralLibrary = () => {
       setActiveTab(tab);
     }
   }, [searchParams]);
+
+  const fetchScripts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('generated_scripts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setScripts(data || []);
+    } catch (error) {
+      console.error('Error fetching scripts:', error);
+    }
+  };
 
   const fetchVideos = async () => {
     try {
@@ -447,13 +475,69 @@ const ViralLibrary = () => {
 
             {/* Scripts Tab */}
             <TabsContent value="scripts" className="mt-0">
-              <Card className="p-12 text-center border-border/50">
-                <ScrollText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum roteiro gerado</h3>
-                <p className="text-lg text-muted-foreground">
-                  Use os agentes para gerar roteiros virais
-                </p>
-              </Card>
+              {scripts.length === 0 ? (
+                <Card className="p-12 text-center border-border/50">
+                  <ScrollText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum roteiro gerado</h3>
+                  <p className="text-lg text-muted-foreground">
+                    Use os agentes para gerar roteiros virais
+                  </p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {scripts.map((script) => (
+                    <Card key={script.id} className="p-6 border-border/50 hover:border-primary/50 transition-colors">
+                      <h3 className="font-bold text-xl text-foreground mb-3 line-clamp-2">{script.title}</h3>
+                      
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <Badge variant="outline">{script.duration} min</Badge>
+                        <Badge variant="outline">{script.language}</Badge>
+                        <Badge className="bg-primary/20 text-primary border-0">
+                          {script.credits_used} créditos
+                        </Badge>
+                      </div>
+
+                      <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+                        {script.content.substring(0, 200)}...
+                      </p>
+
+                      <div className="flex gap-3">
+                        <Button 
+                          className="flex-1"
+                          onClick={() => {
+                            navigator.clipboard.writeText(script.content);
+                            setCopiedId(script.id);
+                            setTimeout(() => setCopiedId(null), 2000);
+                            toast.success("Roteiro copiado!");
+                          }}
+                        >
+                          {copiedId === script.id ? (
+                            <><Check className="w-4 h-4 mr-2" /> Copiado!</>
+                          ) : (
+                            <><Copy className="w-4 h-4 mr-2" /> Copiar</>
+                          )}
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="icon"
+                          onClick={async () => {
+                            const { error } = await supabase
+                              .from('generated_scripts')
+                              .delete()
+                              .eq('id', script.id);
+                            if (!error) {
+                              setScripts(scripts.filter(s => s.id !== script.id));
+                              toast.success("Roteiro removido!");
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>

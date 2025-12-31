@@ -41,6 +41,114 @@ export type Database = {
         }
         Relationships: []
       }
+      api_providers: {
+        Row: {
+          created_at: string | null
+          credits_per_unit: number
+          id: string
+          is_active: number
+          is_default: number
+          is_premium: number
+          markup: number
+          model: string
+          name: string
+          provider: string
+          real_cost_per_unit: number
+          unit_size: number
+          unit_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credits_per_unit?: number
+          id?: string
+          is_active?: number
+          is_default?: number
+          is_premium?: number
+          markup?: number
+          model: string
+          name: string
+          provider: string
+          real_cost_per_unit?: number
+          unit_size?: number
+          unit_type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credits_per_unit?: number
+          id?: string
+          is_active?: number
+          is_default?: number
+          is_premium?: number
+          markup?: number
+          model?: string
+          name?: string
+          provider?: string
+          real_cost_per_unit?: number
+          unit_size?: number
+          unit_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_usage: {
+        Row: {
+          created_at: string | null
+          credits_used: number
+          details: Json | null
+          id: string
+          model_used: string | null
+          operation_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credits_used: number
+          details?: Json | null
+          id?: string
+          model_used?: string | null
+          operation_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credits_used?: number
+          details?: Json | null
+          id?: string
+          model_used?: string | null
+          operation_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       folders: {
         Row: {
           created_at: string | null
@@ -129,6 +237,53 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generated_scripts: {
+        Row: {
+          agent_id: string | null
+          content: string
+          created_at: string | null
+          credits_used: number
+          duration: number
+          id: string
+          language: string
+          model_used: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          agent_id?: string | null
+          content: string
+          created_at?: string | null
+          credits_used?: number
+          duration?: number
+          id?: string
+          language?: string
+          model_used?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string | null
+          content?: string
+          created_at?: string | null
+          credits_used?: number
+          duration?: number
+          id?: string
+          language?: string
+          model_used?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_scripts_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "script_agents"
             referencedColumns: ["id"]
           },
         ]
@@ -333,6 +488,27 @@ export type Database = {
           user_id?: string
           youtube_api_key?: string | null
           youtube_validated?: boolean | null
+        }
+        Relationships: []
+      }
+      user_credits: {
+        Row: {
+          balance: number
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          id?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

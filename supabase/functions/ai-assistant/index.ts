@@ -1,9 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Inicializar Supabase client para operações de créditos
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // Tabela oficial de preços conforme documentação
 const CREDIT_PRICING = {
@@ -27,16 +33,16 @@ const CREDIT_PRICING = {
   FORMULA_ANALYSIS_AGENT: { base: 10, gemini: 12, claude: 14 }
 };
 
-// Função para calcular créditos por operação conforme documentação
+// Função para calcular créditos por operação conforme documentação (seção 4.3)
 function calculateCreditsForOperation(
   operationType: string, 
   model: string, 
   details?: { duration?: number; scenes?: number }
 ): number {
-  // Determinar chave do modelo
+  // Determinar chave do modelo conforme documentação (seção 4.2)
   let modelKey: 'base' | 'gemini' | 'claude' = 'base';
   if (model?.includes('gemini')) modelKey = 'gemini';
-  else if (model?.includes('claude')) modelKey = 'claude';
+  else if (model?.includes('claude') || model?.includes('gpt-5')) modelKey = 'claude';
 
   switch (operationType) {
     case 'analyze_video_titles':
@@ -69,9 +75,138 @@ function calculateCreditsForOperation(
       return CREDIT_PRICING.CHANNEL_ANALYSIS[modelKey];
     
     default:
-      // Fallback: preço base de 5 créditos com multiplicador
+      // Fallback: preço base de 5 créditos com multiplicador (seção 4.3)
       const multipliers = { base: 1, gemini: 1.2, claude: 1.5 };
       return Math.ceil(5 * multipliers[modelKey]);
+  }
+}
+
+// Função checkAndDebitCredits conforme documentação (seção 4.4)
+async function checkAndDebitCredits(
+  userId: string,
+  creditsNeeded: number,
+  operationType: string,
+  details?: { model?: string }
+): Promise<{ success: boolean; newBalance?: number; error?: string }> {
+  try {
+    // Passo 3: Verificar saldo
+    const { data: creditData, error: creditError } = await supabaseAdmin
+      .from('user_credits')
+      .select('balance')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (creditError) {
+      console.error('[Credits] Error fetching balance:', creditError);
+      return { success: false, error: 'Erro ao verificar saldo de créditos' };
+    }
+
+    // Se não existir registro, criar com balance = 50 (FREE plan)
+    let currentBalance = creditData?.balance ?? 0;
+    
+    if (!creditData) {
+      const { error: insertError } = await supabaseAdmin
+        .from('user_credits')
+        .insert({ user_id: userId, balance: 50 });
+      
+      if (insertError && !insertError.message.includes('duplicate')) {
+        console.error('[Credits] Error creating initial credits:', insertError);
+      }
+      currentBalance = 50;
+    }
+
+    // Arredondar saldo atual para cima conforme documentação
+    currentBalance = Math.ceil(currentBalance);
+
+    // Comparar com créditos necessários
+    if (currentBalance < creditsNeeded) {
+      console.log(`[Credits] Insufficient: needed ${creditsNeeded}, available ${currentBalance}`);
+      return { 
+        success: false, 
+        error: `Créditos insuficientes. Necessário: ${creditsNeeded}, Disponível: ${currentBalance}` 
+      };
+    }
+
+    // Passo 4: Debitar créditos
+    const newBalance = Math.ceil(currentBalance - creditsNeeded);
+    
+    const { error: updateError } = await supabaseAdmin
+      .from('user_credits')
+      .update({ balance: newBalance, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
+
+    if (updateError) {
+      console.error('[Credits] Error updating balance:', updateError);
+      return { success: false, error: 'Erro ao debitar créditos' };
+    }
+
+    // Registrar uso na tabela credit_usage
+    await supabaseAdmin
+      .from('credit_usage')
+      .insert({
+        user_id: userId,
+        operation_type: operationType,
+        credits_used: creditsNeeded,
+        model_used: details?.model,
+        details: { timestamp: new Date().toISOString() }
+      });
+
+    // Registrar transação
+    await supabaseAdmin
+      .from('credit_transactions')
+      .insert({
+        user_id: userId,
+        amount: -creditsNeeded,
+        transaction_type: 'debit',
+        description: `Operação: ${operationType}`
+      });
+
+    console.log(`[Credits] Debited ${creditsNeeded} from user ${userId}. New balance: ${newBalance}`);
+    
+    return { success: true, newBalance };
+  } catch (error) {
+    console.error('[Credits] Unexpected error:', error);
+    return { success: false, error: 'Erro interno ao processar créditos' };
+  }
+}
+
+// Função refundCredits conforme documentação (seção 4.5)
+async function refundCredits(
+  userId: string,
+  creditsToRefund: number,
+  reason: string,
+  operationType: string
+): Promise<{ success: boolean; newBalance?: number }> {
+  try {
+    const { data: creditData } = await supabaseAdmin
+      .from('user_credits')
+      .select('balance')
+      .eq('user_id', userId)
+      .single();
+
+    const currentBalance = creditData?.balance ?? 0;
+    const newBalance = Math.ceil(currentBalance + creditsToRefund);
+
+    await supabaseAdmin
+      .from('user_credits')
+      .update({ balance: newBalance, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
+
+    await supabaseAdmin
+      .from('credit_transactions')
+      .insert({
+        user_id: userId,
+        amount: creditsToRefund,
+        transaction_type: 'refund',
+        description: `Reembolso: ${reason} (${operationType})`
+      });
+
+    console.log(`[Credits] Refunded ${creditsToRefund} to user ${userId}. New balance: ${newBalance}`);
+    
+    return { success: true, newBalance };
+  } catch (error) {
+    console.error('[Credits] Refund error:', error);
+    return { success: false };
   }
 }
 
@@ -92,7 +227,8 @@ serve(async (req) => {
       language,
       model,
       duration,
-      agentData
+      agentData,
+      userId: bodyUserId
     } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -101,12 +237,40 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Extrair userId do token JWT ou do body
+    let userId = bodyUserId;
+    const authHeader = req.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+        if (user) {
+          userId = user.id;
+        }
+      } catch (authError) {
+        console.log('[AI Assistant] Could not extract user from token, using bodyUserId');
+      }
+    }
+
     // Calcular créditos necessários para esta operação
     const creditsNeeded = calculateCreditsForOperation(type, model || 'gemini', { 
       duration: duration ? parseInt(duration) : 5 
     });
     
-    console.log(`[AI Assistant] Operation: ${type}, Model: ${model || 'gemini'}, Credits needed: ${creditsNeeded}`);
+    console.log(`[AI Assistant] Operation: ${type}, Model: ${model || 'gemini'}, Credits needed: ${creditsNeeded}, User: ${userId}`);
+
+    // Verificar e debitar créditos se userId disponível
+    if (userId) {
+      const creditResult = await checkAndDebitCredits(userId, creditsNeeded, type, { model });
+      
+      if (!creditResult.success) {
+        return new Response(
+          JSON.stringify({ error: creditResult.error }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log(`[AI Assistant] Credits debited. New balance: ${creditResult.newBalance}`);
+    }
 
     let systemPrompt = "";
     let userPrompt = prompt || "";
