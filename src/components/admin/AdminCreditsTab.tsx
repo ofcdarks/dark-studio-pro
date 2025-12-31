@@ -25,10 +25,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Settings, Search, Plus, RefreshCw, Loader2, Download, History, Trash2 } from "lucide-react";
+import { Settings, Search, Plus, RefreshCw, Loader2, Download, History, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { getToolInfo } from "@/lib/creditToolsMap";
 
 interface UserCredit {
   id: string;
@@ -621,28 +622,44 @@ export function AdminCreditsTab() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>DATA</TableHead>
-                    <TableHead>TIPO</TableHead>
-                    <TableHead>QUANTIDADE</TableHead>
+                    <TableHead>FERRAMENTA</TableHead>
+                    <TableHead>CRÉDITOS</TableHead>
                     <TableHead>DESCRIÇÃO</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {transactionHistory.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell className="text-muted-foreground">
-                        {t.created_at ? format(new Date(t.created_at), "dd/MM/yyyy HH:mm") : "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={t.transaction_type === "add" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"}>
-                          {t.transaction_type === "add" ? "Adição" : "Dedução"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className={t.amount >= 0 ? "text-success" : "text-destructive"}>
-                        {t.amount >= 0 ? "+" : ""}{t.amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{t.description || "N/A"}</TableCell>
-                    </TableRow>
-                  ))}
+                  {transactionHistory.map((t) => {
+                    const toolInfo = getToolInfo(t.transaction_type);
+                    return (
+                      <TableRow key={t.id}>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {t.created_at ? format(new Date(t.created_at), "dd/MM/yyyy HH:mm") : "N/A"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">{toolInfo.icon}</span>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">{toolInfo.name}</p>
+                              <p className="text-xs text-muted-foreground">{toolInfo.description}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`flex items-center gap-1 w-fit ${t.transaction_type === "add" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"}`}>
+                            {t.transaction_type === "add" ? (
+                              <ArrowUp className="w-3 h-3" />
+                            ) : (
+                              <ArrowDown className="w-3 h-3" />
+                            )}
+                            {t.amount >= 0 ? "+" : ""}{t.amount.toFixed(2)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs max-w-[150px] truncate">
+                          {t.description || "-"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
