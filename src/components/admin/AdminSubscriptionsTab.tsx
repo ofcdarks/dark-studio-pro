@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,10 +18,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, TrendingUp, Users, DollarSign, Percent, Download, RefreshCw } from "lucide-react";
+import { Loader2, TrendingUp, Download, RefreshCw, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
+
+interface Subscriber {
+  id: string;
+  email: string;
+  whatsapp: string | null;
+  plan: string;
+  status: string;
+  start_date: string;
+  renewal_date: string;
+}
 
 interface SubscriptionStats {
   mrr: number;
@@ -37,18 +47,19 @@ interface SubscriptionStats {
 export function AdminSubscriptionsTab() {
   const [period, setPeriod] = useState("30");
   const [status, setStatus] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState<SubscriptionStats>({
     mrr: 424.72,
     arr: 5096.6,
-    activeSubscribers: 3,
+    activeSubscribers: 0,
     churnRate: 0,
-    newSubscriptions: 3,
+    newSubscriptions: 0,
     cancellations: 0,
     avgTicket: 141.57,
     avgDays: 36,
   });
   const [loading, setLoading] = useState(false);
-  const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
 
   useEffect(() => {
     fetchSubscribers();
@@ -56,28 +67,96 @@ export function AdminSubscriptionsTab() {
 
   const fetchSubscribers = async () => {
     setLoading(true);
-    // For now, we'll show sample data since subscriptions are managed externally
-    setSubscribers([
-      {
-        id: "1",
-        email: "juniopedromartins21@gmail.com",
-        whatsapp: "94439788521",
-        plan: "RE 149,90",
-        status: "Ativo",
-        start_date: "20/12/2024",
-        renewal_date: "20/01/2025",
-      },
-      {
-        id: "2",
-        email: "edson.te189@gmail.com",
-        whatsapp: "MA27995921",
-        plan: "RE 149,90",
-        status: "Ativo",
-        start_date: "15/12/2024",
-        renewal_date: "15/01/2025",
-      },
-    ]);
-    setLoading(false);
+    try {
+      // Get users with Pro role
+      const { data: proUsers } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "pro");
+
+      if (proUsers && proUsers.length > 0) {
+        const userIds = proUsers.map((u) => u.user_id);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, email, whatsapp, created_at, status")
+          .in("id", userIds);
+
+        const subs: Subscriber[] = (profiles || []).map((p) => ({
+          id: p.id,
+          email: p.email || "",
+          whatsapp: p.whatsapp,
+          plan: "PRO",
+          status: p.status === "active" ? "Ativo" : "Inativo",
+          start_date: p.created_at ? format(new Date(p.created_at), "dd/MM/yyyy") : "N/A",
+          renewal_date: p.created_at
+            ? format(new Date(new Date(p.created_at).setMonth(new Date(p.created_at).getMonth() + 1)), "dd/MM/yyyy")
+            : "N/A",
+        }));
+
+        setSubscribers(subs);
+        setStats((prev) => ({
+          ...prev,
+          activeSubscribers: subs.filter((s) => s.status === "Ativo").length,
+          newSubscriptions: subs.length,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching subscribers:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Dynamic search
+  const filteredSubscribers = useMemo(() => {
+    let filtered = subscribers;
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.email.toLowerCase().includes(term) ||
+          s.whatsapp?.toLowerCase().includes(term)
+      );
+    }
+
+    if (status !== "all") {
+      filtered = filtered.filter((s) =>
+        status === "active" ? s.status === "Ativo" : s.status !== "Ativo"
+      );
+    }
+
+    return filtered;
+  }, [subscribers, searchTerm, status]);
+
+  const handleExport = () => {
+    const csvContent = filteredSubscribers
+      .map((s) => `${s.email},${s.whatsapp || ""},${s.plan},${s.status},${s.start_date}`)
+      .join("\n");
+
+    const blob = new Blob([`Email,WhatsApp,Plano,Status,Data Início\n${csvContent}`], {
+      type: "text/csv",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `assinaturas_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    toast.success("Arquivo exportado!");
+  };
+
+  const handleCancelSubscription = async (userId: string) => {
+    const { error } = await supabase
+      .from("user_roles")
+      .update({ role: "free" })
+      .eq("user_id", userId);
+
+    if (error) {
+      toast.error("Erro ao cancelar assinatura");
+    } else {
+      toast.success("Assinatura cancelada!");
+      fetchSubscribers();
+    }
   };
 
   return (
@@ -112,11 +191,11 @@ export function AdminSubscriptionsTab() {
           </Select>
         </div>
         <div className="flex gap-2 ml-auto mt-5">
-          <Button variant="outline" onClick={fetchSubscribers}>
-            <RefreshCw className="w-4 h-4 mr-1" />
+          <Button variant="outline" onClick={fetchSubscribers} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
             Atualizar
           </Button>
-          <Button className="bg-destructive text-destructive-foreground">
+          <Button className="bg-destructive text-destructive-foreground" onClick={handleExport}>
             <Download className="w-4 h-4 mr-1" />
             Exportar
           </Button>
@@ -132,16 +211,12 @@ export function AdminSubscriptionsTab() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="p-4 bg-secondary/50 rounded-lg">
             <p className="text-sm text-muted-foreground mb-1">Receita Total</p>
-            <p className="text-2xl font-bold text-foreground">
-              R$ {stats.mrr.toFixed(2)}
-            </p>
+            <p className="text-2xl font-bold text-foreground">R$ {stats.mrr.toFixed(2)}</p>
             <p className="text-xs text-muted-foreground">+0% vs anterior</p>
           </div>
           <div className="p-4 bg-secondary/50 rounded-lg">
             <p className="text-sm text-muted-foreground mb-1">Receita Média</p>
-            <p className="text-2xl font-bold text-foreground">
-              R$ {stats.mrr.toFixed(2)}
-            </p>
+            <p className="text-2xl font-bold text-foreground">R$ {stats.mrr.toFixed(2)}</p>
             <p className="text-xs text-muted-foreground">Por período</p>
           </div>
           <div className="p-4 bg-secondary/50 rounded-lg">
@@ -199,34 +274,31 @@ export function AdminSubscriptionsTab() {
         </Card>
       </div>
 
-      {/* Monthly Analysis */}
-      <Card className="p-6">
-        <h3 className="font-semibold text-foreground mb-4">Análise Mensal</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Receita Mês</p>
-            <p className="text-lg font-bold text-foreground">R$ {stats.mrr.toFixed(2)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Lucro Real</p>
-            <p className="text-lg font-bold text-foreground">R$ 0</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Variação %</p>
-            <p className="text-lg font-bold text-foreground">-50.00%</p>
-          </div>
-        </div>
-      </Card>
-
       {/* Subscribers List */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-foreground">Lista de Assinantes</h3>
           <div className="flex gap-2">
-            <Input placeholder="Buscar email ou nome..." className="w-64 bg-secondary" />
-            <Button className="bg-success text-success-foreground">Exportar</Button>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar email ou whatsapp..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-64 bg-secondary pl-10"
+              />
+            </div>
+            <Button className="bg-success text-success-foreground" onClick={handleExport}>
+              Exportar
+            </Button>
           </div>
         </div>
+
+        {searchTerm && (
+          <p className="text-xs text-muted-foreground mb-4">
+            {filteredSubscribers.length} resultado(s) encontrado(s)
+          </p>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-8">
@@ -240,36 +312,55 @@ export function AdminSubscriptionsTab() {
                 <TableHead>WHATSAPP</TableHead>
                 <TableHead>PLANO</TableHead>
                 <TableHead>STATUS</TableHead>
-                <TableHead>ÚLTIMA ATUALIZAÇÃO</TableHead>
+                <TableHead>DATA INÍCIO</TableHead>
                 <TableHead>AÇÕES</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {subscribers.map((sub) => (
-                <TableRow key={sub.id}>
-                  <TableCell className="text-primary">{sub.email}</TableCell>
-                  <TableCell className="text-muted-foreground">{sub.whatsapp}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{sub.plan}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={sub.status === "Ativo" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"}>
-                      {sub.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{sub.start_date}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="outline" className="text-primary">
-                        Zerar
-                      </Button>
-                      <Button size="sm" variant="secondary">
-                        Histórico
-                      </Button>
-                    </div>
+              {filteredSubscribers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    {searchTerm ? "Nenhum assinante encontrado" : "Nenhum assinante cadastrado"}
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredSubscribers.map((sub) => (
+                  <TableRow key={sub.id}>
+                    <TableCell className="text-primary">{sub.email}</TableCell>
+                    <TableCell className="text-muted-foreground">{sub.whatsapp || "N/A"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{sub.plan}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          sub.status === "Ativo"
+                            ? "bg-success/20 text-success"
+                            : "bg-destructive/20 text-destructive"
+                        }
+                      >
+                        {sub.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{sub.start_date}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive"
+                          onClick={() => handleCancelSubscription(sub.id)}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button size="sm" variant="secondary">
+                          Histórico
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         )}
@@ -280,7 +371,7 @@ export function AdminSubscriptionsTab() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-foreground">Relatório de Receitas</h3>
-            <Button variant="destructive" size="sm">
+            <Button variant="destructive" size="sm" onClick={handleExport}>
               <Download className="w-4 h-4 mr-1" />
               Exportar
             </Button>
@@ -308,7 +399,7 @@ export function AdminSubscriptionsTab() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-foreground">Relatório de Assinantes</h3>
-            <Button variant="destructive" size="sm">
+            <Button variant="destructive" size="sm" onClick={handleExport}>
               <Download className="w-4 h-4 mr-1" />
               Exportar
             </Button>

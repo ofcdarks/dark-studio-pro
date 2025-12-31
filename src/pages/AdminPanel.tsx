@@ -13,6 +13,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Shield,
   Users,
   Coins,
@@ -34,7 +51,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
@@ -61,12 +78,12 @@ interface UserData {
   created_at: string | null;
   credits: number | null;
   storage_used: number | null;
+  whatsapp: string | null;
+  status: string | null;
 }
 
 interface UserWithRole extends UserData {
   role: string;
-  status: string;
-  whatsapp?: string;
 }
 
 const AdminPanel = () => {
@@ -83,19 +100,38 @@ const AdminPanel = () => {
   const [filterRole, setFilterRole] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const usersPerPage = 10;
+  const [usersPerPage, setUsersPerPage] = useState(10);
+  
+  // Modal states
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [lockDialogOpen, setLockDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
+  const [editForm, setEditForm] = useState({
+    full_name: "",
+    email: "",
+    whatsapp: "",
+    status: "active",
+    role: "free",
+  });
+  const [savingUser, setSavingUser] = useState(false);
 
   useEffect(() => {
     fetchAdminData();
   }, []);
 
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterRole]);
+
   const fetchAdminData = async () => {
     setLoading(true);
     try {
-      // Fetch user profiles
+      // Fetch user profiles with whatsapp and status
       const { data: profiles, count } = await supabase
         .from("profiles")
-        .select("*", { count: "exact" });
+        .select("id, email, full_name, created_at, credits, storage_used, whatsapp, status", { count: "exact" });
 
       // Fetch user roles
       const { data: userRoles } = await supabase.from("user_roles").select("*");
@@ -106,15 +142,17 @@ const AdminPanel = () => {
         return {
           ...profile,
           role: userRole?.role || "free",
-          status: "Ativo",
-          whatsapp: "",
         };
       });
 
       setUsers(usersWithRoles);
+
+      // Calculate pending users
+      const pendingCount = usersWithRoles.filter(u => u.status === "pending").length;
+
       setStats({
         totalUsers: count || 0,
-        pendingActivation: 1,
+        pendingActivation: pendingCount,
         onlineNow: 1,
         logins24h: 5,
       });
@@ -126,28 +164,165 @@ const AdminPanel = () => {
     }
   };
 
-  const handleApproveAllPending = () => {
-    toast.success("Todos os usuários pendentes foram aprovados!");
+  // Dynamic search - filter users as user types
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch =
+        !searchTerm ||
+        user.email?.toLowerCase().includes(searchLower) ||
+        user.full_name?.toLowerCase().includes(searchLower) ||
+        user.whatsapp?.toLowerCase().includes(searchLower);
+      const matchesRole = filterRole === "all" || user.role === filterRole;
+      return matchesSearch && matchesRole;
+    });
+  }, [users, searchTerm, filterRole]);
+
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * usersPerPage,
+    currentPage * usersPerPage
+  );
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+  const handleApproveAllPending = async () => {
+    const pendingUsers = users.filter(u => u.status === "pending");
+    if (pendingUsers.length === 0) {
+      toast.info("Não há usuários pendentes");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ status: "active" })
+        .in("id", pendingUsers.map(u => u.id));
+
+      if (error) throw error;
+      toast.success(`${pendingUsers.length} usuários aprovados!`);
+      fetchAdminData();
+    } catch (error) {
+      toast.error("Erro ao aprovar usuários");
+    }
   };
 
-  const handleEditUser = (userId: string) => {
-    toast.info(`Editando usuário: ${userId}`);
+  const handleEditUser = (user: UserWithRole) => {
+    setSelectedUser(user);
+    setEditForm({
+      full_name: user.full_name || "",
+      email: user.email || "",
+      whatsapp: user.whatsapp || "",
+      status: user.status || "active",
+      role: user.role,
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleSaveUser = async () => {
+    if (!selectedUser) return;
+    setSavingUser(true);
+
+    try {
+      // Update profile
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: editForm.full_name,
+          whatsapp: editForm.whatsapp,
+          status: editForm.status,
+        })
+        .eq("id", selectedUser.id);
+
+      if (profileError) throw profileError;
+
+      // Update role if changed
+      if (editForm.role !== selectedUser.role) {
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .update({ role: editForm.role as "admin" | "pro" | "free" })
+          .eq("user_id", selectedUser.id);
+
+        if (roleError) throw roleError;
+      }
+
+      toast.success("Usuário atualizado com sucesso!");
+      setEditModalOpen(false);
+      fetchAdminData();
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast.error("Erro ao atualizar usuário");
+    } finally {
+      setSavingUser(false);
+    }
   };
 
   const handleChangePassword = (userId: string) => {
-    toast.info(`Alterando senha do usuário: ${userId}`);
+    toast.info("Funcionalidade de reset de senha será enviada por email");
   };
 
-  const handleLockUser = (userId: string) => {
-    toast.success(`Usuário bloqueado: ${userId}`);
+  const handleLockUser = (user: UserWithRole) => {
+    setSelectedUser(user);
+    setLockDialogOpen(true);
   };
 
-  const handleDisableUser = (userId: string) => {
-    toast.success(`Usuário desativado: ${userId}`);
+  const confirmLockUser = async () => {
+    if (!selectedUser) return;
+
+    try {
+      const newStatus = selectedUser.status === "blocked" ? "active" : "blocked";
+      const { error } = await supabase
+        .from("profiles")
+        .update({ status: newStatus })
+        .eq("id", selectedUser.id);
+
+      if (error) throw error;
+      toast.success(newStatus === "blocked" ? "Usuário bloqueado!" : "Usuário desbloqueado!");
+      setLockDialogOpen(false);
+      fetchAdminData();
+    } catch (error) {
+      toast.error("Erro ao atualizar status do usuário");
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
-    toast.success(`Usuário excluído: ${userId}`);
+  const handleDisableUser = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ status: "inactive" })
+        .eq("id", userId);
+
+      if (error) throw error;
+      toast.success("Usuário desativado!");
+      fetchAdminData();
+    } catch (error) {
+      toast.error("Erro ao desativar usuário");
+    }
+  };
+
+  const handleDeleteUser = (user: UserWithRole) => {
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    try {
+      // Delete user role first
+      await supabase.from("user_roles").delete().eq("user_id", selectedUser.id);
+      
+      // Delete profile (cascade will handle related data)
+      const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", selectedUser.id);
+
+      if (error) throw error;
+      toast.success("Usuário excluído!");
+      setDeleteDialogOpen(false);
+      fetchAdminData();
+    } catch (error) {
+      toast.error("Erro ao excluir usuário");
+    }
   };
 
   const toggleUserSelection = (userId: string) => {
@@ -156,19 +331,13 @@ const AdminPanel = () => {
     );
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.full_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = filterRole === "all" || user.role === filterRole;
-    return matchesSearch && matchesRole;
-  });
-
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * usersPerPage,
-    currentPage * usersPerPage
-  );
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const toggleSelectAll = () => {
+    if (selectedUsers.length === paginatedUsers.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(paginatedUsers.map(u => u.id));
+    }
+  };
 
   const getRoleBadge = (role: string) => {
     const colors: Record<string, string> = {
@@ -179,10 +348,22 @@ const AdminPanel = () => {
     return colors[role] || colors.free;
   };
 
-  const getStatusBadge = (status: string) => {
-    if (status === "Ativo") return "bg-success/20 text-success border-success/50";
-    if (status === "Pendente") return "bg-primary/20 text-primary border-primary/50";
-    return "bg-destructive/20 text-destructive border-destructive/50";
+  const getStatusBadge = (status: string | null) => {
+    const statusVal = status || "active";
+    if (statusVal === "active") return "bg-success/20 text-success border-success/50";
+    if (statusVal === "pending") return "bg-primary/20 text-primary border-primary/50";
+    if (statusVal === "blocked") return "bg-destructive/20 text-destructive border-destructive/50";
+    return "bg-muted text-muted-foreground border-border";
+  };
+
+  const getStatusLabel = (status: string | null) => {
+    const labels: Record<string, string> = {
+      active: "Ativo",
+      pending: "Pendente",
+      blocked: "Bloqueado",
+      inactive: "Inativo",
+    };
+    return labels[status || "active"] || status || "Ativo";
   };
 
   if (role?.role !== "admin") {
@@ -286,9 +467,10 @@ const AdminPanel = () => {
               <Button
                 onClick={handleApproveAllPending}
                 className="w-full bg-success text-success-foreground hover:bg-success/90"
+                disabled={stats.pendingActivation === 0}
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
-                Aprovar Todos os Utilizadores Pendentes
+                Aprovar Todos os Utilizadores Pendentes ({stats.pendingActivation})
               </Button>
 
               {/* User Management */}
@@ -297,7 +479,7 @@ const AdminPanel = () => {
                   Gerenciamento de Utilizadores
                 </h3>
 
-                {/* Filters */}
+                {/* Filters - Dynamic Search */}
                 <div className="flex flex-col md:flex-row gap-4 mb-6">
                   <div className="flex-1">
                     <div className="relative">
@@ -309,6 +491,11 @@ const AdminPanel = () => {
                         className="pl-10 bg-secondary border-border"
                       />
                     </div>
+                    {searchTerm && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {filteredUsers.length} resultado(s) encontrado(s)
+                      </p>
+                    )}
                   </div>
                   <Select value={filterRole} onValueChange={setFilterRole}>
                     <SelectTrigger className="w-40 bg-secondary border-border">
@@ -321,7 +508,7 @@ const AdminPanel = () => {
                       <SelectItem value="free">Free</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Select defaultValue="10">
+                  <Select value={String(usersPerPage)} onValueChange={(v) => setUsersPerPage(Number(v))}>
                     <SelectTrigger className="w-32 bg-secondary border-border">
                       <SelectValue />
                     </SelectTrigger>
@@ -345,7 +532,10 @@ const AdminPanel = () => {
                         <thead>
                           <tr className="border-b border-border text-left">
                             <th className="pb-3 pr-4">
-                              <Checkbox />
+                              <Checkbox 
+                                checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
+                                onCheckedChange={toggleSelectAll}
+                              />
                             </th>
                             <th className="pb-3 pr-4 text-sm font-medium text-muted-foreground">
                               EMAIL
@@ -354,7 +544,7 @@ const AdminPanel = () => {
                               WHATSAPP
                             </th>
                             <th className="pb-3 pr-4 text-sm font-medium text-muted-foreground">
-                              CARGO
+                              NOME
                             </th>
                             <th className="pb-3 pr-4 text-sm font-medium text-muted-foreground">
                               PLANO
@@ -362,101 +552,138 @@ const AdminPanel = () => {
                             <th className="pb-3 pr-4 text-sm font-medium text-muted-foreground">
                               STATUS
                             </th>
-                            <th className="pb-3 pr-4 text-sm font-medium text-muted-foreground">
-                              TAGS
-                            </th>
                             <th className="pb-3 text-sm font-medium text-muted-foreground">AÇÕES</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {paginatedUsers.map((user) => (
-                            <tr key={user.id} className="border-b border-border/50">
-                              <td className="py-4 pr-4">
-                                <Checkbox
-                                  checked={selectedUsers.includes(user.id)}
-                                  onCheckedChange={() => toggleUserSelection(user.id)}
-                                />
-                              </td>
-                              <td className="py-4 pr-4 text-sm text-foreground">{user.email}</td>
-                              <td className="py-4 pr-4 text-sm text-primary">
-                                {user.whatsapp || "N/A"}
-                              </td>
-                              <td className="py-4 pr-4 text-sm text-muted-foreground">Utilizador</td>
-                              <td className="py-4 pr-4">
-                                <Badge className={getRoleBadge(user.role)}>
-                                  {user.role.toUpperCase()}
-                                </Badge>
-                              </td>
-                              <td className="py-4 pr-4">
-                                <Badge className={getStatusBadge(user.status)}>{user.status}</Badge>
-                              </td>
-                              <td className="py-4 pr-4 text-sm text-muted-foreground">N/A</td>
-                              <td className="py-4">
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                    onClick={() => handleEditUser(user.id)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                    onClick={() => handleChangePassword(user.id)}
-                                  >
-                                    <Key className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                    onClick={() => handleLockUser(user.id)}
-                                  >
-                                    <Lock className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                    onClick={() => handleDisableUser(user.id)}
-                                  >
-                                    <UserMinus className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                    onClick={() => handleDeleteUser(user.id)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
+                          {paginatedUsers.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                                {searchTerm ? "Nenhum usuário encontrado" : "Nenhum usuário cadastrado"}
                               </td>
                             </tr>
-                          ))}
+                          ) : (
+                            paginatedUsers.map((user) => (
+                              <tr key={user.id} className="border-b border-border/50">
+                                <td className="py-4 pr-4">
+                                  <Checkbox
+                                    checked={selectedUsers.includes(user.id)}
+                                    onCheckedChange={() => toggleUserSelection(user.id)}
+                                  />
+                                </td>
+                                <td className="py-4 pr-4 text-sm text-foreground">{user.email}</td>
+                                <td className="py-4 pr-4 text-sm text-primary">
+                                  {user.whatsapp || "N/A"}
+                                </td>
+                                <td className="py-4 pr-4 text-sm text-muted-foreground">
+                                  {user.full_name || "N/A"}
+                                </td>
+                                <td className="py-4 pr-4">
+                                  <Badge className={getRoleBadge(user.role)}>
+                                    {user.role.toUpperCase()}
+                                  </Badge>
+                                </td>
+                                <td className="py-4 pr-4">
+                                  <Badge className={getStatusBadge(user.status)}>
+                                    {getStatusLabel(user.status)}
+                                  </Badge>
+                                </td>
+                                <td className="py-4">
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                      onClick={() => handleEditUser(user)}
+                                      title="Editar"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                      onClick={() => handleChangePassword(user.id)}
+                                      title="Alterar Senha"
+                                    >
+                                      <Key className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                      onClick={() => handleLockUser(user)}
+                                      title={user.status === "blocked" ? "Desbloquear" : "Bloquear"}
+                                    >
+                                      <Lock className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                      onClick={() => handleDisableUser(user.id)}
+                                      title="Desativar"
+                                    >
+                                      <UserMinus className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                      onClick={() => handleDeleteUser(user)}
+                                      title="Excluir"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
                         </tbody>
                       </table>
                     </div>
 
                     {/* Pagination */}
-                    <div className="flex items-center justify-end gap-2 mt-4">
-                      <span className="text-sm text-muted-foreground">Anterior</span>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-end gap-2 mt-4">
                         <Button
-                          key={page}
-                          variant={currentPage === page ? "default" : "outline"}
+                          variant="outline"
                           size="sm"
-                          onClick={() => setCurrentPage(page)}
-                          className={currentPage === page ? "bg-primary" : ""}
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
                         >
-                          {page}
+                          <ChevronLeft className="w-4 h-4 mr-1" />
+                          Anterior
                         </Button>
-                      ))}
-                      <span className="text-sm text-muted-foreground">Próximo</span>
-                    </div>
+                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                          let page = i + 1;
+                          if (totalPages > 5 && currentPage > 3) {
+                            page = Math.min(currentPage - 2 + i, totalPages - 4 + i);
+                          }
+                          return (
+                            <Button
+                              key={page}
+                              variant={currentPage === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(page)}
+                              className={currentPage === page ? "bg-primary" : ""}
+                            >
+                              {page}
+                            </Button>
+                          );
+                        })}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Próximo
+                          <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
+                      </div>
+                    )}
                   </>
                 )}
               </Card>
@@ -467,43 +694,149 @@ const AdminPanel = () => {
               <AdminCreditsTab />
             </TabsContent>
 
-            {/* APIs Tab */}
             <TabsContent value="apis">
               <AdminAPIsTab />
             </TabsContent>
 
-            {/* Pixel/Ads Tab */}
             <TabsContent value="pixel">
               <AdminPixelTab />
             </TabsContent>
 
-            {/* Payments Tab */}
             <TabsContent value="payments">
               <AdminPaymentsTab />
             </TabsContent>
 
-            {/* Subscriptions Tab */}
             <TabsContent value="subscriptions">
               <AdminSubscriptionsTab />
             </TabsContent>
 
-            {/* Storage Tab */}
             <TabsContent value="storage">
               <AdminStorageTab />
             </TabsContent>
 
-            {/* Notifications Tab */}
             <TabsContent value="notifications">
               <AdminNotificationsTab />
             </TabsContent>
 
-            {/* Permissions Tab */}
             <TabsContent value="permissions">
               <AdminPermissionsTab />
             </TabsContent>
           </Tabs>
         </div>
       </div>
+
+      {/* Edit User Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">Nome Completo</label>
+              <Input
+                value={editForm.full_name}
+                onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                className="bg-secondary border-border"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">Email</label>
+              <Input
+                value={editForm.email}
+                disabled
+                className="bg-secondary border-border opacity-50"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Email não pode ser alterado</p>
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">WhatsApp</label>
+              <Input
+                value={editForm.whatsapp}
+                onChange={(e) => setEditForm({ ...editForm, whatsapp: e.target.value })}
+                className="bg-secondary border-border"
+                placeholder="Ex: 5511999999999"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">Status</label>
+              <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Ativo</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="blocked">Bloqueado</SelectItem>
+                  <SelectItem value="inactive">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">Plano</label>
+              <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveUser} disabled={savingUser}>
+              {savingUser ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lock User Dialog */}
+      <AlertDialog open={lockDialogOpen} onOpenChange={setLockDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {selectedUser?.status === "blocked" ? "Desbloquear Usuário" : "Bloquear Usuário"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedUser?.status === "blocked"
+                ? `Deseja desbloquear o usuário ${selectedUser?.email}?`
+                : `Deseja bloquear o usuário ${selectedUser?.email}? Ele não poderá acessar a plataforma.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLockUser}>
+              {selectedUser?.status === "blocked" ? "Desbloquear" : "Bloquear"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete User Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Usuário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o usuário {selectedUser?.email}? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteUser} className="bg-destructive text-destructive-foreground">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };
