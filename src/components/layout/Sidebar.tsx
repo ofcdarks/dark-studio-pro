@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useNavigate, useLocation } from "react-router-dom";
+import logo from "@/assets/logo.gif";
 import {
   Home,
   Video,
@@ -90,9 +91,11 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="p-4 flex items-center gap-3 border-b border-sidebar-border">
-        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-          <Mic className="w-5 h-5 text-primary-foreground" />
-        </div>
+        <img 
+          src={logo} 
+          alt="Logo" 
+          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+        />
         {!collapsed && (
           <div className="flex flex-col">
             <span className="font-bold text-foreground">La Casa Dark</span>
