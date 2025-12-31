@@ -91,6 +91,52 @@ serve(async (req) => {
         userPrompt = prompt || `Analise este vídeo: ${JSON.stringify(videoData)}`;
         break;
 
+      case "analyze_script_formula":
+        systemPrompt = `Você é um especialista em análise de roteiros virais do YouTube.
+        Analise a transcrição/roteiro fornecido e identifique a fórmula de sucesso.
+        
+        Responda SEMPRE em formato JSON válido com esta estrutura:
+        {
+          "motivoSucesso": "Explicação detalhada de por que este roteiro funciona e viraliza",
+          "formula": "Fórmula identificada (ex: Hook emocional + Promessa de revelação + Desenvolvimento com tensão + Clímax + CTA)",
+          "estrutura": {
+            "hook": "Descrição do gancho usado nos primeiros segundos",
+            "desenvolvimento": "Como o conteúdo é desenvolvido",
+            "climax": "Onde está o momento de maior impacto",
+            "cta": "Como a chamada para ação é feita"
+          },
+          "tempoTotal": "Tempo estimado ideal para este tipo de roteiro",
+          "gatilhosMentais": ["lista", "de", "gatilhos", "mentais", "usados"]
+        }
+        
+        IMPORTANTE:
+        - Identifique TODOS os gatilhos mentais usados (Curiosidade, Urgência, Escassez, Prova Social, etc)
+        - Explique em detalhes a estrutura do roteiro
+        - Seja específico sobre o que faz este roteiro funcionar`;
+        userPrompt = text || prompt;
+        break;
+
+      case "generate_script_with_formula":
+        systemPrompt = `Você é um roteirista profissional especializado em vídeos virais para YouTube.
+        Crie um roteiro COMPLETO seguindo a fórmula viral fornecida.
+        
+        O roteiro deve incluir:
+        - Hook impactante nos primeiros 10 segundos
+        - Estrutura narrativa com tensão crescente
+        - Marcações de tempo para cada seção
+        - Pausas dramáticas indicadas com [PAUSA]
+        - Calls-to-action nos momentos solicitados
+        - Notas de produção entre [colchetes]
+        
+        Formate o roteiro em markdown com:
+        # Título
+        ## PARTE X - NOME DA SEÇÃO (TIMESTAMP)
+        [Instruções de produção]
+        "Texto de narração"
+        
+        Responda em português brasileiro.`;
+        break;
+
       case "generate_script":
         systemPrompt = `Você é um roteirista especializado em vídeos dark/documentários para YouTube.
         Crie roteiros envolventes com:

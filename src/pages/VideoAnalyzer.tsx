@@ -26,6 +26,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { TranscriptionSection } from "@/components/analyzer/TranscriptionSection";
+import { ScriptAgentModal } from "@/components/analyzer/ScriptAgentModal";
 
 interface GeneratedTitle {
   id: string;
@@ -57,6 +59,19 @@ interface VideoInfo {
   originalTitleAnalysis?: OriginalTitleAnalysis;
 }
 
+interface ScriptFormulaAnalysis {
+  motivoSucesso: string;
+  formula: string;
+  estrutura: {
+    hook: string;
+    desenvolvimento: string;
+    climax: string;
+    cta: string;
+  };
+  tempoTotal: string;
+  gatilhosMentais: string[];
+}
+
 const VideoAnalyzer = () => {
   const [videoUrl, setVideoUrl] = useState("");
   const [aiModel, setAiModel] = useState("gemini");
@@ -67,6 +82,9 @@ const VideoAnalyzer = () => {
   const [generatedTitles, setGeneratedTitles] = useState<GeneratedTitle[]>([]);
   const [selectedTitles, setSelectedTitles] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showAgentModal, setShowAgentModal] = useState(false);
+  const [currentFormula, setCurrentFormula] = useState<ScriptFormulaAnalysis | null>(null);
+  const [currentTranscription, setCurrentTranscription] = useState("");
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -336,6 +354,12 @@ const VideoAnalyzer = () => {
     setSelectedTitles((prev) =>
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
     );
+  };
+
+  const handleCreateAgent = (formula: ScriptFormulaAnalysis | null, transcription: string) => {
+    setCurrentFormula(formula);
+    setCurrentTranscription(transcription);
+    setShowAgentModal(true);
   };
 
   return (
@@ -681,6 +705,13 @@ const VideoAnalyzer = () => {
             </div>
           )}
 
+          {/* Transcription Section */}
+          {videoInfo && (
+            <div className="mt-8">
+              <TranscriptionSection onCreateAgent={handleCreateAgent} />
+            </div>
+          )}
+
           {/* Empty State */}
           {!videoInfo && !analyzing && (
             <Card className="p-12 text-center border-border/50">
@@ -695,6 +726,14 @@ const VideoAnalyzer = () => {
           )}
         </div>
       </div>
+
+      {/* Script Agent Modal */}
+      <ScriptAgentModal
+        open={showAgentModal}
+        onOpenChange={setShowAgentModal}
+        formula={currentFormula}
+        baseTranscription={currentTranscription}
+      />
     </MainLayout>
   );
 };
