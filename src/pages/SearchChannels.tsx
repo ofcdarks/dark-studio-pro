@@ -2,19 +2,79 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Users, Video, TrendingUp, Plus } from "lucide-react";
+import { Search, Users, Video, TrendingUp, Plus, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
-const similarChannels = [
-  { name: "Mystery Dark", subscribers: "890K", videos: 234, similarity: "92%" },
-  { name: "Ancient Secrets", subscribers: "1.2M", videos: 567, similarity: "88%" },
-  { name: "Dark History", subscribers: "456K", videos: 189, similarity: "85%" },
-  { name: "Hidden Truth", subscribers: "678K", videos: 312, similarity: "82%" },
-  { name: "Unexplained", subscribers: "345K", videos: 145, similarity: "79%" },
-];
+interface SimilarChannel {
+  name: string;
+  subscribers: string;
+  videos: number;
+  similarity: string;
+  url?: string;
+}
 
 const SearchChannels = () => {
+  const { user } = useAuth();
   const [channelUrl, setChannelUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [similarChannels, setSimilarChannels] = useState<SimilarChannel[]>([]);
+
+  const handleSearch = async () => {
+    if (!channelUrl.trim()) {
+      toast.error("Cole a URL de um canal de referência");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          action: 'search_channels',
+          channelUrl: channelUrl
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.channels) {
+        setSimilarChannels(data.channels);
+        toast.success(`${data.channels.length} canais similares encontrados!`);
+      }
+    } catch (error) {
+      console.error('Error searching channels:', error);
+      toast.error('Erro ao buscar canais similares');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddToMonitored = async (channel: SimilarChannel) => {
+    if (!user) {
+      toast.error("Faça login para adicionar canais");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('monitored_channels')
+        .insert({
+          user_id: user.id,
+          channel_url: channel.url || `https://youtube.com/@${channel.name.replace(/\s/g, '')}`,
+          channel_name: channel.name,
+          subscribers: channel.subscribers,
+          videos_count: channel.videos
+        });
+
+      if (error) throw error;
+      toast.success(`${channel.name} adicionado aos canais monitorados!`);
+    } catch (error) {
+      console.error('Error adding channel:', error);
+      toast.error('Erro ao adicionar canal');
+    }
+  };
 
   return (
     <MainLayout>
@@ -35,14 +95,33 @@ const SearchChannels = () => {
                   value={channelUrl}
                   onChange={(e) => setChannelUrl(e.target.value)}
                   className="bg-secondary border-border"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                <Search className="w-4 h-4 mr-2" />
+              <Button 
+                onClick={handleSearch}
+                disabled={loading}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4 mr-2" />
+                )}
                 Buscar Similares
               </Button>
             </div>
           </Card>
+
+          {similarChannels.length === 0 && !loading && (
+            <Card className="p-12 text-center">
+              <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">Busque canais similares</h3>
+              <p className="text-muted-foreground">
+                Cole a URL de um canal de referência para encontrar canais com conteúdo similar
+              </p>
+            </Card>
+          )}
 
           <div className="space-y-4">
             {similarChannels.map((channel, index) => (
@@ -71,7 +150,12 @@ const SearchChannels = () => {
                       <p className="text-sm text-muted-foreground">Similaridade</p>
                       <p className="text-lg font-semibold text-primary">{channel.similarity}</p>
                     </div>
-                    <Button variant="outline" size="icon" className="border-border text-primary hover:bg-secondary">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="border-border text-primary hover:bg-secondary"
+                      onClick={() => handleAddToMonitored(channel)}
+                    >
                       <Plus className="w-4 h-4" />
                     </Button>
                   </div>

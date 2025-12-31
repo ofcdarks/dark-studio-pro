@@ -4,21 +4,151 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Mic, Play, Download, Pause, Volume2 } from "lucide-react";
-import { useState } from "react";
+import { Mic, Play, Download, Pause, Volume2, Loader2, Trash2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+
+interface GeneratedAudio {
+  id: string;
+  text: string;
+  audio_url: string | null;
+  voice_id: string | null;
+  duration: number | null;
+  created_at: string | null;
+}
 
 const voices = [
-  { id: "roger", name: "Roger - Masculino" },
-  { id: "sarah", name: "Sarah - Feminino" },
-  { id: "charlie", name: "Charlie - Masculino" },
-  { id: "laura", name: "Laura - Feminino" },
-  { id: "george", name: "George - Masculino" },
+  { id: "alloy", name: "Alloy - Neutro" },
+  { id: "echo", name: "Echo - Masculino" },
+  { id: "fable", name: "Fable - Expressivo" },
+  { id: "onyx", name: "Onyx - Masculino Grave" },
+  { id: "nova", name: "Nova - Feminino" },
+  { id: "shimmer", name: "Shimmer - Feminino Suave" },
 ];
 
 const VoiceGenerator = () => {
+  const { user } = useAuth();
   const [text, setText] = useState("");
-  const [selectedVoice, setSelectedVoice] = useState("");
+  const [selectedVoice, setSelectedVoice] = useState("nova");
   const [speed, setSpeed] = useState([1]);
+  const [loading, setLoading] = useState(false);
+  const [audios, setAudios] = useState<GeneratedAudio[]>([]);
+  const [loadingAudios, setLoadingAudios] = useState(true);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (user) fetchAudios();
+  }, [user]);
+
+  const fetchAudios = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('generated_audios')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setAudios(data || []);
+    } catch (error) {
+      console.error('Error fetching audios:', error);
+    } finally {
+      setLoadingAudios(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!text.trim()) {
+      toast.error('Digite o texto para converter em áudio');
+      return;
+    }
+
+    if (!user) {
+      toast.error('Faça login para gerar áudio');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          action: 'generate_voice',
+          text: text,
+          voice: selectedVoice,
+          speed: speed[0]
+        }
+      });
+
+      if (error) throw error;
+
+      // Save to database
+      const { error: insertError } = await supabase
+        .from('generated_audios')
+        .insert({
+          user_id: user.id,
+          text: text.substring(0, 500),
+          voice_id: selectedVoice,
+          audio_url: data.audioUrl || null,
+          duration: data.duration || 0
+        });
+
+      if (insertError) console.error('Error saving audio:', insertError);
+
+      toast.success('Áudio gerado com sucesso!');
+      setText('');
+      fetchAudios();
+    } catch (error) {
+      console.error('Error generating audio:', error);
+      toast.error('Erro ao gerar áudio. Verifique suas chaves de API.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePlay = (audio: GeneratedAudio) => {
+    if (!audio.audio_url) {
+      toast.error('Áudio não disponível');
+      return;
+    }
+
+    if (playingId === audio.id) {
+      audioRef.current?.pause();
+      setPlayingId(null);
+    } else {
+      if (audioRef.current) audioRef.current.pause();
+      audioRef.current = new Audio(audio.audio_url);
+      audioRef.current.play();
+      audioRef.current.onended = () => setPlayingId(null);
+      setPlayingId(audio.id);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('generated_audios')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Áudio removido!');
+      setAudios(audios.filter(a => a.id !== id));
+    } catch (error) {
+      console.error('Error deleting audio:', error);
+      toast.error('Erro ao remover áudio');
+    }
+  };
+
+  const handleDownload = (audio: GeneratedAudio) => {
+    if (!audio.audio_url) {
+      toast.error('Áudio não disponível');
+      return;
+    }
+    window.open(audio.audio_url, '_blank');
+  };
 
   return (
     <MainLayout>
@@ -27,7 +157,7 @@ const VoiceGenerator = () => {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">Gerador de Voz</h1>
             <p className="text-muted-foreground">
-              Converta texto em áudio com vozes realistas
+              Converta texto em áudio com vozes realistas usando IA
             </p>
           </div>
 
@@ -75,11 +205,22 @@ const VoiceGenerator = () => {
             </div>
 
             <div className="flex gap-2">
-              <Button className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
-                <Play className="w-4 h-4 mr-2" />
+              <Button 
+                onClick={handleGenerate}
+                disabled={loading || !text.trim()}
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Play className="w-4 h-4 mr-2" />
+                )}
                 Gerar Áudio
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Máximo de 4096 caracteres por geração
+            </p>
           </Card>
 
           <Card className="p-6">
@@ -87,24 +228,59 @@ const VoiceGenerator = () => {
               <Volume2 className="w-5 h-5 text-primary" />
               <h3 className="font-semibold text-foreground">Áudios Gerados</h3>
             </div>
-            <div className="space-y-3">
-              {[1, 2, 3].map((_, index) => (
-                <div key={index} className="flex items-center gap-4 p-4 bg-secondary/50 rounded-lg">
-                  <Button variant="ghost" size="icon" className="text-primary">
-                    <Play className="w-5 h-5" />
-                  </Button>
-                  <div className="flex-1">
-                    <div className="h-2 bg-secondary rounded-full">
-                      <div className="h-full w-1/3 bg-primary rounded-full" />
+            {loadingAudios ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : audios.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                Nenhum áudio gerado ainda
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {audios.map((audio) => (
+                  <div key={audio.id} className="flex items-center gap-4 p-4 bg-secondary/50 rounded-lg">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-primary"
+                      onClick={() => handlePlay(audio)}
+                    >
+                      {playingId === audio.id ? (
+                        <Pause className="w-5 h-5" />
+                      ) : (
+                        <Play className="w-5 h-5" />
+                      )}
+                    </Button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-foreground truncate">{audio.text}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Voz: {voices.find(v => v.id === audio.voice_id)?.name || audio.voice_id}
+                      </p>
                     </div>
+                    <span className="text-sm text-muted-foreground">
+                      {audio.duration ? `${Math.floor(audio.duration / 60)}:${String(Math.floor(audio.duration % 60)).padStart(2, '0')}` : '--:--'}
+                    </span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => handleDownload(audio)}
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-destructive hover:bg-destructive/10"
+                      onClick={() => handleDelete(audio.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <span className="text-sm text-muted-foreground">0:00 / 1:23</span>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                    <Download className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
       </div>
