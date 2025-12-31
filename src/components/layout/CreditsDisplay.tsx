@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useCredits } from "@/hooks/useCredits";
-import { Coins, Loader2, RefreshCw, History, ArrowDown, ArrowUp } from "lucide-react";
+import { Coins, Loader2, RefreshCw, History, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { getToolInfo } from "@/lib/creditToolsMap";
+import { getToolInfo, getModelName } from "@/lib/creditToolsMap";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -13,15 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface CreditsDisplayProps {
   collapsed?: boolean;
@@ -35,7 +28,6 @@ interface CreditUsageItem {
   credits_used: number;
   model_used: string | null;
   created_at: string;
-  details: unknown;
 }
 
 interface CreditTransactionItem {
@@ -51,6 +43,7 @@ type HistoryItem = {
   type: 'usage' | 'transaction';
   operation: string;
   amount: number;
+  modelUsed: string | null;
   description: string | null;
   created_at: string;
   toolInfo: { name: string; icon: string; description: string };
@@ -84,13 +77,13 @@ export function CreditsDisplay({ collapsed = false, showRefresh = true, classNam
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
-          .limit(30),
+          .limit(50),
         supabase
           .from('credit_transactions')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
-          .limit(30)
+          .limit(50)
       ]);
 
       const usageItems: HistoryItem[] = (usageResult.data || []).map((item: CreditUsageItem) => ({
@@ -98,7 +91,8 @@ export function CreditsDisplay({ collapsed = false, showRefresh = true, classNam
         type: 'usage' as const,
         operation: item.operation_type,
         amount: -item.credits_used,
-        description: item.model_used || null,
+        modelUsed: item.model_used,
+        description: null,
         created_at: item.created_at,
         toolInfo: getToolInfo(item.operation_type),
       }));
@@ -107,7 +101,8 @@ export function CreditsDisplay({ collapsed = false, showRefresh = true, classNam
         id: item.id,
         type: 'transaction' as const,
         operation: item.transaction_type,
-        amount: item.transaction_type === 'add' ? item.amount : -item.amount,
+        amount: item.transaction_type === 'add' || item.transaction_type === 'refund' ? item.amount : -item.amount,
+        modelUsed: null,
         description: item.description,
         created_at: item.created_at,
         toolInfo: getToolInfo(item.transaction_type),
@@ -118,7 +113,7 @@ export function CreditsDisplay({ collapsed = false, showRefresh = true, classNam
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      setHistoryItems(combined.slice(0, 50));
+      setHistoryItems(combined.slice(0, 100));
     } catch (error) {
       console.error('Error fetching history:', error);
     } finally {
@@ -129,6 +124,17 @@ export function CreditsDisplay({ collapsed = false, showRefresh = true, classNam
   const handleOpenHistory = () => {
     setHistoryOpen(true);
     fetchHistory();
+  };
+
+  // Extract model name from description if not in modelUsed
+  const extractModelFromDescription = (item: HistoryItem): string | null => {
+    if (item.modelUsed) return item.modelUsed;
+    if (item.description) {
+      // Try to extract model name from description like "Análise de Títulos - GPT-4o"
+      const match = item.description.match(/- ([A-Za-z0-9\s.-]+)$/);
+      if (match) return match[1].trim();
+    }
+    return null;
   };
 
   if (collapsed) {
@@ -189,15 +195,14 @@ export function CreditsDisplay({ collapsed = false, showRefresh = true, classNam
 
       {/* History Modal */}
       <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <History className="w-5 h-5 text-primary" />
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="p-6 pb-4">
+            <DialogTitle className="flex items-center gap-2 text-xl">
               Histórico de Créditos
             </DialogTitle>
           </DialogHeader>
           
-          <div className="flex-1 overflow-auto">
+          <ScrollArea className="flex-1 px-6 pb-6">
             {loadingHistory ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -207,60 +212,69 @@ export function CreditsDisplay({ collapsed = false, showRefresh = true, classNam
                 Nenhum histórico encontrado
               </p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>DATA</TableHead>
-                    <TableHead>FERRAMENTA</TableHead>
-                    <TableHead>CRÉDITOS</TableHead>
-                    <TableHead>DETALHES</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {historyItems.map((item) => (
-                    <TableRow key={`${item.type}-${item.id}`}>
-                      <TableCell className="text-muted-foreground text-xs">
-                        {format(new Date(item.created_at), "dd/MM/yyyy HH:mm")}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{item.toolInfo.icon}</span>
-                          <div>
-                            <p className="text-sm font-medium text-foreground">
-                              {item.toolInfo.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {item.toolInfo.description}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
+              <div className="space-y-3">
+                {historyItems.map((item) => {
+                  const modelName = extractModelFromDescription(item);
+                  const formattedModel = modelName ? getModelName(modelName) : null;
+                  const isDebit = item.amount < 0;
+                  const isRefund = item.operation === 'refund';
+                  
+                  return (
+                    <div 
+                      key={`${item.type}-${item.id}`}
+                      className="p-4 rounded-lg border border-border bg-secondary/30"
+                    >
+                      {/* Amount and Type */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={cn(
+                          "font-bold text-lg",
+                          isDebit ? "text-destructive" : "text-success"
+                        )}>
+                          {isDebit ? '' : '+'}{item.amount.toFixed(2)} créditos
+                        </span>
                         <Badge 
                           className={cn(
-                            "flex items-center gap-1 w-fit",
-                            item.amount >= 0 
-                              ? "bg-success/20 text-success" 
-                              : "bg-destructive/20 text-destructive"
+                            "text-xs",
+                            isRefund 
+                              ? "bg-blue-500/20 text-blue-400" 
+                              : isDebit 
+                                ? "bg-destructive/20 text-destructive" 
+                                : "bg-success/20 text-success"
                           )}
                         >
-                          {item.amount >= 0 ? (
-                            <ArrowUp className="w-3 h-3" />
-                          ) : (
-                            <ArrowDown className="w-3 h-3" />
-                          )}
-                          {item.amount >= 0 ? '+' : ''}{item.amount.toFixed(2)}
+                          {isRefund ? 'Reembolso' : isDebit ? 'Débito' : 'Crédito'}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-xs max-w-[150px] truncate">
-                        {item.description || '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </div>
+                      
+                      {/* Tool name and model */}
+                      <p className="text-foreground font-medium mb-2">
+                        {item.toolInfo.name}
+                        {formattedModel && ` – ${formattedModel}`}
+                      </p>
+                      
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        <Badge className="bg-emerald-600/20 text-emerald-400 text-xs">
+                          {item.toolInfo.name}
+                        </Badge>
+                        {formattedModel && (
+                          <Badge variant="outline" className="text-xs border-border text-muted-foreground">
+                            {formattedModel}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* Date */}
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        {format(new Date(item.created_at), "dd/MM/yyyy, HH:mm")}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
-          </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </>
