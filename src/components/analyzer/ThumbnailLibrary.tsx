@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES, getStylesByCategory } from "@/lib/thumbnailStyles";
 
 interface ReferenceThumbnail {
   id: string;
@@ -70,9 +71,16 @@ export function ThumbnailLibrary({
   const [selectedPrompt, setSelectedPrompt] = useState<string>("1");
   const [genModel, setGenModel] = useState("gpt-4o");
   const [genLanguage, setGenLanguage] = useState("pt-BR");
-  const [artStyle, setArtStyle] = useState("realistic");
+  const [artStyle, setArtStyle] = useState("foto-realista");
   const [includeHeadline, setIncludeHeadline] = useState(true);
   const [useTitle, setUseTitle] = useState(false);
+
+  // Sync videoTitle when currentTitle changes (from selected title in VideoAnalyzer)
+  useEffect(() => {
+    if (currentTitle) {
+      setVideoTitle(currentTitle);
+    }
+  }, [currentTitle]);
 
   // Fetch folders
   const { data: folders } = useQuery({
@@ -250,6 +258,11 @@ export function ThumbnailLibrary({
 
     const selectedThumb = savedThumbnails?.find((_, i) => String(i + 1) === selectedPrompt);
     const basePrompt = selectedThumb?.extracted_prompt || "";
+    
+    // Get the selected style
+    const selectedStyle = THUMBNAIL_STYLES.find(s => s.id === artStyle);
+    const stylePromptPrefix = selectedStyle?.promptPrefix || "";
+    const styleName = selectedStyle?.name || artStyle;
 
     setGeneratingThumbnail(true);
     try {
@@ -265,12 +278,15 @@ export function ThumbnailLibrary({
           
           Nicho: ${niche || "Geral"}
           Subnicho: ${subNiche || "Geral"}
-          Estilo de arte: ${artStyle === "realistic" ? "Foto Realista - Ultra HD" : artStyle}
+          Estilo de arte: ${styleName}
+          Prefixo de estilo para usar: ${stylePromptPrefix}
           Idioma: ${genLanguage}
           ${includeHeadline ? `Incluir headline: "${useTitle ? videoTitle : 'Gerar headline de impacto'}"` : "Sem texto na imagem"}
           
+          IMPORTANTE: Combine o prefixo de estilo com o prompt adaptado.
+          
           Retorne um JSON com:
-          - adaptedPrompt: o prompt adaptado para gerar a thumbnail
+          - adaptedPrompt: o prompt adaptado para gerar a thumbnail (DEVE incluir o prefixo de estilo)
           - headline: a headline de impacto (se solicitado)
           - seoDescription: descrição SEO da thumbnail
           - tags: array de tags relevantes`,
@@ -603,14 +619,26 @@ export function ThumbnailLibrary({
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">Estilo de Arte</label>
               <Select value={artStyle} onValueChange={setArtStyle}>
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue />
+                <SelectTrigger className="bg-secondary border-border border-primary">
+                  <SelectValue placeholder="Selecione um estilo" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="realistic">✨ Foto Realista - Ultra HD, detalhes perfeitos</SelectItem>
-                  <SelectItem value="cinematic">🎬 Cinematográfico</SelectItem>
-                  <SelectItem value="digital-art">🎨 Arte Digital</SelectItem>
-                  <SelectItem value="3d">🔮 3D Render</SelectItem>
+                <SelectContent className="max-h-80">
+                  {THUMBNAIL_STYLE_CATEGORIES.map((category) => (
+                    <div key={category.id}>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-secondary/50">
+                        {category.icon} {category.name}
+                      </div>
+                      {getStylesByCategory(category.id).map((style) => (
+                        <SelectItem key={style.id} value={style.id}>
+                          <span className="flex items-center gap-2">
+                            <span>{style.icon}</span>
+                            <span>{style.name}</span>
+                            <span className="text-xs text-muted-foreground">- {style.description}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </div>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
