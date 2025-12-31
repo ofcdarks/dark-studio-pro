@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -11,13 +10,7 @@ import {
   Check, 
   X, 
   Zap, 
-  Star, 
-  Crown, 
   ArrowLeft,
-  Sparkles,
-  Clock,
-  Shield,
-  Infinity
 } from "lucide-react";
 
 interface PlanData {
@@ -31,62 +24,162 @@ interface PlanData {
 }
 
 const CREDIT_PACKAGES = [
-  { credits: 1000, price: 99.90, label: "Reforço rápido" },
-  { credits: 2500, price: 149.90, label: "Expansão" },
-  { credits: 5000, price: 249.90, label: "Boost" },
-  { credits: 10000, price: 399.90, label: "Mega reforço" },
-  { credits: 20000, price: 699.90, label: "Operação de alto volume" },
+  { credits: 1000, price: 99.90, label: "Alocação básica" },
+  { credits: 2500, price: 149.90, label: "Expansão moderada" },
+  { credits: 5000, price: 249.90, label: "Execução intensiva" },
+  { credits: 10000, price: 399.90, label: "Escala prolongada" },
+  { credits: 20000, price: 699.90, label: "Contínuo de alta demanda" },
 ];
 
-const PLAN_FEATURES = [
-  { key: "analyze_videos", label: "Análise de vídeos" },
-  { key: "transcription", label: "Transcrição" },
-  { key: "title_generation", label: "Geração de títulos" },
-  { key: "thumbnail_generation", label: "Geração de Thumbnails" },
-  { key: "script_generation", label: "Geração de roteiros" },
-  { key: "voice_generation", label: "Geração de áudio" },
-  { key: "video_generation", label: "Geração de vídeo" },
-  { key: "batch_images", label: "Imagens em lote" },
-  { key: "channel_monitoring", label: "Monitoramento de canais" },
-  { key: "youtube_integration", label: "Integração YouTube" },
-  { key: "viral_library", label: "Biblioteca de virais" },
-  { key: "viral_agents", label: "Agentes virais" },
-  { key: "api_own", label: "API própria liberada" },
+const MONTHLY_PLANS = [
+  {
+    name: "Acesso Inicial",
+    credits: 50,
+    price: 0,
+    features: [
+      { label: "Ambiente de avaliação", included: true },
+      { label: "Ferramentas limitadas (habilitadas)", included: true },
+      { label: "Ambiente exemplos (limitado)", included: true },
+      { label: "Análise de vídeos (restrito)", included: true },
+      { label: "Geração de áudio (Inserto)", included: false },
+      { label: "Localização (Inserto) | Agentes", included: false },
+      { label: "Cláusula de Riscos e Rendimento", included: false },
+      { label: "Processamento interno da Lavador", included: false },
+      { label: "Armazenamento reduzido", included: false },
+    ],
+    buttonLabel: "ATIVAR ACESSO INICIAL",
+    highlighted: false,
+  },
+  {
+    name: "START CREATOR",
+    credits: 800,
+    price: 79.90,
+    features: [
+      { label: "Processamento de vídeo", included: true },
+      { label: "Ambiente exemplos virgens", included: true },
+      { label: "Áudio: até 40 min", included: true },
+      { label: "Transcrição Ilimitada", included: true },
+      { label: "API 8 agentes operacionais", included: true },
+      { label: "Atualização de vídeos", included: true },
+      { label: "Geração de Riscos e Rendimento", included: true },
+      { label: "Integração YouTube", included: true },
+      { label: "Armazenamento: 10 GB", included: true },
+    ],
+    buttonLabel: "ATIVAR CAPACIDADE",
+    highlighted: false,
+    extraInfo: {
+      label: "CONTA EXECUÇÃO (LIA min)",
+      items: ["90 análises + Cesta (ET) = 360", "análises = vídeo = 85 artigos", "com armazenamento ilimitado"],
+    },
+  },
+  {
+    name: "TURBO MAKER",
+    credits: 1600,
+    price: 99.90,
+    originalPrice: 149.90,
+    features: [
+      { label: "60-120 transcrição mensal", included: true },
+      { label: "Claude + Sonnet: Ilimitado", included: true },
+      { label: "Multilíngua (IA fixa modo)", included: true },
+      { label: "360+ análises", included: true },
+      { label: "API 10 agentes operacionais", included: true },
+      { label: "Geração de Riscos e Rendimento", included: true },
+      { label: "Armazenamento: 30 GB", included: true },
+      { label: "Integração YouTube exemplos", included: true },
+      { label: "Atualização semanal", included: true },
+      { label: "Armazenamento: 20 GB", included: true },
+    ],
+    buttonLabel: "HABILITAR EXECUÇÃO",
+    highlighted: true,
+    extraInfo: {
+      label: "CONTA EXECUÇÃO:",
+      items: ["Orçamento de Ciclo (LLA min)", "60+ min", "Execuções Images (Ciclo): <800", "Transcrição: 2-15h", "com armazenamento ilimitado"],
+    },
+  },
+  {
+    name: "MASTER PRO",
+    credits: 2400,
+    price: 149.90,
+    features: [
+      { label: "Capacidade estável de execução", included: true },
+      { label: "Criações de Rifas de 15 min +", included: true },
+      { label: "Todos os vídeos multi estátilo", included: true },
+      { label: "Transcrição Ilimitada", included: true },
+      { label: "Transcrição Ilimitada 15.000", included: true },
+      { label: "API própria liberada", included: true },
+      { label: "Acréscimo enterprise", included: true },
+    ],
+    buttonLabel: "ATIVAR INFRAESTRUTURA",
+    highlighted: false,
+    badge: "PRO",
+    extraInfo: {
+      label: "CONTA EXECUÇÃO FULL:",
+      items: ["Operação (Mestre)de + Agente", "0+", "Extração contínua de clips", "Armazenamento: 50 GB"],
+    },
+  },
 ];
 
-const FAQ_ITEMS = [
+const ANNUAL_PLANS = [
   {
-    question: "Os créditos expiram?",
-    answer: "Créditos de execução recorrente expiram ao final do ciclo ativo. Créditos de expansão pontual não expiram."
+    name: "START CREATOR",
+    credits: 9600,
+    price: 699.00,
+    originalPrice: 959.00,
+    savings: 350,
+    features: [
+      "Todos os recursos do START",
+      "Execução prolongada segura",
+      "API própria liberada",
+      "Armazenamento: 15 GB",
+    ],
+    buttonLabel: "ATIVAR CAPACIDADE ANUAL",
+    highlighted: false,
   },
   {
-    question: "Posso ajustar minha capacidade?",
-    answer: "Sim. A capacidade pode ser ampliada ou reduzida conforme sua necessidade operacional."
+    name: "TURBO MAKER",
+    credits: 19200,
+    price: 999.00,
+    originalPrice: 1199.00,
+    savings: 600,
+    features: [
+      "Todos os recursos do TURBO",
+      "Execução com escalabilidade",
+      "API própria liberada",
+      "Armazenamento: 30 GB",
+    ],
+    buttonLabel: "HABILITAR EXECUÇÃO ANUAL",
+    highlighted: true,
   },
   {
-    question: "O que acontece ao atingir o limite?",
-    answer: "As execuções são suspensas até nova alocação de créditos."
-  },
-  {
-    question: "Posso combinar planos e pacotes?",
-    answer: "Sim. Pacotes funcionam como reforço adicional sobre qualquer capacidade ativa."
+    name: "MASTER PRO",
+    credits: 28800,
+    price: 1499.00,
+    originalPrice: 1799.00,
+    savings: 1000,
+    features: [
+      "Todos os recursos do MASTER",
+      "Infraestrutura exemplos do CORE",
+      "API própria liberada",
+      "Acréscimo enterprise",
+      "Armazenamento: 50 GB",
+    ],
+    buttonLabel: "ATIVAR INFRAESTRUTURA ANUAL",
+    highlighted: false,
+    badge: "PRO",
   },
 ];
 
 const COMPARISON_DATA = [
-  { feature: "Análises", inicial: "50", start: "50-85", turbo: "1.000", master: "2.400" },
-  { feature: "Roteiros/mês", inicial: "Básico", start: "ad 45", turbo: "0-min", master: "25-min" },
-  { feature: "Valor (mês)", inicial: "R$ 0", start: "~350", turbo: "~900", master: "~1.500" },
-  { feature: "Áudio", inicial: "-", start: "35-mín", turbo: "1-14h", master: "Ilimitado" },
-  { feature: "Transcrição", inicial: "-", start: "30-min", turbo: "Ilimitado", master: "Ilimitado" },
-  { feature: "Agentes", inicial: "1", start: "3", turbo: "10", master: "Ilimitado" },
+  { feature: "Avaliação", creditos: "50", roteiros: "ad 45", valor: "Grátis", audio: "35-mín", transcricao: "1", agentes: "1" },
+  { feature: "START", creditos: "800", roteiros: "50-85", valor: "~R80", audio: "25-mín", transcricao: "35-mín", agentes: "5" },
+  { feature: "TURBO", creditos: "1.600", roteiros: "80-150", valor: "~600", audio: "1-1.5h", transcricao: "50 análises", agentes: "10" },
+  { feature: "MASTER", creditos: "2.400", roteiros: "100-180", valor: "+1.800", audio: "Ilimitado", transcricao: "Ilimitado", agentes: "15.000" },
 ];
 
 export default function PlansCredits() {
   const navigate = useNavigate();
   const [plans, setPlans] = useState<PlanData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
 
   useEffect(() => {
     fetchPlans();
@@ -112,50 +205,32 @@ export default function PlansCredits() {
     }
   };
 
-  const monthlyPlans = plans.filter(p => !p.is_annual);
-  const annualPlans = plans.filter(p => p.is_annual);
-
-  const getPlanIcon = (planName: string) => {
-    if (planName.toLowerCase().includes("master")) return Crown;
-    if (planName.toLowerCase().includes("turbo")) return Zap;
-    if (planName.toLowerCase().includes("start")) return Star;
-    return Sparkles;
-  };
-
-  const getPlanHighlight = (planName: string) => {
-    return planName.toLowerCase().includes("turbo");
-  };
-
-  const calculateAnnualSavings = (monthlyPrice: number) => {
-    const annualPrice = monthlyPrice * 10; // 2 meses grátis
-    const savings = monthlyPrice * 2;
-    return { annualPrice, savings };
-  };
-
   return (
     <MainLayout>
       <div className="min-h-screen bg-background">
         {/* Header */}
         <div className="border-b border-border bg-card/50">
-          <div className="container mx-auto px-4 py-4">
+          <div className="container mx-auto px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => navigate(-1)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-playfair font-bold text-foreground">Planos e Créditos</h1>
-                  <p className="text-sm text-muted-foreground">Gerencie sua capacidade operacional</p>
-                </div>
+                <span className="text-primary font-playfair font-bold text-lg">La Casa Dark Core</span>
+                <nav className="hidden md:flex items-center gap-4 text-sm text-muted-foreground">
+                  <span className="hover:text-foreground cursor-pointer">Mensais</span>
+                  <span className="hover:text-foreground cursor-pointer">Anuais</span>
+                  <span className="hover:text-foreground cursor-pointer">Pacotes</span>
+                  <span className="hover:text-foreground cursor-pointer">Comparação</span>
+                  <span className="hover:text-foreground cursor-pointer">FAQ</span>
+                </nav>
               </div>
-              <Badge variant="outline" className="border-primary text-primary">
-                PRIVATE CORE
-              </Badge>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate(-1)}
+                className="border-primary text-primary"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                VOLTAR
+              </Button>
             </div>
           </div>
         </div>
@@ -167,11 +242,13 @@ export default function PlansCredits() {
               <Zap className="w-3 h-3 mr-1" />
               PRIVATE CORE - Alocação de Recursos
             </Badge>
-            <h2 className="text-3xl md:text-4xl font-playfair font-bold text-foreground">
+            <h1 className="text-3xl md:text-4xl font-playfair font-bold text-foreground">
               Defina sua Capacidade Operacional
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            </h1>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-sm">
               Os créditos determinam o volume, a frequência e a complexidade das execuções dentro do CORE.
+            </p>
+            <p className="text-muted-foreground max-w-xl mx-auto text-sm">
               Selecione a capacidade adequada ao seu ritmo de operação.
             </p>
           </section>
@@ -181,123 +258,86 @@ export default function PlansCredits() {
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                <h3 className="text-xl font-semibold text-foreground">
+                <h2 className="text-xl font-semibold text-foreground">
                   Execução Recorrente (Capacidade Mensal)
-                </h3>
+                </h2>
               </div>
               <p className="text-sm text-muted-foreground">Execução recorrente com recursos mensais</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Free Plan */}
-              <Card className="border-border bg-card relative overflow-hidden">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-medium text-foreground">Acesso Inicial</CardTitle>
-                  <div className="space-y-1">
-                    <Badge variant="secondary" className="bg-muted text-muted-foreground">
-                      50 créditos/mês
-                    </Badge>
-                    <div className="text-2xl font-bold text-foreground">
-                      R$0 <span className="text-sm font-normal text-muted-foreground">/mês</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {MONTHLY_PLANS.map((plan, idx) => (
+                <Card 
+                  key={idx} 
+                  className={`relative overflow-hidden ${
+                    plan.highlighted 
+                      ? "border-2 border-primary bg-card" 
+                      : "border-border bg-card"
+                  }`}
+                >
+                  {plan.badge && (
+                    <div className="absolute top-2 right-2">
+                      <Badge className="bg-destructive text-destructive-foreground text-xs">
+                        {plan.badge}
+                      </Badge>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-xs text-muted-foreground">
-                    Recurso Introdutório - Ideal para experimentar o sistema
-                  </p>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2 text-muted-foreground">
-                      <Check className="w-4 h-4 text-primary" />
-                      Ambiente de avaliação
-                    </li>
-                    <li className="flex items-center gap-2 text-muted-foreground">
-                      <Check className="w-4 h-4 text-primary" />
-                      Ferramentas limitadas
-                    </li>
-                    <li className="flex items-center gap-2 text-muted-foreground">
-                      <Check className="w-4 h-4 text-primary" />
-                      Análise de vídeos (restrito)
-                    </li>
-                    <li className="flex items-center gap-2 text-muted-foreground">
-                      <X className="w-4 h-4 text-destructive" />
-                      Geração de áudio
-                    </li>
-                    <li className="flex items-center gap-2 text-muted-foreground">
-                      <X className="w-4 h-4 text-destructive" />
-                      Armazenamento 10 GB
-                    </li>
-                  </ul>
-                  <Button variant="outline" className="w-full">
-                    ATIVAR ACESSO INICIAL
-                  </Button>
-                </CardContent>
-              </Card>
+                  )}
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-foreground">{plan.name}</h3>
+                      <Badge className={`${plan.highlighted ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
+                        {plan.credits.toLocaleString()} créditos/mês
+                      </Badge>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-primary">
+                          R${plan.price.toFixed(2).replace(".", ",")}
+                        </span>
+                        <span className="text-sm text-muted-foreground">/mês</span>
+                      </div>
+                      {plan.originalPrice && (
+                        <span className="text-sm text-muted-foreground line-through">
+                          R${plan.originalPrice.toFixed(2).replace(".", ",")}
+                        </span>
+                      )}
+                    </div>
 
-              {/* Dynamic Plans from Database */}
-              {monthlyPlans.map((plan) => {
-                const Icon = getPlanIcon(plan.plan_name);
-                const isHighlighted = getPlanHighlight(plan.plan_name);
-                
-                return (
-                  <Card 
-                    key={plan.id} 
-                    className={`border-border bg-card relative overflow-hidden ${
-                      isHighlighted ? "ring-2 ring-primary border-primary" : ""
-                    }`}
-                  >
-                    {isHighlighted && (
-                      <div className="absolute top-0 right-0">
-                        <Badge className="rounded-none rounded-bl-lg bg-primary text-primary-foreground">
-                          POPULAR
-                        </Badge>
+                    <ul className="space-y-1.5 text-xs">
+                      {plan.features.map((feature, fIdx) => (
+                        <li key={fIdx} className="flex items-start gap-2 text-muted-foreground">
+                          {feature.included ? (
+                            <Check className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                          ) : (
+                            <X className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                          )}
+                          <span>{feature.label}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Button 
+                      variant={plan.highlighted ? "default" : "outline"}
+                      className={`w-full text-xs ${plan.highlighted ? "bg-primary" : ""}`}
+                      size="sm"
+                    >
+                      {plan.buttonLabel}
+                    </Button>
+
+                    {plan.extraInfo && (
+                      <div className="mt-4 pt-4 border-t border-border">
+                        <p className="text-xs text-primary font-semibold mb-2">{plan.extraInfo.label}</p>
+                        <ul className="space-y-1 text-xs text-muted-foreground">
+                          {plan.extraInfo.items.map((item, iIdx) => (
+                            <li key={iIdx}>{item}</li>
+                          ))}
+                        </ul>
+                        <Button variant="outline" size="sm" className="w-full mt-3 text-xs">
+                          ATIVAR CAPACIDADE
+                        </Button>
                       </div>
                     )}
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
-                        <Icon className="w-5 h-5 text-primary" />
-                        {plan.plan_name.toUpperCase()}
-                      </CardTitle>
-                      <div className="space-y-1">
-                        <Badge className="bg-primary/20 text-primary border-primary">
-                          {plan.monthly_credits?.toLocaleString()} créditos/mês
-                        </Badge>
-                        <div className="text-2xl font-bold text-foreground">
-                          R${plan.price_amount?.toFixed(2)} 
-                          <span className="text-sm font-normal text-muted-foreground">/mês</span>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <ul className="space-y-2 text-sm">
-                        {PLAN_FEATURES.slice(0, 6).map((feature) => {
-                          const hasFeature = plan.permissions?.[feature.key] ?? false;
-                          return (
-                            <li key={feature.key} className="flex items-center gap-2 text-muted-foreground">
-                              {hasFeature ? (
-                                <Check className="w-4 h-4 text-primary" />
-                              ) : (
-                                <X className="w-4 h-4 text-destructive" />
-                              )}
-                              {feature.label}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                      <Button 
-                        className={`w-full ${
-                          isHighlighted 
-                            ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                            : ""
-                        }`}
-                        variant={isHighlighted ? "default" : "outline"}
-                      >
-                        ATIVAR CAPACIDADE
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </section>
 
@@ -306,10 +346,10 @@ export default function PlansCredits() {
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                <h3 className="text-xl font-semibold text-foreground">
+                <h2 className="text-xl font-semibold text-foreground">
                   Execução Prolongada (Capacidade Anual)
-                </h3>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500">
+                </h2>
+                <Badge className="bg-success/20 text-success border-success text-xs">
                   Economize
                 </Badge>
               </div>
@@ -317,178 +357,93 @@ export default function PlansCredits() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {annualPlans.length > 0 ? annualPlans.map((plan) => {
-                const Icon = getPlanIcon(plan.plan_name);
-                const isHighlighted = getPlanHighlight(plan.plan_name);
-                
-                return (
-                  <Card 
-                    key={plan.id} 
-                    className={`border-border bg-card relative overflow-hidden ${
-                      isHighlighted ? "ring-2 ring-primary border-primary" : ""
-                    }`}
-                  >
-                    {isHighlighted && (
-                      <div className="absolute top-0 right-0">
-                        <Badge className="rounded-none rounded-bl-lg bg-primary text-primary-foreground">
-                          POPULAR
-                        </Badge>
+              {ANNUAL_PLANS.map((plan, idx) => (
+                <Card 
+                  key={idx} 
+                  className={`relative overflow-hidden ${
+                    plan.highlighted 
+                      ? "border-2 border-primary bg-card" 
+                      : "border-border bg-card"
+                  }`}
+                >
+                  {plan.badge && (
+                    <div className="absolute top-2 right-2">
+                      <Badge className="bg-destructive text-destructive-foreground text-xs">
+                        {plan.badge}
+                      </Badge>
+                    </div>
+                  )}
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-foreground">{plan.name}</h3>
+                      <Badge className={`${plan.highlighted ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
+                        {plan.credits.toLocaleString()} créditos/ano
+                      </Badge>
+                      <div className="text-xs text-muted-foreground">
+                        + {(plan.credits * 0.1).toLocaleString()} créditos/mês
                       </div>
-                    )}
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
-                        <Icon className="w-5 h-5 text-primary" />
-                        {plan.plan_name.toUpperCase()}
-                      </CardTitle>
-                      <div className="space-y-1">
-                        <Badge className="bg-primary/20 text-primary border-primary">
-                          {(plan.monthly_credits * 12)?.toLocaleString()} créditos/ano
-                        </Badge>
-                        <div className="text-2xl font-bold text-foreground">
-                          R${plan.price_amount?.toFixed(2)} 
-                          <span className="text-sm font-normal text-muted-foreground">/ano</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-green-400">
-                          <Sparkles className="w-3 h-3" />
-                          Economia de R$ {((plan.price_amount / 10) * 2).toFixed(2)}/ano
-                        </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-primary">
+                          R${plan.price.toFixed(2).replace(".", ",")}
+                        </span>
+                        <span className="text-sm text-muted-foreground">/ano</span>
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <ul className="space-y-2 text-sm">
-                        <li className="flex items-center gap-2 text-muted-foreground">
-                          <Check className="w-4 h-4 text-primary" />
-                          Todos os recursos do plano mensal
+                      <span className="text-sm text-muted-foreground line-through">
+                        R${plan.originalPrice.toFixed(2).replace(".", ",")}
+                      </span>
+                      <div className="flex items-center gap-1 text-xs text-success">
+                        <Zap className="w-3 h-3" />
+                        Economia de R$ {plan.savings.toFixed(0)}/ano
+                      </div>
+                    </div>
+
+                    <ul className="space-y-1.5 text-xs">
+                      {plan.features.map((feature, fIdx) => (
+                        <li key={fIdx} className="flex items-start gap-2 text-muted-foreground">
+                          <Check className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                          <span>{feature}</span>
                         </li>
-                        <li className="flex items-center gap-2 text-muted-foreground">
-                          <Check className="w-4 h-4 text-primary" />
-                          Execução prolongada sem pagas
-                        </li>
-                        <li className="flex items-center gap-2 text-muted-foreground">
-                          <Check className="w-4 h-4 text-primary" />
-                          Economia com estabilidade
-                        </li>
-                        <li className="flex items-center gap-2 text-muted-foreground">
-                          <Check className="w-4 h-4 text-primary" />
-                          API própria liberada
-                        </li>
-                      </ul>
-                      <Button 
-                        className={`w-full ${
-                          isHighlighted 
-                            ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                            : ""
-                        }`}
-                        variant={isHighlighted ? "default" : "outline"}
-                      >
-                        ASSINAR CAPACIDADE ANUAL
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              }) : (
-                // Fallback annual plans if none in database
-                <>
-                  {["START CREATOR", "TURBO MAKER", "MASTER PRO"].map((name, idx) => {
-                    const prices = [699, 999, 1499];
-                    const credits = [9600, 19200, 28800];
-                    const savings = [359, 599, 899];
-                    const isHighlighted = name === "TURBO MAKER";
-                    const Icon = getPlanIcon(name);
-                    
-                    return (
-                      <Card 
-                        key={name} 
-                        className={`border-border bg-card relative overflow-hidden ${
-                          isHighlighted ? "ring-2 ring-primary border-primary" : ""
-                        }`}
-                      >
-                        {isHighlighted && (
-                          <div className="absolute top-0 right-0">
-                            <Badge className="rounded-none rounded-bl-lg bg-primary text-primary-foreground">
-                              POPULAR
-                            </Badge>
-                          </div>
-                        )}
-                        <CardHeader className="pb-4">
-                          <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
-                            <Icon className="w-5 h-5 text-primary" />
-                            {name}
-                          </CardTitle>
-                          <div className="space-y-1">
-                            <Badge className="bg-primary/20 text-primary border-primary">
-                              {credits[idx].toLocaleString()} créditos/ano
-                            </Badge>
-                            <div className="text-2xl font-bold text-foreground">
-                              R${prices[idx].toFixed(2)} 
-                              <span className="text-sm font-normal text-muted-foreground">/ano</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-xs text-green-400">
-                              <Sparkles className="w-3 h-3" />
-                              Economia de R$ {savings[idx].toFixed(2)}/ano
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <ul className="space-y-2 text-sm">
-                            <li className="flex items-center gap-2 text-muted-foreground">
-                              <Check className="w-4 h-4 text-primary" />
-                              Todos os recursos do mensal
-                            </li>
-                            <li className="flex items-center gap-2 text-muted-foreground">
-                              <Check className="w-4 h-4 text-primary" />
-                              Execução prolongada sem pausas
-                            </li>
-                            <li className="flex items-center gap-2 text-muted-foreground">
-                              <Check className="w-4 h-4 text-primary" />
-                              Economia com estabilidade
-                            </li>
-                            <li className="flex items-center gap-2 text-muted-foreground">
-                              <Check className="w-4 h-4 text-primary" />
-                              API própria liberada
-                            </li>
-                          </ul>
-                          <Button 
-                            className={`w-full ${
-                              isHighlighted 
-                                ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                                : ""
-                            }`}
-                            variant={isHighlighted ? "default" : "outline"}
-                          >
-                            ASSINAR CAPACIDADE ANUAL
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </>
-              )}
+                      ))}
+                    </ul>
+
+                    <Button 
+                      variant={plan.highlighted ? "default" : "outline"}
+                      className={`w-full text-xs ${plan.highlighted ? "bg-primary" : ""}`}
+                      size="sm"
+                    >
+                      {plan.buttonLabel}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </section>
 
           {/* Credit Packages Section */}
           <section className="space-y-6">
             <div className="text-center space-y-2">
-              <h3 className="text-xl font-semibold text-foreground flex items-center justify-center gap-2">
+              <h2 className="text-xl font-semibold text-foreground flex items-center justify-center gap-2">
                 <Zap className="w-5 h-5 text-primary" />
                 Expansão Pontual de Capacidade
-              </h3>
+              </h2>
               <p className="text-sm text-muted-foreground">Reforço temporário para picos de execução</p>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {CREDIT_PACKAGES.map((pkg) => (
-                <Card key={pkg.credits} className="border-border bg-card text-center">
+              {CREDIT_PACKAGES.map((pkg, idx) => (
+                <Card 
+                  key={idx} 
+                  className={`border-border bg-card text-center ${idx === 4 ? "border-primary" : ""}`}
+                >
                   <CardContent className="pt-6 space-y-3">
-                    <div className="text-lg font-bold text-foreground">
+                    <div className="text-sm font-bold text-foreground">
                       {pkg.credits.toLocaleString()} CRÉDITOS
                     </div>
-                    <div className="text-2xl font-bold text-primary">
+                    <div className="text-xl font-bold text-primary">
                       R$ {pkg.price.toFixed(2).replace(".", ",")}
                     </div>
                     <p className="text-xs text-muted-foreground">{pkg.label}</p>
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button variant="outline" size="sm" className="w-full text-xs">
                       ALOCAR CRÉDITOS
                     </Button>
                   </CardContent>
@@ -500,102 +455,45 @@ export default function PlansCredits() {
           {/* Comparison Table */}
           <section className="space-y-6">
             <div className="text-center space-y-2">
-              <h3 className="text-xl font-semibold text-foreground">Comparação de Planos</h3>
+              <h2 className="text-xl font-semibold text-foreground">Comparação de Planos</h2>
               <p className="text-sm text-muted-foreground">Compare todos os planos em uma única tabela</p>
             </div>
 
             <Card className="border-border bg-card overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border">
-                    <TableHead className="text-muted-foreground">Capacidade</TableHead>
-                    <TableHead className="text-muted-foreground">Créditos</TableHead>
-                    <TableHead className="text-muted-foreground">Roteiros/mês</TableHead>
-                    <TableHead className="text-muted-foreground">Valor (mês)</TableHead>
-                    <TableHead className="text-muted-foreground">Áudio</TableHead>
-                    <TableHead className="text-muted-foreground">Transcrição</TableHead>
-                    <TableHead className="text-muted-foreground">Agentes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow className="border-border">
-                    <TableCell className="font-medium text-foreground">Avaliação</TableCell>
-                    <TableCell className="text-muted-foreground">50</TableCell>
-                    <TableCell className="text-muted-foreground">Básico</TableCell>
-                    <TableCell className="text-muted-foreground">ad 45</TableCell>
-                    <TableCell className="text-muted-foreground">0-min</TableCell>
-                    <TableCell className="text-muted-foreground">25-min</TableCell>
-                    <TableCell className="text-muted-foreground">1</TableCell>
-                  </TableRow>
-                  <TableRow className="border-border">
-                    <TableCell className="font-medium text-foreground">START</TableCell>
-                    <TableCell className="text-muted-foreground">500</TableCell>
-                    <TableCell className="text-muted-foreground">50-85</TableCell>
-                    <TableCell className="text-muted-foreground">~350</TableCell>
-                    <TableCell className="text-muted-foreground">35-mín</TableCell>
-                    <TableCell className="text-muted-foreground">30-min</TableCell>
-                    <TableCell className="text-muted-foreground">3</TableCell>
-                  </TableRow>
-                  <TableRow className="border-border bg-primary/5">
-                    <TableCell className="font-medium text-primary">TURBO</TableCell>
-                    <TableCell className="text-foreground">1.000</TableCell>
-                    <TableCell className="text-foreground">80-150</TableCell>
-                    <TableCell className="text-foreground">~900</TableCell>
-                    <TableCell className="text-foreground">1-14h</TableCell>
-                    <TableCell className="text-foreground">Ilimitado</TableCell>
-                    <TableCell className="text-foreground">10</TableCell>
-                  </TableRow>
-                  <TableRow className="border-border">
-                    <TableCell className="font-medium text-foreground">MASTER</TableCell>
-                    <TableCell className="text-muted-foreground">2.400</TableCell>
-                    <TableCell className="text-muted-foreground">100-180</TableCell>
-                    <TableCell className="text-muted-foreground">~1.500</TableCell>
-                    <TableCell className="text-muted-foreground">Ilimitado</TableCell>
-                    <TableCell className="text-muted-foreground">Ilimitado</TableCell>
-                    <TableCell className="text-muted-foreground">Ilimitado</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border">
+                      <TableHead className="text-muted-foreground text-xs">Capacidade</TableHead>
+                      <TableHead className="text-muted-foreground text-xs">Créditos</TableHead>
+                      <TableHead className="text-muted-foreground text-xs">Roteiros/mês</TableHead>
+                      <TableHead className="text-muted-foreground text-xs">Valor (mês)</TableHead>
+                      <TableHead className="text-muted-foreground text-xs">Áudio</TableHead>
+                      <TableHead className="text-muted-foreground text-xs">Transcrição</TableHead>
+                      <TableHead className="text-muted-foreground text-xs">Agentes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {COMPARISON_DATA.map((row, idx) => (
+                      <TableRow 
+                        key={idx} 
+                        className={`border-border ${row.feature === "TURBO" ? "bg-primary/10" : ""}`}
+                      >
+                        <TableCell className={`font-medium text-xs ${row.feature === "TURBO" ? "text-primary" : "text-foreground"}`}>
+                          {row.feature}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">{row.creditos}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs">{row.roteiros}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs">{row.valor}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs">{row.audio}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs">{row.transcricao}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs">{row.agentes}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </Card>
-          </section>
-
-          {/* FAQ Section */}
-          <section className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-xl font-semibold text-foreground">Perguntas Frequentes</h3>
-            </div>
-
-            <div className="max-w-2xl mx-auto">
-              <Accordion type="single" collapsible className="space-y-2">
-                {FAQ_ITEMS.map((item, idx) => (
-                  <AccordionItem 
-                    key={idx} 
-                    value={`item-${idx}`}
-                    className="border border-border rounded-lg px-4 bg-card"
-                  >
-                    <AccordionTrigger className="text-foreground hover:text-primary hover:no-underline">
-                      {item.question}
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">
-                      {item.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
-          </section>
-
-          {/* CTA Section */}
-          <section className="text-center space-y-6 py-12 border-t border-border">
-            <h3 className="text-2xl font-playfair font-bold text-foreground">
-              Pronto para começar?
-            </h3>
-            <p className="text-muted-foreground">
-              Escolha o plano ideal e comece a criar conteúdo profissional hoje mesmo.
-            </p>
-            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
-              VER MEU DASHBOARD
-            </Button>
           </section>
 
           {/* Footer */}
