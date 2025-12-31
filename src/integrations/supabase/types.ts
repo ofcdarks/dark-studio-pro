@@ -14,16 +14,346 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      folders: {
+        Row: {
+          created_at: string | null
+          id: string
+          items_count: number | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          items_count?: number | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          items_count?: number | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      generated_audios: {
+        Row: {
+          audio_url: string | null
+          created_at: string | null
+          duration: number | null
+          id: string
+          text: string
+          user_id: string
+          voice_id: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          text: string
+          user_id: string
+          voice_id?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          text?: string
+          user_id?: string
+          voice_id?: string | null
+        }
+        Relationships: []
+      }
+      generated_images: {
+        Row: {
+          created_at: string | null
+          folder_id: string | null
+          id: string
+          image_url: string | null
+          prompt: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          folder_id?: string | null
+          id?: string
+          image_url?: string | null
+          prompt: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          folder_id?: string | null
+          id?: string
+          image_url?: string | null
+          prompt?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_images_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monitored_channels: {
+        Row: {
+          channel_name: string | null
+          channel_url: string
+          created_at: string | null
+          growth_rate: string | null
+          id: string
+          last_checked: string | null
+          subscribers: string | null
+          user_id: string
+          videos_count: number | null
+        }
+        Insert: {
+          channel_name?: string | null
+          channel_url: string
+          created_at?: string | null
+          growth_rate?: string | null
+          id?: string
+          last_checked?: string | null
+          subscribers?: string | null
+          user_id: string
+          videos_count?: number | null
+        }
+        Update: {
+          channel_name?: string | null
+          channel_url?: string
+          created_at?: string | null
+          growth_rate?: string | null
+          id?: string
+          last_checked?: string | null
+          subscribers?: string | null
+          user_id?: string
+          videos_count?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          credits: number | null
+          email: string | null
+          full_name: string | null
+          id: string
+          storage_limit: number | null
+          storage_used: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          credits?: number | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          storage_limit?: number | null
+          storage_used?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          credits?: number | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          storage_limit?: number | null
+          storage_used?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      saved_prompts: {
+        Row: {
+          created_at: string | null
+          folder_id: string | null
+          id: string
+          prompt: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          folder_id?: string | null
+          id?: string
+          prompt: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          folder_id?: string | null
+          id?: string
+          prompt?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_prompts_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      video_analyses: {
+        Row: {
+          analysis_data: Json | null
+          comments: number | null
+          created_at: string | null
+          ctr: number | null
+          engagement_rate: number | null
+          id: string
+          likes: number | null
+          thumbnail_url: string | null
+          user_id: string
+          video_title: string | null
+          video_url: string
+          views: number | null
+        }
+        Insert: {
+          analysis_data?: Json | null
+          comments?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          engagement_rate?: number | null
+          id?: string
+          likes?: number | null
+          thumbnail_url?: string | null
+          user_id: string
+          video_title?: string | null
+          video_url: string
+          views?: number | null
+        }
+        Update: {
+          analysis_data?: Json | null
+          comments?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          engagement_rate?: number | null
+          id?: string
+          likes?: number | null
+          thumbnail_url?: string | null
+          user_id?: string
+          video_title?: string | null
+          video_url?: string
+          views?: number | null
+        }
+        Relationships: []
+      }
+      viral_library: {
+        Row: {
+          created_at: string | null
+          duration: string | null
+          id: string
+          likes: string | null
+          notes: string | null
+          title: string | null
+          user_id: string
+          video_url: string
+          views: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration?: string | null
+          id?: string
+          likes?: string | null
+          notes?: string | null
+          title?: string | null
+          user_id: string
+          video_url: string
+          views?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duration?: string | null
+          id?: string
+          likes?: string | null
+          notes?: string | null
+          title?: string | null
+          user_id?: string
+          video_url?: string
+          views?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "pro" | "free"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +480,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "pro", "free"],
+    },
   },
 } as const
