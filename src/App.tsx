@@ -25,6 +25,7 @@ import ViralAnalysis from "./pages/ViralAnalysis";
 import SRTConverter from "./pages/SRTConverter";
 import SettingsPage from "./pages/SettingsPage";
 import AdminPanel from "./pages/AdminPanel";
+import ThumbnailsPage from "./pages/ThumbnailsPage";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,8 @@ const App = () => (
             <Route path="/srt" element={<ProtectedRoute><SRTConverter /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+            <Route path="/thumbnails" element={<ProtectedRoute><ThumbnailsPage /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
