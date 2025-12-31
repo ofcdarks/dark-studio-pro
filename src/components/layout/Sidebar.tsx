@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useStorage } from "@/hooks/useStorage";
 import { useNavigate, useLocation } from "react-router-dom";
 import logo from "@/assets/logo.gif";
 import {
@@ -67,6 +68,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { signOut } = useAuth();
   const { profile, role } = useProfile();
+  const { storageUsed, storageLimit, usagePercent } = useStorage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -75,9 +77,6 @@ export function Sidebar() {
     navigate("/auth");
   };
 
-  const credits = profile?.credits ?? 0;
-  const storageUsed = profile?.storage_used ?? 0;
-  const storageLimit = profile?.storage_limit ?? 1;
   const userRole = role?.role ?? "free";
 
   const roleLabels = {
@@ -154,9 +153,10 @@ export function Sidebar() {
               <div className="flex-1">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Armazenamento</span>
-                  <span className="text-foreground font-medium">{storageUsed.toFixed(2)} GB</span>
                 </div>
-                <Progress value={(storageUsed / storageLimit) * 100} className="h-1.5 mt-1" />
+                <p className="text-foreground font-semibold text-lg">{storageUsed.toFixed(2)} GB</p>
+                <p className="text-xs text-muted-foreground">de {storageLimit.toFixed(1)} GB</p>
+                <Progress value={usagePercent} className="h-1.5 mt-1" />
               </div>
             </div>
           </div>

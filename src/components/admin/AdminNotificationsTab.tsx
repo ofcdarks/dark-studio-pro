@@ -76,19 +76,21 @@ export const AdminNotificationsTab = forwardRef<HTMLDivElement>((props, ref) => 
 
     const fakeUsersJson = fakeUsers.map(u => ({ id: u.id, name: u.name, type: u.type }));
     
+    const newValue = {
+      ...((current?.value as Record<string, unknown>) || {}),
+      purchase_enabled: purchaseEnabled,
+      new_user_enabled: newUserEnabled,
+      purchase_message: purchaseMessage,
+      new_user_message: newUserMessage,
+      purchase_sid: purchaseSid,
+      new_user_sid: newUserSid,
+      fake_users: fakeUsersJson,
+    };
+
     const { error } = await supabase
       .from("admin_settings")
       .update({
-        value: {
-          ...(current?.value as object),
-          purchase_enabled: purchaseEnabled,
-          new_user_enabled: newUserEnabled,
-          purchase_message: purchaseMessage,
-          new_user_message: newUserMessage,
-          purchase_sid: purchaseSid,
-          new_user_sid: newUserSid,
-          fake_users: fakeUsersJson,
-        } as Record<string, unknown>,
+        value: newValue,
         updated_at: new Date().toISOString(),
       })
       .eq("key", "notifications");
