@@ -28,6 +28,7 @@ import AdminPanel from "./pages/AdminPanel";
 import ThumbnailsPage from "./pages/ThumbnailsPage";
 import SceneGenerator from "./pages/SceneGenerator";
 import AnalysisHistory from "./pages/AnalysisHistory";
+import PlansCredits from "./pages/PlansCredits";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
             <Route path="/thumbnails" element={<ProtectedRoute><ThumbnailsPage /></ProtectedRoute>} />
             <Route path="/scenes" element={<ProtectedRoute><SceneGenerator /></ProtectedRoute>} />
+            <Route path="/plans" element={<ProtectedRoute><PlansCredits /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -170,7 +170,10 @@ export function Sidebar() {
               <div className="text-sm text-muted-foreground">Plano Atual</div>
               <div className="text-foreground font-semibold">{roleLabels[userRole]}</div>
               {userRole !== "admin" && (
-                <Button className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                <Button 
+                  className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => navigate("/plans")}
+                >
                   Fazer Upgrade
                 </Button>
               )}
