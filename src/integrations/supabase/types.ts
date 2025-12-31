@@ -558,6 +558,66 @@ export type Database = {
         }
         Relationships: []
       }
+      tags: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      title_tags: {
+        Row: {
+          created_at: string
+          id: string
+          tag_id: string
+          title_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tag_id: string
+          title_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tag_id?: string
+          title_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "title_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "title_tags_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "generated_titles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_api_settings: {
         Row: {
           claude_api_key: string | null
@@ -692,6 +752,42 @@ export type Database = {
           views?: number | null
         }
         Relationships: []
+      }
+      video_tags: {
+        Row: {
+          created_at: string
+          id: string
+          tag_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tag_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tag_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_tags_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "analyzed_videos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       viral_library: {
         Row: {

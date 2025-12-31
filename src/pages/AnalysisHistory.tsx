@@ -28,6 +28,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { FolderSelect } from "@/components/folders/FolderSelect";
 import { MoveToFolderDialog } from "@/components/folders/MoveToFolderDialog";
+import { TagManager } from "@/components/tags/TagManager";
+import { TagBadge } from "@/components/tags/TagBadge";
+import { TagFilter } from "@/components/tags/TagFilter";
 
 interface AnalyzedVideo {
   id: string;
@@ -64,9 +67,26 @@ interface Folder {
   name: string;
 }
 
+interface TagData {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface VideoTag {
+  tag_id: string;
+  tags: TagData;
+}
+
+interface TitleTag {
+  tag_id: string;
+  tags: TagData;
+}
+
 export default function AnalysisHistory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [itemToMove, setItemToMove] = useState<{
@@ -132,6 +152,42 @@ export default function AnalysisHistory() {
     enabled: !!user,
   });
 
+  // Fetch video tags
+  const { data: videoTags } = useQuery({
+    queryKey: ["video-tags", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("video_tags")
+        .select("video_id, tag_id, tags:tag_id(id, name, color)");
+      if (error) throw error;
+      return data as unknown as { video_id: string; tag_id: string; tags: TagData }[];
+    },
+    enabled: !!user,
+  });
+
+  // Fetch title tags
+  const { data: titleTags } = useQuery({
+    queryKey: ["title-tags", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("title_tags")
+        .select("title_id, tag_id, tags:tag_id(id, name, color)");
+      if (error) throw error;
+      return data as unknown as { title_id: string; tag_id: string; tags: TagData }[];
+    },
+    enabled: !!user,
+  });
+
+  const getVideoTags = (videoId: string): TagData[] => {
+    return videoTags?.filter((vt) => vt.video_id === videoId).map((vt) => vt.tags) || [];
+  };
+
+  const getTitleTags = (titleId: string): TagData[] => {
+    return titleTags?.filter((tt) => tt.title_id === titleId).map((tt) => tt.tags) || [];
+  };
+
   // Toggle favorite mutation
   const toggleFavoriteMutation = useMutation({
     mutationFn: async ({ id, isFavorite }: { id: string; isFavorite: boolean }) => {
@@ -185,18 +241,30 @@ export default function AnalysisHistory() {
     return folder?.name || null;
   };
 
-  const filteredVideos = analyzedVideos?.filter(
-    (video) =>
+  const filteredVideos = analyzedVideos?.filter((video) => {
+    const matchesSearch =
       video.original_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       video.translated_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      video.detected_niche?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      video.detected_niche?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesTags =
+      selectedTagIds.length === 0 ||
+      getVideoTags(video.id).some((tag) => selectedTagIds.includes(tag.id));
+    
+    return matchesSearch && matchesTags;
+  });
 
-  const filteredTitles = generatedTitles?.filter(
-    (title) =>
+  const filteredTitles = generatedTitles?.filter((title) => {
+    const matchesSearch =
       title.title_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      title.formula?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      title.formula?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesTags =
+      selectedTagIds.length === 0 ||
+      getTitleTags(title.id).some((tag) => selectedTagIds.includes(tag.id));
+    
+    return matchesSearch && matchesTags;
+  });
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
@@ -243,6 +311,10 @@ export default function AnalysisHistory() {
                 showCreateButton={false}
               />
             </div>
+            <TagFilter
+              selectedTagIds={selectedTagIds}
+              onChange={setSelectedTagIds}
+            />
           </div>
 
           <Tabs defaultValue="videos" className="space-y-6">
@@ -301,6 +373,11 @@ export default function AnalysisHistory() {
                               )}
                             </div>
                             <div className="flex items-center gap-1">
+                              <TagManager
+                                itemId={video.id}
+                                itemType="video"
+                                existingTags={getVideoTags(video.id)}
+                              />
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -362,6 +439,14 @@ export default function AnalysisHistory() {
                                 {getFolderName(video.folder_id)}
                               </Badge>
                             )}
+                            {getVideoTags(video.id).map((tag) => (
+                              <TagBadge
+                                key={tag.id}
+                                name={tag.name}
+                                color={tag.color}
+                                size="sm"
+                              />
+                            ))}
                           </div>
 
                           <p className="text-xs text-muted-foreground mt-2">
@@ -420,9 +505,24 @@ export default function AnalysisHistory() {
                             {title.model_used && <span>Modelo: {title.model_used}</span>}
                             <span>{formatDate(title.created_at)}</span>
                           </div>
+                          <div className="flex flex-wrap items-center gap-1 mt-2">
+                            {getTitleTags(title.id).map((tag) => (
+                              <TagBadge
+                                key={tag.id}
+                                name={tag.name}
+                                color={tag.color}
+                                size="sm"
+                              />
+                            ))}
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-1">
+                          <TagManager
+                            itemId={title.id}
+                            itemType="title"
+                            existingTags={getTitleTags(title.id)}
+                          />
                           <Button
                             variant="ghost"
                             size="icon"
