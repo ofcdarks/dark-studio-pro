@@ -38,6 +38,11 @@ interface GeneratedTitle {
   model: string;
 }
 
+interface OriginalTitleAnalysis {
+  motivoSucesso: string;
+  formula: string;
+}
+
 interface VideoInfo {
   title: string;
   thumbnail: string;
@@ -49,6 +54,7 @@ interface VideoInfo {
   niche: string;
   subNiche: string;
   microNiche: string;
+  originalTitleAnalysis?: OriginalTitleAnalysis;
 }
 
 const VideoAnalyzer = () => {
@@ -204,7 +210,6 @@ const VideoAnalyzer = () => {
   };
 
   const generateMockData = (url: string) => {
-    const baseTitle = "A ESTRATÉGIA SECRETA que NINGUÉM Conhecia";
     return {
       videoInfo: {
         title: "La BATALLA TECNOLÓGICA que NADIE Vio: MAYAS vs. AZTECAS",
@@ -217,6 +222,10 @@ const VideoAnalyzer = () => {
         niche: "História",
         subNiche: "Mistérios",
         microNiche: "Conflito Tecnológico Ucrônico Antigo",
+        originalTitleAnalysis: {
+          motivoSucesso: "O título original gera curiosidade ao sugerir uma batalha tecnológica desconhecida entre civilizações antigas, usando palavras em caixa alta para intensificar o impacto.",
+          formula: "Promessa central + benefício + 5 termo(s) em CAIXA ALTA + loop mental (o detalhe/segredo/verdade).",
+        },
       },
       titles: [
         {
@@ -257,6 +266,63 @@ const VideoAnalyzer = () => {
         },
       ],
     };
+  };
+
+  const handleDownloadThumbnail = async () => {
+    if (!videoInfo?.thumbnail) {
+      toast({
+        title: "Thumbnail não disponível",
+        description: "Não foi possível obter a thumbnail do vídeo",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const response = await fetch(videoInfo.thumbnail);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `thumbnail-${Date.now()}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast({ title: "Download iniciado!", description: "Thumbnail salva com sucesso" });
+    } catch {
+      toast({
+        title: "Erro no download",
+        description: "Não foi possível baixar a thumbnail",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLoadTranscription = () => {
+    // Create file input for transcription upload
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".txt,.srt,.vtt";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const text = await file.text();
+        toast({
+          title: "Transcrição carregada!",
+          description: `Arquivo ${file.name} carregado com ${text.length} caracteres`,
+        });
+      }
+    };
+    input.click();
+  };
+
+  const handleSearchSimilarVideos = () => {
+    if (!videoInfo?.title) return;
+    
+    const searchQuery = encodeURIComponent(videoInfo.title);
+    window.open(`https://www.youtube.com/results?search_query=${searchQuery}`, "_blank");
+    toast({ title: "Buscando vídeos semelhantes", description: "Abrindo YouTube em nova aba" });
   };
 
   const copyTitle = async (id: string, title: string) => {
@@ -454,15 +520,15 @@ const VideoAnalyzer = () => {
 
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={handleDownloadThumbnail}>
                       <Download className="w-4 h-4 mr-2" />
                       Baixar Thumbnail Original
                     </Button>
-                    <Button variant="outline" size="sm" className="border-primary text-primary">
+                    <Button variant="outline" size="sm" className="border-primary text-primary" onClick={handleLoadTranscription}>
                       <FileText className="w-4 h-4 mr-2" />
                       Carregar Transcrição
                     </Button>
-                    <Button variant="outline" size="sm" className="border-primary text-primary">
+                    <Button variant="outline" size="sm" className="border-primary text-primary" onClick={handleSearchSimilarVideos}>
                       <Search className="w-4 h-4 mr-2" />
                       Buscar Vídeos Semelhantes
                     </Button>
@@ -476,7 +542,7 @@ const VideoAnalyzer = () => {
                   <p className="text-xs text-destructive font-semibold mb-1">NICHO DETETADO</p>
                   <div className="flex items-center justify-between">
                     <p className="text-foreground font-medium">{videoInfo.niche}</p>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyTitle("niche", videoInfo.niche)}>
                       <Copy className="w-4 h-4" />
                     </Button>
                   </div>
@@ -485,7 +551,7 @@ const VideoAnalyzer = () => {
                   <p className="text-xs text-primary font-semibold mb-1">SUBNICHO DETETADO</p>
                   <div className="flex items-center justify-between">
                     <p className="text-foreground font-medium">{videoInfo.subNiche}</p>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyTitle("subNiche", videoInfo.subNiche)}>
                       <Copy className="w-4 h-4" />
                     </Button>
                   </div>
@@ -494,12 +560,31 @@ const VideoAnalyzer = () => {
                   <p className="text-xs text-primary font-semibold mb-1">MICRO-NICHO DETETADO</p>
                   <div className="flex items-center justify-between">
                     <p className="text-foreground font-medium">{videoInfo.microNiche}</p>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyTitle("microNiche", videoInfo.microNiche)}>
                       <Copy className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
               </div>
+
+              {/* Análise do Título Original */}
+              {videoInfo.originalTitleAnalysis && (
+                <Card className="mt-6 p-6 bg-secondary/30 border-border/50">
+                  <h3 className="text-lg font-bold text-foreground mb-4">Análise do Título Original</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <span className="font-semibold text-foreground">Motivo do Sucesso: </span>
+                      <span className="text-muted-foreground">{videoInfo.originalTitleAnalysis.motivoSucesso}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-foreground">Fórmula: </span>
+                      <code className="bg-primary/20 text-primary px-2 py-1 rounded text-sm">
+                        {videoInfo.originalTitleAnalysis.formula}
+                      </code>
+                    </div>
+                  </div>
+                </Card>
+              )}
             </Card>
           )}
 
