@@ -132,6 +132,22 @@ const VideoAnalyzer = () => {
     setGeneratedTitles([]);
 
     try {
+      // Extract video ID from URL for thumbnail fallback
+      const extractVideoId = (url: string): string | null => {
+        const patterns = [
+          /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+          /^([a-zA-Z0-9_-]{11})$/
+        ];
+        for (const pattern of patterns) {
+          const match = url.match(pattern);
+          if (match) return match[1];
+        }
+        return null;
+      };
+
+      const videoId = extractVideoId(videoUrl);
+      const fallbackThumbnail = videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : "";
+
       // First, fetch real video data from YouTube API
       const transcribeResponse = await supabase.functions.invoke("transcribe-video", {
         body: { videoUrl },
@@ -141,10 +157,24 @@ const VideoAnalyzer = () => {
       if (transcribeResponse.data?.videoDetails) {
         realVideoData = transcribeResponse.data.videoDetails;
         
+        // Ensure thumbnail is set with fallback
+        if (!realVideoData.thumbnail && fallbackThumbnail) {
+          realVideoData.thumbnail = fallbackThumbnail;
+        }
+        
         // Update transcription if available
         if (transcribeResponse.data.transcription) {
           setCurrentTranscription(transcribeResponse.data.transcription);
         }
+      } else if (videoId) {
+        // If no video details but we have ID, create minimal data
+        realVideoData = {
+          title: "",
+          thumbnail: fallbackThumbnail,
+          views: 0,
+          daysAgo: 0,
+          comments: 0,
+        };
       }
 
       // Helper function to call AI and generate titles
@@ -258,11 +288,11 @@ const VideoAnalyzer = () => {
         allTitles[bestIndex].isBest = true;
       }
 
-      // Set video info
+      // Set video info with thumbnail fallback
       const aiVideoInfo = videoInfoData || {};
       setVideoInfo({
         title: realVideoData?.title || aiVideoInfo.title || "Título do Vídeo",
-        thumbnail: realVideoData?.thumbnail || "",
+        thumbnail: realVideoData?.thumbnail || fallbackThumbnail || "",
         views: realVideoData?.views || 0,
         daysAgo: realVideoData?.daysAgo || 0,
         comments: realVideoData?.comments || 0,
@@ -317,10 +347,26 @@ const VideoAnalyzer = () => {
   };
 
   const generateMockData = (url: string) => {
+    // Extract video ID for thumbnail fallback
+    const extractVideoId = (videoUrl: string): string | null => {
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+        /^([a-zA-Z0-9_-]{11})$/
+      ];
+      for (const pattern of patterns) {
+        const match = videoUrl.match(pattern);
+        if (match) return match[1];
+      }
+      return null;
+    };
+
+    const videoId = extractVideoId(url);
+    const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : "";
+
     return {
       videoInfo: {
         title: "La BATALLA TECNOLÓGICA que NADIE Vio: MAYAS vs. AZTECAS",
-        thumbnail: "",
+        thumbnail: thumbnailUrl,
         views: 1295,
         daysAgo: 137,
         comments: 2,
