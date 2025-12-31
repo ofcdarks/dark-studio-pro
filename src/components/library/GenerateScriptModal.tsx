@@ -100,25 +100,17 @@ export const GenerateScriptModal = ({
 
     setGenerating(true);
     try {
-      // Build the CTA instructions
+      // Build the CTA instructions conforme documentação
       const ctaPositions = [];
       if (ctaInicio) ctaPositions.push("início (primeiros 30 segundos)");
       if (ctaMeio) ctaPositions.push("meio (metade do vídeo)");
       if (ctaFinal) ctaPositions.push("final (últimos 30 segundos)");
 
+      // Construir prompt conforme documentação - Passo 4: Geração de Roteiros
       const prompt = `
 Gere um roteiro completo para um vídeo com o título: "${videoTitle}"
 
-FÓRMULA DO AGENTE:
-${agent.formula || "Hook + Desenvolvimento + Clímax + CTA"}
-
-ESTRUTURA BASE:
-${agent.formula_structure ? JSON.stringify(agent.formula_structure, null, 2) : "Usar estrutura padrão de vídeo viral"}
-
-GATILHOS MENTAIS A USAR:
-${agent.mental_triggers?.join(", ") || "Curiosidade, Urgência, Prova Social"}
-
-ESPECIFICAÇÕES:
+ESPECIFICAÇÕES DO VÍDEO:
 - Duração: ${adjustedDuration} minutos (~${estimatedWords} palavras)
 - Partes: ${estimatedParts} partes de ~${Math.ceil(adjustedDuration / estimatedParts)} minutos cada
 - Idioma: ${language === "pt-BR" ? "Português (Brasil)" : language === "en-US" ? "English (US)" : "Español"}
@@ -126,30 +118,63 @@ ESPECIFICAÇÕES:
 
 ${additionalContext ? `CONTEXTO ADICIONAL:\n${additionalContext}` : ""}
 
-Por favor, gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado para engajamento viral.
+Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado para engajamento viral.
       `.trim();
 
+      // Enviar dados do agente conforme documentação
       const { data, error } = await supabase.functions.invoke("ai-assistant", {
         body: {
           type: "generate_script_with_formula",
           prompt,
           model: aiModel,
+          duration: adjustedDuration,
+          language,
+          // Dados do agente conforme estrutura da documentação
+          agentData: {
+            name: agent.name,
+            niche: agent.niche,
+            sub_niche: agent.sub_niche,
+            formula: agent.formula,
+            formula_structure: agent.formula_structure,
+            mental_triggers: agent.mental_triggers,
+          },
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[GenerateScript] Error:", error);
+        throw error;
+      }
 
-      // Update agent usage count
-      await supabase
+      // Verificar erros de créditos (402) ou rate limit (429)
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      // Update agent usage count conforme documentação
+      const { error: updateError } = await supabase
         .from("script_agents")
-        .update({ times_used: (agent.times_used || 0) + 1 })
+        .update({ 
+          times_used: (agent.times_used || 0) + 1,
+          updated_at: new Date().toISOString()
+        })
         .eq("id", agent.id);
 
-      toast.success("Roteiro gerado com sucesso!");
+      if (updateError) {
+        console.error("[GenerateScript] Error updating agent:", updateError);
+      }
+
+      // Log do resultado
+      console.log("[GenerateScript] Script generated successfully, credits used:", data?.creditsUsed);
+
+      toast.success(`Roteiro gerado com sucesso! (${data?.creditsUsed || estimatedCredits} créditos)`);
       onOpenChange(false);
       
+      // TODO: Navegar para aba de roteiros gerados ou exibir resultado
+      
     } catch (error) {
-      console.error("Error generating script:", error);
+      console.error("[GenerateScript] Error generating script:", error);
       toast.error("Erro ao gerar roteiro. Tente novamente.");
     } finally {
       setGenerating(false);

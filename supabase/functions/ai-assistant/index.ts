@@ -5,18 +5,108 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Tabela oficial de preços conforme documentação
+const CREDIT_PRICING = {
+  // 🧠 TÍTULOS & ANÁLISES
+  TITLE_ANALYSIS: { base: 6, gemini: 7, claude: 9 },
+  TITLE_ANALYSIS_MULTIMODAL: { base: 15, gemini: 18, claude: 21 },
+  EXPLORE_NICHE: { base: 6, gemini: 7, claude: 9 },
+  ANALYZE_COMPETITOR: { base: 6, gemini: 7, claude: 9 },
+  CHANNEL_ANALYSIS: { base: 5, gemini: 6, claude: 7 },
+  
+  // 🎬 VÍDEO & ROTEIRO
+  READY_VIDEO: { base: 10, gemini: 12, claude: 15 },
+  SCRIPT_PER_MINUTE: { base: 2, gemini: 2.4, claude: 2.8 }, // Por minuto de vídeo
+  
+  // 🖼️ IMAGENS & CENAS
+  IMAGE_PROMPT: { base: 1, gemini: 2, claude: 3 }, // Por imagem
+  IMAGE_BATCH_10: { base: 10, gemini: 20, claude: 30 }, // Lote de 10
+  
+  // 🧩 OUTROS RECURSOS
+  TRANSCRIPTION_BASE: { base: 2, gemini: 3, claude: 4 }, // Até 10 min
+  FORMULA_ANALYSIS_AGENT: { base: 10, gemini: 12, claude: 14 }
+};
+
+// Função para calcular créditos por operação conforme documentação
+function calculateCreditsForOperation(
+  operationType: string, 
+  model: string, 
+  details?: { duration?: number; scenes?: number }
+): number {
+  // Determinar chave do modelo
+  let modelKey: 'base' | 'gemini' | 'claude' = 'base';
+  if (model?.includes('gemini')) modelKey = 'gemini';
+  else if (model?.includes('claude')) modelKey = 'claude';
+
+  switch (operationType) {
+    case 'analyze_video_titles':
+    case 'TITLE_ANALYSIS':
+      return CREDIT_PRICING.TITLE_ANALYSIS[modelKey];
+    
+    case 'analyze_script_formula':
+    case 'FORMULA_ANALYSIS_AGENT':
+      return CREDIT_PRICING.FORMULA_ANALYSIS_AGENT[modelKey];
+    
+    case 'generate_script_with_formula':
+    case 'SCRIPT_PER_MINUTE':
+      const duration = details?.duration || 5;
+      return Math.ceil(CREDIT_PRICING.SCRIPT_PER_MINUTE[modelKey] * duration);
+    
+    case 'explore_niche':
+    case 'EXPLORE_NICHE':
+      return CREDIT_PRICING.EXPLORE_NICHE[modelKey];
+    
+    case 'batch_images':
+    case 'IMAGE_BATCH_10':
+      const scenes = details?.scenes || 1;
+      if (scenes >= 10) {
+        return Math.ceil((scenes / 10) * CREDIT_PRICING.IMAGE_BATCH_10[modelKey]);
+      }
+      return Math.ceil(scenes * CREDIT_PRICING.IMAGE_PROMPT[modelKey]);
+    
+    case 'viral_analysis':
+    case 'CHANNEL_ANALYSIS':
+      return CREDIT_PRICING.CHANNEL_ANALYSIS[modelKey];
+    
+    default:
+      // Fallback: preço base de 5 créditos com multiplicador
+      const multipliers = { base: 1, gemini: 1.2, claude: 1.5 };
+      return Math.ceil(5 * multipliers[modelKey]);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { type, prompt, videoData, channelUrl, niche, text, voiceId, language } = await req.json();
+    const { 
+      type, 
+      prompt, 
+      videoData, 
+      channelUrl, 
+      niche, 
+      text, 
+      voiceId, 
+      language,
+      model,
+      duration,
+      agentData
+    } = await req.json();
+    
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+
+    // Calcular créditos necessários para esta operação
+    const creditsNeeded = calculateCreditsForOperation(type, model || 'gemini', { 
+      duration: duration ? parseInt(duration) : 5 
+    });
+    
+    console.log(`[AI Assistant] Operation: ${type}, Model: ${model || 'gemini'}, Credits needed: ${creditsNeeded}`);
 
     let systemPrompt = "";
     let userPrompt = prompt || "";
@@ -117,24 +207,59 @@ serve(async (req) => {
         break;
 
       case "generate_script_with_formula":
+        // Conforme documentação: Geração de roteiros usando fórmula do agente
+        const agentFormula = agentData?.formula || "Hook + Desenvolvimento + Clímax + CTA";
+        const agentStructure = agentData?.formula_structure ? JSON.stringify(agentData.formula_structure) : "Usar estrutura padrão de vídeo viral";
+        const agentTriggers = agentData?.mental_triggers?.join(", ") || "Curiosidade, Urgência, Prova Social";
+        
         systemPrompt = `Você é um roteirista profissional especializado em vídeos virais para YouTube.
-        Crie um roteiro COMPLETO seguindo a fórmula viral fornecida.
+        Crie um roteiro COMPLETO seguindo a fórmula viral fornecida pelo agente.
         
-        O roteiro deve incluir:
-        - Hook impactante nos primeiros 10 segundos
-        - Estrutura narrativa com tensão crescente
-        - Marcações de tempo para cada seção
+        FÓRMULA DO AGENTE A SEGUIR:
+        ${agentFormula}
+        
+        ESTRUTURA BASE DO AGENTE:
+        ${agentStructure}
+        
+        GATILHOS MENTAIS OBRIGATÓRIOS:
+        ${agentTriggers}
+        
+        O roteiro DEVE incluir:
+        - Hook impactante nos primeiros 10 segundos que capture atenção imediata
+        - Estrutura narrativa com tensão crescente conforme a fórmula
+        - Marcações de tempo para cada seção [00:00 - 00:30]
         - Pausas dramáticas indicadas com [PAUSA]
-        - Calls-to-action nos momentos solicitados
+        - Calls-to-action posicionados conforme solicitado
         - Notas de produção entre [colchetes]
+        - Uso estratégico dos gatilhos mentais especificados
         
-        Formate o roteiro em markdown com:
-        # Título
-        ## PARTE X - NOME DA SEÇÃO (TIMESTAMP)
-        [Instruções de produção]
-        "Texto de narração"
+        FORMATO DO ROTEIRO:
         
-        Responda em português brasileiro.`;
+        # TÍTULO DO VÍDEO
+        
+        ## PARTE 1 - HOOK [00:00 - 00:30]
+        [Instruções de produção e tom de voz]
+        "Texto de narração exato"
+        
+        ## PARTE 2 - DESENVOLVIMENTO [00:30 - XX:XX]
+        [Instruções]
+        "Narração"
+        
+        ## PARTE 3 - CLÍMAX [XX:XX - XX:XX]
+        [Instruções]
+        "Narração"
+        
+        ## PARTE 4 - CTA [XX:XX - FIM]
+        [Instruções]
+        "Narração com call-to-action"
+        
+        ---
+        
+        IMPORTANTE:
+        - Siga a fórmula do agente RIGOROSAMENTE
+        - Use os gatilhos mentais especificados de forma natural
+        - O roteiro deve estar 100% pronto para narração
+        - Responda em português brasileiro`;
         break;
 
       case "generate_script":
@@ -230,8 +355,6 @@ serve(async (req) => {
         break;
 
       case "generate_voice":
-        // For voice generation, we'll return a structured response
-        // The actual audio generation would need ElevenLabs or similar
         systemPrompt = `Você é um assistente de geração de voz. 
         O usuário quer converter o seguinte texto em áudio.
         Analise o texto e sugira:
@@ -301,8 +424,19 @@ serve(async (req) => {
         systemPrompt = "Você é um assistente especializado em criação de conteúdo para YouTube. Responda em português brasileiro de forma clara e útil.";
     }
 
-    console.log("AI request type:", type);
-    console.log("System prompt length:", systemPrompt.length);
+    console.log("[AI Assistant] Request type:", type);
+    console.log("[AI Assistant] System prompt length:", systemPrompt.length);
+
+    // Selecionar modelo conforme documentação
+    // Modelos suportados: gpt-4o, claude-sonnet, gemini-2.0-flash, gemini-2.5-flash
+    let selectedModel = "google/gemini-2.5-flash"; // Default conforme documentação
+    if (model === "gpt-5" || model === "gpt-4o") {
+      selectedModel = "openai/gpt-5";
+    } else if (model === "claude" || model?.includes("claude")) {
+      selectedModel = "google/gemini-2.5-pro"; // Usar pro para qualidade similar ao Claude
+    } else if (model === "gemini-pro" || model?.includes("pro")) {
+      selectedModel = "google/gemini-2.5-pro";
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -311,7 +445,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: selectedModel,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -321,7 +455,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
+      console.error("[AI Assistant] AI Gateway error:", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
@@ -343,7 +477,7 @@ serve(async (req) => {
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
-    console.log("AI response received, length:", content?.length);
+    console.log("[AI Assistant] AI response received, length:", content?.length);
 
     // Try to parse as JSON if expected
     let result = content;
@@ -363,11 +497,15 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ result }),
+      JSON.stringify({ 
+        result,
+        creditsUsed: creditsNeeded,
+        model: selectedModel
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
-    console.error("Error in ai-assistant:", error);
+    console.error("[AI Assistant] Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({ error: errorMessage }),
