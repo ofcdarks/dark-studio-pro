@@ -38,6 +38,14 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
+import { AdminCreditsTab } from "@/components/admin/AdminCreditsTab";
+import { AdminAPIsTab } from "@/components/admin/AdminAPIsTab";
+import { AdminPermissionsTab } from "@/components/admin/AdminPermissionsTab";
+import { AdminPixelTab } from "@/components/admin/AdminPixelTab";
+import { AdminPaymentsTab } from "@/components/admin/AdminPaymentsTab";
+import { AdminSubscriptionsTab } from "@/components/admin/AdminSubscriptionsTab";
+import { AdminStorageTab } from "@/components/admin/AdminStorageTab";
+import { AdminNotificationsTab } from "@/components/admin/AdminNotificationsTab";
 
 interface AdminStats {
   totalUsers: number;
@@ -456,84 +464,42 @@ const AdminPanel = () => {
 
             {/* Credits Tab */}
             <TabsContent value="credits">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">
-                  Gerenciamento de Créditos
-                </h3>
-                <p className="text-muted-foreground">
-                  Configure os pacotes de créditos e gerencie saldos dos usuários.
-                </p>
-              </Card>
+              <AdminCreditsTab />
             </TabsContent>
 
             {/* APIs Tab */}
             <TabsContent value="apis">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Configurações de APIs</h3>
-                <p className="text-muted-foreground">
-                  Gerencie as chaves de API e integrações externas.
-                </p>
-              </Card>
+              <AdminAPIsTab />
             </TabsContent>
 
             {/* Pixel/Ads Tab */}
             <TabsContent value="pixel">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Pixel e Anúncios</h3>
-                <p className="text-muted-foreground">
-                  Configure pixels de rastreamento e integrações de anúncios.
-                </p>
-              </Card>
+              <AdminPixelTab />
             </TabsContent>
 
             {/* Payments Tab */}
             <TabsContent value="payments">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Pagamentos</h3>
-                <p className="text-muted-foreground">
-                  Visualize histórico de pagamentos e configure gateways.
-                </p>
-              </Card>
+              <AdminPaymentsTab />
             </TabsContent>
 
             {/* Subscriptions Tab */}
             <TabsContent value="subscriptions">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Assinaturas</h3>
-                <p className="text-muted-foreground">
-                  Gerencie assinaturas ativas e configure planos.
-                </p>
-              </Card>
+              <AdminSubscriptionsTab />
             </TabsContent>
 
             {/* Storage Tab */}
             <TabsContent value="storage">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Armazenamento</h3>
-                <p className="text-muted-foreground">
-                  Monitore o uso de armazenamento e configure limites.
-                </p>
-              </Card>
+              <AdminStorageTab />
             </TabsContent>
 
             {/* Notifications Tab */}
             <TabsContent value="notifications">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Notificações</h3>
-                <p className="text-muted-foreground">
-                  Configure notificações por email, push e SMS.
-                </p>
-              </Card>
+              <AdminNotificationsTab />
             </TabsContent>
 
             {/* Permissions Tab */}
             <TabsContent value="permissions">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Permissões de Planos</h3>
-                <p className="text-muted-foreground">
-                  Configure as permissões e recursos de cada plano.
-                </p>
-              </Card>
+              <AdminPermissionsTab />
             </TabsContent>
           </Tabs>
         </div>
