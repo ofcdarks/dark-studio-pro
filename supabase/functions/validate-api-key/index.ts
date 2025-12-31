@@ -114,11 +114,28 @@ async function validateElevenLabs(apiKey: string): Promise<boolean> {
 
 async function validateYouTube(apiKey: string): Promise<boolean> {
   try {
+    // Use a simple search endpoint that only requires API key
     const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?part=id&mine=false&id=UC_x5XG1OV2P6uZZ5FSM9Ttw&key=${apiKey}`
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=test&maxResults=1&type=video&key=${apiKey}`
     );
-    return response.ok;
-  } catch {
+    
+    if (response.ok) {
+      return true;
+    }
+    
+    // Check if it's a quota error (403) - API key is valid but quota exceeded
+    if (response.status === 403) {
+      const data = await response.json();
+      // If it's a quota error, the key is still valid
+      if (data.error?.errors?.[0]?.reason === 'quotaExceeded') {
+        return true;
+      }
+    }
+    
+    console.log(`YouTube validation response: ${response.status}`);
+    return false;
+  } catch (error) {
+    console.error('YouTube validation error:', error);
     return false;
   }
 }
