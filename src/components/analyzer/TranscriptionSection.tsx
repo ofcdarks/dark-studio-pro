@@ -12,6 +12,7 @@ import {
   Sparkles,
   Bot,
   Zap,
+  Download,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -31,11 +32,13 @@ interface ScriptFormulaAnalysis {
 
 interface TranscriptionSectionProps {
   onCreateAgent: (formula: ScriptFormulaAnalysis | null, transcription: string) => void;
+  videoUrl?: string;
 }
 
-export const TranscriptionSection = ({ onCreateAgent }: TranscriptionSectionProps) => {
+export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionSectionProps) => {
   const [transcription, setTranscription] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [formulaAnalysis, setFormulaAnalysis] = useState<ScriptFormulaAnalysis | null>(null);
   const { toast } = useToast();
 
@@ -118,6 +121,45 @@ export const TranscriptionSection = ({ onCreateAgent }: TranscriptionSectionProp
     }
   };
 
+  const handleAutoTranscribe = async () => {
+    if (!videoUrl) {
+      toast({
+        title: "Erro",
+        description: "Nenhuma URL de vídeo disponível. Analise um vídeo primeiro.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTranscribing(true);
+    try {
+      const response = await supabase.functions.invoke("transcribe-video", {
+        body: { videoUrl },
+      });
+
+      if (response.error) throw response.error;
+
+      if (response.data.transcription) {
+        setTranscription(response.data.transcription);
+        toast({
+          title: "Transcrição concluída!",
+          description: `Idioma detectado: ${response.data.language || "auto"}`,
+        });
+      } else {
+        throw new Error("Nenhuma transcrição retornada");
+      }
+    } catch (error) {
+      console.error("Error transcribing:", error);
+      toast({
+        title: "Erro na transcrição",
+        description: "Não foi possível transcrever o vídeo automaticamente. Tente colar manualmente.",
+        variant: "destructive",
+      });
+    } finally {
+      setTranscribing(false);
+    }
+  };
+
   const handleLoadFile = () => {
     const input = document.createElement("input");
     input.type = "file";
@@ -183,6 +225,19 @@ export const TranscriptionSection = ({ onCreateAgent }: TranscriptionSectionProp
           <Button variant="outline" onClick={handleClearField}>
             <Trash2 className="w-4 h-4 mr-2" />
             Limpar Campo
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleAutoTranscribe}
+            disabled={transcribing || !videoUrl}
+            className="border-primary text-primary"
+          >
+            {transcribing ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
+            Transcrição Automática
           </Button>
           <Button 
             onClick={handleAnalyzeFormula}
