@@ -46,8 +46,8 @@ serve(async (req) => {
         const lang = language === "pt-BR" ? "Português Brasileiro" : language === "es" ? "Espanhol" : "Inglês";
         systemPrompt = `Você é um especialista em análise de títulos virais do YouTube.
         Analise a URL do vídeo fornecida e:
-        1. Identifique a fórmula/estrutura do título original
-        2. Gere 5 novos títulos seguindo a mesma fórmula
+        1. Identifique a fórmula/estrutura do título original e por que ele funciona
+        2. Gere 5 novos títulos OTIMIZADOS seguindo e MELHORANDO a mesma fórmula
         3. Detecte o nicho, subnicho e micro-nicho do vídeo
         
         Responda SEMPRE em formato JSON válido com esta estrutura exata:
@@ -62,13 +62,17 @@ serve(async (req) => {
             "rpm": { "usd": número, "brl": número },
             "niche": "nicho principal",
             "subNiche": "subnicho",
-            "microNiche": "micro-nicho específico"
+            "microNiche": "micro-nicho específico",
+            "originalTitleAnalysis": {
+              "motivoSucesso": "Explicação detalhada de por que o título original funciona e gera curiosidade",
+              "formula": "Fórmula identificada (ex: Promessa central + benefício + termos em CAIXA ALTA + loop mental)"
+            }
           },
           "titles": [
             {
-              "title": "Título gerado em ${lang}",
-              "formula": "Descrição da fórmula (ex: Promessa central + benefício + termos em CAIXA ALTA + loop mental)",
-              "formulaSurpresa": "Variação da fórmula (ex: Mistério + revelação + gatilho)",
+              "title": "Título OTIMIZADO gerado em ${lang}",
+              "formula": "Descrição da fórmula usada (mesma do original)",
+              "formulaSurpresa": "Variação otimizada da fórmula (ex: Mistério + revelação + gatilho)",
               "quality": score de 1-10,
               "impact": score de 1-10,
               "isBest": true apenas para o melhor título
@@ -77,11 +81,13 @@ serve(async (req) => {
         }
         
         IMPORTANTE: 
-        - Gere exatamente 5 títulos
+        - Gere exatamente 5 títulos OTIMIZADOS baseados na fórmula identificada
         - O melhor título deve ter isBest: true
         - Todos os títulos devem estar em ${lang}
-        - Use CAIXA ALTA estrategicamente nos títulos
-        - Mantenha títulos com no máximo 60 caracteres`;
+        - Use CAIXA ALTA estrategicamente nos títulos como no original
+        - Mantenha títulos com no máximo 60 caracteres
+        - Na análise do título original, explique claramente o MOTIVO DO SUCESSO
+        - Identifique a FÓRMULA exata usada (promessa + curiosidade + etc)`;
         userPrompt = prompt || `Analise este vídeo: ${JSON.stringify(videoData)}`;
         break;
 
