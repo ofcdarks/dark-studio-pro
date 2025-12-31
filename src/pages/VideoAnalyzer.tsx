@@ -122,16 +122,45 @@ const VideoAnalyzer = () => {
     setGeneratedTitles([]);
 
     try {
+      // First, fetch real video data from YouTube API
+      const transcribeResponse = await supabase.functions.invoke("transcribe-video", {
+        body: { videoUrl },
+      });
+
+      let realVideoData = null;
+      if (transcribeResponse.data?.videoDetails) {
+        realVideoData = transcribeResponse.data.videoDetails;
+        
+        // Update transcription if available
+        if (transcribeResponse.data.transcription) {
+          setCurrentTranscription(transcribeResponse.data.transcription);
+        }
+      }
+
       // Call AI to analyze video and generate titles
       const response = await supabase.functions.invoke("ai-assistant", {
         body: {
           type: "analyze_video_titles",
-          videoData: { url: videoUrl },
+          videoData: { 
+            url: videoUrl,
+            title: realVideoData?.title,
+            description: realVideoData?.description,
+            tags: realVideoData?.tags,
+          },
           language,
           prompt: `Analise o vídeo do YouTube com URL: ${videoUrl}
+          ${realVideoData ? `
+          Dados reais do vídeo:
+          - Título: ${realVideoData.title}
+          - Canal: ${realVideoData.channelTitle}
+          - Views: ${realVideoData.views}
+          - Likes: ${realVideoData.likes}
+          - Tags: ${realVideoData.tags?.join(", ") || "N/A"}
+          - Descrição: ${realVideoData.description?.substring(0, 500) || "N/A"}
+          ` : ""}
           
           Retorne um JSON com:
-          1. videoInfo: informações do vídeo (título, views estimados, dias desde publicação, comentários estimados, receita estimada em USD e BRL, RPM, nicho, subnicho, micronicho)
+          1. videoInfo: informações do vídeo (nicho, subnicho, micronicho, estimatedRevenue em USD e BRL, rpm em USD e BRL)
           2. titles: array com 5 títulos gerados baseados na fórmula do título original. Cada título deve ter:
              - title: o título gerado
              - formula: análise da estrutura/fórmula (ex: "Promessa central + benefício + 5 termo(s) em CAIXA ALTA + loop mental")
@@ -165,24 +194,21 @@ const VideoAnalyzer = () => {
         }
       }
 
-      // Set video info
-      if (parsedResult.videoInfo) {
-        setVideoInfo(parsedResult.videoInfo);
-      } else {
-        // Generate mock video info
-        setVideoInfo({
-          title: "Título do Vídeo Analisado",
-          thumbnail: "",
-          views: Math.floor(Math.random() * 100000),
-          daysAgo: Math.floor(Math.random() * 365),
-          comments: Math.floor(Math.random() * 500),
-          estimatedRevenue: { usd: 5, brl: 25 },
-          rpm: { usd: 3.5, brl: 19.25 },
-          niche: "Conteúdo",
-          subNiche: "Educacional",
-          microNiche: "Análise de Tendências",
-        });
-      }
+      // Set video info - use real data from YouTube API first, then enhance with AI analysis
+      const aiVideoInfo = parsedResult.videoInfo || {};
+      setVideoInfo({
+        title: realVideoData?.title || aiVideoInfo.title || "Título do Vídeo",
+        thumbnail: realVideoData?.thumbnail || "",
+        views: realVideoData?.views || 0,
+        daysAgo: realVideoData?.daysAgo || 0,
+        comments: realVideoData?.comments || 0,
+        estimatedRevenue: aiVideoInfo.estimatedRevenue || { usd: 5, brl: 25 },
+        rpm: aiVideoInfo.rpm || { usd: 3.5, brl: 19.25 },
+        niche: aiVideoInfo.niche || "Conteúdo",
+        subNiche: aiVideoInfo.subNiche || "Educacional",
+        microNiche: aiVideoInfo.microNiche || "Análise de Tendências",
+        originalTitleAnalysis: aiVideoInfo.originalTitleAnalysis,
+      });
 
       // Set generated titles
       if (parsedResult.titles && Array.isArray(parsedResult.titles)) {
@@ -198,7 +224,11 @@ const VideoAnalyzer = () => {
       await supabase.from("video_analyses").insert({
         user_id: user?.id,
         video_url: videoUrl,
-        video_title: parsedResult.videoInfo?.title || "Análise de Vídeo",
+        video_title: realVideoData?.title || parsedResult.videoInfo?.title || "Análise de Vídeo",
+        thumbnail_url: realVideoData?.thumbnail,
+        views: realVideoData?.views,
+        likes: realVideoData?.likes,
+        comments: realVideoData?.comments,
         analysis_data: parsedResult,
       });
 
