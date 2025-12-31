@@ -215,11 +215,11 @@ export default function PlansCredits() {
               <div className="flex items-center gap-4">
                 <span className="text-primary font-playfair font-bold text-lg">La Casa Dark Core</span>
                 <nav className="hidden md:flex items-center gap-4 text-sm text-muted-foreground">
-                  <span className="hover:text-foreground cursor-pointer">Mensais</span>
-                  <span className="hover:text-foreground cursor-pointer">Anuais</span>
-                  <span className="hover:text-foreground cursor-pointer">Pacotes</span>
-                  <span className="hover:text-foreground cursor-pointer">Comparação</span>
-                  <span className="hover:text-foreground cursor-pointer">FAQ</span>
+                  <a href="#mensais" className="hover:text-foreground cursor-pointer">Mensais</a>
+                  <a href="#anuais" className="hover:text-foreground cursor-pointer">Anuais</a>
+                  <a href="#pacotes" className="hover:text-foreground cursor-pointer">Pacotes</a>
+                  <a href="#comparacao" className="hover:text-foreground cursor-pointer">Comparação</a>
+                  <a href="#faq" className="hover:text-foreground cursor-pointer">FAQ</a>
                 </nav>
               </div>
               <Button 
@@ -254,7 +254,7 @@ export default function PlansCredits() {
           </section>
 
           {/* Monthly Plans Section */}
-          <section className="space-y-6">
+          <section id="mensais" className="space-y-6 scroll-mt-20">
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
@@ -342,7 +342,7 @@ export default function PlansCredits() {
           </section>
 
           {/* Annual Plans Section */}
-          <section className="space-y-6">
+          <section id="anuais" className="space-y-6 scroll-mt-20">
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
@@ -420,7 +420,7 @@ export default function PlansCredits() {
           </section>
 
           {/* Credit Packages Section */}
-          <section className="space-y-6">
+          <section id="pacotes" className="space-y-6 scroll-mt-20">
             <div className="text-center space-y-2">
               <h2 className="text-xl font-semibold text-foreground flex items-center justify-center gap-2">
                 <Zap className="w-5 h-5 text-primary" />
@@ -453,7 +453,7 @@ export default function PlansCredits() {
           </section>
 
           {/* Comparison Table */}
-          <section className="space-y-6">
+          <section id="comparacao" className="space-y-6 scroll-mt-20">
             <div className="text-center space-y-2">
               <h2 className="text-xl font-semibold text-foreground">Comparação de Planos</h2>
               <p className="text-sm text-muted-foreground">Compare todos os planos em uma única tabela</p>
@@ -496,11 +496,73 @@ export default function PlansCredits() {
             </Card>
           </section>
 
+          {/* FAQ Section */}
+          <section id="faq" className="space-y-6 scroll-mt-20">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold text-foreground">Perguntas Frequentes</h2>
+            </div>
+
+            <div className="max-w-2xl mx-auto space-y-3">
+              <Card className="border-border bg-card">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-foreground text-sm mb-2">Os créditos expiram?</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Créditos de execução recorrente expiram ao final do ciclo ativo.<br />
+                    Créditos de expansão pontual não expiram.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border bg-card">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-foreground text-sm mb-2">Posso ajustar minha capacidade?</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Sim. A capacidade pode ser ampliada ou reduzida conforme sua<br />
+                    necessidade operacional.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border bg-card">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-foreground text-sm mb-2">O que acontece ao atingir o limite?</h3>
+                  <p className="text-xs text-muted-foreground">
+                    As execuções são suspensas até nova alocação de créditos.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-primary bg-card border-2">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-primary text-sm mb-2">Posso combinar planos e pacotes?</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Sim. Pacotes funcionam como reforço adicional sobre qualquer<br />
+                    capacidade ativa.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+
+          {/* CTA Section */}
+          <section className="text-center space-y-6 py-8">
+            <h2 className="text-xl font-semibold text-foreground">Pronto para começar?</h2>
+            <p className="text-sm text-muted-foreground">
+              Escolha o plano ideal e comece a criar conteúdo profissional hoje mesmo.
+            </p>
+            <Button 
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8"
+              onClick={() => document.getElementById('mensais')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              VER MEUS CRÉDITOS
+            </Button>
+          </section>
+
           {/* Footer */}
           <footer className="text-center space-y-4 py-8 border-t border-border">
             <p className="text-xs text-muted-foreground">
-              As tarifas cobradas pela execução são em escala. <br />
-              Consulte política de utilização.
+              Ambiente validado para execução em escala.<br />
+              Gerenciamento das máquinas operacionais.
             </p>
             <p className="text-xs text-muted-foreground">
               © 2025 La Casa Dark Core. Todos os direitos reservados.
