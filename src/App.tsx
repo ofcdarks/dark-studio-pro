@@ -27,6 +27,7 @@ import SettingsPage from "./pages/SettingsPage";
 import AdminPanel from "./pages/AdminPanel";
 import ThumbnailsPage from "./pages/ThumbnailsPage";
 import SceneGenerator from "./pages/SceneGenerator";
+import AnalysisHistory from "./pages/AnalysisHistory";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/analyzer" element={<ProtectedRoute><VideoAnalyzer /></ProtectedRoute>} />
+            <Route path="/history" element={<ProtectedRoute><AnalysisHistory /></ProtectedRoute>} />
             <Route path="/explore" element={<ProtectedRoute><ExploreNiche /></ProtectedRoute>} />
             <Route path="/folders" element={<ProtectedRoute><Folders /></ProtectedRoute>} />
             <Route path="/channels" element={<ProtectedRoute><MonitoredChannels /></ProtectedRoute>} />
@@ -59,7 +61,6 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
             <Route path="/thumbnails" element={<ProtectedRoute><ThumbnailsPage /></ProtectedRoute>} />
             <Route path="/scenes" element={<ProtectedRoute><SceneGenerator /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

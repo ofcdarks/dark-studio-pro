@@ -22,16 +22,17 @@ import {
   TrendingUp,
   FileText,
   Settings,
-  Coins,
   HardDrive,
   Crown,
   Shield,
   ChevronLeft,
   ChevronRight,
   LogOut,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { CreditsDisplay } from "./CreditsDisplay";
 
 interface NavItem {
   icon: React.ElementType;
@@ -42,6 +43,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { icon: Home, label: "Início", href: "/" },
   { icon: Video, label: "Analisador de Vídeos", href: "/analyzer" },
+  { icon: History, label: "Histórico de Análises", href: "/history" },
   { icon: Compass, label: "Explorar Nicho", href: "/explore" },
   { icon: FolderOpen, label: "Pastas e Histórico", href: "/folders" },
   { icon: Eye, label: "Canais Monitorados", href: "/channels" },
@@ -141,21 +143,8 @@ export function Sidebar() {
 
       {/* Bottom Section */}
       <div className="p-4 border-t border-sidebar-border space-y-4">
-        {/* Credits */}
-        <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-          <Coins className="w-5 h-5 text-primary flex-shrink-0" />
-          {!collapsed && (
-            <div className="flex-1">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Créditos</span>
-                <span className="text-primary font-semibold">{credits.toLocaleString()}</span>
-              </div>
-              <Button variant="outline" size="sm" className="w-full mt-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                Comprar Créditos
-              </Button>
-            </div>
-          )}
-        </div>
+        {/* Credits - Now using real-time hook */}
+        <CreditsDisplay collapsed={collapsed} showRefresh={!collapsed} />
 
         {/* Storage */}
         {!collapsed && (
