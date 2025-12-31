@@ -28,6 +28,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useSearchParams } from "react-router-dom";
+import { GenerateScriptModal } from "@/components/library/GenerateScriptModal";
 
 interface ViralVideo {
   id: string;
@@ -46,6 +47,8 @@ interface ScriptAgent {
   sub_niche: string | null;
   based_on_title: string | null;
   formula: string | null;
+  formula_structure: any;
+  mental_triggers: string[] | null;
   times_used: number;
   created_at: string;
 }
@@ -65,6 +68,8 @@ const ViralLibrary = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [generateModalOpen, setGenerateModalOpen] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<ScriptAgent | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -178,9 +183,8 @@ const ViralLibrary = () => {
   };
 
   const handleUseAgent = (agent: ScriptAgent) => {
-    toast.info('Abrindo gerador de roteiro com agente...');
-    // Navigate to video generator with agent context
-    window.location.href = `/video-generator?agent=${agent.id}`;
+    setSelectedAgent(agent);
+    setGenerateModalOpen(true);
   };
 
   const handleCopyFormula = async (id: string, formula: string) => {
@@ -454,6 +458,13 @@ const ViralLibrary = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Generate Script Modal */}
+      <GenerateScriptModal
+        open={generateModalOpen}
+        onOpenChange={setGenerateModalOpen}
+        agent={selectedAgent}
+      />
     </MainLayout>
   );
 };
