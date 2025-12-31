@@ -41,6 +41,30 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       analyzed_videos: {
         Row: {
           analysis_data_json: Json | null
@@ -217,6 +241,39 @@ export type Database = {
           model_used?: string | null
           operation_type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          body: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          subject: string
+          template_type: string
+          updated_at: string | null
+          variables: string[] | null
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          subject: string
+          template_type: string
+          updated_at?: string | null
+          variables?: string[] | null
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          subject?: string
+          template_type?: string
+          updated_at?: string | null
+          variables?: string[] | null
         }
         Relationships: []
       }
@@ -442,6 +499,42 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_annual: boolean | null
+          monthly_credits: number | null
+          permissions: Json
+          plan_name: string
+          price_amount: number | null
+          stripe_price_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_annual?: boolean | null
+          monthly_credits?: number | null
+          permissions?: Json
+          plan_name: string
+          price_amount?: number | null
+          stripe_price_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_annual?: boolean | null
+          monthly_credits?: number | null
+          permissions?: Json
+          plan_name?: string
+          price_amount?: number | null
+          stripe_price_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -450,9 +543,11 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          status: string | null
           storage_limit: number | null
           storage_used: number | null
           updated_at: string | null
+          whatsapp: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -461,9 +556,11 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          status?: string | null
           storage_limit?: number | null
           storage_used?: number | null
           updated_at?: string | null
+          whatsapp?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -472,9 +569,11 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          status?: string | null
           storage_limit?: number | null
           storage_used?: number | null
           updated_at?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
