@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Settings, Search, Plus, RefreshCw, Loader2, Download } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Settings, Search, Plus, RefreshCw, Loader2, Download, History, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -30,26 +37,78 @@ interface UserCredit {
   updated_at: string | null;
   email?: string;
   full_name?: string;
+  whatsapp?: string;
+}
+
+interface CreditTransaction {
+  id: string;
+  amount: number;
+  transaction_type: string;
+  description: string | null;
+  created_at: string | null;
+}
+
+interface SearchResult {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  whatsapp: string | null;
 }
 
 export function AdminCreditsTab() {
   const [initialBalance, setInitialBalance] = useState("50");
   const [costMultiplier, setCostMultiplier] = useState("2");
   const [searchBalance, setSearchBalance] = useState("");
-  const [searchUser, setSearchUser] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [addCreditsSearch, setAddCreditsSearch] = useState("");
+  const [addCreditsResults, setAddCreditsResults] = useState<SearchResult[]>([]);
+  const [selectedUserForCredits, setSelectedUserForCredits] = useState<SearchResult | null>(null);
   const [creditsAmount, setCreditsAmount] = useState("1000");
+  const [creditsPreset, setCreditsPreset] = useState("custom");
   const [creditsReason, setCreditsReason] = useState("");
   const [minBalance, setMinBalance] = useState("0");
   const [usersWithCredits, setUsersWithCredits] = useState<UserCredit[]>([]);
   const [loading, setLoading] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [selectedUserHistory, setSelectedUserHistory] = useState<UserCredit | null>(null);
+  const [transactionHistory, setTransactionHistory] = useState<CreditTransaction[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
     fetchUsersWithCredits();
     loadGlobalSettings();
   }, []);
+
+  // Dynamic search for balance check
+  useEffect(() => {
+    if (searchBalance.length >= 1) {
+      searchUsers(searchBalance, setSearchResults);
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchBalance]);
+
+  // Dynamic search for add credits
+  useEffect(() => {
+    if (addCreditsSearch.length >= 1) {
+      searchUsers(addCreditsSearch, setAddCreditsResults);
+    } else {
+      setAddCreditsResults([]);
+      setSelectedUserForCredits(null);
+    }
+  }, [addCreditsSearch]);
+
+  const searchUsers = async (term: string, setResults: (results: SearchResult[]) => void) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, email, full_name, whatsapp")
+      .or(`email.ilike.%${term}%,full_name.ilike.%${term}%,whatsapp.ilike.%${term}%`)
+      .limit(5);
+
+    setResults(data || []);
+  };
 
   const loadGlobalSettings = async () => {
     const { data } = await supabase
@@ -88,13 +147,13 @@ export function AdminCreditsTab() {
         .select("*")
         .gte("balance", Number(minBalance) || 0)
         .order("balance", { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (credits) {
         const userIds = credits.map((c) => c.user_id);
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, email, full_name")
+          .select("id, email, full_name, whatsapp")
           .in("id", userIds);
 
         const enriched = credits.map((credit) => {
@@ -103,6 +162,7 @@ export function AdminCreditsTab() {
             ...credit,
             email: profile?.email || "",
             full_name: profile?.full_name || "",
+            whatsapp: profile?.whatsapp || "",
           };
         });
         setUsersWithCredits(enriched);
@@ -114,38 +174,52 @@ export function AdminCreditsTab() {
     }
   };
 
+  const handlePresetChange = (value: string) => {
+    setCreditsPreset(value);
+    if (value !== "custom") {
+      setCreditsAmount(value);
+    }
+  };
+
   const handleAddCredits = async () => {
-    if (!addCreditsSearch.trim() || !creditsAmount) {
-      toast.error("Preencha email e quantidade");
+    if (!selectedUserForCredits && !addCreditsSearch.trim()) {
+      toast.error("Selecione um usuário");
+      return;
+    }
+    if (!creditsAmount || Number(creditsAmount) <= 0) {
+      toast.error("Quantidade inválida");
       return;
     }
 
-    // Find user by email
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", addCreditsSearch.trim())
-      .single();
+    let userId = selectedUserForCredits?.id;
 
-    if (!profile) {
-      toast.error("Usuário não encontrado");
-      return;
+    if (!userId) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .or(`email.eq.${addCreditsSearch.trim()},whatsapp.eq.${addCreditsSearch.trim()}`)
+        .limit(1)
+        .single();
+
+      if (!profile) {
+        toast.error("Usuário não encontrado");
+        return;
+      }
+      userId = profile.id;
     }
 
-    // Get current balance
     const { data: currentCredits } = await supabase
       .from("user_credits")
       .select("balance")
-      .eq("user_id", profile.id)
+      .eq("user_id", userId)
       .single();
 
     const newBalance = (currentCredits?.balance || 0) + Number(creditsAmount);
 
-    // Update or insert credits
     const { error } = await supabase
       .from("user_credits")
       .upsert({
-        user_id: profile.id,
+        user_id: userId,
         balance: newBalance,
         updated_at: new Date().toISOString(),
       });
@@ -153,9 +227,8 @@ export function AdminCreditsTab() {
     if (error) {
       toast.error("Erro ao adicionar créditos");
     } else {
-      // Log transaction
       await supabase.from("credit_transactions").insert({
-        user_id: profile.id,
+        user_id: userId,
         amount: Number(creditsAmount),
         transaction_type: "add",
         description: creditsReason || "Créditos adicionados pelo admin",
@@ -163,34 +236,75 @@ export function AdminCreditsTab() {
 
       toast.success(`${creditsAmount} créditos adicionados!`);
       setAddCreditsSearch("");
+      setAddCreditsResults([]);
+      setSelectedUserForCredits(null);
       setCreditsAmount("1000");
       setCreditsReason("");
       fetchUsersWithCredits();
     }
   };
 
-  const handleViewBalance = async () => {
-    if (!searchBalance.trim()) return;
-    
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id, email")
-      .or(`email.ilike.%${searchBalance}%,full_name.ilike.%${searchBalance}%`)
-      .limit(1)
-      .single();
-
-    if (!profile) {
-      toast.error("Usuário não encontrado");
-      return;
-    }
-
+  const handleViewBalance = async (user: SearchResult) => {
     const { data: credits } = await supabase
       .from("user_credits")
       .select("balance")
-      .eq("user_id", profile.id)
+      .eq("user_id", user.id)
       .single();
 
-    toast.info(`Saldo de ${profile.email}: ${credits?.balance || 0} créditos`);
+    toast.info(`Saldo de ${user.email || user.full_name}: ${credits?.balance?.toFixed(2) || 0} créditos`);
+    setSearchBalance("");
+    setSearchResults([]);
+  };
+
+  const handleZeroBalance = async (user: UserCredit) => {
+    const { error } = await supabase
+      .from("user_credits")
+      .update({ balance: 0, updated_at: new Date().toISOString() })
+      .eq("user_id", user.user_id);
+
+    if (error) {
+      toast.error("Erro ao zerar saldo");
+    } else {
+      await supabase.from("credit_transactions").insert({
+        user_id: user.user_id,
+        amount: -user.balance,
+        transaction_type: "deduct",
+        description: "Saldo zerado pelo admin",
+      });
+
+      toast.success("Saldo zerado!");
+      fetchUsersWithCredits();
+    }
+  };
+
+  const handleViewHistory = async (user: UserCredit) => {
+    setSelectedUserHistory(user);
+    setLoadingHistory(true);
+    setHistoryModalOpen(true);
+
+    const { data } = await supabase
+      .from("credit_transactions")
+      .select("*")
+      .eq("user_id", user.user_id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    setTransactionHistory(data || []);
+    setLoadingHistory(false);
+  };
+
+  const handleExportStats = () => {
+    const csvContent = usersWithCredits.map(u => 
+      `${u.email},${u.full_name},${u.whatsapp},${u.balance}`
+    ).join("\n");
+    
+    const blob = new Blob([`Email,Nome,WhatsApp,Saldo\n${csvContent}`], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `creditos_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    toast.success("Arquivo exportado!");
   };
 
   return (
@@ -234,67 +348,89 @@ export function AdminCreditsTab() {
         </Button>
       </Card>
 
-      {/* Check Balance */}
+      {/* Check Balance with Dynamic Search */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Search className="w-5 h-5 text-primary" />
           <h3 className="font-semibold text-foreground">Consultar Saldo</h3>
         </div>
         <p className="text-sm text-muted-foreground mb-2">Buscar por Email, Nome ou WhatsApp</p>
-        <div className="flex gap-2">
-          <Input
-            placeholder="Ex: usuario@gmail.com, nome ou 5517999999999"
-            value={searchBalance}
-            onChange={(e) => setSearchBalance(e.target.value)}
-            className="bg-secondary border-border flex-1"
-          />
-          <Button onClick={handleViewBalance} className="bg-primary">
-            Ver Saldo
-          </Button>
-        </div>
-      </Card>
-
-      {/* Search Users */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Search className="w-5 h-5 text-muted-foreground" />
-          <h3 className="font-semibold text-foreground">Buscar Usuários</h3>
-        </div>
-        <p className="text-sm text-muted-foreground mb-2">Buscar por Email, Nome ou WhatsApp</p>
-        <div className="flex gap-2">
+        <div className="relative">
           <Input
             placeholder="Digite para buscar..."
-            value={searchUser}
-            onChange={(e) => setSearchUser(e.target.value)}
-            className="bg-secondary border-border flex-1"
+            value={searchBalance}
+            onChange={(e) => setSearchBalance(e.target.value)}
+            className="bg-secondary border-border"
           />
-          <Button variant="secondary">Buscar Usuários</Button>
+          {searchResults.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-48 overflow-auto">
+              {searchResults.map((user) => (
+                <div
+                  key={user.id}
+                  className="px-4 py-2 hover:bg-secondary cursor-pointer flex justify-between items-center"
+                  onClick={() => handleViewBalance(user)}
+                >
+                  <div>
+                    <p className="text-sm text-foreground">{user.email}</p>
+                    <p className="text-xs text-muted-foreground">{user.full_name} • {user.whatsapp || "Sem WhatsApp"}</p>
+                  </div>
+                  <Button size="sm" variant="outline">Ver Saldo</Button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </Card>
 
-      {/* Add Credits */}
+      {/* Add Credits with Dynamic Search */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Plus className="w-5 h-5 text-muted-foreground" />
           <h3 className="font-semibold text-foreground">Adicionar Créditos (Individual)</h3>
         </div>
         <div className="space-y-4">
-          <div>
+          <div className="relative">
             <label className="text-sm text-muted-foreground mb-2 block">
               Buscar Usuário (Email, Nome ou WhatsApp)
             </label>
             <Input
               placeholder="Digite para buscar..."
               value={addCreditsSearch}
-              onChange={(e) => setAddCreditsSearch(e.target.value)}
+              onChange={(e) => {
+                setAddCreditsSearch(e.target.value);
+                setSelectedUserForCredits(null);
+              }}
               className="bg-secondary border-border"
             />
+            {addCreditsResults.length > 0 && !selectedUserForCredits && (
+              <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-48 overflow-auto">
+                {addCreditsResults.map((user) => (
+                  <div
+                    key={user.id}
+                    className="px-4 py-2 hover:bg-secondary cursor-pointer"
+                    onClick={() => {
+                      setSelectedUserForCredits(user);
+                      setAddCreditsSearch(user.email || user.full_name || "");
+                      setAddCreditsResults([]);
+                    }}
+                  >
+                    <p className="text-sm text-foreground">{user.email}</p>
+                    <p className="text-xs text-muted-foreground">{user.full_name} • {user.whatsapp || "Sem WhatsApp"}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {selectedUserForCredits && (
+              <Badge className="mt-2 bg-primary/20 text-primary">
+                Selecionado: {selectedUserForCredits.email}
+              </Badge>
+            )}
           </div>
           <div>
             <label className="text-sm text-muted-foreground mb-2 block">
               Quantidade de Créditos ou Recorte
             </label>
-            <Select defaultValue="custom">
+            <Select value={creditsPreset} onValueChange={handlePresetChange}>
               <SelectTrigger className="bg-secondary border-border">
                 <SelectValue placeholder="Valor Personalizado" />
               </SelectTrigger>
@@ -303,6 +439,7 @@ export function AdminCreditsTab() {
                 <SelectItem value="100">100 créditos</SelectItem>
                 <SelectItem value="500">500 créditos</SelectItem>
                 <SelectItem value="1000">1000 créditos</SelectItem>
+                <SelectItem value="5000">5000 créditos</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -350,6 +487,7 @@ export function AdminCreditsTab() {
             className="w-24 bg-secondary border-border"
             type="number"
           />
+          <Button size="sm" onClick={fetchUsersWithCredits}>Filtrar</Button>
         </div>
 
         {loading ? (
@@ -370,33 +508,52 @@ export function AdminCreditsTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {usersWithCredits.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="text-primary">{user.email}</TableCell>
-                    <TableCell className="text-muted-foreground">N/A</TableCell>
-                    <TableCell className="text-muted-foreground">{user.full_name || "N/A"}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-primary border-primary">
-                        {user.balance.toFixed(2)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {user.updated_at
-                        ? format(new Date(user.updated_at), "dd/MM/yyyy HH:mm")
-                        : "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="outline" className="text-primary">
-                          Zerar
-                        </Button>
-                        <Button size="sm" variant="secondary">
-                          Histórico
-                        </Button>
-                      </div>
+                {usersWithCredits.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      Nenhum usuário encontrado
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  usersWithCredits.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="text-primary">{user.email}</TableCell>
+                      <TableCell className="text-muted-foreground">{user.whatsapp || "N/A"}</TableCell>
+                      <TableCell className="text-muted-foreground">{user.full_name || "N/A"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-primary border-primary">
+                          {user.balance.toFixed(2)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {user.updated_at
+                          ? format(new Date(user.updated_at), "dd/MM/yyyy HH:mm")
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-destructive"
+                            onClick={() => handleZeroBalance(user)}
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Zerar
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="secondary"
+                            onClick={() => handleViewHistory(user)}
+                          >
+                            <History className="w-3 h-3 mr-1" />
+                            Histórico
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
@@ -430,14 +587,71 @@ export function AdminCreditsTab() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button className="flex-1 bg-success text-success-foreground hover:bg-success/90">
+          <Button 
+            className="flex-1 bg-success text-success-foreground hover:bg-success/90"
+            onClick={fetchUsersWithCredits}
+          >
             Carregar Estatísticas
           </Button>
-          <Button className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <Button 
+            className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={handleExportStats}
+          >
+            <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
         </div>
       </Card>
+
+      {/* History Modal */}
+      <Dialog open={historyModalOpen} onOpenChange={setHistoryModalOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Histórico de Créditos - {selectedUserHistory?.email}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-96 overflow-auto">
+            {loadingHistory ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : transactionHistory.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">Nenhuma transação encontrada</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>DATA</TableHead>
+                    <TableHead>TIPO</TableHead>
+                    <TableHead>QUANTIDADE</TableHead>
+                    <TableHead>DESCRIÇÃO</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactionHistory.map((t) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="text-muted-foreground">
+                        {t.created_at ? format(new Date(t.created_at), "dd/MM/yyyy HH:mm") : "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={t.transaction_type === "add" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"}>
+                          {t.transaction_type === "add" ? "Adição" : "Dedução"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className={t.amount >= 0 ? "text-success" : "text-destructive"}>
+                        {t.amount >= 0 ? "+" : ""}{t.amount.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{t.description || "N/A"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setHistoryModalOpen(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
