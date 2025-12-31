@@ -219,11 +219,14 @@ export function AdminCreditsTab() {
 
     const { error } = await supabase
       .from("user_credits")
-      .upsert({
-        user_id: userId,
-        balance: newBalance,
-        updated_at: new Date().toISOString(),
-      });
+      .upsert(
+        {
+          user_id: userId,
+          balance: newBalance,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
 
     if (error) {
       toast.error("Erro ao adicionar créditos");
