@@ -75,7 +75,7 @@ interface ScriptFormulaAnalysis {
 
 const VideoAnalyzer = () => {
   const [videoUrl, setVideoUrl] = useState("");
-  const [aiModel, setAiModel] = useState("gemini");
+  const [aiModel, setAiModel] = useState("gemini-pro");
   const [language, setLanguage] = useState("pt-BR");
   const [saveFolder, setSaveFolder] = useState("general");
   const [analyzing, setAnalyzing] = useState(false);
@@ -104,9 +104,17 @@ const VideoAnalyzer = () => {
   });
 
   const modelLabels: Record<string, string> = {
-    gemini: "Gemini 2.5 Flash",
+    multimodal: "Comparar (Multimodal)",
+    "gpt-4o": "GPT-4o (2025)",
+    "claude-4-sonnet": "Claude 4 Sonnet",
     "gemini-pro": "Gemini 2.5 Pro (2025)",
-    compare: "Comparar (Multimodal)",
+  };
+
+  // Map model IDs to Lovable AI gateway models
+  const modelMapping: Record<string, string> = {
+    "gpt-4o": "openai/gpt-5",
+    "claude-4-sonnet": "openai/gpt-5-mini", // Claude via gateway
+    "gemini-pro": "google/gemini-2.5-pro",
   };
 
   const handleAnalyze = async () => {
@@ -139,65 +147,119 @@ const VideoAnalyzer = () => {
         }
       }
 
-      // Call AI to analyze video and generate titles
-      const response = await supabase.functions.invoke("ai-assistant", {
-        body: {
-          type: "analyze_video_titles",
-          videoData: { 
-            url: videoUrl,
-            title: realVideoData?.title,
-            description: realVideoData?.description,
-            tags: realVideoData?.tags,
+      // Helper function to call AI and generate titles
+      const generateTitlesWithModel = async (modelId: string, modelLabel: string) => {
+        const gatewayModel = modelMapping[modelId] || "google/gemini-2.5-flash";
+        
+        const response = await supabase.functions.invoke("ai-assistant", {
+          body: {
+            type: "analyze_video_titles",
+            model: gatewayModel,
+            videoData: { 
+              url: videoUrl,
+              title: realVideoData?.title,
+              description: realVideoData?.description,
+              tags: realVideoData?.tags,
+            },
+            language,
+            prompt: `Analise o vídeo do YouTube com URL: ${videoUrl}
+            ${realVideoData ? `
+            Dados reais do vídeo:
+            - Título: ${realVideoData.title}
+            - Canal: ${realVideoData.channelTitle}
+            - Views: ${realVideoData.views}
+            - Likes: ${realVideoData.likes}
+            - Tags: ${realVideoData.tags?.join(", ") || "N/A"}
+            - Descrição: ${realVideoData.description?.substring(0, 500) || "N/A"}
+            ` : ""}
+            
+            Retorne um JSON com:
+            1. videoInfo: informações do vídeo (nicho, subnicho, micronicho, estimatedRevenue em USD e BRL, rpm em USD e BRL)
+            2. titles: array com 5 títulos gerados baseados na fórmula do título original. Cada título deve ter:
+               - title: o título gerado
+               - formula: análise da estrutura/fórmula (ex: "Promessa central + benefício + 5 termo(s) em CAIXA ALTA + loop mental")
+               - formulaSurpresa: fórmula alternativa (ex: "Promessa central + benefício + gatilho de segredo + loop mental")
+               - quality: score de qualidade (1-10)
+               - impact: score de impacto (1-10)
+            
+            O título com maior score combinado deve ser marcado como isBest: true.
+            Idioma dos títulos: ${language === "pt-BR" ? "Português Brasileiro" : language}`,
           },
-          language,
-          prompt: `Analise o vídeo do YouTube com URL: ${videoUrl}
-          ${realVideoData ? `
-          Dados reais do vídeo:
-          - Título: ${realVideoData.title}
-          - Canal: ${realVideoData.channelTitle}
-          - Views: ${realVideoData.views}
-          - Likes: ${realVideoData.likes}
-          - Tags: ${realVideoData.tags?.join(", ") || "N/A"}
-          - Descrição: ${realVideoData.description?.substring(0, 500) || "N/A"}
-          ` : ""}
-          
-          Retorne um JSON com:
-          1. videoInfo: informações do vídeo (nicho, subnicho, micronicho, estimatedRevenue em USD e BRL, rpm em USD e BRL)
-          2. titles: array com 5 títulos gerados baseados na fórmula do título original. Cada título deve ter:
-             - title: o título gerado
-             - formula: análise da estrutura/fórmula (ex: "Promessa central + benefício + 5 termo(s) em CAIXA ALTA + loop mental")
-             - formulaSurpresa: fórmula alternativa (ex: "Promessa central + benefício + gatilho de segredo + loop mental")
-             - quality: score de qualidade (1-10)
-             - impact: score de impacto (1-10)
-          
-          O título com maior score combinado deve ser marcado como isBest: true.
-          Idioma dos títulos: ${language === "pt-BR" ? "Português Brasileiro" : language}`,
-        },
-      });
+        });
 
-      if (response.error) throw response.error;
+        if (response.error) throw response.error;
 
-      const result = response.data.result;
-      
-      // Parse result - handle both string and object responses
-      let parsedResult = result;
-      if (typeof result === "string") {
-        try {
-          // Try to extract JSON from markdown code blocks
-          const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
-          if (jsonMatch) {
-            parsedResult = JSON.parse(jsonMatch[1].trim());
-          } else {
-            parsedResult = JSON.parse(result);
+        const result = response.data.result;
+        let parsedResult = result;
+        if (typeof result === "string") {
+          try {
+            const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (jsonMatch) {
+              parsedResult = JSON.parse(jsonMatch[1].trim());
+            } else {
+              parsedResult = JSON.parse(result);
+            }
+          } catch {
+            parsedResult = generateMockData(videoUrl);
           }
-        } catch {
-          // Generate mock data if parsing fails
-          parsedResult = generateMockData(videoUrl);
         }
+
+        return { parsedResult, modelLabel };
+      };
+
+      // Determine models to use based on selection
+      let modelsToUse: { id: string; label: string }[] = [];
+      
+      if (aiModel === "multimodal") {
+        // Use all 3 models for multimodal
+        modelsToUse = [
+          { id: "gpt-4o", label: "GPT-4o (2025)" },
+          { id: "claude-4-sonnet", label: "Claude 4 Sonnet" },
+          { id: "gemini-pro", label: "Gemini 2.5 Pro (2025)" },
+        ];
+      } else {
+        // Use single selected model
+        modelsToUse = [{ id: aiModel, label: modelLabels[aiModel] || aiModel }];
       }
 
-      // Set video info - use real data from YouTube API first, then enhance with AI analysis
-      const aiVideoInfo = parsedResult.videoInfo || {};
+      // Call all models in parallel
+      const results = await Promise.all(
+        modelsToUse.map(m => generateTitlesWithModel(m.id, m.label))
+      );
+
+      // Combine all titles from all models
+      let allTitles: GeneratedTitle[] = [];
+      let videoInfoData = null;
+
+      results.forEach(({ parsedResult, modelLabel }, resultIndex) => {
+        // Use video info from first result
+        if (resultIndex === 0 && parsedResult.videoInfo) {
+          videoInfoData = parsedResult.videoInfo;
+        }
+
+        // Add titles with model label
+        if (parsedResult.titles && Array.isArray(parsedResult.titles)) {
+          const titlesWithModel = parsedResult.titles.map((t: any, i: number) => ({
+            ...t,
+            id: `title-${resultIndex}-${i}`,
+            model: modelLabel,
+          }));
+          allTitles = [...allTitles, ...titlesWithModel];
+        }
+      });
+
+      // Find best title across all
+      if (allTitles.length > 0) {
+        const bestIndex = allTitles.reduce((best, curr, idx) => {
+          const currScore = (curr.quality || 0) + (curr.impact || 0);
+          const bestScore = (allTitles[best].quality || 0) + (allTitles[best].impact || 0);
+          return currScore > bestScore ? idx : best;
+        }, 0);
+        allTitles[bestIndex].isBest = true;
+      }
+
+      // Set video info
+      const aiVideoInfo = videoInfoData || {};
       setVideoInfo({
         title: realVideoData?.title || aiVideoInfo.title || "Título do Vídeo",
         thumbnail: realVideoData?.thumbnail || "",
@@ -213,26 +275,21 @@ const VideoAnalyzer = () => {
       });
 
       // Set generated titles
-      if (parsedResult.titles && Array.isArray(parsedResult.titles)) {
-        const titlesWithIds = parsedResult.titles.map((t: any, i: number) => ({
-          ...t,
-          id: `title-${i}`,
-          model: modelLabels[aiModel] || aiModel,
-        }));
-        setGeneratedTitles(titlesWithIds);
-      }
+      setGeneratedTitles(allTitles);
 
       // Save to database
-      await supabase.from("video_analyses").insert({
-        user_id: user?.id,
-        video_url: videoUrl,
-        video_title: realVideoData?.title || parsedResult.videoInfo?.title || "Análise de Vídeo",
-        thumbnail_url: realVideoData?.thumbnail,
-        views: realVideoData?.views,
-        likes: realVideoData?.likes,
-        comments: realVideoData?.comments,
-        analysis_data: parsedResult,
-      });
+      if (user?.id) {
+        await supabase.from("video_analyses").insert({
+          user_id: user.id,
+          video_url: videoUrl,
+          video_title: realVideoData?.title || aiVideoInfo?.title || "Análise de Vídeo",
+          thumbnail_url: realVideoData?.thumbnail,
+          views: realVideoData?.views,
+          likes: realVideoData?.likes,
+          comments: realVideoData?.comments,
+          analysis_data: JSON.parse(JSON.stringify({ videoInfo: aiVideoInfo, titles: allTitles })),
+        });
+      }
 
       toast({
         title: "Análise concluída!",
@@ -486,12 +543,15 @@ const VideoAnalyzer = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="compare">Comparar (Multimodal)</SelectItem>
-                      <SelectItem value="gemini">Gemini 2.5 Flash</SelectItem>
+                      <SelectItem value="multimodal">Comparar (Multimodal)</SelectItem>
+                      <SelectItem value="gpt-4o">GPT-4o (2025)</SelectItem>
+                      <SelectItem value="claude-4-sonnet">Claude 4 Sonnet</SelectItem>
                       <SelectItem value="gemini-pro">Gemini 2.5 Pro (2025)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-sm text-muted-foreground mt-2">Modo único: 5 títulos</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {aiModel === "multimodal" ? "Multimodal: 15 títulos (5 de cada modelo)" : "Modo único: 5 títulos"}
+                  </p>
                 </div>
 
                 {/* Language */}
