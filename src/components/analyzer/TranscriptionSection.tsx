@@ -13,6 +13,14 @@ import {
   Bot,
   Zap,
   Download,
+  Eye,
+  ThumbsUp,
+  MessageSquare,
+  Calendar,
+  Clock,
+  Tag,
+  User,
+  AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +38,19 @@ interface ScriptFormulaAnalysis {
   gatilhosMentais: string[];
 }
 
+interface VideoDetails {
+  title: string;
+  description: string;
+  channelTitle: string;
+  views: number;
+  likes: number;
+  comments: number;
+  daysAgo: number;
+  thumbnail: string;
+  tags: string[];
+  duration: number;
+}
+
 interface TranscriptionSectionProps {
   onCreateAgent: (formula: ScriptFormulaAnalysis | null, transcription: string) => void;
   videoUrl?: string;
@@ -40,12 +61,29 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
   const [analyzing, setAnalyzing] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [formulaAnalysis, setFormulaAnalysis] = useState<ScriptFormulaAnalysis | null>(null);
+  const [videoDetails, setVideoDetails] = useState<VideoDetails | null>(null);
+  const [noSubtitlesMessage, setNoSubtitlesMessage] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+    return num.toString();
+  };
+
+  const formatDuration = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hours > 0) return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
       setTranscription(text);
+      setNoSubtitlesMessage(null);
       toast({ title: "Colado!", description: "Transcrição colada da área de transferência" });
     } catch {
       toast({
@@ -65,6 +103,8 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
   const handleClearField = () => {
     setTranscription("");
     setFormulaAnalysis(null);
+    setVideoDetails(null);
+    setNoSubtitlesMessage(null);
   };
 
   const handleAnalyzeFormula = async () => {
@@ -132,6 +172,8 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
     }
 
     setTranscribing(true);
+    setNoSubtitlesMessage(null);
+    
     try {
       const response = await supabase.functions.invoke("transcribe-video", {
         body: { videoUrl },
@@ -139,14 +181,31 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
 
       if (response.error) throw response.error;
 
-      if (response.data.transcription) {
+      // Store video details if available
+      if (response.data.videoDetails) {
+        setVideoDetails(response.data.videoDetails);
+      }
+
+      if (response.data.transcription && response.data.transcription.length > 0) {
         setTranscription(response.data.transcription);
         toast({
           title: "Transcrição concluída!",
           description: `Idioma detectado: ${response.data.language || "auto"}`,
         });
+      } else if (response.data.message) {
+        setNoSubtitlesMessage(response.data.message);
+        toast({
+          title: "Dados do vídeo carregados",
+          description: response.data.message,
+          variant: "destructive",
+        });
       } else {
-        throw new Error("Nenhuma transcrição retornada");
+        setNoSubtitlesMessage("Este vídeo não possui legendas disponíveis. Cole a transcrição manualmente.");
+        toast({
+          title: "Sem legendas",
+          description: "Este vídeo não possui legendas. Cole a transcrição manualmente.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error transcribing:", error);
@@ -169,6 +228,7 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
       if (file) {
         const text = await file.text();
         setTranscription(text);
+        setNoSubtitlesMessage(null);
         toast({
           title: "Transcrição carregada!",
           description: `Arquivo ${file.name} carregado`,
@@ -180,6 +240,73 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
 
   return (
     <div className="space-y-6">
+      {/* Video Details Card */}
+      {videoDetails && (
+        <Card className="p-6 border-primary/30 bg-card">
+          <div className="flex items-start gap-4">
+            {videoDetails.thumbnail && (
+              <img 
+                src={videoDetails.thumbnail} 
+                alt={videoDetails.title}
+                className="w-48 h-28 object-cover rounded-lg border border-border"
+              />
+            )}
+            <div className="flex-1 space-y-3">
+              <h3 className="text-lg font-bold text-foreground line-clamp-2">{videoDetails.title}</h3>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <User className="w-4 h-4" />
+                <span>{videoDetails.channelTitle}</span>
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Eye className="w-4 h-4 text-primary" />
+                  <span className="text-foreground font-medium">{formatNumber(videoDetails.views)}</span> views
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <ThumbsUp className="w-4 h-4 text-primary" />
+                  <span className="text-foreground font-medium">{formatNumber(videoDetails.likes)}</span> likes
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  <span className="text-foreground font-medium">{formatNumber(videoDetails.comments)}</span> comentários
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  <span className="text-foreground font-medium">{videoDetails.daysAgo}</span> dias atrás
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Clock className="w-4 h-4 text-primary" />
+                  <span className="text-foreground font-medium">{formatDuration(videoDetails.duration)}</span>
+                </div>
+              </div>
+              {videoDetails.tags && videoDetails.tags.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Tag className="w-4 h-4 text-primary" />
+                  {videoDetails.tags.slice(0, 6).map((tag, i) => (
+                    <Badge key={i} variant="outline" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                  {videoDetails.tags.length > 6 && (
+                    <span className="text-xs text-muted-foreground">+{videoDetails.tags.length - 6} mais</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* No Subtitles Warning */}
+      {noSubtitlesMessage && (
+        <Card className="p-4 border-destructive/50 bg-destructive/10">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-destructive" />
+            <p className="text-sm text-destructive">{noSubtitlesMessage}</p>
+          </div>
+        </Card>
+      )}
+
       {/* Transcription Card */}
       <Card className="p-6 border-border/50">
         <div className="flex items-center justify-between mb-4">
@@ -192,52 +319,45 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
               <Zap className="w-3 h-3 mr-1" />
               Custo estimado: 10 créditos
             </Badge>
-            <span className="text-sm text-muted-foreground">
-              Cole o roteiro manualmente ou clique em &quot;Carregar Transcrição&quot;
-            </span>
           </div>
         </div>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Assim que o campo estiver preenchido, o botão &quot;Criar Agente de Roteiro&quot; será liberado automaticamente.
+          Cole o roteiro manualmente ou clique em &quot;Buscar Transcrição&quot; para carregar automaticamente.
         </p>
 
         <Textarea
-          placeholder="Cole aqui a transcrição completa do vídeo ou aguarde o carregamento automático."
+          placeholder="Cole aqui a transcrição completa do vídeo ou clique em 'Buscar Transcrição' para carregar automaticamente."
           value={transcription}
           onChange={(e) => setTranscription(e.target.value)}
           className="min-h-[200px] bg-secondary border-border resize-y mb-4"
         />
 
-        <p className="text-sm text-muted-foreground mb-4">
-          Você pode colar manualmente o roteiro completo, colar direto da área de transferência ou utilizar o botão de transcrição automática após analisar o vídeo.
-        </p>
-
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={handlePasteFromClipboard}>
-            <Clipboard className="w-4 h-4 mr-2" />
-            Colar do Clipboard
-          </Button>
-          <Button variant="outline" onClick={handleCopyTranscription} disabled={!transcription}>
-            <Copy className="w-4 h-4 mr-2" />
-            Copiar Transcrição
-          </Button>
-          <Button variant="outline" onClick={handleClearField}>
-            <Trash2 className="w-4 h-4 mr-2" />
-            Limpar Campo
-          </Button>
           <Button
             variant="outline"
             onClick={handleAutoTranscribe}
             disabled={transcribing || !videoUrl}
-            className="border-primary text-primary"
+            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
           >
             {transcribing ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
               <Download className="w-4 h-4 mr-2" />
             )}
-            Transcrição Automática
+            Buscar Transcrição
+          </Button>
+          <Button variant="outline" onClick={handlePasteFromClipboard}>
+            <Clipboard className="w-4 h-4 mr-2" />
+            Colar do Clipboard
+          </Button>
+          <Button variant="outline" onClick={handleCopyTranscription} disabled={!transcription}>
+            <Copy className="w-4 h-4 mr-2" />
+            Copiar
+          </Button>
+          <Button variant="outline" onClick={handleClearField}>
+            <Trash2 className="w-4 h-4 mr-2" />
+            Limpar
           </Button>
           <Button 
             onClick={handleAnalyzeFormula}

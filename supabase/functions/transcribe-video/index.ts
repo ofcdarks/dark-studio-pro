@@ -78,7 +78,7 @@ async function fetchVideoDetailsFromYouTube(videoId: string, apiKey: string) {
 }
 
 // Fetch YouTube page and extract caption tracks
-async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription: string; language: string }> {
+async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription: string; language: string; hasSubtitles: boolean }> {
   console.log("Fetching YouTube page for captions:", videoId);
   
   const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
@@ -89,7 +89,8 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription:
   });
   
   if (!response.ok) {
-    throw new Error(`Failed to fetch YouTube page: ${response.status}`);
+    console.error("Failed to fetch YouTube page:", response.status);
+    return { transcription: "", language: "none", hasSubtitles: false };
   }
   
   const html = await response.text();
@@ -97,21 +98,23 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription:
   // Extract captions data from ytInitialPlayerResponse
   const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
   if (!playerResponseMatch) {
-    throw new Error("Could not find player response in YouTube page");
+    console.log("Could not find player response in YouTube page");
+    return { transcription: "", language: "none", hasSubtitles: false };
   }
   
   let playerResponse;
   try {
     playerResponse = JSON.parse(playerResponseMatch[1]);
   } catch (e) {
-    throw new Error("Failed to parse player response JSON");
+    console.error("Failed to parse player response JSON");
+    return { transcription: "", language: "none", hasSubtitles: false };
   }
   
   const captions = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
   
   if (!captions || captions.length === 0) {
     console.log("No captions available for this video");
-    return { transcription: "", language: "none" };
+    return { transcription: "", language: "none", hasSubtitles: false };
   }
   
   console.log("Found caption tracks:", captions.length);
@@ -132,7 +135,8 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription:
   const captionResponse = await fetch(captionUrl);
   
   if (!captionResponse.ok) {
-    throw new Error(`Failed to fetch captions: ${captionResponse.status}`);
+    console.error("Failed to fetch captions:", captionResponse.status);
+    return { transcription: "", language: selectedCaption.languageCode, hasSubtitles: false };
   }
   
   const captionXml = await captionResponse.text();
@@ -163,7 +167,8 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription:
   
   return {
     transcription,
-    language: selectedCaption.languageCode
+    language: selectedCaption.languageCode,
+    hasSubtitles: true
   };
 }
 
@@ -177,7 +182,7 @@ async function getUserYouTubeApiKey(userId: string): Promise<string | null> {
     .from('user_api_settings')
     .select('youtube_api_key')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
   
   if (error || !data?.youtube_api_key) {
     return null;
@@ -236,19 +241,22 @@ serve(async (req) => {
           console.error("YouTube API error, falling back to scraping:", apiError);
         }
       } else {
-        console.log("No YouTube API key found for user, using scraping method");
+        console.log("No YouTube API key found for user");
       }
     }
 
     // Fetch transcription
-    const { transcription, language } = await fetchYouTubeTranscript(videoId);
+    const { transcription, language, hasSubtitles } = await fetchYouTubeTranscript(videoId);
 
+    // Always return video details even if there's no transcription
     return new Response(
       JSON.stringify({
-        transcription,
+        transcription: transcription || "",
         language,
         videoId,
         videoDetails,
+        hasSubtitles,
+        message: hasSubtitles ? null : "Este vídeo não possui legendas disponíveis. Cole a transcrição manualmente.",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
