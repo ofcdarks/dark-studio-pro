@@ -77,7 +77,7 @@ async function fetchVideoDetailsFromYouTube(videoId: string, apiKey: string) {
   };
 }
 
-// Fetch YouTube page and extract caption tracks
+// Fetch YouTube page and extract caption tracks (YouTube native captions)
 async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription: string; language: string; hasSubtitles: boolean }> {
   console.log("Fetching YouTube page for captions:", videoId);
   
@@ -241,11 +241,66 @@ serve(async (req) => {
           console.error("YouTube API error, falling back to scraping:", apiError);
         }
       } else {
-        console.log("No YouTube API key found for user");
+        console.log("No YouTube API key found for user, trying to scrape video details");
       }
     }
 
-    // Fetch transcription
+    // If no video details from API, try to scrape basic info from page
+    if (!videoDetails) {
+      try {
+        const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+          headers: {
+            "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          }
+        });
+        
+        if (response.ok) {
+          const html = await response.text();
+          
+          // Extract title
+          const titleMatch = html.match(/<title>([^<]*)<\/title>/);
+          let title = titleMatch ? titleMatch[1].replace(' - YouTube', '').trim() : 'Título não disponível';
+          
+          // Extract thumbnail
+          const thumbnailMatch = html.match(/"thumbnail":\{"thumbnails":\[\{"url":"([^"]+)"/);
+          const thumbnail = thumbnailMatch 
+            ? thumbnailMatch[1].replace(/\\u0026/g, '&')
+            : `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+          
+          // Extract channel
+          const channelMatch = html.match(/"ownerChannelName":"([^"]+)"/);
+          const channelTitle = channelMatch ? channelMatch[1] : 'Canal desconhecido';
+          
+          // Extract view count
+          const viewsMatch = html.match(/"viewCount":"(\d+)"/);
+          const views = viewsMatch ? parseInt(viewsMatch[1]) : 0;
+          
+          videoDetails = {
+            title,
+            description: "",
+            channelTitle,
+            channelId: "",
+            publishedAt: "",
+            daysAgo: 0,
+            thumbnail,
+            tags: [],
+            categoryId: "",
+            views,
+            likes: 0,
+            comments: 0,
+            duration: 0,
+            durationFormatted: "",
+          };
+          
+          console.log("Video details scraped successfully:", videoDetails.title);
+        }
+      } catch (scrapeError) {
+        console.error("Failed to scrape video details:", scrapeError);
+      }
+    }
+
+    // Fetch transcription from YouTube captions
     const { transcription, language, hasSubtitles } = await fetchYouTubeTranscript(videoId);
 
     // Always return video details even if there's no transcription
