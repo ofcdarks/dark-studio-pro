@@ -17,6 +17,8 @@ import {
   Star,
   Loader2,
   FileText,
+  FolderInput,
+  FolderOpen,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +26,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { FolderSelect } from "@/components/folders/FolderSelect";
+import { MoveToFolderDialog } from "@/components/folders/MoveToFolderDialog";
 
 interface AnalyzedVideo {
   id: string;
@@ -37,9 +41,10 @@ interface AnalyzedVideo {
   detected_niche: string | null;
   detected_subniche: string | null;
   detected_microniche: string | null;
-  analysis_data_json: any;
+  analysis_data_json: unknown;
   analyzed_at: string | null;
   created_at: string | null;
+  folder_id: string | null;
 }
 
 interface GeneratedTitle {
@@ -54,23 +59,57 @@ interface GeneratedTitle {
   created_at: string | null;
 }
 
+interface Folder {
+  id: string;
+  name: string;
+}
+
 export default function AnalysisHistory() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [itemToMove, setItemToMove] = useState<{
+    id: string;
+    type: "analyzed_videos" | "generated_titles";
+    folderId: string | null;
+    title: string;
+  } | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch analyzed videos
-  const { data: analyzedVideos, isLoading: loadingVideos } = useQuery({
-    queryKey: ["analyzed-videos", user?.id],
+  // Fetch folders for display names
+  const { data: folders } = useQuery({
+    queryKey: ["folders", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
+        .from("folders")
+        .select("id, name")
+        .eq("user_id", user.id);
+      if (error) throw error;
+      return data as Folder[];
+    },
+    enabled: !!user,
+  });
+
+  // Fetch analyzed videos
+  const { data: analyzedVideos, isLoading: loadingVideos } = useQuery({
+    queryKey: ["analyzed-videos", user?.id, selectedFolderId],
+    queryFn: async () => {
+      if (!user) return [];
+      let query = supabase
         .from("analyzed_videos")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
+
+      if (selectedFolderId) {
+        query = query.eq("folder_id", selectedFolderId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as AnalyzedVideo[];
     },
@@ -130,6 +169,22 @@ export default function AnalysisHistory() {
     toast({ title: "Copiado!", description: "Título copiado para a área de transferência" });
   };
 
+  const openMoveDialog = (
+    id: string,
+    type: "analyzed_videos" | "generated_titles",
+    folderId: string | null,
+    title: string
+  ) => {
+    setItemToMove({ id, type, folderId, title });
+    setMoveDialogOpen(true);
+  };
+
+  const getFolderName = (folderId: string | null) => {
+    if (!folderId) return null;
+    const folder = folders?.find((f) => f.id === folderId);
+    return folder?.name || null;
+  };
+
   const filteredVideos = analyzedVideos?.filter(
     (video) =>
       video.original_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -169,15 +224,25 @@ export default function AnalysisHistory() {
             </p>
           </div>
 
-          {/* Search */}
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por título, nicho ou fórmula..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-secondary border-border h-12"
-            />
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por título, nicho ou fórmula..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-secondary border-border h-12"
+              />
+            </div>
+            <div className="w-full sm:w-64">
+              <FolderSelect
+                value={selectedFolderId}
+                onChange={setSelectedFolderId}
+                placeholder="Filtrar por pasta"
+                showCreateButton={false}
+              />
+            </div>
           </div>
 
           <Tabs defaultValue="videos" className="space-y-6">
@@ -201,7 +266,9 @@ export default function AnalysisHistory() {
                   <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground text-lg">Nenhuma análise encontrada</p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Analise vídeos virais para ver o histórico aqui
+                    {selectedFolderId
+                      ? "Nenhum vídeo nesta pasta"
+                      : "Analise vídeos virais para ver o histórico aqui"}
                   </p>
                 </Card>
               ) : (
@@ -233,7 +300,22 @@ export default function AnalysisHistory() {
                                 </p>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  openMoveDialog(
+                                    video.id,
+                                    "analyzed_videos",
+                                    video.folder_id,
+                                    video.translated_title || video.original_title || ""
+                                  )
+                                }
+                                title="Mover para pasta"
+                              >
+                                <FolderInput className="w-4 h-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -254,7 +336,7 @@ export default function AnalysisHistory() {
                             </div>
                           </div>
 
-                          {/* Stats */}
+                          {/* Stats & Folder */}
                           <div className="flex flex-wrap items-center gap-4 mt-3">
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                               <Eye className="w-4 h-4" />
@@ -273,6 +355,12 @@ export default function AnalysisHistory() {
                             )}
                             {video.detected_subniche && (
                               <Badge variant="outline">{video.detected_subniche}</Badge>
+                            )}
+                            {video.folder_id && getFolderName(video.folder_id) && (
+                              <Badge variant="outline" className="border-primary/50 text-primary">
+                                <FolderOpen className="w-3 h-3 mr-1" />
+                                {getFolderName(video.folder_id)}
+                              </Badge>
                             )}
                           </div>
 
@@ -369,6 +457,18 @@ export default function AnalysisHistory() {
           </Tabs>
         </div>
       </div>
+
+      {/* Move to Folder Dialog */}
+      {itemToMove && (
+        <MoveToFolderDialog
+          open={moveDialogOpen}
+          onOpenChange={setMoveDialogOpen}
+          itemId={itemToMove.id}
+          itemType={itemToMove.type}
+          currentFolderId={itemToMove.folderId}
+          itemTitle={itemToMove.title}
+        />
+      )}
     </MainLayout>
   );
 }
