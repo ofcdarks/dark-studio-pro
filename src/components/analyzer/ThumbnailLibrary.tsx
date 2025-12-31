@@ -835,72 +835,81 @@ export function ThumbnailLibrary({
             O sistema gerará 4 variações da thumbnail com headline, SEO e tags prontos
           </p>
 
-          {/* Generated Thumbnails Preview Grid */}
+          {/* Generated Thumbnails Grid - Layout igual à referência */}
           {generatedThumbnails.length > 0 && (
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium text-foreground">Thumbnails Geradas</h4>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setPreviewOpen(true);
-                    setActivePreviewIndex(0);
-                  }}
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Ver Todas
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="mt-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {generatedThumbnails.map((thumb, index) => (
-                  <div key={index} className="relative group">
-                    <div className="aspect-video rounded-lg overflow-hidden bg-secondary border border-border">
-                      <img
-                        src={thumb.imageBase64}
-                        alt={`Thumbnail ${index + 1}`}
-                        className="w-full h-full object-cover cursor-pointer"
-                        onClick={() => {
-                          setActivePreviewIndex(index);
-                          setPreviewOpen(true);
-                        }}
-                      />
+                  <Card key={index} className="border-border/50 overflow-hidden">
+                    {/* Header com número da variação */}
+                    <div className="px-4 py-2 border-b border-border/50 bg-secondary/20">
+                      <span className="text-sm font-medium text-foreground">Variação {index + 1}</span>
                     </div>
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 rounded-lg">
-                      <Badge className="bg-primary text-primary-foreground text-xs">
-                        {thumb.style}
-                      </Badge>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => handleDownloadThumbnail(thumb.imageBase64, index)}
-                      >
-                        <Download className="w-3 h-3 mr-1" />
-                        Baixar Imagem
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={savedToLibrary.includes(index) ? "default" : "outline"}
-                        className={savedToLibrary.includes(index) ? "bg-green-600 hover:bg-green-700" : ""}
-                        onClick={() => handleSaveToLibrary(thumb, index)}
-                        disabled={savingToLibrary === index || savedToLibrary.includes(index)}
-                      >
-                        {savingToLibrary === index ? (
-                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                        ) : savedToLibrary.includes(index) ? (
-                          <Check className="w-3 h-3 mr-1" />
-                        ) : (
-                          <Save className="w-3 h-3 mr-1" />
-                        )}
-                        {savedToLibrary.includes(index) ? "Salvo" : "Salvar"}
-                      </Button>
+                    
+                    {/* Imagem da Thumbnail */}
+                    <div className="p-4">
+                      <div className="aspect-video rounded-lg overflow-hidden bg-secondary border border-border mb-4">
+                        <img
+                          src={thumb.imageBase64}
+                          alt={`Thumbnail ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* Botões de ação */}
+                      <div className="flex gap-2 mb-4">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleDownloadThumbnail(thumb.imageBase64, index)}
+                          className="flex-1"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Baixar Imagem
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={savedToLibrary.includes(index) ? "default" : "default"}
+                          className={savedToLibrary.includes(index) ? "bg-success hover:bg-success/90 flex-1" : "bg-success hover:bg-success/90 flex-1"}
+                          onClick={() => handleSaveToLibrary(thumb, index)}
+                          disabled={savingToLibrary === index || savedToLibrary.includes(index)}
+                        >
+                          {savingToLibrary === index ? (
+                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          ) : savedToLibrary.includes(index) ? (
+                            <Check className="w-3 h-3 mr-1" />
+                          ) : (
+                            <Save className="w-3 h-3 mr-1" />
+                          )}
+                          {savedToLibrary.includes(index) ? "Salvo!" : "Salvar!"}
+                        </Button>
+                      </div>
+                      
+                      {/* Headline de Impacto */}
+                      {thumb.headline && (
+                        <div className="mb-4">
+                          <p className="text-sm font-semibold text-primary mb-1">★ Headline de Impacto</p>
+                          <p className="text-foreground font-medium">{thumb.headline}</p>
+                        </div>
+                      )}
+                      
+                      {/* Descrição SEO */}
+                      <div className="mb-4">
+                        <p className="text-sm font-semibold text-primary mb-1">★ Descrição SEO</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {thumb.seoDescription || "Descrição SEO otimizada para o vídeo..."}
+                        </p>
+                      </div>
+                      
+                      {/* Tags Principais */}
+                      <div>
+                        <p className="text-sm font-semibold text-primary mb-2">★ Tags Principais</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {Array.isArray(thumb.seoTags) ? thumb.seoTags.join(", ") : (thumb.seoTags || "Tags otimizadas para SEO...")}
+                        </p>
+                      </div>
                     </div>
-                    {thumb.headline && (
-                      <p className="text-xs text-muted-foreground mt-1 truncate text-center font-medium">
-                        "{thumb.headline}"
-                      </p>
-                    )}
-                  </div>
+                  </Card>
                 ))}
               </div>
             </div>
