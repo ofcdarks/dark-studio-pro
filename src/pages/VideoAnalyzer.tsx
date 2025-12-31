@@ -819,10 +819,25 @@ const VideoAnalyzer = () => {
                         className="mt-1 data-[state=checked]:bg-success data-[state=checked]:border-success"
                       />
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="outline" className="text-xs">
+                        <div className="flex items-start gap-2 mb-2 flex-wrap">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs shrink-0 ${
+                              title.model.includes("GPT") 
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30" 
+                                : title.model.includes("Claude") 
+                                  ? "bg-orange-500/10 text-orange-500 border-orange-500/30"
+                                  : "bg-blue-500/10 text-blue-500 border-blue-500/30"
+                            }`}
+                          >
                             {title.model}
                           </Badge>
+                          {title.isBest && (
+                            <Badge className="bg-success/20 text-success border-success/30 text-xs shrink-0">
+                              <Sparkles className="w-3 h-3 mr-1" />
+                              Melhor título
+                            </Badge>
+                          )}
                           <span className="text-foreground font-semibold">{title.title}</span>
                         </div>
 
@@ -863,12 +878,6 @@ const VideoAnalyzer = () => {
                           <Sparkles className="w-3 h-3 mr-1" />
                           Impacto {title.impact}/10
                         </Badge>
-                        {title.isBest && (
-                          <Badge variant="outline" className="border-foreground text-foreground">
-                            <Sparkles className="w-3 h-3 mr-1" />
-                            Melhor Título
-                          </Badge>
-                        )}
                         <Button
                           variant="ghost"
                           size="icon"
