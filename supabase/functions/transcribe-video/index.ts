@@ -20,66 +20,169 @@ function extractVideoId(url: string): string | null {
   return null;
 }
 
-// Fetch video details from YouTube Data API
-async function fetchVideoDetailsFromYouTube(videoId: string, apiKey: string) {
-  console.log("Fetching video details from YouTube API for:", videoId);
+// Fetch subtitles using DownSub API
+async function fetchFromDownSub(videoUrl: string): Promise<{
+  transcription: string;
+  language: string;
+  hasSubtitles: boolean;
+  videoDetails: any;
+}> {
+  const downsubApiKey = Deno.env.get("DOWNSUB_API_KEY");
   
-  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${videoId}&key=${apiKey}`;
+  if (!downsubApiKey) {
+    console.log("DOWNSUB_API_KEY not configured");
+    throw new Error("DownSub API key not configured");
+  }
   
-  const response = await fetch(url);
+  console.log("Fetching subtitles from DownSub API for:", videoUrl);
+  
+  const response = await fetch("https://api.downsub.com/download", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${downsubApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ url: videoUrl }),
+  });
   
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("YouTube API error:", response.status, errorText);
-    throw new Error(`YouTube API error: ${response.status}`);
+    console.error("DownSub API error:", response.status, errorText);
+    
+    if (response.status === 401) {
+      throw new Error("DownSub API: Chave API inválida");
+    } else if (response.status === 403) {
+      throw new Error("DownSub API: Limite de créditos excedido");
+    } else if (response.status === 429) {
+      throw new Error("DownSub API: Muitas requisições, tente novamente mais tarde");
+    }
+    
+    throw new Error(`DownSub API error: ${response.status}`);
   }
   
   const data = await response.json();
+  console.log("DownSub response state:", data.data?.state);
   
-  if (!data.items || data.items.length === 0) {
-    throw new Error("Video not found");
+  if (data.status !== "success" || !data.data) {
+    throw new Error("DownSub API returned invalid response");
   }
   
-  const video = data.items[0];
-  const snippet = video.snippet;
-  const statistics = video.statistics;
-  const contentDetails = video.contentDetails;
+  const result = data.data;
   
-  // Parse duration (ISO 8601 format: PT1H2M3S)
-  const durationMatch = contentDetails.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  let durationSeconds = 0;
-  if (durationMatch) {
-    durationSeconds += parseInt(durationMatch[1] || '0') * 3600;
-    durationSeconds += parseInt(durationMatch[2] || '0') * 60;
-    durationSeconds += parseInt(durationMatch[3] || '0');
+  // Extract video details from DownSub response
+  const videoDetails = {
+    title: result.title || "",
+    description: result.metadata?.description || "",
+    channelTitle: result.metadata?.author || "",
+    channelId: result.metadata?.channelId || "",
+    publishedAt: result.metadata?.publishDate || "",
+    daysAgo: result.metadata?.publishDate 
+      ? Math.floor((Date.now() - new Date(result.metadata.publishDate).getTime()) / (1000 * 60 * 60 * 24))
+      : 0,
+    thumbnail: result.thumbnail || result.metadata?.thumbnail || "",
+    tags: result.metadata?.keywords || [],
+    categoryId: result.metadata?.category || "",
+    views: parseInt(result.metadata?.viewCount || "0"),
+    likes: 0,
+    comments: 0,
+    duration: parseInt(result.duration || "0"),
+    durationFormatted: "",
+  };
+  
+  console.log("Video details from DownSub:", videoDetails.title);
+  
+  // Check if subtitles are available
+  if (result.state !== "subtitles_found" || !result.subtitles || result.subtitles.length === 0) {
+    console.log("No subtitles found in DownSub response");
+    return {
+      transcription: "",
+      language: "none",
+      hasSubtitles: false,
+      videoDetails,
+    };
   }
   
-  // Calculate days since published
-  const publishedAt = new Date(snippet.publishedAt);
-  const now = new Date();
-  const daysAgo = Math.floor((now.getTime() - publishedAt.getTime()) / (1000 * 60 * 60 * 24));
+  console.log("Found subtitles:", result.subtitles.length, "languages");
+  
+  // Prefer Portuguese, then English, then first available
+  let selectedSubtitle = result.subtitles.find((s: any) => 
+    s.language?.toLowerCase().includes("portuguese") || 
+    s.language?.toLowerCase().includes("português")
+  );
+  
+  if (!selectedSubtitle) {
+    selectedSubtitle = result.subtitles.find((s: any) => 
+      s.language?.toLowerCase().includes("english") ||
+      s.language?.toLowerCase().includes("inglês")
+    );
+  }
+  
+  if (!selectedSubtitle) {
+    selectedSubtitle = result.subtitles[0];
+  }
+  
+  console.log("Selected subtitle language:", selectedSubtitle.language);
+  
+  // Find the TXT format (plain text) for easy reading
+  const txtFormat = selectedSubtitle.formats?.find((f: any) => f.format === "txt");
+  const srtFormat = selectedSubtitle.formats?.find((f: any) => f.format === "srt");
+  
+  const subtitleUrl = txtFormat?.url || srtFormat?.url;
+  
+  if (!subtitleUrl) {
+    console.log("No subtitle URL found in formats");
+    return {
+      transcription: "",
+      language: selectedSubtitle.language,
+      hasSubtitles: false,
+      videoDetails,
+    };
+  }
+  
+  // Fetch the subtitle content
+  console.log("Fetching subtitle content from:", subtitleUrl);
+  const subtitleResponse = await fetch(subtitleUrl);
+  
+  if (!subtitleResponse.ok) {
+    console.error("Failed to fetch subtitle content:", subtitleResponse.status);
+    return {
+      transcription: "",
+      language: selectedSubtitle.language,
+      hasSubtitles: false,
+      videoDetails,
+    };
+  }
+  
+  let transcription = await subtitleResponse.text();
+  
+  // If it's SRT format, clean it up (remove timestamps and numbers)
+  if (srtFormat && !txtFormat) {
+    transcription = transcription
+      .replace(/^\d+\s*$/gm, '') // Remove sequence numbers
+      .replace(/\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3}/g, '') // Remove timestamps
+      .replace(/\n+/g, ' ') // Replace multiple newlines with space
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+  }
+  
+  console.log("Transcription extracted, length:", transcription.length);
   
   return {
-    title: snippet.title,
-    description: snippet.description,
-    channelTitle: snippet.channelTitle,
-    channelId: snippet.channelId,
-    publishedAt: snippet.publishedAt,
-    daysAgo,
-    thumbnail: snippet.thumbnails?.maxres?.url || snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url,
-    tags: snippet.tags || [],
-    categoryId: snippet.categoryId,
-    views: parseInt(statistics.viewCount || '0'),
-    likes: parseInt(statistics.likeCount || '0'),
-    comments: parseInt(statistics.commentCount || '0'),
-    duration: durationSeconds,
-    durationFormatted: contentDetails.duration,
+    transcription,
+    language: selectedSubtitle.language,
+    hasSubtitles: true,
+    videoDetails,
   };
 }
 
-// Fetch YouTube page and extract caption tracks (YouTube native captions)
-async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription: string; language: string; hasSubtitles: boolean }> {
-  console.log("Fetching YouTube page for captions:", videoId);
+// Fallback: Fetch from YouTube directly
+async function fetchYouTubeTranscriptFallback(videoId: string): Promise<{ 
+  transcription: string; 
+  language: string; 
+  hasSubtitles: boolean;
+  videoDetails: any;
+}> {
+  console.log("Fallback: Fetching from YouTube directly for:", videoId);
   
   const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
     headers: {
@@ -90,16 +193,48 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription:
   
   if (!response.ok) {
     console.error("Failed to fetch YouTube page:", response.status);
-    return { transcription: "", language: "none", hasSubtitles: false };
+    return { transcription: "", language: "none", hasSubtitles: false, videoDetails: null };
   }
   
   const html = await response.text();
+  
+  // Extract basic video details from HTML
+  let videoDetails: any = null;
+  try {
+    const titleMatch = html.match(/<title>([^<]*)<\/title>/);
+    const title = titleMatch ? titleMatch[1].replace(' - YouTube', '').trim() : '';
+    
+    const channelMatch = html.match(/"ownerChannelName":"([^"]+)"/);
+    const channelTitle = channelMatch ? channelMatch[1] : '';
+    
+    const viewsMatch = html.match(/"viewCount":"(\d+)"/);
+    const views = viewsMatch ? parseInt(viewsMatch[1]) : 0;
+    
+    videoDetails = {
+      title,
+      description: "",
+      channelTitle,
+      channelId: "",
+      publishedAt: "",
+      daysAgo: 0,
+      thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+      tags: [],
+      categoryId: "",
+      views,
+      likes: 0,
+      comments: 0,
+      duration: 0,
+      durationFormatted: "",
+    };
+  } catch (e) {
+    console.error("Failed to extract video details:", e);
+  }
   
   // Extract captions data from ytInitialPlayerResponse
   const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
   if (!playerResponseMatch) {
     console.log("Could not find player response in YouTube page");
-    return { transcription: "", language: "none", hasSubtitles: false };
+    return { transcription: "", language: "none", hasSubtitles: false, videoDetails };
   }
   
   let playerResponse;
@@ -107,17 +242,15 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription:
     playerResponse = JSON.parse(playerResponseMatch[1]);
   } catch (e) {
     console.error("Failed to parse player response JSON");
-    return { transcription: "", language: "none", hasSubtitles: false };
+    return { transcription: "", language: "none", hasSubtitles: false, videoDetails };
   }
   
   const captions = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
   
   if (!captions || captions.length === 0) {
     console.log("No captions available for this video");
-    return { transcription: "", language: "none", hasSubtitles: false };
+    return { transcription: "", language: "none", hasSubtitles: false, videoDetails };
   }
-  
-  console.log("Found caption tracks:", captions.length);
   
   // Prefer Portuguese, then English, then first available
   let selectedCaption = captions.find((c: any) => c.languageCode === 'pt' || c.languageCode === 'pt-BR');
@@ -130,23 +263,16 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription:
   
   console.log("Selected caption language:", selectedCaption.languageCode);
   
-  // Fetch the caption content
-  const captionUrl = selectedCaption.baseUrl;
-  const captionResponse = await fetch(captionUrl);
-  
+  const captionResponse = await fetch(selectedCaption.baseUrl);
   if (!captionResponse.ok) {
-    console.error("Failed to fetch captions:", captionResponse.status);
-    return { transcription: "", language: selectedCaption.languageCode, hasSubtitles: false };
+    return { transcription: "", language: selectedCaption.languageCode, hasSubtitles: false, videoDetails };
   }
   
   const captionXml = await captionResponse.text();
-  
-  // Parse XML to extract text
   const textMatches = captionXml.matchAll(/<text[^>]*>([^<]*)<\/text>/g);
   const texts: string[] = [];
   
   for (const match of textMatches) {
-    // Decode HTML entities
     let text = match[1]
       .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')
@@ -157,9 +283,7 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription:
       .replace(/\n/g, ' ')
       .trim();
     
-    if (text) {
-      texts.push(text);
-    }
+    if (text) texts.push(text);
   }
   
   const transcription = texts.join(' ');
@@ -168,27 +292,9 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription:
   return {
     transcription,
     language: selectedCaption.languageCode,
-    hasSubtitles: true
+    hasSubtitles: true,
+    videoDetails
   };
-}
-
-// Get user's YouTube API key from database
-async function getUserYouTubeApiKey(userId: string): Promise<string | null> {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
-  
-  const { data, error } = await supabase
-    .from('user_api_settings')
-    .select('youtube_api_key')
-    .eq('user_id', userId)
-    .maybeSingle();
-  
-  if (error || !data?.youtube_api_key) {
-    return null;
-  }
-  
-  return data.youtube_api_key;
 }
 
 serve(async (req) => {
@@ -212,106 +318,26 @@ serve(async (req) => {
     
     console.log("Extracted video ID:", videoId);
 
-    // Get user ID from auth header
-    const authHeader = req.headers.get('Authorization');
-    let userId: string | null = null;
+    let result;
     
-    if (authHeader) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey, {
-        global: { headers: { Authorization: authHeader } }
-      });
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      userId = user?.id || null;
+    // Try DownSub API first
+    try {
+      result = await fetchFromDownSub(videoUrl);
+      console.log("DownSub fetch successful");
+    } catch (downsubError) {
+      console.error("DownSub failed, using fallback:", downsubError);
+      // Fallback to YouTube scraping
+      result = await fetchYouTubeTranscriptFallback(videoId);
     }
 
-    let videoDetails = null;
-    
-    // Try to fetch video details using YouTube API if user has API key
-    if (userId) {
-      const youtubeApiKey = await getUserYouTubeApiKey(userId);
-      
-      if (youtubeApiKey) {
-        try {
-          videoDetails = await fetchVideoDetailsFromYouTube(videoId, youtubeApiKey);
-          console.log("Video details fetched successfully:", videoDetails.title);
-        } catch (apiError) {
-          console.error("YouTube API error, falling back to scraping:", apiError);
-        }
-      } else {
-        console.log("No YouTube API key found for user, trying to scrape video details");
-      }
-    }
-
-    // If no video details from API, try to scrape basic info from page
-    if (!videoDetails) {
-      try {
-        const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-          headers: {
-            "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-          }
-        });
-        
-        if (response.ok) {
-          const html = await response.text();
-          
-          // Extract title
-          const titleMatch = html.match(/<title>([^<]*)<\/title>/);
-          let title = titleMatch ? titleMatch[1].replace(' - YouTube', '').trim() : 'Título não disponível';
-          
-          // Extract thumbnail
-          const thumbnailMatch = html.match(/"thumbnail":\{"thumbnails":\[\{"url":"([^"]+)"/);
-          const thumbnail = thumbnailMatch 
-            ? thumbnailMatch[1].replace(/\\u0026/g, '&')
-            : `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-          
-          // Extract channel
-          const channelMatch = html.match(/"ownerChannelName":"([^"]+)"/);
-          const channelTitle = channelMatch ? channelMatch[1] : 'Canal desconhecido';
-          
-          // Extract view count
-          const viewsMatch = html.match(/"viewCount":"(\d+)"/);
-          const views = viewsMatch ? parseInt(viewsMatch[1]) : 0;
-          
-          videoDetails = {
-            title,
-            description: "",
-            channelTitle,
-            channelId: "",
-            publishedAt: "",
-            daysAgo: 0,
-            thumbnail,
-            tags: [],
-            categoryId: "",
-            views,
-            likes: 0,
-            comments: 0,
-            duration: 0,
-            durationFormatted: "",
-          };
-          
-          console.log("Video details scraped successfully:", videoDetails.title);
-        }
-      } catch (scrapeError) {
-        console.error("Failed to scrape video details:", scrapeError);
-      }
-    }
-
-    // Fetch transcription from YouTube captions
-    const { transcription, language, hasSubtitles } = await fetchYouTubeTranscript(videoId);
-
-    // Always return video details even if there's no transcription
     return new Response(
       JSON.stringify({
-        transcription: transcription || "",
-        language,
+        transcription: result.transcription || "",
+        language: result.language,
         videoId,
-        videoDetails,
-        hasSubtitles,
-        message: hasSubtitles ? null : "Este vídeo não possui legendas disponíveis. Cole a transcrição manualmente.",
+        videoDetails: result.videoDetails,
+        hasSubtitles: result.hasSubtitles,
+        message: result.hasSubtitles ? null : "Este vídeo não possui legendas disponíveis. Cole a transcrição manualmente.",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
