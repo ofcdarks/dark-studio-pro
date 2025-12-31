@@ -240,6 +240,51 @@ export type Database = {
           },
         ]
       }
+      script_agents: {
+        Row: {
+          based_on_title: string | null
+          created_at: string
+          formula: string | null
+          formula_structure: Json | null
+          id: string
+          mental_triggers: string[] | null
+          name: string
+          niche: string | null
+          sub_niche: string | null
+          times_used: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          based_on_title?: string | null
+          created_at?: string
+          formula?: string | null
+          formula_structure?: Json | null
+          id?: string
+          mental_triggers?: string[] | null
+          name: string
+          niche?: string | null
+          sub_niche?: string | null
+          times_used?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          based_on_title?: string | null
+          created_at?: string
+          formula?: string | null
+          formula_structure?: Json | null
+          id?: string
+          mental_triggers?: string[] | null
+          name?: string
+          niche?: string | null
+          sub_niche?: string | null
+          times_used?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_api_settings: {
         Row: {
           claude_api_key: string | null

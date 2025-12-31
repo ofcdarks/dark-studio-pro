@@ -310,19 +310,19 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
       {/* Transcription Card */}
       <Card className="p-6 border-border/50">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-bold text-foreground">Transcrição Completa do Vídeo</h3>
+          <div className="flex items-center gap-3">
+            <FileText className="w-6 h-6 text-primary" />
+            <h3 className="text-xl font-bold text-foreground">Transcrição Completa do Vídeo</h3>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-primary border-primary">
-              <Zap className="w-3 h-3 mr-1" />
+            <Badge variant="outline" className="text-primary border-primary text-sm px-3 py-1">
+              <Zap className="w-4 h-4 mr-1" />
               Custo estimado: 10 créditos
             </Badge>
           </div>
         </div>
 
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="text-base text-muted-foreground mb-4">
           Cole o roteiro manualmente ou clique em &quot;Buscar Transcrição&quot; para carregar automaticamente.
         </p>
 
@@ -330,61 +330,64 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
           placeholder="Cole aqui a transcrição completa do vídeo ou clique em 'Buscar Transcrição' para carregar automaticamente."
           value={transcription}
           onChange={(e) => setTranscription(e.target.value)}
-          className="min-h-[200px] bg-secondary border-border resize-y mb-4"
+          className="min-h-[200px] bg-secondary border-border resize-y mb-4 text-base"
         />
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           <Button
             variant="outline"
+            size="lg"
             onClick={handleAutoTranscribe}
             disabled={transcribing || !videoUrl}
-            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground h-11 text-base"
           >
             {transcribing ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
             ) : (
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="w-5 h-5 mr-2" />
             )}
             Buscar Transcrição
           </Button>
-          <Button variant="outline" onClick={handlePasteFromClipboard}>
-            <Clipboard className="w-4 h-4 mr-2" />
+          <Button variant="outline" size="lg" onClick={handlePasteFromClipboard} className="h-11 text-base">
+            <Clipboard className="w-5 h-5 mr-2" />
             Colar do Clipboard
           </Button>
-          <Button variant="outline" onClick={handleCopyTranscription} disabled={!transcription}>
-            <Copy className="w-4 h-4 mr-2" />
+          <Button variant="outline" size="lg" onClick={handleCopyTranscription} disabled={!transcription} className="h-11 text-base">
+            <Copy className="w-5 h-5 mr-2" />
             Copiar
           </Button>
-          <Button variant="outline" onClick={handleClearField}>
-            <Trash2 className="w-4 h-4 mr-2" />
+          <Button variant="outline" size="lg" onClick={handleClearField} className="h-11 text-base">
+            <Trash2 className="w-5 h-5 mr-2" />
             Limpar
           </Button>
           <Button 
+            size="lg"
             onClick={handleAnalyzeFormula}
             disabled={analyzing || !transcription.trim()}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 h-11 text-base"
           >
             {analyzing ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
             ) : (
-              <Sparkles className="w-4 h-4 mr-2" />
+              <Sparkles className="w-5 h-5 mr-2" />
             )}
             Analisar Fórmula Viral
           </Button>
           <Button 
+            size="lg"
             onClick={() => onCreateAgent(formulaAnalysis, transcription)}
-            disabled={!transcription.trim()}
-            className="bg-success text-success-foreground hover:bg-success/90"
+            disabled={!formulaAnalysis}
+            className="bg-success text-success-foreground hover:bg-success/90 h-11 text-base"
           >
-            <Bot className="w-4 h-4 mr-2" />
-            Criar Agente de Roteiro
+            <Bot className="w-5 h-5 mr-2" />
+            Criar Agente
           </Button>
         </div>
       </Card>
 
       {/* Formula Analysis Result */}
       <Card className="p-6 border-border/50 bg-secondary/30">
-        <h3 className="text-lg font-bold text-foreground mb-2">Fórmula de Sucesso Detectada</h3>
+        <h3 className="text-xl font-bold text-foreground mb-4">Fórmula de Sucesso Detectada</h3>
         {formulaAnalysis ? (
           <div className="space-y-4">
             <div>
