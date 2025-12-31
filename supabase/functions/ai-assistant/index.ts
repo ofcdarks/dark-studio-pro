@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { type, prompt, videoData, channelUrl, niche, text, voiceId } = await req.json();
+    const { type, prompt, videoData, channelUrl, niche, text, voiceId, language } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -40,6 +40,49 @@ serve(async (req) => {
           "overall_analysis": string
         }`;
         userPrompt = `Analise este vídeo: ${JSON.stringify(videoData)}`;
+        break;
+
+      case "analyze_video_titles":
+        const lang = language === "pt-BR" ? "Português Brasileiro" : language === "es" ? "Espanhol" : "Inglês";
+        systemPrompt = `Você é um especialista em análise de títulos virais do YouTube.
+        Analise a URL do vídeo fornecida e:
+        1. Identifique a fórmula/estrutura do título original
+        2. Gere 5 novos títulos seguindo a mesma fórmula
+        3. Detecte o nicho, subnicho e micro-nicho do vídeo
+        
+        Responda SEMPRE em formato JSON válido com esta estrutura exata:
+        {
+          "videoInfo": {
+            "title": "título original do vídeo",
+            "thumbnail": "",
+            "views": número estimado de views,
+            "daysAgo": dias desde publicação (número),
+            "comments": número estimado de comentários,
+            "estimatedRevenue": { "usd": número, "brl": número },
+            "rpm": { "usd": número, "brl": número },
+            "niche": "nicho principal",
+            "subNiche": "subnicho",
+            "microNiche": "micro-nicho específico"
+          },
+          "titles": [
+            {
+              "title": "Título gerado em ${lang}",
+              "formula": "Descrição da fórmula (ex: Promessa central + benefício + termos em CAIXA ALTA + loop mental)",
+              "formulaSurpresa": "Variação da fórmula (ex: Mistério + revelação + gatilho)",
+              "quality": score de 1-10,
+              "impact": score de 1-10,
+              "isBest": true apenas para o melhor título
+            }
+          ]
+        }
+        
+        IMPORTANTE: 
+        - Gere exatamente 5 títulos
+        - O melhor título deve ter isBest: true
+        - Todos os títulos devem estar em ${lang}
+        - Use CAIXA ALTA estrategicamente nos títulos
+        - Mantenha títulos com no máximo 60 caracteres`;
+        userPrompt = prompt || `Analise este vídeo: ${JSON.stringify(videoData)}`;
         break;
 
       case "generate_script":
