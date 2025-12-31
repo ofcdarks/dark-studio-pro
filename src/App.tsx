@@ -26,6 +26,7 @@ import SRTConverter from "./pages/SRTConverter";
 import SettingsPage from "./pages/SettingsPage";
 import AdminPanel from "./pages/AdminPanel";
 import ThumbnailsPage from "./pages/ThumbnailsPage";
+import SceneGenerator from "./pages/SceneGenerator";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
             <Route path="/thumbnails" element={<ProtectedRoute><ThumbnailsPage /></ProtectedRoute>} />
+            <Route path="/scenes" element={<ProtectedRoute><SceneGenerator /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

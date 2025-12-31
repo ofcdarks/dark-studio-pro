@@ -14,3 +14,15 @@ verify_jwt = false
 
 [functions.generate-thumbnail]
 verify_jwt = false
+
+[functions.analyze-titles]
+verify_jwt = false
+
+[functions.generate-scenes]
+verify_jwt = false
+
+[functions.analyze-transcript]
+verify_jwt = false
+
+[functions.analyze-channel]
+verify_jwt = false

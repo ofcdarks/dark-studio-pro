@@ -50,6 +50,7 @@ const mainNavItems: NavItem[] = [
   { icon: Bot, label: "Agentes Virais", href: "/agents" },
   { icon: Image, label: "Prompts e Imagens", href: "/prompts" },
   { icon: Image, label: "Gerador de Thumbnails", href: "/thumbnails" },
+  { icon: Film, label: "Gerador de Cenas", href: "/scenes" },
   { icon: Mic, label: "Gerador de Voz", href: "/voice" },
   { icon: Images, label: "Imagens em Lote", href: "/batch-images" },
   { icon: Film, label: "Gerador de Vídeo", href: "/video-gen" },
