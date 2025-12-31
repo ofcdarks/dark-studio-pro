@@ -5,6 +5,109 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Extract video ID from YouTube URL
+function extractVideoId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /^([a-zA-Z0-9_-]{11})$/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+// Fetch YouTube page and extract caption tracks
+async function fetchYouTubeTranscript(videoId: string): Promise<{ transcription: string; language: string }> {
+  console.log("Fetching YouTube page for video:", videoId);
+  
+  const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+    headers: {
+      "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch YouTube page: ${response.status}`);
+  }
+  
+  const html = await response.text();
+  
+  // Extract captions data from ytInitialPlayerResponse
+  const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
+  if (!playerResponseMatch) {
+    throw new Error("Could not find player response in YouTube page");
+  }
+  
+  let playerResponse;
+  try {
+    playerResponse = JSON.parse(playerResponseMatch[1]);
+  } catch (e) {
+    throw new Error("Failed to parse player response JSON");
+  }
+  
+  const captions = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+  
+  if (!captions || captions.length === 0) {
+    throw new Error("No captions available for this video. The video might not have subtitles enabled.");
+  }
+  
+  console.log("Found caption tracks:", captions.length);
+  
+  // Prefer Portuguese, then English, then first available
+  let selectedCaption = captions.find((c: any) => c.languageCode === 'pt' || c.languageCode === 'pt-BR');
+  if (!selectedCaption) {
+    selectedCaption = captions.find((c: any) => c.languageCode === 'en');
+  }
+  if (!selectedCaption) {
+    selectedCaption = captions[0];
+  }
+  
+  console.log("Selected caption language:", selectedCaption.languageCode);
+  
+  // Fetch the caption content
+  const captionUrl = selectedCaption.baseUrl;
+  const captionResponse = await fetch(captionUrl);
+  
+  if (!captionResponse.ok) {
+    throw new Error(`Failed to fetch captions: ${captionResponse.status}`);
+  }
+  
+  const captionXml = await captionResponse.text();
+  
+  // Parse XML to extract text
+  const textMatches = captionXml.matchAll(/<text[^>]*>([^<]*)<\/text>/g);
+  const texts: string[] = [];
+  
+  for (const match of textMatches) {
+    // Decode HTML entities
+    let text = match[1]
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&apos;/g, "'")
+      .replace(/\n/g, ' ')
+      .trim();
+    
+    if (text) {
+      texts.push(text);
+    }
+  }
+  
+  const transcription = texts.join(' ');
+  console.log("Transcription extracted, length:", transcription.length);
+  
+  return {
+    transcription,
+    language: selectedCaption.languageCode
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -17,58 +120,22 @@ serve(async (req) => {
       throw new Error("Video URL is required");
     }
 
-    const DOWNSUB_API_KEY = Deno.env.get("DOWNSUB_API_KEY");
-
-    if (!DOWNSUB_API_KEY) {
-      throw new Error("DOWNSUB_API_KEY is not configured");
-    }
-
-    console.log("Fetching transcription for:", videoUrl);
-
-    // Call DownSub API to get transcription
-    const response = await fetch("https://api.downsub.com/v1/transcribe", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${DOWNSUB_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        url: videoUrl,
-        language: "auto",
-        format: "text",
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("DownSub API error:", response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Limite de requisições excedido. Tente novamente mais tarde." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      if (response.status === 401) {
-        return new Response(
-          JSON.stringify({ error: "Chave de API inválida. Verifique a configuração." }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      throw new Error(`DownSub API error: ${response.status}`);
-    }
-
-    const data = await response.json();
+    console.log("Processing video URL:", videoUrl);
     
-    console.log("Transcription received, length:", data.transcription?.length || 0);
+    const videoId = extractVideoId(videoUrl);
+    if (!videoId) {
+      throw new Error("Invalid YouTube URL. Could not extract video ID.");
+    }
+    
+    console.log("Extracted video ID:", videoId);
+
+    const { transcription, language } = await fetchYouTubeTranscript(videoId);
 
     return new Response(
       JSON.stringify({
-        transcription: data.transcription || data.text || "",
-        language: data.language || "unknown",
-        duration: data.duration || null,
+        transcription,
+        language,
+        videoId,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
