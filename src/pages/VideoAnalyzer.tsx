@@ -87,6 +87,7 @@ const VideoAnalyzer = () => {
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [currentFormula, setCurrentFormula] = useState<ScriptFormulaAnalysis | null>(null);
   const [currentTranscription, setCurrentTranscription] = useState("");
+  const [loadingTranscription, setLoadingTranscription] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -452,22 +453,47 @@ const VideoAnalyzer = () => {
     }
   };
 
-  const handleLoadTranscription = () => {
-    // Create file input for transcription upload
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".txt,.srt,.vtt";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const text = await file.text();
+  const handleLoadTranscription = async () => {
+    if (!videoUrl) {
+      toast({
+        title: "Erro",
+        description: "Insira a URL do vídeo primeiro",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoadingTranscription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("transcribe-video", {
+        body: { videoUrl },
+      });
+
+      if (error) throw error;
+
+      if (data?.transcription) {
+        setCurrentTranscription(data.transcription);
         toast({
           title: "Transcrição carregada!",
-          description: `Arquivo ${file.name} carregado com ${text.length} caracteres`,
+          description: `${data.transcription.length} caracteres transcritos`,
+        });
+      } else {
+        toast({
+          title: "Transcrição não encontrada",
+          description: "Não foi possível obter a transcrição do vídeo",
+          variant: "destructive",
         });
       }
-    };
-    input.click();
+    } catch (error) {
+      console.error("Transcription error:", error);
+      toast({
+        title: "Erro ao transcrever",
+        description: "Não foi possível transcrever o vídeo",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingTranscription(false);
+    }
   };
 
   const handleSearchSimilarVideos = () => {
@@ -732,9 +758,19 @@ const VideoAnalyzer = () => {
                       <Download className="w-4 h-4 mr-2" />
                       Baixar Thumbnail Original
                     </Button>
-                    <Button variant="outline" size="sm" className="border-primary text-primary" onClick={handleLoadTranscription}>
-                      <FileText className="w-4 h-4 mr-2" />
-                      Carregar Transcrição
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-primary text-primary" 
+                      onClick={handleLoadTranscription}
+                      disabled={loadingTranscription}
+                    >
+                      {loadingTranscription ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <FileText className="w-4 h-4 mr-2" />
+                      )}
+                      {loadingTranscription ? "Transcrevendo..." : "Carregar Transcrição"}
                     </Button>
                     <Button variant="outline" size="sm" className="border-primary text-primary" onClick={handleSearchSimilarVideos}>
                       <Search className="w-4 h-4 mr-2" />
