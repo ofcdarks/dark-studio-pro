@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { type, prompt, videoData } = await req.json();
+    const { type, prompt, videoData, channelUrl, niche, text, voiceId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -30,7 +30,15 @@ serve(async (req) => {
         - Sugestões de melhoria
         - Análise de thumbnail ideal
         - Ganchos sugeridos para os primeiros 10 segundos
-        Responda em português brasileiro de forma estruturada.`;
+        Responda em português brasileiro de forma estruturada em JSON com as chaves:
+        {
+          "viral_score": number,
+          "title_analysis": string,
+          "suggestions": string[],
+          "thumbnail_tips": string,
+          "hooks": string[],
+          "overall_analysis": string
+        }`;
         userPrompt = `Analise este vídeo: ${JSON.stringify(videoData)}`;
         break;
 
@@ -51,22 +59,151 @@ serve(async (req) => {
         - Criem curiosidade
         - Tenham no máximo 60 caracteres
         - Usem palavras de poder
-        Responda em português brasileiro em formato de lista.`;
+        Responda em português brasileiro em formato JSON:
+        { "titles": ["título1", "título2", ...] }`;
         break;
 
       case "analyze_niche":
+      case "explore_niche":
         systemPrompt = `Você é um analista de mercado especializado em nichos do YouTube.
-        Forneça análise detalhada sobre:
-        - Tendências atuais
-        - Oportunidades de conteúdo
-        - Competição estimada
-        - Palavras-chave sugeridas
-        - Formatos que funcionam melhor
-        Responda em português brasileiro.`;
+        Forneça análise detalhada sobre o nicho "${niche || prompt}" incluindo:
+        - Tendências atuais do nicho
+        - Oportunidades de conteúdo inexploradas
+        - Nível de competição (baixo/médio/alto)
+        - Palavras-chave com potencial
+        - Formatos de vídeo que funcionam melhor
+        - Exemplos de canais de sucesso
+        - Estratégias de crescimento
+        Responda em português brasileiro em formato JSON:
+        {
+          "niche": string,
+          "trends": string[],
+          "opportunities": string[],
+          "competition_level": string,
+          "keywords": string[],
+          "best_formats": string[],
+          "example_channels": string[],
+          "growth_strategies": string[],
+          "summary": string
+        }`;
+        userPrompt = niche || prompt;
+        break;
+
+      case "search_channels":
+        systemPrompt = `Você é um especialista em descoberta de canais do YouTube.
+        Baseado na URL do canal ou tema "${channelUrl || prompt}", sugira canais similares com:
+        - Nome do canal sugerido
+        - Nicho específico
+        - Tamanho estimado (pequeno/médio/grande)
+        - Por que é relevante
+        Responda em português brasileiro em formato JSON:
+        {
+          "reference_channel": string,
+          "similar_channels": [
+            {
+              "name": string,
+              "niche": string,
+              "size": string,
+              "relevance": string,
+              "url_suggestion": string
+            }
+          ],
+          "search_tips": string[]
+        }`;
+        userPrompt = channelUrl || prompt;
+        break;
+
+      case "viral_analysis":
+        systemPrompt = `Você é um especialista em análise de viralidade de vídeos do YouTube.
+        Analise o potencial viral do conteúdo fornecido e retorne:
+        - Score de viralidade (0-100)
+        - Fatores positivos
+        - Fatores negativos
+        - Recomendações de melhoria
+        - Previsão de performance
+        Responda em português brasileiro em formato JSON:
+        {
+          "viral_score": number,
+          "positive_factors": string[],
+          "negative_factors": string[],
+          "recommendations": string[],
+          "performance_prediction": string,
+          "best_posting_time": string,
+          "target_audience": string
+        }`;
+        userPrompt = JSON.stringify(videoData) || prompt;
+        break;
+
+      case "generate_voice":
+        // For voice generation, we'll return a structured response
+        // The actual audio generation would need ElevenLabs or similar
+        systemPrompt = `Você é um assistente de geração de voz. 
+        O usuário quer converter o seguinte texto em áudio.
+        Analise o texto e sugira:
+        - Melhorias de entonação
+        - Pausas sugeridas (marque com ...)
+        - Tom recomendado (neutro/dramático/alegre/sério)
+        Retorne o texto otimizado para narração.
+        Responda em formato JSON:
+        {
+          "original_text": string,
+          "optimized_text": string,
+          "suggested_tone": string,
+          "duration_estimate": string,
+          "tips": string[]
+        }`;
+        userPrompt = text || prompt;
+        break;
+
+      case "batch_images":
+        systemPrompt = `Você é um especialista em criação de prompts para geração de imagens.
+        Baseado no tema fornecido, crie prompts detalhados para geração de imagens.
+        Cada prompt deve ter:
+        - Descrição visual detalhada
+        - Estilo artístico sugerido
+        - Cores predominantes
+        - Composição da cena
+        Responda em formato JSON:
+        {
+          "theme": string,
+          "prompts": [
+            {
+              "prompt": string,
+              "style": string,
+              "colors": string[],
+              "composition": string
+            }
+          ]
+        }`;
+        break;
+
+      case "video_script":
+        systemPrompt = `Você é um roteirista profissional especializado em vídeos curtos virais.
+        Crie um roteiro completo incluindo:
+        - Hook inicial (0-3 segundos)
+        - Introdução (3-10 segundos)
+        - Desenvolvimento (corpo principal)
+        - Clímax
+        - CTA (call-to-action)
+        Responda em formato JSON:
+        {
+          "title": string,
+          "duration_estimate": string,
+          "sections": [
+            {
+              "name": string,
+              "timestamp": string,
+              "content": string,
+              "visual_notes": string
+            }
+          ],
+          "voiceover_text": string,
+          "music_suggestion": string
+        }`;
         break;
 
       default:
-        systemPrompt = "Você é um assistente especializado em criação de conteúdo para YouTube. Responda em português brasileiro.";
+        systemPrompt = "Você é um assistente especializado em criação de conteúdo para YouTube. Responda em português brasileiro de forma clara e útil.";
     }
 
     console.log("AI request type:", type);
@@ -113,8 +250,25 @@ serve(async (req) => {
 
     console.log("AI response received, length:", content?.length);
 
+    // Try to parse as JSON if expected
+    let result = content;
+    if (content && (content.includes('{') || content.includes('['))) {
+      try {
+        // Extract JSON from markdown code blocks if present
+        const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) {
+          result = JSON.parse(jsonMatch[1].trim());
+        } else {
+          result = JSON.parse(content);
+        }
+      } catch {
+        // If JSON parsing fails, return as string
+        result = content;
+      }
+    }
+
     return new Response(
-      JSON.stringify({ result: content }),
+      JSON.stringify({ result }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
