@@ -27,7 +27,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { TranscriptionSection } from "@/components/analyzer/TranscriptionSection";
-import { ScriptAgentModal } from "@/components/analyzer/ScriptAgentModal";
+import { CreateAgentModal } from "@/components/analyzer/CreateAgentModal";
 
 interface GeneratedTitle {
   id: string;
@@ -398,43 +398,43 @@ const VideoAnalyzer = () => {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
+            <h1 className="text-4xl font-bold text-foreground mb-3">
               Analisador de Títulos Virais
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-lg text-muted-foreground">
               Cole uma URL de vídeo e o motor de IA para gerar títulos.
             </p>
           </div>
 
           {/* Input Section */}
-          <Card className="p-6 mb-8 border-border/50">
-            <div className="space-y-4">
+          <Card className="p-8 mb-8 border-border/50">
+            <div className="space-y-6">
               {/* URL Input */}
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">
+                <label className="text-base text-muted-foreground mb-3 block">
                   URL do Vídeo Viral
                 </label>
                 <Input
                   placeholder="https://www.youtube.com/watch?v=..."
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
-                  className="bg-secondary border-border"
+                  className="bg-secondary border-border h-12 text-base"
                 />
               </div>
 
               {/* Options Row */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* AI Model */}
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="text-sm text-muted-foreground">Motor de IA</label>
-                    <Badge variant="outline" className="text-primary border-primary text-xs">
-                      <Zap className="w-3 h-3 mr-1" />
+                  <div className="flex items-center gap-2 mb-3">
+                    <label className="text-base text-muted-foreground">Motor de IA</label>
+                    <Badge variant="outline" className="text-primary border-primary text-sm px-3 py-1">
+                      <Zap className="w-4 h-4 mr-1" />
                       Custo estimado: 6 créditos
                     </Badge>
                   </div>
                   <Select value={aiModel} onValueChange={setAiModel}>
-                    <SelectTrigger className="bg-secondary border-border">
+                    <SelectTrigger className="bg-secondary border-border h-12 text-base">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -443,16 +443,16 @@ const VideoAnalyzer = () => {
                       <SelectItem value="gemini-pro">Gemini 2.5 Pro (2025)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground mt-1">Modo único: 5 títulos</p>
+                  <p className="text-sm text-muted-foreground mt-2">Modo único: 5 títulos</p>
                 </div>
 
                 {/* Language */}
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">
+                  <label className="text-base text-muted-foreground mb-3 block">
                     Idioma dos Títulos
                   </label>
                   <Select value={language} onValueChange={setLanguage}>
-                    <SelectTrigger className="bg-secondary border-border">
+                    <SelectTrigger className="bg-secondary border-border h-12 text-base">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -465,11 +465,11 @@ const VideoAnalyzer = () => {
 
                 {/* Save Folder */}
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">
+                  <label className="text-base text-muted-foreground mb-3 block">
                     Salvar em... (Opcional)
                   </label>
                   <Select value={saveFolder} onValueChange={setSaveFolder}>
-                    <SelectTrigger className="bg-secondary border-border">
+                    <SelectTrigger className="bg-secondary border-border h-12 text-base">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -488,11 +488,11 @@ const VideoAnalyzer = () => {
               <Button
                 onClick={handleAnalyze}
                 disabled={analyzing}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base font-semibold"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-14 text-lg font-semibold"
               >
                 {analyzing ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    <Loader2 className="w-6 h-6 mr-2 animate-spin" />
                     Analisando...
                   </>
                 ) : (
@@ -757,12 +757,14 @@ const VideoAnalyzer = () => {
         </div>
       </div>
 
-      {/* Script Agent Modal */}
-      <ScriptAgentModal
+      {/* Create Agent Modal */}
+      <CreateAgentModal
         open={showAgentModal}
         onOpenChange={setShowAgentModal}
         formula={currentFormula}
-        baseTranscription={currentTranscription}
+        videoTitle={videoInfo?.title || ""}
+        niche={videoInfo?.niche || ""}
+        subNiche={videoInfo?.subNiche || ""}
       />
     </MainLayout>
   );

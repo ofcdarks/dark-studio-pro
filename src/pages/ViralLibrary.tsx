@@ -2,12 +2,32 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Library, Search, Eye, ThumbsUp, Play, Plus, Trash2, Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Library, 
+  Search, 
+  Eye, 
+  ThumbsUp, 
+  Play, 
+  Plus, 
+  Trash2, 
+  Loader2, 
+  FileText, 
+  Image, 
+  Bot, 
+  ScrollText,
+  Heart,
+  Copy,
+  Check
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useSearchParams } from "react-router-dom";
 
 interface ViralVideo {
   id: string;
@@ -19,18 +39,46 @@ interface ViralVideo {
   notes: string | null;
 }
 
+interface ScriptAgent {
+  id: string;
+  name: string;
+  niche: string | null;
+  sub_niche: string | null;
+  based_on_title: string | null;
+  formula: string | null;
+  times_used: number;
+  created_at: string;
+}
+
 const ViralLibrary = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "titles");
   const [searchTerm, setSearchTerm] = useState("");
+  const [nicheFilter, setNicheFilter] = useState("all");
+  const [viewsFilter, setViewsFilter] = useState("all");
+  const [showFavorites, setShowFavorites] = useState(false);
   const [videos, setVideos] = useState<ViralVideo[]>([]);
+  const [agents, setAgents] = useState<ScriptAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [newVideo, setNewVideo] = useState({ title: '', video_url: '', notes: '' });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) fetchVideos();
+    if (user) {
+      fetchVideos();
+      fetchAgents();
+    }
   }, [user]);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const fetchVideos = async () => {
     try {
@@ -45,6 +93,20 @@ const ViralLibrary = () => {
       console.error('Error fetching videos:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAgents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('script_agents')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAgents(data || []);
+    } catch (error) {
+      console.error('Error fetching agents:', error);
     }
   };
 
@@ -94,9 +156,43 @@ const ViralLibrary = () => {
     }
   };
 
+  const handleDeleteAgent = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('script_agents')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Agente removido!');
+      setAgents(agents.filter(a => a.id !== id));
+    } catch (error) {
+      console.error('Error deleting agent:', error);
+      toast.error('Erro ao remover agente');
+    }
+  };
+
   const handleAnalyzeVideo = async (video: ViralVideo) => {
     toast.info('Redirecionando para análise...');
     window.location.href = `/viral-analysis?url=${encodeURIComponent(video.video_url)}`;
+  };
+
+  const handleUseAgent = (agent: ScriptAgent) => {
+    toast.info('Abrindo gerador de roteiro com agente...');
+    // Navigate to video generator with agent context
+    window.location.href = `/video-generator?agent=${agent.id}`;
+  };
+
+  const handleCopyFormula = async (id: string, formula: string) => {
+    await navigator.clipboard.writeText(formula);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+    toast.success("Fórmula copiada!");
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value });
   };
 
   const filteredVideos = videos.filter(v => 
@@ -104,149 +200,258 @@ const ViralLibrary = () => {
     v.notes?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredAgents = agents.filter(a =>
+    a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    a.niche?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    a.sub_niche?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
+          {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Biblioteca Virais</h1>
-            <p className="text-muted-foreground">
-              Coleção de vídeos virais para inspiração e análise
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-4xl">📚</span>
+              <h1 className="text-4xl font-bold text-foreground">Biblioteca de Títulos e Thumbnails Virais</h1>
+            </div>
+            <p className="text-lg text-muted-foreground">
+              Acesse todos os títulos e thumbnails que geraram milhões de views
             </p>
           </div>
 
-          <Card className="p-6 mb-8">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Buscar na biblioteca..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-secondary border-border"
-                />
-              </div>
-              <Button variant="outline" className="border-border">
-                <Search className="w-4 h-4 mr-2" />
-                Buscar
-              </Button>
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Adicionar Vídeo
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Adicionar Vídeo à Biblioteca</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">Título</label>
-                      <Input
-                        placeholder="Título do vídeo"
-                        value={newVideo.title}
-                        onChange={(e) => setNewVideo({ ...newVideo, title: e.target.value })}
-                        className="bg-secondary border-border"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">URL do Vídeo *</label>
-                      <Input
-                        placeholder="https://youtube.com/watch?v=..."
-                        value={newVideo.video_url}
-                        onChange={(e) => setNewVideo({ ...newVideo, video_url: e.target.value })}
-                        className="bg-secondary border-border"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">Notas</label>
-                      <Input
-                        placeholder="Anotações sobre o vídeo"
-                        value={newVideo.notes}
-                        onChange={(e) => setNewVideo({ ...newVideo, notes: e.target.value })}
-                        className="bg-secondary border-border"
-                      />
-                    </div>
-                    <Button 
-                      onClick={handleAddVideo} 
-                      disabled={saving}
-                      className="w-full bg-primary text-primary-foreground"
-                    >
-                      {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      Adicionar
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </Card>
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="w-full justify-start bg-transparent border-b border-border rounded-none h-auto p-0 mb-8">
+              <TabsTrigger 
+                value="titles" 
+                className="text-base px-6 py-4 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent"
+              >
+                <FileText className="w-5 h-5 mr-2" />
+                Títulos Virais
+              </TabsTrigger>
+              <TabsTrigger 
+                value="thumbnails" 
+                className="text-base px-6 py-4 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent"
+              >
+                <Image className="w-5 h-5 mr-2" />
+                Thumbnails Virais
+              </TabsTrigger>
+              <TabsTrigger 
+                value="agents" 
+                className="text-base px-6 py-4 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent"
+              >
+                <Bot className="w-5 h-5 mr-2" />
+                Agentes de Roteiro
+              </TabsTrigger>
+              <TabsTrigger 
+                value="scripts" 
+                className="text-base px-6 py-4 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent"
+              >
+                <ScrollText className="w-5 h-5 mr-2" />
+                Roteiros Gerados
+              </TabsTrigger>
+            </TabsList>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : filteredVideos.length === 0 ? (
-            <Card className="p-12 text-center">
-              <Library className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">Biblioteca vazia</h3>
-              <p className="text-muted-foreground">
-                Adicione vídeos virais para sua coleção de inspiração
-              </p>
+            {/* Filters */}
+            <Card className="p-6 mb-8 border-border/50">
+              <div className="flex flex-wrap gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <Input
+                    placeholder="Buscar títulos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="bg-secondary border-border h-12 text-base"
+                  />
+                </div>
+                <Select value={nicheFilter} onValueChange={setNicheFilter}>
+                  <SelectTrigger className="w-[200px] bg-secondary border-border h-12 text-base">
+                    <SelectValue placeholder="Todos os Nichos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Nichos</SelectItem>
+                    <SelectItem value="history">História</SelectItem>
+                    <SelectItem value="education">Educação</SelectItem>
+                    <SelectItem value="entertainment">Entretenimento</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={viewsFilter} onValueChange={setViewsFilter}>
+                  <SelectTrigger className="w-[200px] bg-secondary border-border h-12 text-base">
+                    <SelectValue placeholder="Todas as Views" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Views</SelectItem>
+                    <SelectItem value="1m">+1M Views</SelectItem>
+                    <SelectItem value="500k">+500K Views</SelectItem>
+                    <SelectItem value="100k">+100K Views</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button 
+                  variant={showFavorites ? "default" : "outline"} 
+                  onClick={() => setShowFavorites(!showFavorites)}
+                  className="h-12 text-base px-6"
+                >
+                  <Heart className={`w-5 h-5 mr-2 ${showFavorites ? 'fill-current' : ''}`} />
+                  Apenas Favoritos
+                </Button>
+              </div>
             </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredVideos.map((video) => (
-                <Card key={video.id} className="overflow-hidden hover:border-primary/50 transition-colors">
-                  <div className="aspect-video bg-secondary relative flex items-center justify-center">
-                    <Play className="w-12 h-12 text-primary" />
-                    {video.duration && (
-                      <div className="absolute bottom-2 right-2 bg-background/80 px-2 py-1 rounded text-xs text-foreground">
-                        {video.duration}
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-foreground mb-3 line-clamp-2">{video.title}</h3>
-                    {video.notes && (
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{video.notes}</p>
-                    )}
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                      {video.views && (
-                        <span className="flex items-center gap-1">
-                          <Eye className="w-4 h-4" />
-                          {video.views}
-                        </span>
-                      )}
-                      {video.likes && (
-                        <span className="flex items-center gap-1">
-                          <ThumbsUp className="w-4 h-4" />
-                          {video.likes}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        className="flex-1 border-border text-foreground hover:bg-secondary"
-                        onClick={() => handleAnalyzeVideo(video)}
-                      >
-                        Analisar
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDeleteVideo(video.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
+
+            {/* Titles Tab */}
+            <TabsContent value="titles" className="mt-0">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : filteredVideos.length === 0 ? (
+                <Card className="p-12 text-center border-border/50">
+                  <Library className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Biblioteca de títulos vazia</h3>
+                  <p className="text-lg text-muted-foreground">
+                    Analise vídeos para adicionar títulos à biblioteca
+                  </p>
                 </Card>
-              ))}
-            </div>
-          )}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredVideos.map((video) => (
+                    <Card key={video.id} className="p-6 border-border/50 hover:border-primary/50 transition-colors">
+                      <div className="flex items-start justify-between mb-4">
+                        <h3 className="font-bold text-lg text-foreground line-clamp-2 flex-1">{video.title}</h3>
+                        <Button variant="ghost" size="icon" className="shrink-0">
+                          <Heart className="w-5 h-5" />
+                        </Button>
+                      </div>
+                      
+                      <div className="flex gap-2 mb-4">
+                        <Badge className="bg-primary/20 text-primary border-0">História</Badge>
+                        <Badge variant="outline">Mistérios</Badge>
+                      </div>
+
+                      <div className="flex gap-4 mb-4">
+                        <div className="bg-secondary/50 px-4 py-2 rounded-lg flex-1">
+                          <p className="text-xs text-muted-foreground">Views Originais</p>
+                          <p className="text-lg font-bold text-foreground">{video.views || "1.3K"}</p>
+                        </div>
+                        <div className="bg-secondary/50 px-4 py-2 rounded-lg flex-1">
+                          <p className="text-xs text-muted-foreground">Score Viral em Potencial</p>
+                          <p className="text-lg font-bold text-primary">0/10</p>
+                        </div>
+                      </div>
+
+                      {video.notes && (
+                        <div className="mb-4">
+                          <p className="text-sm text-muted-foreground">Fórmula</p>
+                          <p className="text-sm text-foreground">{video.notes}</p>
+                        </div>
+                      )}
+
+                      <Button 
+                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11 text-base"
+                        onClick={() => handleCopyFormula(video.id, video.notes || video.title || "")}
+                      >
+                        {copiedId === video.id ? (
+                          <>
+                            <Check className="w-5 h-5 mr-2" />
+                            Copiado!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-5 h-5 mr-2" />
+                            Copiar
+                          </>
+                        )}
+                      </Button>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Thumbnails Tab */}
+            <TabsContent value="thumbnails" className="mt-0">
+              <Card className="p-12 text-center border-border/50">
+                <Image className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Biblioteca de thumbnails vazia</h3>
+                <p className="text-lg text-muted-foreground">
+                  Analise vídeos para adicionar thumbnails à biblioteca
+                </p>
+              </Card>
+            </TabsContent>
+
+            {/* Agents Tab */}
+            <TabsContent value="agents" className="mt-0">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : filteredAgents.length === 0 ? (
+                <Card className="p-12 text-center border-border/50">
+                  <Bot className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum agente criado</h3>
+                  <p className="text-lg text-muted-foreground">
+                    Analise vídeos e crie agentes de roteiro baseados nas fórmulas virais
+                  </p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredAgents.map((agent) => (
+                    <Card key={agent.id} className="p-6 border-border/50 hover:border-primary/50 transition-colors">
+                      <h3 className="font-bold text-xl text-foreground mb-3">{agent.name}</h3>
+                      
+                      <div className="space-y-2 mb-4">
+                        <p className="text-base">
+                          <span className="text-primary font-medium">Nicho:</span>{" "}
+                          <span className="text-foreground">{agent.niche || "Não definido"}</span>
+                        </p>
+                        <p className="text-base">
+                          <span className="text-primary font-medium">Sub-nicho:</span>{" "}
+                          <span className="text-foreground">{agent.sub_niche || "Não definido"}</span>
+                        </p>
+                        {agent.based_on_title && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            Baseado em: {agent.based_on_title}
+                          </p>
+                        )}
+                        <p className="text-sm text-muted-foreground">
+                          Usado {agent.times_used} vezes
+                        </p>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <Button 
+                          className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base"
+                          onClick={() => handleUseAgent(agent)}
+                        >
+                          <Play className="w-5 h-5 mr-2" />
+                          Usar Agente
+                        </Button>
+                        <Button 
+                          variant="destructive"
+                          size="icon"
+                          className="h-12 w-12"
+                          onClick={() => handleDeleteAgent(agent.id)}
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Scripts Tab */}
+            <TabsContent value="scripts" className="mt-0">
+              <Card className="p-12 text-center border-border/50">
+                <ScrollText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum roteiro gerado</h3>
+                <p className="text-lg text-muted-foreground">
+                  Use os agentes para gerar roteiros virais
+                </p>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </MainLayout>
