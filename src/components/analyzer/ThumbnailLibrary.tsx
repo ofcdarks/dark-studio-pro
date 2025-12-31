@@ -328,7 +328,7 @@ export function ThumbnailLibrary({
     }
   };
 
-  const handleDownloadThumbnail = async (imageBase64: string, resolution: "1280x720" | "1920x1080", index: number) => {
+  const handleDownloadThumbnail = async (imageBase64: string, index: number) => {
     try {
       // Extract base64 data
       const base64Data = imageBase64.includes(",") 
@@ -344,7 +344,7 @@ export function ThumbnailLibrary({
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: "image/png" });
       
-      // Create canvas for resizing
+      // Create canvas for resizing to 1280x720 only
       const img = document.createElement("img");
       img.src = URL.createObjectURL(blob);
       
@@ -353,20 +353,19 @@ export function ThumbnailLibrary({
       });
       
       const canvas = document.createElement("canvas");
-      const [width, height] = resolution.split("x").map(Number);
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = 1280;
+      canvas.height = 720;
       
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        ctx.drawImage(img, 0, 0, width, height);
+        ctx.drawImage(img, 0, 0, 1280, 720);
         
         canvas.toBlob((resizedBlob) => {
           if (resizedBlob) {
             const url = URL.createObjectURL(resizedBlob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `thumbnail-${index + 1}-${resolution}.png`;
+            a.download = `thumbnail-${index + 1}-1280x720.png`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -377,7 +376,7 @@ export function ThumbnailLibrary({
       
       URL.revokeObjectURL(img.src);
       
-      toast({ title: "Download iniciado!", description: `Thumbnail ${resolution}` });
+      toast({ title: "Download iniciado!", description: "Thumbnail 1280x720" });
     } catch (error) {
       console.error("Download error:", error);
       toast({
@@ -871,24 +870,14 @@ export function ThumbnailLibrary({
                       <Badge className="bg-primary text-primary-foreground text-xs">
                         {thumb.style}
                       </Badge>
-                      <div className="flex flex-wrap gap-1 justify-center">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleDownloadThumbnail(thumb.imageBase64, "1280x720", index)}
-                        >
-                          <Download className="w-3 h-3 mr-1" />
-                          720p
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleDownloadThumbnail(thumb.imageBase64, "1920x1080", index)}
-                        >
-                          <Download className="w-3 h-3 mr-1" />
-                          1080p
-                        </Button>
-                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleDownloadThumbnail(thumb.imageBase64, index)}
+                      >
+                        <Download className="w-3 h-3 mr-1" />
+                        Baixar Imagem
+                      </Button>
                       <Button
                         size="sm"
                         variant={savedToLibrary.includes(index) ? "default" : "outline"}
@@ -994,25 +983,13 @@ export function ThumbnailLibrary({
                       {savedToLibrary.includes(activePreviewIndex) ? "Salvo na Biblioteca" : "Salvar na Biblioteca"}
                     </Button>
                     <Button
-                      variant="outline"
                       onClick={() => handleDownloadThumbnail(
                         generatedThumbnails[activePreviewIndex].imageBase64, 
-                        "1280x720", 
                         activePreviewIndex
                       )}
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      Download 1280x720
-                    </Button>
-                    <Button
-                      onClick={() => handleDownloadThumbnail(
-                        generatedThumbnails[activePreviewIndex].imageBase64, 
-                        "1920x1080", 
-                        activePreviewIndex
-                      )}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download 1920x1080
+                      Baixar Imagem
                     </Button>
                   </div>
                 </div>
