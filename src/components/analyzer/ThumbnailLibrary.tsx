@@ -20,6 +20,8 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Save,
+  Check,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -95,6 +97,8 @@ export function ThumbnailLibrary({
   const [generatedThumbnails, setGeneratedThumbnails] = useState<GeneratedThumbnail[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
+  const [savingToLibrary, setSavingToLibrary] = useState<number | null>(null);
+  const [savedToLibrary, setSavedToLibrary] = useState<number[]>([]);
 
   // Sync videoTitle when currentTitle changes (from selected title in VideoAnalyzer)
   useEffect(() => {
@@ -282,6 +286,7 @@ export function ThumbnailLibrary({
 
     setGeneratingThumbnail(true);
     setGeneratedThumbnails([]);
+    setSavedToLibrary([]);
     
     try {
       // Call the generate-thumbnail edge function
@@ -390,6 +395,82 @@ export function ThumbnailLibrary({
       queryClient.invalidateQueries({ queryKey: ["reference-thumbnails"] });
     } catch (error) {
       toast({ title: "Erro", description: "Não foi possível excluir", variant: "destructive" });
+    }
+  };
+
+  const handleSaveToLibrary = async (thumb: GeneratedThumbnail, index: number) => {
+    if (!user) {
+      toast({
+        title: "Erro",
+        description: "Você precisa estar logado para salvar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSavingToLibrary(index);
+    try {
+      // Extract base64 data
+      const base64Data = thumb.imageBase64.includes(",")
+        ? thumb.imageBase64.split(",")[1]
+        : thumb.imageBase64.replace("data:image/png;base64,", "");
+
+      // Convert base64 to blob
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: "image/png" });
+
+      // Create file object
+      const fileName = `${user.id}/${Date.now()}-${index}.png`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from("reference-thumbnails")
+        .upload(fileName, blob, { contentType: "image/png" });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("reference-thumbnails")
+        .getPublicUrl(fileName);
+
+      // Save to database
+      const { error: dbError } = await supabase
+        .from("reference_thumbnails")
+        .insert({
+          user_id: user.id,
+          image_url: urlData.publicUrl,
+          niche: niche || null,
+          sub_niche: subNiche || null,
+          description: `Thumbnail gerada para: ${videoTitle}`,
+          extracted_prompt: thumb.prompt,
+          style_analysis: {
+            style: thumb.style,
+            headline: thumb.headline,
+            seoDescription: thumb.seoDescription,
+            seoTags: thumb.seoTags,
+          },
+        });
+
+      if (dbError) throw dbError;
+
+      setSavedToLibrary(prev => [...prev, index]);
+      toast({ title: "Salvo na biblioteca!", description: "Thumbnail salva para reutilização futura" });
+      queryClient.invalidateQueries({ queryKey: ["reference-thumbnails"] });
+    } catch (error) {
+      console.error("Save to library error:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar na biblioteca",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingToLibrary(null);
     }
   };
 
@@ -790,7 +871,7 @@ export function ThumbnailLibrary({
                       <Badge className="bg-primary text-primary-foreground text-xs">
                         {thumb.style}
                       </Badge>
-                      <div className="flex gap-1">
+                      <div className="flex flex-wrap gap-1 justify-center">
                         <Button
                           size="sm"
                           variant="secondary"
@@ -808,6 +889,22 @@ export function ThumbnailLibrary({
                           1080p
                         </Button>
                       </div>
+                      <Button
+                        size="sm"
+                        variant={savedToLibrary.includes(index) ? "default" : "outline"}
+                        className={savedToLibrary.includes(index) ? "bg-green-600 hover:bg-green-700" : ""}
+                        onClick={() => handleSaveToLibrary(thumb, index)}
+                        disabled={savingToLibrary === index || savedToLibrary.includes(index)}
+                      >
+                        {savingToLibrary === index ? (
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        ) : savedToLibrary.includes(index) ? (
+                          <Check className="w-3 h-3 mr-1" />
+                        ) : (
+                          <Save className="w-3 h-3 mr-1" />
+                        )}
+                        {savedToLibrary.includes(index) ? "Salvo" : "Salvar"}
+                      </Button>
                     </div>
                     {thumb.headline && (
                       <p className="text-xs text-muted-foreground mt-1 truncate text-center font-medium">
@@ -881,6 +978,21 @@ export function ThumbnailLibrary({
                     )}
                   </div>
                   <div className="flex gap-2">
+                    <Button
+                      variant={savedToLibrary.includes(activePreviewIndex) ? "default" : "outline"}
+                      className={savedToLibrary.includes(activePreviewIndex) ? "bg-green-600 hover:bg-green-700" : ""}
+                      onClick={() => handleSaveToLibrary(generatedThumbnails[activePreviewIndex], activePreviewIndex)}
+                      disabled={savingToLibrary === activePreviewIndex || savedToLibrary.includes(activePreviewIndex)}
+                    >
+                      {savingToLibrary === activePreviewIndex ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : savedToLibrary.includes(activePreviewIndex) ? (
+                        <Check className="w-4 h-4 mr-2" />
+                      ) : (
+                        <Save className="w-4 h-4 mr-2" />
+                      )}
+                      {savedToLibrary.includes(activePreviewIndex) ? "Salvo na Biblioteca" : "Salvar na Biblioteca"}
+                    </Button>
                     <Button
                       variant="outline"
                       onClick={() => handleDownloadThumbnail(
