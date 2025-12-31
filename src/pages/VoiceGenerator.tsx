@@ -71,18 +71,31 @@ const VoiceGenerator = () => {
       return;
     }
 
+    if (text.length > 4096) {
+      toast.error('Texto muito longo. Máximo de 4096 caracteres.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+      const { data, error } = await supabase.functions.invoke('generate-tts', {
         body: {
-          action: 'generate_voice',
           text: text,
-          voice: selectedVoice,
+          voiceId: selectedVoice,
           speed: speed[0]
         }
       });
 
       if (error) throw error;
+
+      if (data.error) {
+        if (data.error === 'Insufficient credits') {
+          toast.error(`Créditos insuficientes. Necessário: ${data.required}, Disponível: ${data.available}`);
+        } else {
+          toast.error(data.error);
+        }
+        return;
+      }
 
       // Save to database
       const { error: insertError } = await supabase
@@ -97,12 +110,12 @@ const VoiceGenerator = () => {
 
       if (insertError) console.error('Error saving audio:', insertError);
 
-      toast.success('Áudio gerado com sucesso!');
+      toast.success(`Áudio gerado! ${data.creditsUsed} créditos utilizados.`);
       setText('');
       fetchAudios();
     } catch (error) {
       console.error('Error generating audio:', error);
-      toast.error('Erro ao gerar áudio. Verifique suas chaves de API.');
+      toast.error('Erro ao gerar áudio. Tente novamente.');
     } finally {
       setLoading(false);
     }
