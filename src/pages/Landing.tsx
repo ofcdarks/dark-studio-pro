@@ -35,6 +35,9 @@ import { ParallaxLayer } from "@/components/landing/ParallaxSection";
 import { PurchaseNotifications } from "@/components/landing/PurchaseNotifications";
 import { AutoChat } from "@/components/landing/AutoChat";
 import { TestimonialCarousel } from "@/components/landing/TestimonialCarousel";
+import { OperatorsOnline } from "@/components/landing/OperatorsOnline";
+import { ParticleBackground } from "@/components/landing/ParticleBackground";
+import { GlassCard } from "@/components/landing/GlassCard";
 import logo from "@/assets/logo.gif";
 
 // Dream images
@@ -125,7 +128,7 @@ const Landing = () => {
     { question: "Posso testar antes de assinar?", answer: "Sim, oferecemos 50 créditos gratuitos para você testar a plataforma." },
   ];
 
-  const operatorsOnline = ["RB", "MT", "PN", "CH", "MF", "BN", "GR", "KM", "TS", "FC", "SP"];
+  // Removed static operatorsOnline - now using dynamic component
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
@@ -159,6 +162,9 @@ const Landing = () => {
 
       {/* Hero Section */}
       <section className="pt-36 pb-24 px-4 relative overflow-hidden">
+        {/* Particle Background */}
+        <ParticleBackground particleCount={80} className="opacity-60" />
+        
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background z-10" />
@@ -166,7 +172,7 @@ const Landing = () => {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
         </div>
         
-        <ParallaxLayer depth={0.3} className="absolute top-32 left-1/4 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl pointer-events-none" />
+        <ParallaxLayer depth={0.3} className="absolute top-32 left-1/4 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl pointer-events-none animate-float" />
         <ParallaxLayer depth={0.5} className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
         
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-start relative z-10">
@@ -227,28 +233,8 @@ const Landing = () => {
               </Button>
             </div>
 
-            {/* Operators Online */}
-            <div className="flex items-center gap-6 pt-6">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-base text-muted-foreground">Operadores online</span>
-              </div>
-              <div className="flex -space-x-2">
-                {operatorsOnline.slice(0, 4).map((op, i) => (
-                  <div key={i} className="w-10 h-10 rounded-full bg-card border-2 border-background flex items-center justify-center text-sm font-medium">
-                    {op}
-                  </div>
-                ))}
-                <div className="w-10 h-10 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-sm text-primary font-medium">
-                  +{operatorsOnline.length - 4}
-                </div>
-              </div>
-              <div className="flex gap-3">
-                {operatorsOnline.slice(4, 11).map((op, i) => (
-                  <div key={i} className="px-3 py-1.5 rounded bg-card text-sm">{op}</div>
-                ))}
-              </div>
-            </div>
+            {/* Operators Online - Dynamic */}
+            <OperatorsOnline />
 
             {/* Feature Badges */}
             <div className="flex flex-wrap gap-4">
@@ -960,8 +946,8 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto mt-14 pt-10 border-t border-border flex flex-col md:flex-row items-center justify-between gap-5 text-base text-muted-foreground">
           <p>© 2026 La Casa Dark CORE. Todos os direitos reservados.</p>
           <div className="flex gap-8">
-            <button className="hover:text-foreground transition-colors">Termos de Uso</button>
-            <button className="hover:text-foreground transition-colors">Política de Privacidade</button>
+            <Link to="/terms" className="hover:text-foreground transition-colors">Termos de Uso</Link>
+            <Link to="/privacy" className="hover:text-foreground transition-colors">Política de Privacidade</Link>
           </div>
         </div>
       </footer>
