@@ -38,6 +38,7 @@ import { TestimonialCarousel } from "@/components/landing/TestimonialCarousel";
 import { OperatorsOnline } from "@/components/landing/OperatorsOnline";
 import { ParticleBackground } from "@/components/landing/ParticleBackground";
 import { GlassCard } from "@/components/landing/GlassCard";
+import { AdSenseCard } from "@/components/landing/AdSenseCard";
 import logo from "@/assets/logo.gif";
 
 // Dream images
@@ -186,7 +187,7 @@ const Landing = () => {
         <ParallaxLayer depth={0.3} className="absolute top-32 left-1/4 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl pointer-events-none animate-float" />
         <ParallaxLayer depth={0.5} className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-start relative z-10">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
           <AnimatedSection animation="fade-right" className="space-y-8">
               {/* Private Elite Access Badge */}
               <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-border">
@@ -256,75 +257,7 @@ const Landing = () => {
 
           {/* AdSense Card */}
           <AnimatedSection animation="fade-left" delay={200}>
-            <Card className="p-0 bg-card border-border overflow-hidden">
-              {/* Header */}
-              <div className="bg-green-600 p-5 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-lg bg-white/20 flex items-center justify-center">
-                    <span className="text-white font-bold text-xl">G</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white text-xl">Google AdSense</p>
-                    <p className="text-base text-white/80">Pagamento processado</p>
-                  </div>
-                </div>
-                <span className="px-4 py-2 rounded-full text-sm bg-green-500/30 text-green-100 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-300" />
-                  Ativo
-                </span>
-              </div>
-
-              {/* Content */}
-              <div className="p-8 space-y-8">
-                <div className="text-center">
-                  <p className="text-base text-muted-foreground">Pagamento Recebido</p>
-                  <p className="text-6xl font-bold mt-3">
-                    <span className="text-muted-foreground text-3xl">$</span>
-                    12,847.56
-                  </p>
-                  <p className="text-base text-muted-foreground mt-2">USD · 1 de Janeiro, 2026</p>
-                </div>
-
-                <div className="space-y-4 border-t border-border pt-6">
-                  <div className="flex justify-between text-lg">
-                    <span className="text-muted-foreground">Método de pagamento</span>
-                    <span>Transferência bancária</span>
-                  </div>
-                  <div className="flex justify-between text-lg">
-                    <span className="text-muted-foreground">Conta</span>
-                    <span>****4892</span>
-                  </div>
-                  <div className="flex justify-between text-lg">
-                    <span className="text-muted-foreground">Status</span>
-                    <span className="text-green-500 flex items-center gap-2">
-                      <Check className="w-5 h-5" />
-                      Concluído
-                    </span>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-6 border-t border-border pt-6">
-                  <div className="text-center">
-                    <p className="text-3xl font-bold">2.4M</p>
-                    <p className="text-sm text-muted-foreground">Impressões</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-3xl font-bold text-primary">$5.35</p>
-                    <p className="text-sm text-muted-foreground">RPM</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-3xl font-bold text-green-500">+47%</p>
-                    <p className="text-sm text-muted-foreground">vs mês anterior</p>
-                  </div>
-                </div>
-
-                {/* Next Payment */}
-                <div className="bg-card rounded-xl p-5 border border-border text-center">
-                  <p className="text-base text-muted-foreground">Próximo pagamento estimado: <span className="text-foreground font-semibold text-xl">$14,230.00</span></p>
-                </div>
-              </div>
-            </Card>
+            <AdSenseCard />
           </AnimatedSection>
         </div>
 
