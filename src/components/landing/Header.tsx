@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Crown } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import headerLogo from "@/assets/header-logo.png";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,7 +16,7 @@ const Header = () => {
       className="fixed top-0 left-0 right-0 z-50"
     >
       {/* Glassmorphism background */}
-      <div className="absolute inset-0 bg-background/60 backdrop-blur-xl border-b border-border/50" />
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-xl border-b border-border/50" />
       
       <div className="container mx-auto px-6 h-20 flex items-center justify-between relative">
         {/* Logo */}
@@ -24,12 +25,11 @@ const Header = () => {
             className="flex items-center gap-3"
             whileHover={{ scale: 1.02 }}
           >
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <Crown className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg hidden sm:block">
-              La Casa Dark <span className="text-primary font-black">CORE</span>
-            </span>
+            <img 
+              src={headerLogo} 
+              alt="La Casa Dark CORE" 
+              className="h-12 w-auto object-contain"
+            />
           </motion.div>
         </Link>
 
