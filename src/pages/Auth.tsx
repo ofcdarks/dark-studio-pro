@@ -153,7 +153,7 @@ const Auth = () => {
         />
         
         <div 
-          className="relative bg-background/90 backdrop-blur-md rounded-2xl px-12 py-14 border border-border/30 shadow-2xl overflow-hidden"
+          className="relative bg-background/90 backdrop-blur-md rounded-2xl px-14 py-16 border border-border/30 shadow-2xl overflow-hidden"
           style={{
             boxShadow: `
               0 0 0 1px rgba(255,255,255,0.05) inset,
@@ -179,8 +179,8 @@ const Auth = () => {
           </div>
 
           {/* Logo */}
-          <div className="flex justify-center mb-6 relative">
-            <div className="w-24 h-24 rounded-full ring-4 ring-primary/80 overflow-hidden bg-background shadow-lg shadow-primary/30">
+          <div className="flex justify-center mb-8 relative">
+            <div className="w-32 h-32 rounded-full ring-4 ring-primary/80 overflow-hidden bg-background shadow-lg shadow-primary/30">
               <img 
                 src={logo} 
                 alt="Logo" 
