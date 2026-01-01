@@ -170,10 +170,15 @@ const Landing = () => {
           <img
             src="/images/hero-porsche.jpg"
             alt="Porsche de luxo no fundo da landing page"
-            className="absolute inset-0 h-full w-full object-cover opacity-100 brightness-110 contrast-110 saturate-110"
+            className="absolute inset-0 h-full w-full object-cover object-[75%_center] opacity-100 brightness-110 contrast-110 saturate-110"
             loading="eager"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/45 via-background/15 to-background/55 z-10" />
+
+          {/* Darken left side for text readability */}
+          <div className="absolute inset-0 z-10 bg-gradient-to-r from-background/85 via-background/35 to-transparent" />
+          {/* Gentle vertical fade to match page */}
+          <div className="absolute inset-0 z-10 bg-gradient-to-b from-background/20 via-transparent to-background/35" />
+
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/18 via-transparent to-transparent z-10" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent z-10" />
         </div>
