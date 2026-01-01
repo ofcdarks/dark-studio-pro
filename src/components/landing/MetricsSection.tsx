@@ -51,29 +51,20 @@ const MetricsSection = () => {
               className="relative p-3 sm:p-4 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 hover:border-primary/40 transition-all group"
             >
               {/* Glow on hover */}
-              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 rounded-xl transition-opacity" />
-
-              {/* Status badge */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 rounded-xl transition-opacity" />
+              
               {metric.status && (
-                <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">
+                <span className="absolute -top-2 right-2 px-2 py-0.5 rounded text-[8px] sm:text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/30">
                   {metric.status}
                 </span>
               )}
-
-              {/* Icon */}
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-primary/20 transition-colors">
-                <metric.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              <div className="relative z-10">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-2 sm:mb-3">
+                  <metric.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                </div>
+                <p className="text-lg sm:text-xl md:text-2xl font-bold">{metric.value}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{metric.label}</p>
               </div>
-
-              {/* Value */}
-              <p className="text-xl sm:text-2xl font-bold text-foreground mb-1">
-                {metric.value}
-              </p>
-
-              {/* Label */}
-              <p className="text-[10px] sm:text-xs text-muted-foreground">
-                {metric.label}
-              </p>
             </motion.div>
           ))}
         </div>
