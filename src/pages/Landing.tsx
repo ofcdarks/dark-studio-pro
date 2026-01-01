@@ -187,70 +187,73 @@ const Landing = () => {
         <ParallaxLayer depth={0.5} className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-start relative z-10">
-          <AnimatedSection animation="fade-right" className="space-y-8">
-            {/* Private Elite Access Badge */}
-            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-border">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <span className="text-base font-medium">PRIVATE ELITE ACCESS</span>
-              <Sparkles className="w-5 h-5 text-primary" />
-            </div>
-
-            {/* Warning Badge */}
-            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-primary/20 border border-primary/30">
-              <AlertTriangle className="w-5 h-5 text-primary" />
-              <span className="text-base font-medium text-primary">Fuja dos "marketeiros" e de quem só vende curso!</span>
-            </div>
-
-            {/* Main Heading */}
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-              <span className="block">Escale seus</span>
-              <span className="block text-primary">Canais Dark</span>
-              <span className="block">com IA</span>
-            </h1>
-
-
-            {/* Description */}
-            <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
-              Criado por quem <span className="text-primary font-semibold">vive e respira</span> o mercado do YouTube diariamente. Nada de promessas vazias — aqui é <span className="text-primary font-semibold">ferramenta real</span> feita por quem está no campo de batalha.
-            </p>
-
-            {/* Quote */}
-            <p className="text-base text-muted-foreground italic">
-              "Enquanto outros vendem sonhos, nós entregamos resultados com tecnologia de ponta."
-            </p>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-wrap gap-5">
-              <Link to="/auth">
-                <Button size="lg" className="gradient-button text-primary-foreground font-semibold h-16 px-10 text-xl glow-primary hover:scale-105 transition-transform">
-                  <Zap className="w-6 h-6 mr-3" />
-                  Solicitar Acesso Elite
-                  <ArrowRight className="w-6 h-6 ml-3" />
-                </Button>
-              </Link>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="h-16 px-10 text-xl border-border hover:bg-card hover:scale-105 transition-transform"
-                onClick={() => scrollToSection("demo")}
-              >
-                <Play className="w-6 h-6 mr-3" />
-                Ver Demonstração
-              </Button>
-            </div>
-
-            {/* Operators Online - Dynamic */}
-            <OperatorsOnline />
-
-            {/* Feature Badges */}
-            <div className="flex flex-wrap gap-4">
-              <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-primary/30">
-                <Zap className="w-5 h-5 text-primary" />
-                <span className="text-base">Melhores APIs do mercado</span>
-              </div>
+          {/* Glass panel behind text for readability */}
+          <AnimatedSection animation="fade-right" className="relative">
+            <div className="absolute -inset-6 rounded-3xl bg-background/40 backdrop-blur-md border border-border/20 -z-10" />
+            <div className="space-y-8 p-2">
+              {/* Private Elite Access Badge */}
               <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-border">
-                <Check className="w-5 h-5 text-muted-foreground" />
-                <span className="text-base text-muted-foreground">Ferramenta em constante atualização</span>
+                <Sparkles className="w-5 h-5 text-primary" />
+                <span className="text-base font-medium">PRIVATE ELITE ACCESS</span>
+                <Sparkles className="w-5 h-5 text-primary" />
+              </div>
+
+              {/* Warning Badge */}
+              <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-primary/20 border border-primary/30">
+                <AlertTriangle className="w-5 h-5 text-primary" />
+                <span className="text-base font-medium text-primary">Fuja dos "marketeiros" e de quem só vende curso!</span>
+              </div>
+
+              {/* Main Heading */}
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
+                <span className="block">Escale seus</span>
+                <span className="block text-primary">Canais Dark</span>
+                <span className="block">com IA</span>
+              </h1>
+
+              {/* Description */}
+              <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
+                Criado por quem <span className="text-primary font-semibold">vive e respira</span> o mercado do YouTube diariamente. Nada de promessas vazias — aqui é <span className="text-primary font-semibold">ferramenta real</span> feita por quem está no campo de batalha.
+              </p>
+
+              {/* Quote */}
+              <p className="text-base text-muted-foreground italic">
+                "Enquanto outros vendem sonhos, nós entregamos resultados com tecnologia de ponta."
+              </p>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-wrap gap-5">
+                <Link to="/auth">
+                  <Button size="lg" className="gradient-button text-primary-foreground font-semibold h-16 px-10 text-xl glow-primary hover:scale-105 transition-transform">
+                    <Zap className="w-6 h-6 mr-3" />
+                    Solicitar Acesso Elite
+                    <ArrowRight className="w-6 h-6 ml-3" />
+                  </Button>
+                </Link>
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="h-16 px-10 text-xl border-border hover:bg-card hover:scale-105 transition-transform"
+                  onClick={() => scrollToSection("demo")}
+                >
+                  <Play className="w-6 h-6 mr-3" />
+                  Ver Demonstração
+                </Button>
+              </div>
+
+              {/* Operators Online - Dynamic */}
+              <OperatorsOnline />
+
+              {/* Feature Badges */}
+              <div className="flex flex-wrap gap-4">
+                <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-primary/30">
+                  <Zap className="w-5 h-5 text-primary" />
+                  <span className="text-base">Melhores APIs do mercado</span>
+                </div>
+                <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-border">
+                  <Check className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-base text-muted-foreground">Ferramenta em constante atualização</span>
+                </div>
               </div>
             </div>
           </AnimatedSection>
