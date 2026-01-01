@@ -1,189 +1,165 @@
+import { motion } from "framer-motion";
+import { Crown, ArrowLeft, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import logo from "@/assets/logo.gif";
+import { Helmet } from "react-helmet";
 
 const PrivacyPolicy = () => {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <Link to="/" className="flex items-center gap-4">
-              <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary via-amber-400 to-primary animate-spin-slow opacity-75 blur-sm" />
-                <img src={logo} alt="La Casa Dark CORE" className="w-12 h-12 rounded-full relative z-10 border-2 border-primary" />
+    <>
+      <Helmet>
+        <title>Política de Privacidade | La Casa Dark CORE</title>
+        <meta name="description" content="Política de privacidade da plataforma La Casa Dark CORE." />
+      </Helmet>
+      
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+          <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary via-orange-500 to-yellow-500 flex items-center justify-center">
+                <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <span className="font-bold text-xl">La Casa Dark <span className="text-primary">CORE</span></span>
+              <span className="font-black text-lg sm:text-xl text-foreground">La Casa Dark</span>
+              <span className="font-black text-lg sm:text-xl text-primary">CORE</span>
             </Link>
-            
             <Link to="/">
-              <Button variant="outline" className="gap-2">
+              <Button variant="ghost" size="sm" className="gap-2">
                 <ArrowLeft className="w-4 h-4" />
-                Voltar
+                <span className="hidden sm:inline">Voltar</span>
               </Button>
             </Link>
           </div>
-        </div>
-      </nav>
+        </header>
 
-      {/* Content */}
-      <main className="pt-32 pb-20 px-4">
-        <article className="max-w-4xl mx-auto prose prose-invert prose-lg">
-          <h1 className="text-4xl md:text-5xl font-bold mb-8 text-foreground">
-            Política de <span className="text-primary">Privacidade</span>
-          </h1>
-          
-          <p className="text-muted-foreground text-lg mb-8">
-            Última atualização: 1 de Janeiro de 2026
-          </p>
+        {/* Content */}
+        <main className="pt-24 pb-16">
+          <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black">
+                  Política de <span className="text-primary">Privacidade</span>
+                </h1>
+              </div>
+              <p className="text-muted-foreground mb-8">Última atualização: Janeiro de 2026</p>
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-4">1. Introdução</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              O La Casa Dark CORE ("nós", "nosso" ou "Plataforma") está comprometido em proteger sua privacidade. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos suas informações pessoais quando você usa nossos serviços.
-            </p>
-          </section>
+              <div className="prose prose-invert max-w-none space-y-8">
+                <section className="p-4 sm:p-6 rounded-2xl bg-card/50 border border-border/50">
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">1. Informações que Coletamos</h2>
+                  <p className="text-muted-foreground leading-relaxed mb-4 text-sm sm:text-base">Coletamos as seguintes informações:</p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 text-sm sm:text-base">
+                    <li><strong>Dados de cadastro:</strong> nome, e-mail, telefone</li>
+                    <li><strong>Dados de pagamento:</strong> processados por gateways seguros</li>
+                    <li><strong>Dados de uso:</strong> interações com a plataforma, preferências</li>
+                    <li><strong>Dados do YouTube:</strong> métricas dos canais conectados (com autorização)</li>
+                    <li><strong>Dados técnicos:</strong> IP, navegador, dispositivo</li>
+                  </ul>
+                </section>
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-4">2. Informações que Coletamos</h2>
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              Coletamos os seguintes tipos de informações:
-            </p>
-            
-            <h3 className="text-xl font-semibold text-foreground mb-3">2.1 Informações Pessoais</h3>
-            <ul className="text-muted-foreground space-y-2 mb-6">
-              <li>Nome completo</li>
-              <li>Endereço de email</li>
-              <li>Número de telefone (opcional)</li>
-              <li>Informações de pagamento</li>
-            </ul>
+                <section className="p-4 sm:p-6 rounded-2xl bg-card/50 border border-border/50">
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">2. Como Usamos seus Dados</h2>
+                  <p className="text-muted-foreground leading-relaxed mb-4 text-sm sm:text-base">Utilizamos suas informações para:</p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 text-sm sm:text-base">
+                    <li>Fornecer e melhorar nossos serviços</li>
+                    <li>Personalizar sua experiência na plataforma</li>
+                    <li>Processar pagamentos e assinaturas</li>
+                    <li>Enviar comunicações sobre a plataforma</li>
+                    <li>Analisar métricas e melhorar o produto</li>
+                    <li>Prevenir fraudes e garantir segurança</li>
+                  </ul>
+                </section>
 
-            <h3 className="text-xl font-semibold text-foreground mb-3">2.2 Informações de Uso</h3>
-            <ul className="text-muted-foreground space-y-2 mb-6">
-              <li>Dados de navegação e interação com a plataforma</li>
-              <li>Endereço IP e informações do dispositivo</li>
-              <li>Conteúdo gerado usando nossas ferramentas</li>
-              <li>Histórico de análises e gerações</li>
-            </ul>
+                <section className="p-4 sm:p-6 rounded-2xl bg-card/50 border border-border/50">
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">3. Compartilhamento de Dados</h2>
+                  <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
+                    Não vendemos seus dados pessoais. Podemos compartilhar informações com:
+                  </p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 mt-4 text-sm sm:text-base">
+                    <li>Processadores de pagamento (Stripe, PayPal)</li>
+                    <li>Serviços de hospedagem e infraestrutura</li>
+                    <li>Ferramentas de analytics (de forma anonimizada)</li>
+                    <li>Autoridades legais quando exigido por lei</li>
+                  </ul>
+                </section>
 
-            <h3 className="text-xl font-semibold text-foreground mb-3">2.3 Integrações</h3>
-            <ul className="text-muted-foreground space-y-2">
-              <li>Dados de canais do YouTube conectados</li>
-              <li>APIs de terceiros autorizadas pelo usuário</li>
-            </ul>
-          </section>
+                <section className="p-4 sm:p-6 rounded-2xl bg-card/50 border border-border/50">
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">4. Segurança dos Dados</h2>
+                  <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
+                    Implementamos medidas de segurança robustas para proteger suas informações:
+                  </p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 mt-4 text-sm sm:text-base">
+                    <li>Criptografia SSL/TLS em todas as transmissões</li>
+                    <li>Armazenamento em servidores seguros</li>
+                    <li>Acesso restrito a dados sensíveis</li>
+                    <li>Monitoramento contínuo de segurança</li>
+                    <li>Backups regulares e criptografados</li>
+                  </ul>
+                </section>
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-4">3. Como Usamos suas Informações</h2>
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              Utilizamos suas informações para:
-            </p>
-            <ul className="text-muted-foreground space-y-2">
-              <li>Fornecer e manter nossos serviços</li>
-              <li>Processar pagamentos e gerenciar sua conta</li>
-              <li>Personalizar sua experiência na plataforma</li>
-              <li>Enviar comunicações importantes sobre o serviço</li>
-              <li>Melhorar nossas ferramentas com base em padrões de uso</li>
-              <li>Prevenir fraudes e garantir segurança</li>
-              <li>Cumprir obrigações legais</li>
-            </ul>
-          </section>
+                <section className="p-4 sm:p-6 rounded-2xl bg-card/50 border border-border/50">
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">5. Seus Direitos (LGPD)</h2>
+                  <p className="text-muted-foreground leading-relaxed mb-4 text-sm sm:text-base">
+                    De acordo com a Lei Geral de Proteção de Dados (LGPD), você tem direito a:
+                  </p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 text-sm sm:text-base">
+                    <li>Acessar seus dados pessoais</li>
+                    <li>Corrigir dados incompletos ou desatualizados</li>
+                    <li>Solicitar a exclusão de seus dados</li>
+                    <li>Revogar o consentimento para uso de dados</li>
+                    <li>Solicitar a portabilidade de dados</li>
+                    <li>Ser informado sobre o uso de seus dados</li>
+                  </ul>
+                </section>
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-4">4. Compartilhamento de Dados</h2>
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              Não vendemos suas informações pessoais. Podemos compartilhar dados com:
-            </p>
-            <ul className="text-muted-foreground space-y-2">
-              <li><strong>Processadores de pagamento:</strong> Para processar transações</li>
-              <li><strong>Provedores de infraestrutura:</strong> Para hospedagem e armazenamento</li>
-              <li><strong>Serviços de IA:</strong> Para processamento de conteúdo (sem identificação pessoal)</li>
-              <li><strong>Autoridades legais:</strong> Quando exigido por lei</li>
-            </ul>
-          </section>
+                <section className="p-4 sm:p-6 rounded-2xl bg-card/50 border border-border/50">
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">6. Cookies e Tecnologias</h2>
+                  <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
+                    Utilizamos cookies e tecnologias similares para melhorar sua experiência:
+                  </p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 mt-4 text-sm sm:text-base">
+                    <li><strong>Cookies essenciais:</strong> necessários para o funcionamento</li>
+                    <li><strong>Cookies de preferência:</strong> lembram suas configurações</li>
+                    <li><strong>Cookies analíticos:</strong> nos ajudam a entender o uso</li>
+                  </ul>
+                </section>
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-4">5. Segurança dos Dados</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              Implementamos medidas técnicas e organizacionais para proteger suas informações, incluindo:
-            </p>
-            <ul className="text-muted-foreground mt-4 space-y-2">
-              <li>Criptografia de dados em trânsito e em repouso</li>
-              <li>Autenticação segura e controle de acesso</li>
-              <li>Monitoramento contínuo de segurança</li>
-              <li>Backups regulares e planos de recuperação</li>
-            </ul>
-          </section>
+                <section className="p-4 sm:p-6 rounded-2xl bg-card/50 border border-border/50">
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">7. Retenção de Dados</h2>
+                  <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
+                    Mantemos seus dados enquanto sua conta estiver ativa ou conforme necessário 
+                    para fornecer serviços. Após o encerramento da conta, os dados são retidos 
+                    por até 5 anos para fins legais, depois são excluídos permanentemente.
+                  </p>
+                </section>
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-4">6. Seus Direitos</h2>
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              De acordo com a Lei Geral de Proteção de Dados (LGPD), você tem direito a:
-            </p>
-            <ul className="text-muted-foreground space-y-2">
-              <li>Acessar seus dados pessoais</li>
-              <li>Corrigir dados incompletos ou desatualizados</li>
-              <li>Solicitar exclusão de dados</li>
-              <li>Portabilidade de dados</li>
-              <li>Revogar consentimento</li>
-              <li>Opor-se ao tratamento de dados</li>
-            </ul>
-          </section>
+                <section className="p-4 sm:p-6 rounded-2xl bg-card/50 border border-border/50">
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">8. Alterações na Política</h2>
+                  <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
+                    Podemos atualizar esta política periodicamente. Notificaremos sobre mudanças 
+                    significativas por e-mail ou através da plataforma. A data da última atualização 
+                    será sempre indicada no início do documento.
+                  </p>
+                </section>
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-4">7. Cookies e Tecnologias Similares</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              Utilizamos cookies e tecnologias similares para melhorar sua experiência, analisar uso da plataforma e personalizar conteúdo. Você pode gerenciar suas preferências de cookies através das configurações do seu navegador.
-            </p>
-          </section>
-
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-4">8. Retenção de Dados</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              Mantemos suas informações pessoais enquanto sua conta estiver ativa ou conforme necessário para fornecer serviços. Após o encerramento da conta, retemos dados por até 5 anos para fins legais e de auditoria.
-            </p>
-          </section>
-
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-4">9. Alterações nesta Política</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              Podemos atualizar esta Política de Privacidade periodicamente. Notificaremos sobre alterações significativas através do email cadastrado ou de aviso em nossa plataforma.
-            </p>
-          </section>
-
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-4">10. Contato</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              Para questões sobre esta política ou para exercer seus direitos, entre em contato:
-            </p>
-            <ul className="text-muted-foreground mt-4 space-y-2">
-              <li><strong>Email:</strong> <a href="mailto:privacidade@lacasadark.com" className="text-primary hover:underline">privacidade@lacasadark.com</a></li>
-              <li><strong>Suporte:</strong> <a href="mailto:suporte@lacasadark.com" className="text-primary hover:underline">suporte@lacasadark.com</a></li>
-            </ul>
-          </section>
-
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-4">11. Encarregado de Proteção de Dados (DPO)</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              Nosso Encarregado de Proteção de Dados pode ser contatado através do email: <a href="mailto:dpo@lacasadark.com" className="text-primary hover:underline">dpo@lacasadark.com</a>
-            </p>
-          </section>
-        </article>
-      </main>
-
-      {/* Footer */}
-      <footer className="py-12 px-4 border-t border-border">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>© 2026 La Casa Dark CORE. Todos os direitos reservados.</p>
-          <div className="flex gap-6">
-            <Link to="/terms" className="hover:text-foreground transition-colors">Termos de Uso</Link>
-            <Link to="/privacy" className="text-primary hover:underline">Política de Privacidade</Link>
+                <section className="p-4 sm:p-6 rounded-2xl bg-card/50 border border-border/50">
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">9. Contato do DPO</h2>
+                  <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
+                    Para questões sobre privacidade ou para exercer seus direitos, entre em contato com nosso 
+                    Encarregado de Proteção de Dados (DPO):
+                  </p>
+                  <p className="text-primary mt-4 text-sm sm:text-base">privacidade@lacasadark.com</p>
+                </section>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      </footer>
-    </div>
+        </main>
+      </div>
+    </>
   );
 };
 
