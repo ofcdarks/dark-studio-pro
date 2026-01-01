@@ -8,6 +8,7 @@ import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ArrowLeft } from 
 import { z } from "zod";
 import logo from "@/assets/logo.gif";
 import authBg from "@/assets/auth-bg.jpg";
+import FloatingParticles from "@/components/auth/FloatingParticles";
 
 const authSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -117,6 +118,9 @@ const Auth = () => {
         <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-radial from-primary/10 via-transparent to-transparent rotate-12 animate-pulse" />
         <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-radial from-primary/5 via-transparent to-transparent -rotate-12" />
       </div>
+
+      {/* Floating Particles */}
+      <FloatingParticles />
 
       {/* Back to Landing Button */}
       <Link 
