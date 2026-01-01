@@ -151,10 +151,10 @@ const VideoShowcaseSection = () => {
                   </p>
                 </div>
                 <Button variant="hero" size="sm" className="group shrink-0" asChild>
-                  <a href="https://app.canaisdarks.com.br" target="_blank" rel="noopener noreferrer">
-                  <Zap className="w-4 h-4" />
-                  Começar Agora
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <a href="/auth">
+                    <Zap className="w-4 h-4" />
+                    Começar Agora
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </a>
                 </Button>
               </div>
