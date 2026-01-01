@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AnimatedSection, AnimatedItem } from "@/components/landing/AnimatedSection";
+import { ParallaxSection, ParallaxBackground, ParallaxLayer } from "@/components/landing/ParallaxSection";
 import logo from "@/assets/logo.gif";
 
 const Landing = () => {
@@ -125,9 +126,11 @@ const Landing = () => {
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+        <ParallaxBackground speed={0.2}>
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
+        </ParallaxBackground>
+        <ParallaxLayer depth={0.3} className="absolute top-20 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+        <ParallaxLayer depth={0.5} className="absolute bottom-0 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
         
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative">
           <AnimatedSection animation="fade-right" className="space-y-8">
@@ -293,8 +296,10 @@ const Landing = () => {
       </section>
 
       {/* Dreams Section */}
-      <section className="py-20 px-4 bg-gradient-to-b from-card/50 to-transparent">
-        <div className="max-w-7xl mx-auto text-center space-y-12">
+      <section className="py-20 px-4 bg-gradient-to-b from-card/50 to-transparent relative overflow-hidden">
+        <ParallaxLayer depth={0.4} className="absolute -top-20 -right-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        <ParallaxLayer depth={0.6} className="absolute -bottom-20 -left-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-7xl mx-auto text-center space-y-12 relative">
           <AnimatedSection className="space-y-4">
             <span className="text-primary font-semibold">REALIZE SEUS SONHOS</span>
             <h2 className="text-3xl md:text-4xl font-bold">
@@ -333,8 +338,10 @@ const Landing = () => {
       </section>
 
       {/* Tools Section */}
-      <section id="funcionalidades" className="py-20 px-4 scroll-mt-20">
-        <div className="max-w-7xl mx-auto space-y-12">
+      <section id="funcionalidades" className="py-20 px-4 scroll-mt-20 relative overflow-hidden">
+        <ParallaxLayer depth={0.3} className="absolute top-40 -left-32 w-72 h-72 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        <ParallaxLayer depth={0.5} className="absolute bottom-20 -right-32 w-96 h-96 bg-primary/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-7xl mx-auto space-y-12 relative">
           <AnimatedSection className="text-center space-y-4">
             <h2 className="text-3xl md:text-4xl font-bold">
               Arsenal Completo para Operações Dark
@@ -429,8 +436,10 @@ const Landing = () => {
       </section>
 
       {/* Results Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto space-y-12">
+      <section className="py-20 px-4 relative overflow-hidden">
+        <ParallaxLayer depth={0.35} className="absolute top-0 left-1/4 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        <ParallaxLayer depth={0.45} className="absolute bottom-0 right-1/3 w-64 h-64 bg-primary/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-7xl mx-auto space-y-12 relative">
           <AnimatedSection className="text-center space-y-4">
             <span className="text-primary font-semibold">RESULTADOS COMPROVADOS</span>
             <h2 className="text-3xl md:text-4xl font-bold">
@@ -506,8 +515,10 @@ const Landing = () => {
       </section>
 
       {/* Plans Section */}
-      <section id="planos" className="py-20 px-4 bg-card/30 scroll-mt-20">
-        <div className="max-w-7xl mx-auto space-y-12">
+      <section id="planos" className="py-20 px-4 bg-card/30 scroll-mt-20 relative overflow-hidden">
+        <ParallaxLayer depth={0.25} className="absolute -top-10 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        <ParallaxLayer depth={0.4} className="absolute -bottom-20 left-0 w-80 h-80 bg-primary/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-7xl mx-auto space-y-12 relative">
           <AnimatedSection className="text-center space-y-4">
             <span className="text-primary font-semibold">$PRIVATE CORE - Alocação de Recursos</span>
             <h2 className="text-3xl md:text-4xl font-bold">
