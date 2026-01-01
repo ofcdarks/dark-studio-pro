@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,9 +22,16 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Trigger entrance animation on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,7 +129,11 @@ const Auth = () => {
       
       {/* Login Card with Mirror/Glass Effect */}
       <div 
-        className="relative z-10 w-full max-w-sm"
+        className={`relative z-10 w-full max-w-md transition-all duration-700 ease-out ${
+          isVisible 
+            ? 'opacity-100 translate-y-0 scale-100' 
+            : 'opacity-0 translate-y-8 scale-95'
+        }`}
         style={{
           perspective: '1000px',
         }}
@@ -138,7 +149,7 @@ const Auth = () => {
         />
         
         <div 
-          className="relative bg-background/90 backdrop-blur-md rounded-2xl p-6 border border-border/30 shadow-2xl overflow-hidden"
+          className="relative bg-background/90 backdrop-blur-md rounded-2xl p-8 border border-border/30 shadow-2xl overflow-hidden"
           style={{
             boxShadow: `
               0 0 0 1px rgba(255,255,255,0.05) inset,
@@ -156,16 +167,16 @@ const Auth = () => {
           />
 
           {/* Private Core Badge */}
-          <div className="flex justify-center mb-3 relative">
-            <span className="bg-primary/20 text-primary text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
-              <Lock className="w-2.5 h-2.5" />
+          <div className="flex justify-center mb-4 relative">
+            <span className="bg-primary/20 text-primary text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5">
+              <Lock className="w-3 h-3" />
               PRIVATE CORE
             </span>
           </div>
 
           {/* Logo */}
-          <div className="flex justify-center mb-3 relative">
-            <div className="w-16 h-16 rounded-full ring-2 ring-primary/80 overflow-hidden bg-background shadow-lg shadow-primary/20">
+          <div className="flex justify-center mb-4 relative">
+            <div className="w-20 h-20 rounded-full ring-4 ring-primary/80 overflow-hidden bg-background shadow-lg shadow-primary/30">
               <img 
                 src={logo} 
                 alt="Logo" 
@@ -175,26 +186,26 @@ const Auth = () => {
           </div>
 
           {/* Title */}
-          <h1 className="text-2xl font-bold text-foreground text-center tracking-wide relative">
+          <h1 className="text-3xl font-bold text-foreground text-center tracking-wide relative">
             LA CASA DARK
           </h1>
-          <p className="text-primary text-base font-bold text-center tracking-[0.25em] mb-1.5">
+          <p className="text-primary text-lg font-bold text-center tracking-[0.3em] mb-2">
             CORE
           </p>
 
           {/* Subtitle */}
-          <h2 className="text-sm font-semibold text-foreground text-center mb-0.5">
+          <h2 className="text-base font-semibold text-foreground text-center mb-1">
             {isLogin ? "Acesso ao Núcleo Privado" : "Criar Acesso ao Núcleo"}
           </h2>
-          <p className="text-[10px] text-muted-foreground text-center mb-4">
+          <p className="text-xs text-muted-foreground text-center mb-6">
             Ferramentas usadas por criadores que operam canais dark em escala
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-3 relative">
+          <form onSubmit={handleSubmit} className="space-y-4 relative">
             {!isLogin && (
               <div>
-                <label className="text-[10px] text-muted-foreground mb-1 flex items-center gap-1">
-                  <Mail className="w-2.5 h-2.5 text-primary" />
+                <label className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                  <Mail className="w-3 h-3 text-primary" />
                   Nome completo
                 </label>
                 <Input
@@ -202,15 +213,15 @@ const Auth = () => {
                   placeholder="Seu nome"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="bg-secondary/50 border-border/30 h-9 text-sm"
+                  className="bg-secondary/50 border-border/30 h-11"
                 />
               </div>
             )}
             
             {/* Email */}
             <div>
-              <label className="text-[10px] text-muted-foreground mb-1 flex items-center gap-1">
-                <Mail className="w-2.5 h-2.5 text-primary" />
+              <label className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                <Mail className="w-3 h-3 text-primary" />
                 E-mail
               </label>
               <Input
@@ -218,15 +229,15 @@ const Auth = () => {
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-secondary/50 border-border/30 h-9 text-sm"
+                className="bg-secondary/50 border-border/30 h-11"
                 required
               />
             </div>
 
             {/* Password */}
             <div>
-              <label className="text-[10px] text-muted-foreground mb-1 flex items-center gap-1">
-                <Lock className="w-2.5 h-2.5 text-primary" />
+              <label className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                <Lock className="w-3 h-3 text-primary" />
                 Senha
               </label>
               <div className="relative">
@@ -235,15 +246,15 @@ const Auth = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-secondary/50 border-border/30 h-9 text-sm pr-9"
+                  className="bg-secondary/50 border-border/30 h-11 pr-10"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
@@ -253,11 +264,11 @@ const Auth = () => {
               <div className="text-left">
                 <button
                   type="button"
-                  className="text-primary text-[10px] hover:underline"
+                  className="text-primary text-xs hover:underline"
                 >
                   Recuperar acesso ao Core
                 </button>
-                <p className="text-[9px] text-muted-foreground mt-0.5">
+                <p className="text-[10px] text-muted-foreground mt-0.5">
                   Sessão vinculada à infraestrutura do operador
                 </p>
               </div>
@@ -266,45 +277,45 @@ const Auth = () => {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-10 text-sm font-semibold hover:scale-[1.02] transition-transform"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base font-semibold hover:scale-[1.02] transition-transform"
               disabled={loading}
             >
               {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
               ) : (
-                <ArrowRight className="w-4 h-4 mr-2" />
+                <ArrowRight className="w-5 h-5 mr-2" />
               )}
               {isLogin ? "Acessar o Core" : "Criar Acesso"}
             </Button>
           </form>
 
           {/* Info text */}
-          <p className="text-[9px] text-muted-foreground text-center mt-2.5">
+          <p className="text-xs text-muted-foreground text-center mt-4">
             Canais dark não crescem por sorte. Crescem por sistema.
           </p>
 
           {/* Restricted access */}
-          <div className="text-center mt-3">
-            <p className="text-[10px] text-muted-foreground">
+          <div className="text-center mt-4">
+            <p className="text-xs text-muted-foreground">
               Acesso restrito · Validação obrigatória
             </p>
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-primary text-xs font-semibold hover:underline mt-0.5"
+              className="text-primary text-sm font-semibold hover:underline mt-1"
             >
               {isLogin ? "Solicitar acesso ao Core" : "Já tenho acesso"}
             </button>
           </div>
 
           {/* Security badge */}
-          <div className="flex items-center justify-center gap-1 mt-4 text-muted-foreground">
-            <Shield className="w-3 h-3 text-primary" />
-            <span className="text-[9px]">Ambiente isolado para operações dark</span>
+          <div className="flex items-center justify-center gap-1.5 mt-5 text-muted-foreground">
+            <Shield className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs">Ambiente isolado para operações dark</span>
           </div>
 
           {/* Terms */}
-          <p className="text-[8px] text-muted-foreground text-center mt-3">
+          <p className="text-[10px] text-muted-foreground text-center mt-4">
             Ao continuar, você concorda com nossos{" "}
             <span className="text-primary hover:underline cursor-pointer">Termos de Uso</span>
             {" "}e{" "}
