@@ -82,10 +82,39 @@ const creditPacks = [
 const PricingSection = () => {
   return (
     <section id="pricing" className="py-24 relative overflow-hidden">
-      {/* Background */}
+      {/* Background with animated orbs */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-card/30 to-background" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-card/20 to-background" />
+        <motion.div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[1200px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, hsl(38, 92%, 50%, 0.08) 0%, transparent 50%)',
+          }}
+          animate={{
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div 
+          className="absolute top-1/4 right-1/4 w-[400px] h-[400px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, hsl(45, 90%, 50%, 0.06) 0%, transparent 70%)',
+          }}
+          animate={{
+            x: [0, 40, 0],
+            y: [0, -30, 0],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
@@ -117,12 +146,16 @@ const PricingSection = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               whileHover={{ y: -10, scale: 1.02 }}
-              className={`relative p-6 rounded-2xl border transition-all ${
+              className={`relative p-6 rounded-2xl border transition-all overflow-hidden ${
                 plan.popular
-                  ? "bg-gradient-to-b from-primary/10 to-card border-primary/50 shadow-lg shadow-primary/20"
-                  : "bg-card/80 border-border/50 hover:border-primary/30"
+                  ? "bg-gradient-to-b from-primary/15 to-card border-primary/50 shadow-lg shadow-primary/20"
+                  : "bg-card/60 backdrop-blur-sm border-border/50 hover:border-primary/30"
               }`}
             >
+              {/* Shimmer effect on hover */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 animate-shimmer" />
+              </div>
               {/* Highlight badge */}
               {plan.highlight && (
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold">

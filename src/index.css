@@ -113,6 +113,49 @@
   .animate-pulse-glow {
     animation: pulseGlow 2s ease-in-out infinite;
   }
+
+  /* Animated gradient background */
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradientMove 8s ease infinite;
+  }
+
+  .animate-gradient-slow {
+    background-size: 400% 400%;
+    animation: gradientMove 15s ease infinite;
+  }
+
+  /* Shimmer effect */
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(38, 92%, 50%, 0.1) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  /* Glow pulse */
+  .glow-amber {
+    box-shadow: 0 0 20px hsl(38, 92%, 50%, 0.4),
+                0 0 40px hsl(38, 92%, 50%, 0.2),
+                0 0 60px hsl(38, 92%, 50%, 0.1);
+  }
+
+  /* Glass effect */
+  .glass {
+    background: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .glass-strong {
+    background: hsl(var(--card) / 0.8);
+    backdrop-filter: blur(40px);
+    border: 1px solid hsl(var(--primary) / 0.2);
+  }
 }
 
 @keyframes float {
@@ -133,6 +176,27 @@
   }
 }
 
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
@@ -144,12 +208,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary) / 0.3);
+  background: linear-gradient(180deg, hsl(38, 92%, 50%, 0.5), hsl(32, 95%, 45%, 0.3));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary) / 0.5);
+  background: linear-gradient(180deg, hsl(38, 92%, 50%, 0.7), hsl(32, 95%, 45%, 0.5));
 }
 
 ::selection {

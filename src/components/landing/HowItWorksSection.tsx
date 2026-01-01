@@ -40,11 +40,41 @@ const HowItWorksSection = () => {
 
   return (
     <section id="como-funciona" ref={containerRef} className="py-24 relative overflow-hidden">
-      {/* Background */}
+      {/* Background with animated orbs */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-3xl" />
+        <motion.div 
+          className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, hsl(38, 92%, 50%, 0.08) 0%, transparent 60%)',
+          }}
+          animate={{
+            x: [0, -30, 0],
+            y: [0, 30, 0],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div 
+          className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, hsl(220, 80%, 50%, 0.05) 0%, transparent 60%)',
+          }}
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -30, 0],
+            scale: [1, 1.15, 1],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
@@ -100,14 +130,19 @@ const HowItWorksSection = () => {
                       {step.description}
                     </p>
                     <div className={`flex flex-wrap gap-3 ${index % 2 === 1 ? "lg:justify-end" : ""} justify-center lg:justify-start`}>
-                      {step.features.map((feature) => (
-                        <span
+                      {step.features.map((feature, fi) => (
+                        <motion.span
                           key={feature}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          whileInView={{ opacity: 1, scale: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.3 + fi * 0.1 }}
+                          whileHover={{ scale: 1.05 }}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm cursor-default"
                         >
                           <Check className="w-4 h-4" />
                           {feature}
-                        </span>
+                        </motion.span>
                       ))}
                     </div>
                   </div>
