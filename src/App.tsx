@@ -30,6 +30,8 @@ import ThumbnailsPage from "./pages/ThumbnailsPage";
 import SceneGenerator from "./pages/SceneGenerator";
 import AnalysisHistory from "./pages/AnalysisHistory";
 import PlansCredits from "./pages/PlansCredits";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +67,8 @@ const App = () => (
             <Route path="/thumbnails" element={<ProtectedRoute><ThumbnailsPage /></ProtectedRoute>} />
             <Route path="/scenes" element={<ProtectedRoute><SceneGenerator /></ProtectedRoute>} />
             <Route path="/plans" element={<ProtectedRoute><PlansCredits /></ProtectedRoute>} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

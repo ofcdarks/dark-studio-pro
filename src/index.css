@@ -112,6 +112,7 @@
 
   html {
     font-size: 16px;
+    scroll-behavior: smooth;
   }
 
   body {
@@ -119,6 +120,39 @@
     font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
     font-size: 1rem;
     line-height: 1.6;
+  }
+
+  /* Custom Scrollbar - Premium Style */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(240 20% 6%);
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, hsl(38 92% 50% / 0.6) 0%, hsl(32 91% 44% / 0.4) 100%);
+    border-radius: 5px;
+    border: 2px solid hsl(240 20% 6%);
+    transition: all 0.3s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, hsl(38 92% 50% / 0.8) 0%, hsl(32 91% 44% / 0.6) 100%);
+    box-shadow: 0 0 10px hsl(38 92% 50% / 0.4);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: hsl(240 20% 6%);
+  }
+
+  /* Firefox Scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(38 92% 50% / 0.5) hsl(240 20% 6%);
   }
 
   /* Typography base sizes - La Casa Dark Core spec */
@@ -280,4 +314,67 @@
 
 .animate-spin-slow {
   animation: spin-slow 8s linear infinite;
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Shimmer effect for cards */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(38 92% 50% / 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Glow pulse animation */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(38 92% 50% / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(38 92% 50% / 0.5);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Border gradient animation */
+@keyframes border-glow {
+  0%, 100% {
+    border-color: hsl(38 92% 50% / 0.3);
+  }
+  50% {
+    border-color: hsl(38 92% 50% / 0.7);
+  }
+}
+
+.animate-border-glow {
+  animation: border-glow 2s ease-in-out infinite;
 }
