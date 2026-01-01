@@ -133,7 +133,7 @@ const Auth = () => {
       
       {/* Login Card with Mirror/Glass Effect */}
       <div 
-        className={`relative z-10 w-full max-w-xl transition-all duration-700 ease-out ${
+        className={`relative z-10 w-full max-w-2xl transition-all duration-700 ease-out ${
           isVisible 
             ? 'opacity-100 translate-y-0 scale-100' 
             : 'opacity-0 translate-y-8 scale-95'
@@ -153,7 +153,7 @@ const Auth = () => {
         />
         
         <div 
-          className="relative bg-background/90 backdrop-blur-md rounded-2xl px-14 py-16 border border-border/30 shadow-2xl overflow-hidden"
+          className="relative bg-background/90 backdrop-blur-md rounded-2xl px-16 py-16 border border-border/30 shadow-2xl overflow-hidden"
           style={{
             boxShadow: `
               0 0 0 1px rgba(255,255,255,0.05) inset,
@@ -171,16 +171,16 @@ const Auth = () => {
           />
 
           {/* Private Core Badge */}
-          <div className="flex justify-center mb-6 relative">
-            <span className="bg-primary/20 text-primary text-sm font-semibold px-4 py-2 rounded-full flex items-center gap-2">
-              <Lock className="w-3.5 h-3.5" />
+          <div className="flex justify-center mb-8 relative">
+            <span className="bg-primary/20 text-primary text-base font-semibold px-5 py-2.5 rounded-full flex items-center gap-2">
+              <Lock className="w-4 h-4" />
               PRIVATE CORE
             </span>
           </div>
 
           {/* Logo */}
-          <div className="flex justify-center mb-8 relative">
-            <div className="w-32 h-32 rounded-full ring-4 ring-primary/80 overflow-hidden bg-background shadow-lg shadow-primary/30">
+          <div className="flex justify-center mb-10 relative">
+            <div className="w-40 h-40 rounded-full ring-4 ring-primary/80 overflow-hidden bg-background shadow-lg shadow-primary/30">
               <img 
                 src={logo} 
                 alt="Logo" 
@@ -190,26 +190,26 @@ const Auth = () => {
           </div>
 
           {/* Title */}
-          <h1 className="text-4xl font-bold text-foreground text-center tracking-wide relative">
+          <h1 className="text-5xl font-bold text-foreground text-center tracking-wide relative">
             LA CASA DARK
           </h1>
-          <p className="text-primary text-xl font-bold text-center tracking-[0.3em] mb-3">
+          <p className="text-primary text-2xl font-bold text-center tracking-[0.3em] mb-4">
             CORE
           </p>
 
           {/* Subtitle */}
-          <h2 className="text-lg font-semibold text-foreground text-center mb-2">
+          <h2 className="text-xl font-semibold text-foreground text-center mb-3">
             {isLogin ? "Acesso ao Núcleo Privado" : "Criar Acesso ao Núcleo"}
           </h2>
-          <p className="text-sm text-muted-foreground text-center mb-8">
+          <p className="text-base text-muted-foreground text-center mb-10">
             Ferramentas usadas por criadores que operam canais dark em escala
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-5 relative">
+          <form onSubmit={handleSubmit} className="space-y-6 relative">
             {!isLogin && (
               <div>
-                <label className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-primary" />
+                <label className="text-base text-muted-foreground mb-2 flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-primary" />
                   Nome completo
                 </label>
                 <Input
@@ -217,15 +217,15 @@ const Auth = () => {
                   placeholder="Seu nome"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="bg-secondary/50 border-border/30 h-14 text-base"
+                  className="bg-secondary/50 border-border/30 h-16 text-lg"
                 />
               </div>
             )}
             
             {/* Email */}
             <div>
-              <label className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                <Mail className="w-4 h-4 text-primary" />
+              <label className="text-base text-muted-foreground mb-2 flex items-center gap-2">
+                <Mail className="w-5 h-5 text-primary" />
                 E-mail
               </label>
               <Input
@@ -233,15 +233,15 @@ const Auth = () => {
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-secondary/50 border-border/30 h-14 text-base"
+                className="bg-secondary/50 border-border/30 h-16 text-lg"
                 required
               />
             </div>
 
             {/* Password */}
             <div>
-              <label className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-primary" />
+              <label className="text-base text-muted-foreground mb-2 flex items-center gap-2">
+                <Lock className="w-5 h-5 text-primary" />
                 Senha
               </label>
               <div className="relative">
@@ -250,15 +250,15 @@ const Auth = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-secondary/50 border-border/30 h-14 text-base pr-12"
+                  className="bg-secondary/50 border-border/30 h-16 text-lg pr-14"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
                 </button>
               </div>
             </div>
@@ -268,11 +268,11 @@ const Auth = () => {
               <div className="text-left">
                 <button
                   type="button"
-                  className="text-primary text-sm hover:underline"
+                  className="text-primary text-base hover:underline"
                 >
                   Recuperar acesso ao Core
                 </button>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Sessão vinculada à infraestrutura do operador
                 </p>
               </div>
@@ -281,13 +281,13 @@ const Auth = () => {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-14 text-lg font-semibold hover:scale-[1.02] transition-transform mt-2"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-16 text-xl font-semibold hover:scale-[1.02] transition-transform mt-3"
               disabled={loading}
             >
               {loading ? (
-                <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                <Loader2 className="w-7 h-7 animate-spin mr-2" />
               ) : (
-                <ArrowRight className="w-6 h-6 mr-2" />
+                <ArrowRight className="w-7 h-7 mr-2" />
               )}
               {isLogin ? "Acessar o Core" : "Criar Acesso"}
             </Button>
