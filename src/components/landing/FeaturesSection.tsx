@@ -144,10 +144,25 @@ const FeaturesSection = () => {
 
   return (
     <section id="features" ref={ref} className="py-24 relative overflow-hidden">
-      {/* Background */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-card/50 to-background" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-card/30 to-background" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-primary/5 rounded-full blur-3xl" />
+        {/* Animated gradient orb */}
+        <motion.div 
+          className="absolute top-1/3 right-1/4 w-[400px] h-[400px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, hsl(38, 92%, 50%, 0.08) 0%, transparent 70%)',
+          }}
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -20, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
@@ -182,25 +197,34 @@ const FeaturesSection = () => {
               {/* Glow effect */}
               <div className={`absolute inset-0 bg-gradient-to-r ${feature.color} opacity-0 group-hover:opacity-20 rounded-2xl blur-xl transition-all duration-500`} />
               
-              {/* Card */}
-              <div className="relative p-6 h-full rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 hover:border-primary/40 transition-all duration-300">
+              {/* Card with glass effect */}
+              <div className="relative p-6 h-full rounded-2xl bg-card/60 backdrop-blur-sm border border-border/50 hover:border-primary/40 transition-all duration-300 overflow-hidden">
+                {/* Shimmer on hover */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="absolute inset-0 animate-shimmer" />
+                </div>
+                
                 {/* Badge */}
                 {feature.badge && (
-                  <span className="absolute top-4 right-4 px-2 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold">
+                  <span className="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold border border-primary/30">
                     {feature.badge}
                   </span>
                 )}
 
                 {/* Icon */}
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${feature.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                <motion.div 
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-r ${feature.color} flex items-center justify-center mb-4 shadow-lg relative z-10`}
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ duration: 0.3 }}
+                >
                   <feature.icon className="w-6 h-6 text-white" />
-                </div>
+                </motion.div>
 
                 {/* Content */}
-                <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors relative z-10">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed relative z-10">
                   {feature.description}
                 </p>
               </div>

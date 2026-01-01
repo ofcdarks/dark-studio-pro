@@ -10,31 +10,77 @@ const VideoShowcaseSection = () => {
     <section id="demo" className="py-24 relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-card/50 to-background" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] bg-primary/10 rounded-full blur-[150px]" />
-        <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-orange-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-0 w-[400px] h-[400px] bg-yellow-500/5 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-card/30 to-background" />
+        
+        {/* Animated gradient orbs */}
+        <motion.div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] rounded-full"
+          style={{
+            background: 'radial-gradient(ellipse, hsl(38, 92%, 50%, 0.1) 0%, transparent 60%)',
+          }}
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.5, 0.8, 0.5],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div 
+          className="absolute top-1/4 right-0 w-[400px] h-[400px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, hsl(32, 95%, 50%, 0.1) 0%, transparent 70%)',
+          }}
+          animate={{
+            x: [0, -30, 0],
+            y: [0, 20, 0],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div 
+          className="absolute bottom-1/4 left-0 w-[400px] h-[400px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, hsl(45, 90%, 50%, 0.08) 0%, transparent 70%)',
+          }}
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -20, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
       </div>
 
-      {/* Animated particles */}
+      {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(25)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 bg-primary/40 rounded-full"
-            initial={{
-              x: Math.random() * 100 + "%",
-              y: Math.random() * 600,
-              opacity: 0,
+            className="absolute w-1 h-1 bg-primary/50 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
             }}
             animate={{
-              y: [null, -100],
-              opacity: [0, 1, 0],
+              y: [0, -50, 0],
+              x: [0, Math.random() * 20 - 10, 0],
+              opacity: [0.3, 0.8, 0.3],
+              scale: [0.5, 1, 0.5],
             }}
             transition={{
-              duration: 3 + Math.random() * 2,
+              duration: 4 + Math.random() * 3,
               repeat: Infinity,
               delay: Math.random() * 3,
+              ease: "easeInOut",
             }}
           />
         ))}

@@ -52,7 +52,37 @@ const LifestyleSection = () => {
       {/* Premium Background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/5 to-background" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-3xl" />
+        <motion.div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, hsl(38, 92%, 50%, 0.12) 0%, transparent 60%)',
+          }}
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.5, 0.8, 0.5],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        {/* Moving gradient orbs */}
+        <motion.div 
+          className="absolute top-1/4 left-1/4 w-[300px] h-[300px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, hsl(45, 90%, 55%, 0.08) 0%, transparent 70%)',
+          }}
+          animate={{
+            x: [0, 50, 0],
+            y: [0, -30, 0],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
