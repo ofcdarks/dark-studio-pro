@@ -47,15 +47,15 @@ const HeroSection = () => {
         <img 
           src={heroBg}
           alt="Luxury Porsche"
-          className="absolute inset-0 w-full h-full object-cover opacity-60"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: 0.7 }}
         />
-        {/* Minimal overlay to keep text readable */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background/50 via-background/30 to-transparent" />
+        {/* Minimal overlay - only on left side for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/40 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/40 via-transparent to-transparent" />
-        {/* Animated gradient shimmer */}
+        {/* Subtle shimmer */}
         <motion.div 
-          className="absolute inset-0 bg-gradient-to-r from-primary/3 via-primary/8 to-primary/3"
+          className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent"
           animate={{
             backgroundPosition: ["0% 0%", "100% 0%", "0% 0%"],
           }}
