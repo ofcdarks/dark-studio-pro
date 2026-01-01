@@ -19,17 +19,19 @@ const Header = () => {
       
       <div className="container mx-auto px-6 h-20 flex items-center justify-between relative">
         {/* Logo */}
-        <motion.div 
-          className="flex items-center gap-3"
-          whileHover={{ scale: 1.02 }}
-        >
-          <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
-            <Crown className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <span className="font-bold text-xl hidden sm:block">
-            La Casa Dark <span className="text-gradient">CORE</span>
-          </span>
-        </motion.div>
+        <Link to="/">
+          <motion.div 
+            className="flex items-center gap-3"
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+              <Crown className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <span className="font-bold text-lg hidden sm:block">
+              La Casa Dark <span className="text-primary font-black">CORE</span>
+            </span>
+          </motion.div>
+        </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
@@ -67,16 +69,11 @@ const Header = () => {
           </motion.a>
         </nav>
 
-        {/* CTA Buttons */}
-        <div className="hidden md:flex items-center gap-4">
-          <Link to="/auth">
-            <Button variant="ghost" size="sm">
-              Entrar
-            </Button>
-          </Link>
+        {/* CTA Button */}
+        <div className="hidden md:flex items-center">
           <Link to="/auth">
             <Button variant="hero" size="sm">
-              Começar Agora
+              Acessar Core
             </Button>
           </Link>
         </div>
