@@ -187,10 +187,7 @@ const Landing = () => {
         <ParallaxLayer depth={0.5} className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-start relative z-10">
-          {/* Glass panel behind text for readability */}
-          <AnimatedSection animation="fade-right" className="relative">
-            <div className="absolute -inset-6 rounded-3xl bg-background/40 backdrop-blur-md border border-border/20 -z-10" />
-            <div className="space-y-8 p-2">
+          <AnimatedSection animation="fade-right" className="space-y-8">
               {/* Private Elite Access Badge */}
               <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-border">
                 <Sparkles className="w-5 h-5 text-primary" />
@@ -255,7 +252,6 @@ const Landing = () => {
                   <span className="text-base text-muted-foreground">Ferramenta em constante atualização</span>
                 </div>
               </div>
-            </div>
           </AnimatedSection>
 
           {/* AdSense Card */}
