@@ -149,7 +149,7 @@ const Auth = () => {
         />
         
         <div 
-          className="relative bg-background/90 backdrop-blur-md rounded-2xl p-10 border border-border/30 shadow-2xl overflow-hidden"
+          className="relative bg-background/90 backdrop-blur-md rounded-2xl px-12 py-14 border border-border/30 shadow-2xl overflow-hidden"
           style={{
             boxShadow: `
               0 0 0 1px rgba(255,255,255,0.05) inset,
@@ -167,16 +167,16 @@ const Auth = () => {
           />
 
           {/* Private Core Badge */}
-          <div className="flex justify-center mb-4 relative">
-            <span className="bg-primary/20 text-primary text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5">
-              <Lock className="w-3 h-3" />
+          <div className="flex justify-center mb-6 relative">
+            <span className="bg-primary/20 text-primary text-sm font-semibold px-4 py-2 rounded-full flex items-center gap-2">
+              <Lock className="w-3.5 h-3.5" />
               PRIVATE CORE
             </span>
           </div>
 
           {/* Logo */}
-          <div className="flex justify-center mb-4 relative">
-            <div className="w-20 h-20 rounded-full ring-4 ring-primary/80 overflow-hidden bg-background shadow-lg shadow-primary/30">
+          <div className="flex justify-center mb-6 relative">
+            <div className="w-24 h-24 rounded-full ring-4 ring-primary/80 overflow-hidden bg-background shadow-lg shadow-primary/30">
               <img 
                 src={logo} 
                 alt="Logo" 
@@ -186,26 +186,26 @@ const Auth = () => {
           </div>
 
           {/* Title */}
-          <h1 className="text-3xl font-bold text-foreground text-center tracking-wide relative">
+          <h1 className="text-4xl font-bold text-foreground text-center tracking-wide relative">
             LA CASA DARK
           </h1>
-          <p className="text-primary text-lg font-bold text-center tracking-[0.3em] mb-2">
+          <p className="text-primary text-xl font-bold text-center tracking-[0.3em] mb-3">
             CORE
           </p>
 
           {/* Subtitle */}
-          <h2 className="text-base font-semibold text-foreground text-center mb-1">
+          <h2 className="text-lg font-semibold text-foreground text-center mb-2">
             {isLogin ? "Acesso ao Núcleo Privado" : "Criar Acesso ao Núcleo"}
           </h2>
-          <p className="text-xs text-muted-foreground text-center mb-6">
+          <p className="text-sm text-muted-foreground text-center mb-8">
             Ferramentas usadas por criadores que operam canais dark em escala
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4 relative">
+          <form onSubmit={handleSubmit} className="space-y-5 relative">
             {!isLogin && (
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                  <Mail className="w-3 h-3 text-primary" />
+                <label className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-primary" />
                   Nome completo
                 </label>
                 <Input
@@ -213,15 +213,15 @@ const Auth = () => {
                   placeholder="Seu nome"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="bg-secondary/50 border-border/30 h-11"
+                  className="bg-secondary/50 border-border/30 h-14 text-base"
                 />
               </div>
             )}
             
             {/* Email */}
             <div>
-              <label className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                <Mail className="w-3 h-3 text-primary" />
+              <label className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
                 E-mail
               </label>
               <Input
@@ -229,15 +229,15 @@ const Auth = () => {
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-secondary/50 border-border/30 h-11"
+                className="bg-secondary/50 border-border/30 h-14 text-base"
                 required
               />
             </div>
 
             {/* Password */}
             <div>
-              <label className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                <Lock className="w-3 h-3 text-primary" />
+              <label className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-primary" />
                 Senha
               </label>
               <div className="relative">
@@ -246,15 +246,15 @@ const Auth = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-secondary/50 border-border/30 h-11 pr-10"
+                  className="bg-secondary/50 border-border/30 h-14 text-base pr-12"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
@@ -264,11 +264,11 @@ const Auth = () => {
               <div className="text-left">
                 <button
                   type="button"
-                  className="text-primary text-xs hover:underline"
+                  className="text-primary text-sm hover:underline"
                 >
                   Recuperar acesso ao Core
                 </button>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-1">
                   Sessão vinculada à infraestrutura do operador
                 </p>
               </div>
@@ -277,45 +277,45 @@ const Auth = () => {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base font-semibold hover:scale-[1.02] transition-transform"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-14 text-lg font-semibold hover:scale-[1.02] transition-transform mt-2"
               disabled={loading}
             >
               {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                <Loader2 className="w-6 h-6 animate-spin mr-2" />
               ) : (
-                <ArrowRight className="w-5 h-5 mr-2" />
+                <ArrowRight className="w-6 h-6 mr-2" />
               )}
               {isLogin ? "Acessar o Core" : "Criar Acesso"}
             </Button>
           </form>
 
           {/* Info text */}
-          <p className="text-xs text-muted-foreground text-center mt-4">
+          <p className="text-sm text-muted-foreground text-center mt-6">
             Canais dark não crescem por sorte. Crescem por sistema.
           </p>
 
           {/* Restricted access */}
-          <div className="text-center mt-4">
-            <p className="text-xs text-muted-foreground">
+          <div className="text-center mt-6">
+            <p className="text-sm text-muted-foreground">
               Acesso restrito · Validação obrigatória
             </p>
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-primary text-sm font-semibold hover:underline mt-1"
+              className="text-primary text-base font-semibold hover:underline mt-2"
             >
               {isLogin ? "Solicitar acesso ao Core" : "Já tenho acesso"}
             </button>
           </div>
 
           {/* Security badge */}
-          <div className="flex items-center justify-center gap-1.5 mt-5 text-muted-foreground">
-            <Shield className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs">Ambiente isolado para operações dark</span>
+          <div className="flex items-center justify-center gap-2 mt-6 text-muted-foreground">
+            <Shield className="w-4 h-4 text-primary" />
+            <span className="text-sm">Ambiente isolado para operações dark</span>
           </div>
 
           {/* Terms */}
-          <p className="text-[10px] text-muted-foreground text-center mt-4">
+          <p className="text-xs text-muted-foreground text-center mt-6">
             Ao continuar, você concorda com nossos{" "}
             <span className="text-primary hover:underline cursor-pointer">Termos de Uso</span>
             {" "}e{" "}
