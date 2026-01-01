@@ -170,17 +170,17 @@ const Landing = () => {
           <img
             src="/images/hero-porsche.jpg"
             alt="Porsche de luxo no fundo da landing page"
-            className="absolute inset-0 h-full w-full object-cover object-[70%_60%] scale-[0.85] opacity-100 brightness-105 contrast-105 saturate-110"
+            className="absolute inset-0 h-full w-full object-cover object-right opacity-50 brightness-90 contrast-110"
             loading="eager"
           />
 
-          {/* Darken left side for text readability */}
-          <div className="absolute inset-0 z-10 bg-gradient-to-r from-background/90 via-background/50 to-background/20" />
-          {/* Stronger vertical fade for seamless section transitions */}
-          <div className="absolute inset-0 z-10 bg-gradient-to-b from-background/70 via-background/10 to-background/80" />
+          {/* Heavy unified dark overlay */}
+          <div className="absolute inset-0 z-10 bg-gradient-to-r from-background via-background/95 to-background/60" />
+          {/* Strong vertical fade for seamless section transitions */}
+          <div className="absolute inset-0 z-10 bg-gradient-to-b from-background/90 via-background/20 to-background" />
 
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/15 via-transparent to-transparent z-10" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-primary/8 via-transparent to-transparent z-10" />
+          {/* Subtle amber glow accents */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_right,_var(--tw-gradient-stops))] from-primary/8 via-transparent to-transparent z-10" />
         </div>
 
         <ParallaxLayer depth={0.3} className="absolute top-32 left-1/4 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl pointer-events-none animate-float" />
