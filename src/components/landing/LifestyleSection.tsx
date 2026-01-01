@@ -87,12 +87,15 @@ const LifestyleSection = () => {
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
+          initial={{ opacity: 0, y: 50, filter: "blur(10px)" }}
+          animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-10 sm:mb-16"
         >
           <motion.span 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={isInView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.5, delay: 0.2 }}
             className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-gradient-to-r from-primary/20 to-yellow-500/20 border border-primary/30 text-primary text-xs sm:text-sm font-bold mb-4 sm:mb-6 backdrop-blur-sm"
             whileHover={{ scale: 1.05 }}
           >
@@ -101,17 +104,27 @@ const LifestyleSection = () => {
             <Diamond className="w-3 h-3 sm:w-4 sm:h-4" />
           </motion.span>
           
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-4 sm:mb-6">
+          <motion.h2 
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-4 sm:mb-6"
+          >
             O Que Você Pode
-            <span className="block mt-2 sm:mt-3 bg-gradient-to-r from-primary via-yellow-400 to-primary bg-clip-text text-transparent">
+            <span className="block mt-2 sm:mt-3 bg-gradient-to-r from-primary via-yellow-400 to-primary bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
               Conquistar Com YouTube
             </span>
-          </h2>
+          </motion.h2>
           
-          <p className="text-muted-foreground text-sm sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed px-4">
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="text-muted-foreground text-sm sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed px-4"
+          >
             Dedicando apenas <span className="text-primary font-bold">2 a 3 horas por dia</span>, você pode transformar 
             sua vida e conquistar tudo isso com canais Dark no YouTube.
-          </p>
+          </motion.p>
         </motion.div>
 
         {/* Image Grid */}
@@ -119,13 +132,15 @@ const LifestyleSection = () => {
           {lifestyleItems.map((item, index) => (
             <motion.a
               key={item.title}
-              href="https://app.canaisdarks.com.br"
-              target="_blank"
-              rel="noopener noreferrer"
-              initial={{ opacity: 0, y: 30, scale: 0.9 }}
-              animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              whileHover={{ y: -8, scale: 1.02 }}
+              href="/auth"
+              initial={{ opacity: 0, y: 60, scale: 0.85, rotateX: 15 }}
+              animate={isInView ? { opacity: 1, y: 0, scale: 1, rotateX: 0 } : {}}
+              transition={{ 
+                duration: 0.7, 
+                delay: 0.5 + index * 0.12,
+                ease: [0.22, 1, 0.36, 1]
+              }}
+              whileHover={{ y: -12, scale: 1.03 }}
               className="group cursor-pointer"
             >
               <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-card border border-border hover:border-primary/50 transition-all duration-300">
