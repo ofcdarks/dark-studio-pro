@@ -129,7 +129,7 @@ const Auth = () => {
       
       {/* Login Card with Mirror/Glass Effect */}
       <div 
-        className={`relative z-10 w-full max-w-md transition-all duration-700 ease-out ${
+        className={`relative z-10 w-full max-w-xl transition-all duration-700 ease-out ${
           isVisible 
             ? 'opacity-100 translate-y-0 scale-100' 
             : 'opacity-0 translate-y-8 scale-95'
@@ -149,7 +149,7 @@ const Auth = () => {
         />
         
         <div 
-          className="relative bg-background/90 backdrop-blur-md rounded-2xl p-8 border border-border/30 shadow-2xl overflow-hidden"
+          className="relative bg-background/90 backdrop-blur-md rounded-2xl p-10 border border-border/30 shadow-2xl overflow-hidden"
           style={{
             boxShadow: `
               0 0 0 1px rgba(255,255,255,0.05) inset,
