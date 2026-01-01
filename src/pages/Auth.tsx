@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ArrowLeft } from "lucide-react";
@@ -22,6 +23,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberPassword, setRememberPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const { signIn, signUp } = useAuth();
@@ -263,34 +265,60 @@ const Auth = () => {
               </div>
             </div>
 
-            {/* Recover access */}
+            {/* Remember password & Recover access */}
             {isLogin && (
-              <div className="text-left">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="rememberPassword"
+                    checked={rememberPassword}
+                    onCheckedChange={(checked) => setRememberPassword(checked as boolean)}
+                    className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                  />
+                  <label 
+                    htmlFor="rememberPassword" 
+                    className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                  >
+                    Lembrar senha
+                  </label>
+                </div>
                 <button
                   type="button"
-                  className="text-primary text-base hover:underline"
+                  className="text-primary text-sm hover:underline"
                 >
-                  Recuperar acesso ao Core
+                  Esqueceu a senha?
                 </button>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Sessão vinculada à infraestrutura do operador
-                </p>
               </div>
             )}
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-16 text-xl font-semibold hover:scale-[1.02] transition-transform mt-3"
-              disabled={loading}
-            >
-              {loading ? (
-                <Loader2 className="w-7 h-7 animate-spin mr-2" />
-              ) : (
-                <ArrowRight className="w-7 h-7 mr-2" />
-              )}
-              {isLogin ? "Acessar o Core" : "Criar Acesso"}
-            </Button>
+            {/* Submit Button with animated gradient */}
+            <div className="relative mt-4 group">
+              <div 
+                className="absolute -inset-0.5 rounded-xl opacity-75 blur-sm group-hover:opacity-100 transition-opacity"
+                style={{
+                  background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(38, 92%, 60%), hsl(var(--primary)), hsl(38, 92%, 60%))',
+                  backgroundSize: '300% 100%',
+                  animation: 'gradient-shift 3s ease infinite',
+                }}
+              />
+              <Button
+                type="submit"
+                className="relative w-full h-16 text-xl font-semibold hover:scale-[1.02] transition-transform overflow-hidden"
+                style={{
+                  background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(38, 92%, 55%), hsl(var(--primary)))',
+                  backgroundSize: '200% 100%',
+                  animation: 'gradient-shift 3s ease infinite',
+                }}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="w-7 h-7 animate-spin mr-2" />
+                ) : (
+                  <ArrowRight className="w-7 h-7 mr-2" />
+                )}
+                {isLogin ? "Acessar o Core" : "Criar Acesso"}
+              </Button>
+            </div>
           </form>
 
           {/* Info text */}
