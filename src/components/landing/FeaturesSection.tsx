@@ -12,7 +12,11 @@ import {
   LineChart,
   Brain,
   Palette,
-  Key
+  Key,
+  Mic,
+  FileSearch,
+  Youtube,
+  Flame
 } from "lucide-react";
 
 const features = [
@@ -89,10 +93,48 @@ const features = [
     badge: "IA",
   },
   {
+    icon: Palette,
+    title: "Modelagem de Thumbnail",
+    description: "Templates e modelagem inteligente de thumbnails.",
+    color: "from-rose-500 to-pink-500",
+  },
+  {
+    icon: Youtube,
+    title: "Processamento de Vídeos YouTube",
+    description: "Processamento e análise de vídeos diretamente do YouTube.",
+    color: "from-red-500 to-rose-500",
+  },
+  {
+    icon: Mic,
+    title: "Geração de Áudio (TTS)",
+    description: "Text-to-Speech com vozes ultra-realistas e naturais.",
+    color: "from-amber-500 to-yellow-500",
+  },
+  {
+    icon: FileSearch,
+    title: "Análise de Transcrições",
+    description: "Transcreva e analise conteúdo de vídeos automaticamente.",
+    color: "from-emerald-500 to-teal-500",
+  },
+  {
+    icon: Flame,
+    title: "Biblioteca de Virais",
+    description: "Acesse os vídeos mais virais do momento para referência.",
+    color: "from-orange-500 to-amber-500",
+    badge: "Hot",
+  },
+  {
     icon: Key,
     title: "Integração com APIs Próprias",
     description: "Use suas próprias chaves de API para maior controle.",
     color: "from-gray-500 to-zinc-500",
+  },
+  {
+    icon: Bot,
+    title: "Assistente IA 24/7",
+    description: "Chat integrado com IA para tirar dúvidas a qualquer momento.",
+    color: "from-blue-500 to-indigo-500",
+    badge: "IA",
   },
 ];
 
@@ -115,15 +157,15 @@ const FeaturesSection = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <span className="inline-block px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-medium mb-4">
-            ⚡ FUNCIONALIDADES PREMIUM
+          <span className="inline-block px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-bold mb-4">
+            18+ FUNCIONALIDADES PREMIUM
           </span>
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            Ferramentas de
-            <span className="text-gradient"> Elite</span>
+            Arsenal Completo para
+            <span className="text-gradient"> Operações Dark</span>
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Todas as ferramentas que você precisa para dominar o YouTube em uma única plataforma.
+            Todas as ferramentas que você precisa para criar, otimizar e escalar seus canais de forma automatizada.
           </p>
         </motion.div>
 
