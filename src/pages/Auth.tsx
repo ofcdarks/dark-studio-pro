@@ -60,7 +60,7 @@ const Auth = () => {
             title: "Bem-vindo!",
             description: "Login realizado com sucesso",
           });
-          navigate("/");
+          navigate("/dashboard");
         }
       } else {
         const { error } = await signUp(email, password, fullName);
@@ -79,7 +79,7 @@ const Auth = () => {
             title: "Conta criada!",
             description: "Você já pode acessar a plataforma",
           });
-          navigate("/");
+          navigate("/dashboard");
         }
       }
     } catch (error) {
