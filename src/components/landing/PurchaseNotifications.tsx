@@ -1,33 +1,32 @@
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Crown, Star } from "lucide-react";
+import { Sparkles, Zap, Star } from "lucide-react";
 
 const purchaseData = [
-  { name: "Mariana L.", city: "Porto Alegre", plan: "MASTER PRO", time: "Agora mesmo" },
-  { name: "Carlos E.", city: "São Paulo", plan: "TURBO MAKER", time: "Há 2 min" },
-  { name: "Amanda S.", city: "Rio de Janeiro", plan: "START CREATOR", time: "Há 3 min" },
-  { name: "Pedro H.", city: "Brasília", plan: "MASTER PRO", time: "Há 5 min" },
-  { name: "Juliana M.", city: "Curitiba", plan: "TURBO MAKER", time: "Há 7 min" },
-  { name: "Rafael C.", city: "Belo Horizonte", plan: "MASTER PRO", time: "Há 8 min" },
-  { name: "Fernanda R.", city: "Salvador", plan: "START CREATOR", time: "Há 10 min" },
-  { name: "Lucas P.", city: "Fortaleza", plan: "TURBO MAKER", time: "Há 12 min" },
-  { name: "Beatriz A.", city: "Recife", plan: "MASTER PRO", time: "Há 15 min" },
-  { name: "Thiago M.", city: "Florianópolis", plan: "TURBO MAKER", time: "Há 18 min" },
-  { name: "Camila G.", city: "Manaus", plan: "START CREATOR", time: "Há 20 min" },
-  { name: "Diego S.", city: "Goiânia", plan: "MASTER PRO", time: "Há 22 min" },
-  { name: "Isabela F.", city: "Vitória", plan: "TURBO MAKER", time: "Há 25 min" },
-  { name: "Gabriel R.", city: "Campinas", plan: "START CREATOR", time: "Há 28 min" },
-  { name: "Natália L.", city: "Natal", plan: "MASTER PRO", time: "Há 30 min" },
-  { name: "Vinícius O.", city: "João Pessoa", plan: "TURBO MAKER", time: "Há 32 min" },
-  { name: "Larissa T.", city: "Campo Grande", plan: "START CREATOR", time: "Há 35 min" },
-  { name: "Rodrigo N.", city: "Cuiabá", plan: "MASTER PRO", time: "Há 38 min" },
-  { name: "Patrícia C.", city: "Teresina", plan: "TURBO MAKER", time: "Há 40 min" },
-  { name: "André M.", city: "Maceió", plan: "START CREATOR", time: "Há 42 min" },
-  { name: "Jéssica B.", city: "Aracaju", plan: "MASTER PRO", time: "Há 45 min" },
-  { name: "Marcelo D.", city: "São Luís", plan: "TURBO MAKER", time: "Há 48 min" },
-  { name: "Vanessa P.", city: "Belém", plan: "START CREATOR", time: "Há 50 min" },
-  { name: "Eduardo K.", city: "Londrina", plan: "MASTER PRO", time: "Há 52 min" },
-  { name: "Renata S.", city: "Santos", plan: "TURBO MAKER", time: "Há 55 min" },
+  { name: "Natália S.", city: "Sorocaba", plan: "Pro" },
+  { name: "Mariana L.", city: "Porto Alegre", plan: "Master Pro" },
+  { name: "Carlos E.", city: "São Paulo", plan: "Turbo Maker" },
+  { name: "Amanda S.", city: "Rio de Janeiro", plan: "Start Creator" },
+  { name: "Pedro H.", city: "Brasília", plan: "Master Pro" },
+  { name: "Juliana M.", city: "Curitiba", plan: "Turbo Maker" },
+  { name: "Rafael C.", city: "Belo Horizonte", plan: "Pro" },
+  { name: "Fernanda R.", city: "Salvador", plan: "Start Creator" },
+  { name: "Lucas P.", city: "Fortaleza", plan: "Turbo Maker" },
+  { name: "Beatriz A.", city: "Recife", plan: "Master Pro" },
+  { name: "Thiago M.", city: "Florianópolis", plan: "Pro" },
+  { name: "Camila G.", city: "Manaus", plan: "Start Creator" },
+  { name: "Diego S.", city: "Goiânia", plan: "Master Pro" },
+  { name: "Isabela F.", city: "Vitória", plan: "Turbo Maker" },
+  { name: "Gabriel R.", city: "Campinas", plan: "Pro" },
+  { name: "Vinícius O.", city: "João Pessoa", plan: "Turbo Maker" },
+  { name: "Larissa T.", city: "Campo Grande", plan: "Start Creator" },
+  { name: "Rodrigo N.", city: "Cuiabá", plan: "Master Pro" },
+  { name: "Patrícia C.", city: "Teresina", plan: "Pro" },
+  { name: "André M.", city: "Maceió", plan: "Start Creator" },
+  { name: "Jéssica B.", city: "Aracaju", plan: "Master Pro" },
+  { name: "Marcelo D.", city: "São Luís", plan: "Turbo Maker" },
+  { name: "Vanessa P.", city: "Belém", plan: "Pro" },
+  { name: "Eduardo K.", city: "Londrina", plan: "Master Pro" },
+  { name: "Renata S.", city: "Santos", plan: "Turbo Maker" },
 ];
 
 export const PurchaseNotifications = () => {
@@ -71,26 +70,36 @@ export const PurchaseNotifications = () => {
 
   return (
     <div className="fixed bottom-8 left-8 z-50 hidden md:block">
-      <Card 
-        className={`p-4 bg-card border-border flex items-center gap-4 shadow-2xl shadow-primary/20 transition-all duration-500 ${
+      <div 
+        className={`flex items-center gap-4 px-5 py-4 rounded-2xl bg-card/95 backdrop-blur-sm border border-border/50 shadow-2xl shadow-black/40 transition-all duration-500 ${
           isExiting ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
         }`}
       >
-        <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center">
-          <Crown className="w-7 h-7 text-primary" />
+        {/* Left icon - Lightning in circle */}
+        <div className="w-12 h-12 rounded-full bg-secondary/80 border border-border/50 flex items-center justify-center flex-shrink-0">
+          <Zap className="w-5 h-5 text-primary fill-primary" />
         </div>
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm text-primary font-semibold">🎉 Acabou de assinar!</span>
-            <Star className="w-4 h-4 fill-primary text-primary" />
+        
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Top line with sparkles */}
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-sm text-emerald-400 font-medium">Acabou de assinar!</span>
           </div>
-          <p className="font-bold text-lg">{notification.name}</p>
+          
+          {/* Name */}
+          <p className="font-bold text-foreground">{notification.name}</p>
+          
+          {/* City and Plan */}
           <p className="text-sm text-muted-foreground">
-            {notification.city} • <span className="text-primary">{notification.plan}</span>
+            {notification.city} • Plano <span className="text-primary">{notification.plan}</span>
           </p>
-          <p className="text-xs text-muted-foreground/70">{notification.time}</p>
         </div>
-      </Card>
+        
+        {/* Right star */}
+        <Star className="w-5 h-5 text-primary fill-primary flex-shrink-0" />
+      </div>
     </div>
   );
 };
