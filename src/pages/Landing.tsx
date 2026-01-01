@@ -164,17 +164,23 @@ const Landing = () => {
       <section className="pt-36 pb-24 px-4 relative overflow-hidden">
         {/* Particle Background */}
         <ParticleBackground particleCount={80} className="opacity-60" />
-        
+
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background z-10" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
+          <img
+            src="/images/hero-porsche.jpg"
+            alt="Porsche de luxo no fundo da landing page"
+            className="absolute inset-0 h-full w-full object-cover opacity-100 brightness-110 contrast-110 saturate-110"
+            loading="eager"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/45 via-background/15 to-background/55 z-10" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/18 via-transparent to-transparent z-10" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent z-10" />
         </div>
-        
+
         <ParallaxLayer depth={0.3} className="absolute top-32 left-1/4 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl pointer-events-none animate-float" />
         <ParallaxLayer depth={0.5} className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
-        
+
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-start relative z-10">
           <AnimatedSection animation="fade-right" className="space-y-8">
             {/* Private Elite Access Badge */}
@@ -189,19 +195,14 @@ const Landing = () => {
               <AlertTriangle className="w-5 h-5 text-primary" />
               <span className="text-base font-medium text-primary">Fuja dos "marketeiros" e de quem só vende curso!</span>
             </div>
-            
+
             {/* Main Heading */}
-            <div className="space-y-2">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-                Escale seus
-              </h1>
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-primary">
-                Canais Dark
-              </h1>
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-                com IA
-              </h1>
-            </div>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
+              <span className="block">Escale seus</span>
+              <span className="block text-primary">Canais Dark</span>
+              <span className="block">com IA</span>
+            </h1>
+
 
             {/* Description */}
             <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
