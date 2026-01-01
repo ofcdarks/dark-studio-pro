@@ -133,28 +133,34 @@ const LifestyleSection = () => {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="mt-10 sm:mt-16 text-center"
         >
-          <p className="text-lg sm:text-xl md:text-2xl font-bold mb-4">
-            Tudo isso é <span className="text-primary">possível</span> para você
+          <p className="text-xl sm:text-2xl md:text-3xl font-bold mb-4">
+            Tudo isso é <span className="text-primary italic">possível</span> para você
           </p>
-          <p className="text-muted-foreground text-sm sm:text-base mb-6">
+          <p className="text-muted-foreground text-sm sm:text-base mb-8">
             Milhares de criadores já estão vivendo esse estilo de vida
           </p>
           
-          {/* Test CTA */}
+          {/* Test CTA with gradient border */}
           <motion.a
-            href="https://app.canaisdarks.com.br"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/auth"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={isInView ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: 0.5, delay: 1 }}
-            whileHover={{ scale: 1.05 }}
-            className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-primary/20 to-yellow-500/10 border border-primary/40 cursor-pointer hover:border-primary/60 transition-all"
+            whileHover={{ scale: 1.02 }}
+            className="relative inline-flex items-center gap-3 px-8 py-5 rounded-xl cursor-pointer group"
           >
-            <CheckCircle className="w-5 h-5 text-primary" />
-            <span className="text-sm sm:text-base font-medium">
-              <span className="text-primary font-bold">Faça o teste</span> e comprove você mesmo os resultados
-            </span>
+            {/* Gradient border effect */}
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary via-yellow-600 to-primary p-[1px]">
+              <div className="absolute inset-[1px] rounded-xl bg-card" />
+            </div>
+            
+            {/* Content */}
+            <div className="relative flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              <span className="text-sm sm:text-base md:text-lg font-medium">
+                <span className="text-primary font-bold">Faça o teste</span> e comprove você mesmo os resultados
+              </span>
+            </div>
           </motion.a>
         </motion.div>
       </div>
