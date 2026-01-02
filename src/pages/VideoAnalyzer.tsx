@@ -1084,14 +1084,27 @@ const VideoAnalyzer = () => {
 
                       <div className="flex flex-col items-end gap-2">
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="border-success text-success bg-success/10">
-                            <Check className="w-3 h-3 mr-1" />
-                            Qualidade {title.quality}/10
-                          </Badge>
-                          <Badge className="bg-primary text-primary-foreground">
-                            <Rocket className="w-3 h-3 mr-1" />
-                            Impacto {title.impact}/10
-                          </Badge>
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="border-success text-success bg-success/10">
+                                <Check className="w-3 h-3 mr-1" />
+                                Qualidade {title.quality}/10
+                              </Badge>
+                              <Badge className="bg-primary text-primary-foreground">
+                                <Rocket className="w-3 h-3 mr-1" />
+                                Impacto {title.impact}/10
+                              </Badge>
+                            </div>
+                            
+                            {/* Best title badge below quality/impact - aligned and same width */}
+                            {title.isBest && (
+                              <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30 justify-center py-1.5 w-full">
+                                <Rocket className="w-3 h-3 mr-1" />
+                                Melhor título
+                              </Badge>
+                            )}
+                          </div>
+                          
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1105,14 +1118,6 @@ const VideoAnalyzer = () => {
                             )}
                           </Button>
                         </div>
-                        
-                        {/* Best title badge below quality/impact - same width as both badges */}
-                        {title.isBest && (
-                          <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30 justify-center py-1.5 w-[calc(100%-2.5rem)]">
-                            <Rocket className="w-3 h-3 mr-1" />
-                            Melhor título
-                          </Badge>
-                        )}
                       </div>
                     </div>
                   </Card>
