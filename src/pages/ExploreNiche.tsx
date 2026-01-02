@@ -462,14 +462,55 @@ const ExploreNiche = () => {
                   </h3>
                 </div>
                 
+                {/* Legenda das pontuações */}
+                <div className="mb-6 p-4 bg-secondary/20 rounded-xl border border-border/30">
+                  <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-primary" />
+                    Entenda as Pontuações
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div className="flex items-start gap-2">
+                      <div className="w-3 h-3 rounded-full bg-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span className="font-semibold text-foreground">Demanda</span>
+                        <p className="text-muted-foreground">Quanto o público busca por esse tipo de conteúdo. Maior = mais interesse.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-3 h-3 rounded-full bg-success mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span className="font-semibold text-foreground">Oportunidade</span>
+                        <p className="text-muted-foreground">Potencial de crescimento considerando demanda vs concorrência. Maior = melhor.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-3 h-3 rounded-full bg-destructive mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span className="font-semibold text-foreground">Dificuldade</span>
+                        <p className="text-muted-foreground">Quão difícil é competir nesse nicho. Menor = mais fácil de entrar.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="space-y-4">
-                  {subnicheResults.map((sub, index) => (
-                    <Collapsible 
-                      key={index} 
-                      open={expandedSubniche === index}
-                      onOpenChange={() => setExpandedSubniche(expandedSubniche === index ? null : index)}
-                    >
-                      <div className="bg-secondary/30 rounded-xl border border-border/50 overflow-hidden hover:border-primary/30 transition-colors">
+                  {(() => {
+                    // Calcular o vencedor (maior score combinado: demanda + oportunidade - dificuldade)
+                    const winnerIndex = subnicheResults.reduce((best, curr, idx) => {
+                      const currScore = (curr.demandScore || 0) + (curr.opportunityScore || 0) - (curr.competitionScore || 0);
+                      const bestScore = (subnicheResults[best].demandScore || 0) + (subnicheResults[best].opportunityScore || 0) - (subnicheResults[best].competitionScore || 0);
+                      return currScore > bestScore ? idx : best;
+                    }, 0);
+                    
+                    return subnicheResults.map((sub, index) => {
+                      const isWinner = index === winnerIndex;
+                      return (
+                      <Collapsible 
+                        key={index} 
+                        open={expandedSubniche === index}
+                        onOpenChange={() => setExpandedSubniche(expandedSubniche === index ? null : index)}
+                      >
+                        <div className={`bg-secondary/30 rounded-xl border overflow-hidden transition-colors ${isWinner ? 'border-success/50 ring-2 ring-success/20' : 'border-border/50 hover:border-primary/30'}`}>
                         <CollapsibleTrigger className="w-full">
                           <div className="p-5">
                             {/* Header */}
@@ -477,6 +518,12 @@ const ExploreNiche = () => {
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="text-xs text-muted-foreground font-medium">#{index + 1}</span>
+                                  {isWinner && (
+                                    <Badge className="bg-success/20 text-success border-success/30 text-xs px-2 py-0.5">
+                                      <Award className="w-3 h-3 mr-1" />
+                                      Melhor Escolha
+                                    </Badge>
+                                  )}
                                   {sub.growthTrend && (
                                     <Badge className="bg-primary/20 text-primary border-0 text-xs">
                                       {sub.growthTrend}
@@ -627,7 +674,9 @@ const ExploreNiche = () => {
                         </CollapsibleContent>
                       </div>
                     </Collapsible>
-                  ))}
+                      );
+                    })
+                  })()}
                 </div>
               </div>
             )}
