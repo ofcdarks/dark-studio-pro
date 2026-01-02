@@ -16,8 +16,11 @@ interface ThumbnailRequest {
   niche?: string;
   subNiche?: string;
   style?: string;
+  stylePromptPrefix?: string;
   includeHeadline?: boolean;
+  useTitle?: boolean;
   referenceThumbnailUrl?: string;
+  referencePrompt?: string;
   language?: string;
 }
 
@@ -205,8 +208,11 @@ serve(async (req) => {
       niche = "Geral", 
       subNiche, 
       style = "photorealistic",
+      stylePromptPrefix = "",
       includeHeadline = true,
+      useTitle = false,
       referenceThumbnailUrl,
+      referencePrompt,
       language = "Português"
     } = body;
 
@@ -228,15 +234,47 @@ serve(async (req) => {
     
     for (let i = 0; i < 4; i++) {
       const variationStyle = VARIATION_STYLES[i];
-      const headline = includeHeadline ? headlines[i % headlines.length] : null;
       
-      // Build the image generation prompt
-      let imagePrompt = `Create a YouTube thumbnail image (16:9 aspect ratio, 1280x720 resolution). 
+      // Determine the headline to use
+      let headline: string | null = null;
+      if (includeHeadline) {
+        if (useTitle) {
+          // Use the video title as headline
+          headline = videoTitle.length > 50 ? videoTitle.substring(0, 47) + "..." : videoTitle;
+        } else {
+          headline = headlines[i % headlines.length];
+        }
+      }
+      
+      // Build the image generation prompt with art style
+      let imagePrompt = `${stylePromptPrefix} Create a YouTube thumbnail image (16:9 aspect ratio, 1280x720 resolution). 
 Style: ${style}, ${variationStyle.description}
 Topic: ${videoTitle}
-Niche: ${niche}${subNiche ? `, Sub-niche: ${subNiche}` : ""}
-${headline ? `The image should convey the message: "${headline}"` : ""}
-${referenceThumbnailUrl ? `Reference style from: ${referenceThumbnailUrl}` : ""}
+Niche: ${niche}${subNiche ? `, Sub-niche: ${subNiche}` : ""}`;
+
+      // Add headline instructions if needed
+      if (headline && includeHeadline) {
+        imagePrompt += `
+
+IMPORTANT HEADLINE REQUIREMENT:
+- Add this text as a bold, eye-catching headline on the thumbnail: "${headline}"
+- The headline should be positioned prominently (typically top or bottom third of the image)
+- Use a bold, impactful font style with high contrast against the background
+- Consider adding text effects like: drop shadow, outline, glow, or gradient
+- The text must be large enough to be readable even in small thumbnail sizes
+- Match the headline style to the overall visual theme`;
+      }
+
+      // Add reference style if available
+      if (referencePrompt) {
+        imagePrompt += `
+
+REFERENCE STYLE TO FOLLOW:
+${referencePrompt}
+Use this reference as a guide for the overall visual style, composition, and text placement.`;
+      }
+
+      imagePrompt += `
 
 Requirements:
 - High contrast and vibrant colors
@@ -244,7 +282,7 @@ Requirements:
 - Eye-catching composition
 - Clear focal point
 - ${style} style
-- DO NOT include any text in the image`;
+${!includeHeadline ? '- DO NOT include any text in the image' : ''}`;
 
       console.log(`Generating variation ${i + 1} with style: ${variationStyle.name}`);
       
