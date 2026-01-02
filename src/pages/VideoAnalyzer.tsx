@@ -1106,14 +1106,12 @@ const VideoAnalyzer = () => {
                           </Button>
                         </div>
                         
-                        {/* Best title badge below quality/impact - aligned with Impacto badge */}
+                        {/* Best title badge below quality/impact - same width as both badges */}
                         {title.isBest && (
-                          <div className="flex justify-end mr-10">
-                            <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                              <Rocket className="w-3 h-3 mr-1" />
-                              Melhor título
-                            </Badge>
-                          </div>
+                          <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30 justify-center py-1.5 w-[calc(100%-2.5rem)]">
+                            <Rocket className="w-3 h-3 mr-1" />
+                            Melhor título
+                          </Badge>
                         )}
                       </div>
                     </div>
