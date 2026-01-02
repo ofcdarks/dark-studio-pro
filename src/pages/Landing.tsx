@@ -177,7 +177,7 @@ const Landing = () => {
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
           <ParallaxBackground speed={0.15} className="h-[120%] -top-[10%]">
             <img
-              src="/images/hero-porsche.jpg"
+              src="/images/hero-porsche.jpg?v=20260102"
               alt="Porsche de luxo no fundo da landing page"
               className="h-full w-full object-cover object-center opacity-60 md:opacity-80"
               loading="eager"
