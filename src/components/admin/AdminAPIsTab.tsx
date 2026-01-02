@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
+import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff, Pencil, Trash2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -87,6 +87,10 @@ export function AdminAPIsTab() {
   const [downsubKey, setDownsubKey] = useState("");
   const [downsubValidated, setDownsubValidated] = useState(false);
   const [downsubShowPassword, setDownsubShowPassword] = useState(false);
+  
+  const [laozhangKey, setLaozhangKey] = useState("");
+  const [laozhangValidated, setLaozhangValidated] = useState(false);
+  const [laozhangShowPassword, setLaozhangShowPassword] = useState(false);
 
   const [apiProviders, setApiProviders] = useState<ApiProvider[]>([]);
   const [loading, setLoading] = useState(false);
@@ -137,6 +141,8 @@ export function AdminAPIsTab() {
       setYoutubeValidated(!!(keys.youtube_validated));
       setDownsubKey((keys.downsub as string) || "");
       setDownsubValidated(!!(keys.downsub_validated));
+      setLaozhangKey((keys.laozhang as string) || "");
+      setLaozhangValidated(!!(keys.laozhang_validated));
     }
   };
 
@@ -409,6 +415,19 @@ export function AdminAPIsTab() {
       description: "Chave para extração de legendas/transcrições de vídeos do YouTube.",
       showPassword: downsubShowPassword,
       setShowPassword: setDownsubShowPassword,
+    },
+    {
+      key: laozhangKey,
+      setKey: setLaozhangKey,
+      keyName: "laozhang",
+      displayName: "Laozhang AI",
+      provider: "laozhang",
+      validated: laozhangValidated,
+      setValidated: setLaozhangValidated,
+      icon: <Sparkles className="w-5 h-5 text-yellow-500" />,
+      description: "Chave para API Laozhang AI. Gateway para modelos OpenAI, Claude e outros com custos reduzidos.",
+      showPassword: laozhangShowPassword,
+      setShowPassword: setLaozhangShowPassword,
     },
   ];
 
