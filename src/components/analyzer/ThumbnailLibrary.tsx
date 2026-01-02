@@ -94,6 +94,8 @@ export function ThumbnailLibrary({
   // Analysis states
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisModel, setAnalysisModel] = useState("auto");
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisMessage, setAnalysisMessage] = useState("");
   
   // Generation states
   const [generatingThumbnail, setGeneratingThumbnail] = useState(false);
@@ -111,6 +113,18 @@ export function ThumbnailLibrary({
     "Gerando headlines magnéticas...",
     "Finalizando sua obra-prima visual...",
     "Thumbnails premium quase prontas...",
+  ];
+  
+  // Analysis progress messages
+  const ANALYSIS_LOADING_MESSAGES = [
+    "Iniciando análise visual avançada...",
+    "Identificando paleta de cores dominante...",
+    "Analisando composição e enquadramento...",
+    "Detectando elementos visuais chave...",
+    "Extraindo estilo tipográfico...",
+    "Mapeando hierarquia visual...",
+    "Gerando prompt padrão otimizado...",
+    "Finalizando extração de estilo...",
   ];
   
   // Preview state
@@ -247,6 +261,28 @@ export function ThumbnailLibrary({
     }
 
     setAnalyzing(true);
+    setAnalysisProgress(0);
+    setAnalysisMessage(ANALYSIS_LOADING_MESSAGES[0]);
+    
+    // Animate progress and rotate messages
+    let progressValue = 0;
+    let messageIndex = 0;
+    
+    const progressInterval = setInterval(() => {
+      progressValue += Math.random() * 8 + 3;
+      if (progressValue > 92) progressValue = 92;
+      setAnalysisProgress(progressValue);
+      
+      const newMessageIndex = Math.min(
+        Math.floor((progressValue / 100) * ANALYSIS_LOADING_MESSAGES.length),
+        ANALYSIS_LOADING_MESSAGES.length - 1
+      );
+      if (newMessageIndex !== messageIndex) {
+        messageIndex = newMessageIndex;
+        setAnalysisMessage(ANALYSIS_LOADING_MESSAGES[messageIndex]);
+      }
+    }, 600);
+    
     try {
       // Call AI to analyze thumbnails and extract prompts
       const response = await supabase.functions.invoke("ai-assistant", {
@@ -259,11 +295,18 @@ export function ThumbnailLibrary({
           })),
           prompt: `Analise estas thumbnails de referência e extraia o padrão visual/estilo usado.
           Para cada thumbnail, crie um prompt detalhado que poderia ser usado para gerar uma thumbnail similar.
+          O prompt deve incluir detalhes sobre:
+          - Estilo visual e composição
+          - Paleta de cores e iluminação
+          - Posição e estilo de headline/texto se houver
+          - Elementos visuais principais
+          
           Retorne um JSON com:
           - prompts: array de prompts (um para cada thumbnail)
           - commonStyle: descrição do estilo comum entre as thumbnails
           - colorPalette: cores predominantes
-          - composition: descrição da composição típica`,
+          - composition: descrição da composição típica
+          - headlineStyle: descrição do estilo de headline usado (posição, cor, fonte, efeitos)`,
         },
       });
 
@@ -283,6 +326,8 @@ export function ThumbnailLibrary({
         }
       }
 
+      clearInterval(progressInterval);
+      setAnalysisProgress(100);
       toast({ title: "Análise concluída!", description: "Prompts padrão extraídos das thumbnails" });
       queryClient.invalidateQueries({ queryKey: ["reference-thumbnails"] });
     } catch (error) {
@@ -293,6 +338,8 @@ export function ThumbnailLibrary({
         variant: "destructive",
       });
     } finally {
+      clearInterval(progressInterval);
+      setTimeout(() => setAnalysisProgress(0), 500);
       setAnalyzing(false);
     }
   };
@@ -338,6 +385,15 @@ export function ThumbnailLibrary({
     
     const messageInterval = progressInterval; // Keep reference for cleanup
     try {
+      // Get the selected style's prompt prefix
+      const selectedStyleObj = THUMBNAIL_STYLES.find(s => s.id === artStyle);
+      const stylePromptPrefix = selectedStyleObj?.promptPrefix || "";
+      
+      // Get reference thumbnail prompt if available
+      const referencePrompt = thumbnailsWithPrompts.length > 0 
+        ? thumbnailsWithPrompts[parseInt(selectedPrompt) - 1]?.extracted_prompt 
+        : undefined;
+      
       // Call the generate-thumbnail edge function
       const response = await supabase.functions.invoke("generate-thumbnail", {
         body: {
@@ -345,7 +401,10 @@ export function ThumbnailLibrary({
           niche: niche || "Geral",
           subNiche: subNiche || undefined,
           style: styleName,
+          stylePromptPrefix,
           includeHeadline,
+          useTitle,
+          referencePrompt,
           language: genLanguage === "pt-BR" ? "Português" : genLanguage === "es" ? "Español" : "English",
         },
       });
@@ -716,35 +775,95 @@ export function ThumbnailLibrary({
             </div>
           </div>
 
+          {/* Analysis Progress Bar */}
+          {analyzing && (
+            <div className="space-y-3 mb-6 p-4 bg-secondary/30 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <span className="text-sm font-medium text-foreground">{analysisMessage}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Analisando thumbnails de referência...</span>
+                <span className="text-primary font-semibold">{Math.round(analysisProgress)}%</span>
+              </div>
+              <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-primary via-primary to-amber-400 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${analysisProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+          
           {/* Thumbnails Grid */}
           {savedThumbnails && savedThumbnails.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {savedThumbnails.map((thumb) => (
-                <div key={thumb.id} className="relative group">
-                  <div className="aspect-video rounded-lg overflow-hidden bg-secondary">
-                    <img
-                      src={thumb.image_url}
-                      alt="Reference thumbnail"
-                      className="w-full h-full object-cover"
-                    />
+                <div key={thumb.id} className="relative group border border-border/50 rounded-lg overflow-hidden bg-secondary/20">
+                  <div className="flex gap-4 p-4">
+                    {/* Thumbnail Image */}
+                    <div className="w-48 flex-shrink-0">
+                      <div className="aspect-video rounded-lg overflow-hidden bg-secondary relative">
+                        <img
+                          src={thumb.image_url}
+                          alt="Reference thumbnail"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteThumbnail(thumb.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 truncate">
+                        {thumb.niche || "Sem nicho"} {thumb.sub_niche ? `/ ${thumb.sub_niche}` : ""}
+                      </p>
+                    </div>
+                    
+                    {/* Extracted Prompt */}
+                    <div className="flex-1 min-w-0">
+                      {thumb.extracted_prompt ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-success/20 text-success border-success/30 text-xs">
+                              <Check className="w-3 h-3 mr-1" />
+                              Prompt Extraído
+                            </Badge>
+                          </div>
+                          <div className="bg-secondary/50 rounded-lg p-3 border border-border/30">
+                            <p className="text-xs text-muted-foreground mb-1 font-medium">Prompt Padrão:</p>
+                            <p className="text-sm text-foreground leading-relaxed line-clamp-4">
+                              {thumb.extracted_prompt}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => copyToClipboard(thumb.extracted_prompt || "", `prompt-${thumb.id}`)}
+                          >
+                            {copiedField === `prompt-${thumb.id}` ? (
+                              <Check className="w-3 h-3 mr-1 text-success" />
+                            ) : (
+                              <Copy className="w-3 h-3 mr-1" />
+                            )}
+                            {copiedField === `prompt-${thumb.id}` ? "Copiado!" : "Copiar Prompt"}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                          <Lightbulb className="w-8 h-8 text-muted-foreground/50 mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            Clique em "Analisar Estilo" para extrair o prompt desta thumbnail
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDeleteThumbnail(thumb.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  {thumb.extracted_prompt && (
-                    <Badge className="absolute top-2 right-2 bg-success/80 text-success-foreground text-xs">
-                      Prompt OK
-                    </Badge>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1 truncate">
-                    {thumb.niche || "Sem nicho"}
-                  </p>
                 </div>
               ))}
             </div>
@@ -1072,7 +1191,7 @@ export function ThumbnailLibrary({
 
       {/* Full Preview Modal */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-5xl w-full h-[90vh] flex flex-col">
+        <DialogContent className="max-w-6xl w-full h-[90vh] flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center justify-between">
               <span>Preview da Thumbnail {activePreviewIndex + 1} de {generatedThumbnails.length}</span>
@@ -1084,13 +1203,15 @@ export function ThumbnailLibrary({
           
           {generatedThumbnails[activePreviewIndex] && (
             <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Main Image */}
-              <div className="flex-1 relative bg-secondary/30 rounded-lg overflow-hidden flex items-center justify-center">
-                <img
-                  src={generatedThumbnails[activePreviewIndex].imageBase64}
-                  alt={`Thumbnail ${activePreviewIndex + 1}`}
-                  className="max-w-full max-h-full object-contain"
-                />
+              {/* Main Image - Fixed 1280x720 aspect ratio */}
+              <div className="flex-1 relative bg-secondary/30 rounded-lg overflow-hidden flex items-center justify-center p-4">
+                <div className="relative w-full max-w-[1280px] mx-auto" style={{ aspectRatio: '1280/720' }}>
+                  <img
+                    src={generatedThumbnails[activePreviewIndex].imageBase64}
+                    alt={`Thumbnail ${activePreviewIndex + 1}`}
+                    className="w-full h-full object-contain rounded-lg"
+                  />
+                </div>
                 
                 {/* Navigation Arrows */}
                 {generatedThumbnails.length > 1 && (
