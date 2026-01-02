@@ -73,7 +73,7 @@ export const AutoChat = () => {
       {/* Chat Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-6 right-6 z-[9999] w-16 h-16 rounded-full gradient-button shadow-2xl shadow-primary/30 hover:scale-110 transition-all duration-300 ${
+        className={`!fixed !bottom-6 !right-6 z-[9999] w-16 h-16 rounded-full gradient-button shadow-2xl shadow-primary/30 hover:scale-110 transition-all duration-300 ${
           isOpen ? 'rotate-0' : 'animate-bounce'
         }`}
         size="icon"
@@ -87,7 +87,7 @@ export const AutoChat = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 z-[9999] w-96 max-w-[calc(100vw-3rem)] h-[500px] bg-card border-border shadow-2xl shadow-primary/20 flex flex-col overflow-hidden animate-scale-in">
+        <Card className="!fixed !bottom-24 !right-6 z-[9999] w-96 max-w-[calc(100vw-3rem)] h-[500px] bg-card border-border shadow-2xl shadow-primary/20 flex flex-col overflow-hidden animate-scale-in">
           {/* Header */}
           <div className="p-5 bg-primary text-primary-foreground flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
