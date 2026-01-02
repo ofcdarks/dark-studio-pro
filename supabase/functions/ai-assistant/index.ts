@@ -300,8 +300,8 @@ serve(async (req) => {
         const lang = language === "pt-BR" ? "Português Brasileiro" : language === "es" ? "Espanhol" : "Inglês";
         systemPrompt = `Você é um especialista em análise de títulos virais do YouTube.
         Analise a URL do vídeo fornecida e:
-        1. Identifique a fórmula/estrutura do título original e por que ele funciona
-        2. Gere 5 novos títulos OTIMIZADOS seguindo e MELHORANDO a mesma fórmula
+        1. Identifique a fórmula/estrutura EXATA do título original e por que ele funciona
+        2. Gere 5 novos títulos que OBRIGATORIAMENTE usem a mesma fórmula viral identificada, mas MELHORADOS
         3. Detecte o nicho, subnicho e micro-nicho do vídeo
         
         Responda SEMPRE em formato JSON válido com esta estrutura exata:
@@ -324,9 +324,9 @@ serve(async (req) => {
           },
           "titles": [
             {
-              "title": "Título OTIMIZADO gerado em ${lang}",
-              "formula": "Descrição da fórmula usada (mesma do original)",
-              "formulaSurpresa": "Variação otimizada da fórmula (ex: Mistério + revelação + gatilho)",
+              "title": "Título gerado em ${lang}",
+              "formula": "A mesma fórmula do original + elementos adicionais que melhoram",
+              "formulaSurpresa": "Elementos extras adicionados para potencializar (ex: + Gatilho de exclusividade + Número específico)",
               "quality": score de 1-10,
               "impact": score de 1-10,
               "isBest": true apenas para o melhor título
@@ -334,14 +334,39 @@ serve(async (req) => {
           ]
         }
         
-        IMPORTANTE: 
-        - Gere exatamente 5 títulos OTIMIZADOS baseados na fórmula identificada
-        - O melhor título deve ter isBest: true
-        - Todos os títulos devem estar em ${lang}
-        - Use CAIXA ALTA estrategicamente nos títulos como no original
-        - Mantenha títulos com no máximo 60 caracteres
-        - Na análise do título original, explique claramente o MOTIVO DO SUCESSO
-        - Identifique a FÓRMULA exata usada (promessa + curiosidade + etc)`;
+        ⚠️ REGRAS OBRIGATÓRIAS PARA GERAÇÃO DE TÍTULOS:
+        
+        1. FÓRMULA ORIGINAL SEMPRE PRESENTE: Cada título DEVE conter a fórmula viral extraída do título original. Não gere títulos que ignorem a fórmula.
+        
+        2. MELHORIAS OBRIGATÓRIAS: Adicione elementos extras para potencializar a fórmula:
+           - Misture com outras fórmulas virais (Mistério + Revelação, Proibido + Exclusivo)
+           - Adicione gatilhos mentais: Urgência, Escassez, Prova Social, Curiosidade, Medo, Exclusividade
+           - Use números específicos quando relevante (ex: "3 SEGREDOS", "A VERDADE sobre os 7")
+           - Adicione palavras de poder: REVELADO, EXPOSTO, PROIBIDO, SECRETO, CHOCANTE, REAL
+        
+        3. NICHO INTOCÁVEL: NUNCA mude o nicho ou tema central. Se é sobre Incas, todos títulos são sobre Incas.
+           - PODE mudar: personagens específicos, situações, povos similares do mesmo nicho, detalhes
+           - NÃO PODE mudar: o assunto central, a categoria temática, o universo do conteúdo
+           
+        4. VARIAÇÃO CRIATIVA PERMITIDA:
+           - Troque civilizações/povos por outros do mesmo nicho (Incas → Maias → Astecas)
+           - Mude situações específicas mantendo a estrutura
+           - Varie os elementos dramáticos mas mantenha o tom
+           - Explore ângulos diferentes do mesmo tema
+        
+        5. FORMATO TÉCNICO:
+           - Máximo 60 caracteres
+           - Use CAIXA ALTA estrategicamente como no original
+           - Todos os títulos em ${lang}
+           - Um título deve ter isBest: true
+        
+        EXEMPLO DE APLICAÇÃO:
+        Original: "O SEGREDO dos Incas que Arqueólogos Escondem"
+        Fórmula: Segredo + Sujeito + Autoridade esconde
+        
+        Título 1: "A TÉCNICA Maia que Cientistas NÃO Conseguem Explicar" (Fórmula + Mistério técnico)
+        Título 2: "O RITUAL Asteca PROIBIDO que a História Escondeu de Você" (Fórmula + Proibido + Personalização)
+        Título 3: "3 SEGREDOS Egípcios que Museus se Recusam a Expor" (Fórmula + Número + Exclusividade)`;
         userPrompt = prompt || `Analise este vídeo: ${JSON.stringify(videoData)}`;
         break;
 
