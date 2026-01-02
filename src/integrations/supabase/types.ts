@@ -420,6 +420,7 @@ export type Database = {
         Row: {
           created_at: string | null
           explicacao: string | null
+          folder_id: string | null
           formula: string | null
           id: string
           is_favorite: boolean | null
@@ -432,6 +433,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           explicacao?: string | null
+          folder_id?: string | null
           formula?: string | null
           id?: string
           is_favorite?: boolean | null
@@ -444,6 +446,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           explicacao?: string | null
+          folder_id?: string | null
           formula?: string | null
           id?: string
           is_favorite?: boolean | null
@@ -454,6 +457,13 @@ export type Database = {
           video_analysis_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "generated_titles_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "generated_titles_video_analysis_id_fkey"
             columns: ["video_analysis_id"]
