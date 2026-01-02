@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import { useQuery } from "@tanstack/react-query";
 import { TranscriptionSection } from "@/components/analyzer/TranscriptionSection";
 import { CreateAgentModal } from "@/components/analyzer/CreateAgentModal";
 import { ThumbnailLibrary } from "@/components/analyzer/ThumbnailLibrary";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface GeneratedTitle {
   id: string;
@@ -86,23 +87,27 @@ const LOADING_MESSAGES = [
 ];
 
 const VideoAnalyzer = () => {
-  const [videoUrl, setVideoUrl] = useState("");
-  const [aiModel, setAiModel] = useState("gemini-pro");
-  const [language, setLanguage] = useState("pt-BR");
-  const [saveFolder, setSaveFolder] = useState("general");
+  // Persisted states - survive navigation
+  const [videoUrl, setVideoUrl] = usePersistedState("analyzer_videoUrl", "");
+  const [aiModel, setAiModel] = usePersistedState("analyzer_aiModel", "gemini-pro");
+  const [language, setLanguage] = usePersistedState("analyzer_language", "pt-BR");
+  const [saveFolder, setSaveFolder] = usePersistedState("analyzer_saveFolder", "general");
+  const [videoInfo, setVideoInfo] = usePersistedState<VideoInfo | null>("analyzer_videoInfo", null);
+  const [generatedTitles, setGeneratedTitles] = usePersistedState<GeneratedTitle[]>("analyzer_generatedTitles", []);
+  const [selectedTitles, setSelectedTitles] = usePersistedState<string[]>("analyzer_selectedTitles", []);
+  const [selectedTitleForThumbnail, setSelectedTitleForThumbnail] = usePersistedState("analyzer_selectedTitleForThumbnail", "");
+  const [currentTranscription, setCurrentTranscription] = usePersistedState("analyzer_currentTranscription", "");
+  const [currentAnalysisId, setCurrentAnalysisId] = usePersistedState<string | null>("analyzer_currentAnalysisId", null);
+  
+  // Non-persisted states (transient)
   const [analyzing, setAnalyzing] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(LOADING_MESSAGES[0]);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
-  const [generatedTitles, setGeneratedTitles] = useState<GeneratedTitle[]>([]);
-  const [selectedTitles, setSelectedTitles] = useState<string[]>([]);
-  const [selectedTitleForThumbnail, setSelectedTitleForThumbnail] = useState<string>("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [currentFormula, setCurrentFormula] = useState<ScriptFormulaAnalysis | null>(null);
-  const [currentTranscription, setCurrentTranscription] = useState("");
   const [loadingTranscription, setLoadingTranscription] = useState(false);
-  const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null);
+  
   const { user } = useAuth();
   const { toast } = useToast();
 

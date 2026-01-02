@@ -29,6 +29,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES, getStylesByCategory } from "@/lib/thumbnailStyles";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface ReferenceThumbnail {
   id: string;
@@ -70,15 +71,25 @@ export function ThumbnailLibrary({
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Upload states
+  // Upload states (non-persisted)
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [channelName, setChannelName] = useState("");
-  const [niche, setNiche] = useState(currentNiche || "");
-  const [subNiche, setSubNiche] = useState(currentSubNiche || "");
   const [description, setDescription] = useState("");
   const [selectedFolder, setSelectedFolder] = useState<string>("none");
+  
+  // Persisted states - survive navigation
+  const [niche, setNiche] = usePersistedState("thumbnail_niche", currentNiche || "");
+  const [subNiche, setSubNiche] = usePersistedState("thumbnail_subNiche", currentSubNiche || "");
+  const [videoTitle, setVideoTitle] = usePersistedState("thumbnail_videoTitle", currentTitle || "");
+  const [genModel, setGenModel] = usePersistedState("thumbnail_genModel", "gpt-4o");
+  const [genLanguage, setGenLanguage] = usePersistedState("thumbnail_genLanguage", "pt-BR");
+  const [artStyle, setArtStyle] = usePersistedState("thumbnail_artStyle", "foto-realista");
+  const [includeHeadline, setIncludeHeadline] = usePersistedState("thumbnail_includeHeadline", true);
+  const [useTitle, setUseTitle] = usePersistedState("thumbnail_useTitle", false);
+  const [generatedThumbnails, setGeneratedThumbnails] = usePersistedState<GeneratedThumbnail[]>("thumbnail_generatedThumbnails", []);
+  const [savedToLibrary, setSavedToLibrary] = usePersistedState<number[]>("thumbnail_savedToLibrary", []);
   
   // Analysis states
   const [analyzing, setAnalyzing] = useState(false);
@@ -88,13 +99,7 @@ export function ThumbnailLibrary({
   const [generatingThumbnail, setGeneratingThumbnail] = useState(false);
   const [thumbnailLoadingMessage, setThumbnailLoadingMessage] = useState("");
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [videoTitle, setVideoTitle] = useState(currentTitle || "");
   const [selectedPrompt, setSelectedPrompt] = useState<string>("1");
-  const [genModel, setGenModel] = useState("gpt-4o");
-  const [genLanguage, setGenLanguage] = useState("pt-BR");
-  const [artStyle, setArtStyle] = useState("foto-realista");
-  const [includeHeadline, setIncludeHeadline] = useState(true);
-  const [useTitle, setUseTitle] = useState(false);
   
   // Elite motivational messages for thumbnail generation (La Casa Dark Core style)
   const THUMBNAIL_LOADING_MESSAGES = [
@@ -108,12 +113,10 @@ export function ThumbnailLibrary({
     "Thumbnails premium quase prontas...",
   ];
   
-  // Generated thumbnails preview state
-  const [generatedThumbnails, setGeneratedThumbnails] = useState<GeneratedThumbnail[]>([]);
+  // Preview state
   const [previewOpen, setPreviewOpen] = useState(false);
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
   const [savingToLibrary, setSavingToLibrary] = useState<number | null>(null);
-  const [savedToLibrary, setSavedToLibrary] = useState<number[]>([]);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Copy to clipboard helper
