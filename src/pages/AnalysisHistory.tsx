@@ -281,7 +281,38 @@ export default function AnalysisHistory() {
     },
   });
 
-  // Toggle video selection
+  // Move multiple titles - note: generated_titles doesn't have folder_id, 
+  // but we can associate through video_analysis_id if needed
+  // For now, this is a placeholder that clears selection
+  const moveMultipleTitlesMutation = useMutation({
+    mutationFn: async ({ ids, folderId }: { ids: string[]; folderId: string | null }) => {
+      // Titles don't have direct folder_id, but they're linked via video_analysis_id
+      // If the title has a linked video, move that video to the folder
+      for (const id of ids) {
+        const { data: title } = await supabase
+          .from("generated_titles")
+          .select("video_analysis_id")
+          .eq("id", id)
+          .single();
+        
+        if (title?.video_analysis_id) {
+          const { error } = await supabase
+            .from("analyzed_videos")
+            .update({ folder_id: folderId })
+            .eq("id", title.video_analysis_id);
+          if (error) throw error;
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["analyzed-videos"] });
+      queryClient.invalidateQueries({ queryKey: ["generated-titles"] });
+      setSelectedTitles([]);
+      toast({ title: "Movidos!", description: `Títulos associados movidos para a pasta` });
+    },
+  });
+
+
   const toggleVideoSelection = (id: string) => {
     setSelectedVideos(prev => 
       prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
@@ -649,19 +680,57 @@ export default function AnalysisHistory() {
                     </span>
                   </div>
                   {selectedTitles.length > 0 && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteMultipleTitlesMutation.mutate(selectedTitles)}
-                      disabled={deleteMultipleTitlesMutation.isPending}
-                    >
-                      {deleteMultipleTitlesMutation.isPending ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4 mr-2" />
-                      )}
-                      Excluir Selecionados
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {/* Move to folder dropdown for titles */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={moveMultipleVideosMutation.isPending}
+                          >
+                            {moveMultipleVideosMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <FolderInput className="w-4 h-4 mr-2" />
+                            )}
+                            Mover para Pasta
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuItem
+                            onClick={() => moveMultipleTitlesMutation.mutate({ ids: selectedTitles, folderId: null })}
+                          >
+                            <FolderOpen className="w-4 h-4 mr-2" />
+                            Remover da pasta (Geral)
+                          </DropdownMenuItem>
+                          {folders?.map((folder) => (
+                            <DropdownMenuItem
+                              key={folder.id}
+                              onClick={() => moveMultipleTitlesMutation.mutate({ ids: selectedTitles, folderId: folder.id })}
+                            >
+                              <FolderOpen className="w-4 h-4 mr-2" />
+                              {folder.name}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      {/* Delete button */}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteMultipleTitlesMutation.mutate(selectedTitles)}
+                        disabled={deleteMultipleTitlesMutation.isPending}
+                      >
+                        {deleteMultipleTitlesMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4 mr-2" />
+                        )}
+                        Excluir Selecionados
+                      </Button>
+                    </div>
                   )}
                 </div>
               )}
