@@ -394,13 +394,22 @@ serve(async (req) => {
         } else {
           laozhangModel = "gpt-4o-mini"; // Default cost-effective model
         }
-        console.log(`[AI Assistant] Using Laozhang AI (platform credits) - Requested: ${model}, Using: ${laozhangModel}`);
+
+        // Laozhang não tem canais Gemini disponíveis em todos os grupos.
+        // Para requisições Gemini (ex: multimodal), caímos para o Lovable AI Gateway.
+        if (model?.includes("gemini")) {
+          apiProvider = 'lovable';
+          laozhangModel = null;
+          console.log(`[AI Assistant] Laozhang Gemini unavailable; falling back to Lovable AI for model: ${model}`);
+        } else {
+          console.log(`[AI Assistant] Using Laozhang AI (platform credits) - Requested: ${model}, Using: ${laozhangModel}`);
+        }
       } else if (adminApiKeys?.openai && adminApiKeys.openai_validated) {
-        userApiKeyToUse = adminApiKeys.openai;
+        userApiKeyToUse = adminApiKeys.openai ?? null;
         apiProvider = 'openai';
         console.log('[AI Assistant] Using admin OpenAI API key (platform credits)');
       } else if (adminApiKeys?.gemini && adminApiKeys.gemini_validated) {
-        userApiKeyToUse = adminApiKeys.gemini;
+        userApiKeyToUse = adminApiKeys.gemini ?? null;
         apiProvider = 'gemini';
         console.log('[AI Assistant] Using admin Gemini API key (platform credits)');
       } else if (OPENAI_API_KEY) {

@@ -293,31 +293,43 @@ const VideoAnalyzer = () => {
         modelsToUse = [{ id: aiModel, label: modelLabels[aiModel] || aiModel }];
       }
 
-      // Call all models in parallel
-      const results = await Promise.all(
-        modelsToUse.map(m => generateTitlesWithModel(m.id, m.label))
+      // Call all models in parallel (one call per model). Don't fail the whole run if one model errors.
+      const settled = await Promise.allSettled(
+        modelsToUse.map((m) => generateTitlesWithModel(m.id, m.label))
       );
 
-      // Combine all titles from all models
-      let allTitles: GeneratedTitle[] = [];
-      let videoInfoData = null;
+      const failedModelLabels = settled
+        .map((r, idx) => (r.status === "rejected" ? modelsToUse[idx].label : null))
+        .filter(Boolean) as string[];
 
-      results.forEach(({ parsedResult, modelLabel }, resultIndex) => {
-        // Use video info from first result
-        if (resultIndex === 0 && parsedResult.videoInfo) {
+      // Combine all titles from all successful models
+      let allTitles: GeneratedTitle[] = [];
+      let videoInfoData: any = null;
+
+      settled.forEach((r, modelIndex) => {
+        if (r.status !== "fulfilled") return;
+
+        const { parsedResult, modelLabel } = r.value;
+
+        if (!videoInfoData && parsedResult?.videoInfo) {
           videoInfoData = parsedResult.videoInfo;
         }
 
         // Add titles with model label
-        if (parsedResult.titles && Array.isArray(parsedResult.titles)) {
+        if (parsedResult?.titles && Array.isArray(parsedResult.titles)) {
           const titlesWithModel = parsedResult.titles.map((t: any, i: number) => ({
             ...t,
-            id: `title-${resultIndex}-${i}`,
+            id: `title-${modelIndex}-${i}`,
             model: modelLabel,
           }));
           allTitles = [...allTitles, ...titlesWithModel];
         }
       });
+
+      if (allTitles.length === 0) {
+        // All models failed
+        throw new Error("Nenhum modelo retornou títulos");
+      }
 
       // Find best title across all
       if (allTitles.length > 0) {
@@ -401,8 +413,12 @@ const VideoAnalyzer = () => {
       }
 
       toast({
-        title: "Análise concluída!",
-        description: "Títulos gerados com sucesso",
+        title: failedModelLabels.length > 0 ? "Análise concluída (parcial)" : "Análise concluída!",
+        description:
+          failedModelLabels.length > 0
+            ? `Alguns modelos falharam: ${failedModelLabels.join(", ")}`
+            : "Títulos gerados com sucesso",
+        ...(failedModelLabels.length > 0 ? { variant: "destructive" as const } : {}),
       });
     } catch (error) {
       console.error("Error analyzing video:", error);
