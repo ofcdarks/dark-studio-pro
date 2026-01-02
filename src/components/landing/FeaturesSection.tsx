@@ -4,7 +4,7 @@ import {
   Wand2, 
   Image, 
   FileText, 
-  Sparkles, 
+  Rocket, 
   Subtitles,
   Film,
   Bot,
@@ -41,7 +41,7 @@ const features = [
     color: "from-blue-500 to-cyan-500",
   },
   {
-    icon: Sparkles,
+    icon: Rocket,
     title: "Gerador de Prompts Cenas",
     description: "Prompts detalhados para cada cena do seu vídeo.",
     color: "from-purple-500 to-pink-500",

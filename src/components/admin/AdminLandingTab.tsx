@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Loader2, Save, Video, ExternalLink, Youtube, Play, 
-  Type, Layout, MessageSquare, Sparkles, Image
+  Type, Layout, MessageSquare, Rocket, Image
 } from "lucide-react";
 
 interface LandingSettings {
@@ -167,7 +167,7 @@ export const AdminLandingTab = () => {
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 rounded-lg bg-primary/10">
-                <Sparkles className="w-5 h-5 text-primary" />
+                <Rocket className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-foreground">Seção Hero</h3>

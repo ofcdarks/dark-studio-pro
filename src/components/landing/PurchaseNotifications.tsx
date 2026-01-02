@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Sparkles, Zap, Star } from "lucide-react";
+import { Rocket, Zap, Star } from "lucide-react";
 
 const purchaseData = [
   { name: "Natália S.", city: "Sorocaba", plan: "Pro" },
@@ -82,9 +82,9 @@ export const PurchaseNotifications = () => {
         
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Top line with sparkles */}
+          {/* Top line with rocket */}
           <div className="flex items-center gap-1.5 mb-0.5">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <Rocket className="w-3.5 h-3.5 text-emerald-400" />
             <span className="text-sm text-emerald-400 font-medium">Acabou de assinar!</span>
           </div>
           

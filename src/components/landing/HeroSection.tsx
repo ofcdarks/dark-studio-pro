@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Zap, Shield, Sparkles, Play, Star, Crown, Flame } from "lucide-react";
+import { ArrowRight, Zap, Shield, Rocket, Play, Star, Crown, Flame } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroBg from "@/assets/hero-porsche.jpg";
 import { useLandingSettings } from "@/hooks/useLandingSettings";
@@ -124,7 +124,7 @@ const HeroSection = () => {
           transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
         >
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/10 backdrop-blur-sm border border-purple-500/30 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 md:w-6 md:h-6 text-purple-400" />
+            <Rocket className="w-4 h-4 md:w-6 md:h-6 text-purple-400" />
           </div>
         </motion.div>
 
@@ -259,7 +259,7 @@ const HeroSection = () => {
               ease: "easeInOut",
             }}
           >
-            <Sparkles className="w-3 h-3 text-primary/60" />
+            <Rocket className="w-3 h-3 text-primary/60" />
           </motion.div>
         ))}
       </div>
@@ -304,7 +304,7 @@ const HeroSection = () => {
           className="relative inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/10 border border-primary/40 text-primary mb-6 overflow-hidden"
         >
           <div className="absolute inset-0 animate-shimmer" />
-          <Sparkles className="w-4 h-4 relative z-10" />
+          <Rocket className="w-4 h-4 relative z-10" />
           <span className="text-sm font-bold relative z-10">{settings.heroBadge}</span>
         </motion.div>
 
@@ -403,7 +403,7 @@ const HeroSection = () => {
             className="flex items-center gap-2 px-4 py-2 rounded-full glass"
             whileHover={{ scale: 1.05, y: -2 }}
           >
-            <Sparkles className="w-4 h-4 text-primary" />
+            <Rocket className="w-4 h-4 text-primary" />
             <span className="text-sm">Suporte 24/7</span>
           </motion.div>
         </motion.div>
