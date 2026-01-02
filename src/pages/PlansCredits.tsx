@@ -17,6 +17,7 @@ import {
   Star,
   Shield,
   ArrowRight,
+  LayoutDashboard,
 } from "lucide-react";
 
 interface PlanData {
@@ -242,7 +243,7 @@ export default function PlansCredits() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate('/dashboard')}
                 className="border-primary/50 text-primary hover:bg-primary/10"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
@@ -804,10 +805,10 @@ export default function PlansCredits() {
                 </p>
                 <Button 
                   className="gradient-button text-primary-foreground px-8 h-12 text-base"
-                  onClick={() => document.getElementById('mensais')?.scrollIntoView({ behavior: 'smooth' })}
+                  onClick={() => navigate('/dashboard')}
                 >
-                  <Zap className="w-5 h-5 mr-2" />
-                  Ver Planos
+                  <LayoutDashboard className="w-5 h-5 mr-2" />
+                  Ver meu Dashboard
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </div>
@@ -820,7 +821,7 @@ export default function PlansCredits() {
               Ambiente validado para execução em escala.
             </p>
             <p className="text-xs text-muted-foreground">
-              © 2025 La Casa Dark Core. Todos os direitos reservados.
+              © 2026 La Casa Dark Core. Todos os direitos reservados.
             </p>
           </footer>
         </div>
