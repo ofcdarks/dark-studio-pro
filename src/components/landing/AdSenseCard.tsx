@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Check } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import adsenseLogo from "@/assets/adsense-logo.png";
 
 // Different payment amounts to cycle through
@@ -16,10 +14,19 @@ const paymentAmounts = [
   { amount: "27,345.67", next: "29,800.00", impressions: "4.2M", rpm: "6.78", growth: "84" },
 ];
 
+// 5 different dates to cycle through
+const displayDates = [
+  "1 de janeiro, 2026",
+  "15 de fevereiro, 2026",
+  "3 de março, 2026",
+  "22 de abril, 2026",
+  "10 de maio, 2026",
+];
+
 export const AdSenseCard = () => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [dateIndex, setDateIndex] = useState(0);
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -31,11 +38,11 @@ export const AdSenseCard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Update date every minute
+  // Cycle through dates every 4 seconds (synced with payment amounts)
   useEffect(() => {
     const dateInterval = setInterval(() => {
-      setCurrentDate(new Date());
-    }, 60000);
+      setDateIndex((prev) => (prev + 1) % displayDates.length);
+    }, 4000);
     return () => clearInterval(dateInterval);
   }, []);
 
@@ -67,9 +74,7 @@ export const AdSenseCard = () => {
   };
 
   const current = paymentAmounts[currentIndex];
-  
-  // Format date in Portuguese
-  const formattedDate = format(currentDate, "d 'de' MMMM, yyyy", { locale: ptBR });
+  const currentDate = displayDates[dateIndex];
 
   return (
     <motion.div
@@ -187,12 +192,18 @@ export const AdSenseCard = () => {
                 {current.amount}
               </motion.p>
             </AnimatePresence>
-            <motion.p 
-              className="text-sm text-muted-foreground mt-2"
-              key={formattedDate}
-            >
-              USD · {formattedDate}
-            </motion.p>
+            <AnimatePresence mode="wait">
+              <motion.p 
+                key={currentDate}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="text-sm text-muted-foreground mt-2"
+              >
+                USD · {currentDate}
+              </motion.p>
+            </AnimatePresence>
           </div>
 
           <div className="space-y-3 border-t border-border pt-5">
