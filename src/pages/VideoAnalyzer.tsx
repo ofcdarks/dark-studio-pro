@@ -1035,12 +1035,6 @@ const VideoAnalyzer = () => {
                           >
                             {title.model}
                           </Badge>
-                          {title.isBest && (
-                            <Badge className="bg-success/20 text-success border-success/30 text-xs shrink-0 animate-bounce">
-                              <Rocket className="w-3 h-3 mr-1" />
-                              Melhor título
-                            </Badge>
-                          )}
                           {title.isUsed && (
                             <Badge variant="outline" className="text-xs shrink-0 text-muted-foreground border-muted-foreground/50">
                               Utilizado
@@ -1058,6 +1052,16 @@ const VideoAnalyzer = () => {
                             {title.title}
                           </span>
                         </div>
+                        
+                        {/* Best title badge - centered below */}
+                        {title.isBest && (
+                          <div className="flex justify-center mt-2">
+                            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs animate-pulse">
+                              <Rocket className="w-3 h-3 mr-1" />
+                              Melhor título
+                            </Badge>
+                          </div>
+                        )}
 
                         <Collapsible>
                           <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
