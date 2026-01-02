@@ -86,7 +86,8 @@ export function ThumbnailLibrary({
   
   // Generation states
   const [generatingThumbnail, setGeneratingThumbnail] = useState(false);
-  const [thumbnailLoadingMessage, setThumbnailLoadingMessage] = useState("🎨 Iniciando geração...");
+  const [thumbnailLoadingMessage, setThumbnailLoadingMessage] = useState("");
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [videoTitle, setVideoTitle] = useState(currentTitle || "");
   const [selectedPrompt, setSelectedPrompt] = useState<string>("1");
   const [genModel, setGenModel] = useState("gpt-4o");
@@ -95,16 +96,16 @@ export function ThumbnailLibrary({
   const [includeHeadline, setIncludeHeadline] = useState(true);
   const [useTitle, setUseTitle] = useState(false);
   
-  // Motivational messages for thumbnail generation
+  // Elite motivational messages for thumbnail generation (La Casa Dark Core style)
   const THUMBNAIL_LOADING_MESSAGES = [
-    "🎨 Criando arte visual única...",
-    "✨ Aplicando estilos profissionais...",
-    "🖌️ Renderizando variações...",
-    "🔥 Otimizando para máximo impacto...",
-    "📐 Ajustando composição perfeita...",
-    "💡 Gerando headlines de impacto...",
-    "🏷️ Criando tags SEO otimizadas...",
-    "🚀 Finalizando suas thumbnails...",
+    "Iniciando motor de IA premium...",
+    "Analisando padrões visuais de alto impacto...",
+    "Renderizando composições exclusivas...",
+    "Aplicando estética profissional...",
+    "Otimizando para máxima conversão...",
+    "Gerando headlines magnéticas...",
+    "Finalizando sua obra-prima visual...",
+    "Thumbnails premium quase prontas...",
   ];
   
   // Generated thumbnails preview state
@@ -310,15 +311,29 @@ export function ThumbnailLibrary({
     setGeneratedThumbnails([]);
     setSavedToLibrary([]);
     setThumbnailLoadingMessage(THUMBNAIL_LOADING_MESSAGES[0]);
+    setLoadingProgress(0);
     
-    // Rotate loading messages every 2.5 seconds
-    const messageInterval = setInterval(() => {
-      setThumbnailLoadingMessage(prev => {
-        const currentIndex = THUMBNAIL_LOADING_MESSAGES.indexOf(prev);
-        const nextIndex = (currentIndex + 1) % THUMBNAIL_LOADING_MESSAGES.length;
-        return THUMBNAIL_LOADING_MESSAGES[nextIndex];
-      });
-    }, 2500);
+    // Animate progress and rotate messages
+    let progressValue = 0;
+    let messageIndex = 0;
+    
+    const progressInterval = setInterval(() => {
+      progressValue += Math.random() * 8 + 2; // Random increment between 2-10
+      if (progressValue > 92) progressValue = 92; // Cap at 92% until complete
+      setLoadingProgress(progressValue);
+      
+      // Update message based on progress
+      const newMessageIndex = Math.min(
+        Math.floor((progressValue / 100) * THUMBNAIL_LOADING_MESSAGES.length),
+        THUMBNAIL_LOADING_MESSAGES.length - 1
+      );
+      if (newMessageIndex !== messageIndex) {
+        messageIndex = newMessageIndex;
+        setThumbnailLoadingMessage(THUMBNAIL_LOADING_MESSAGES[messageIndex]);
+      }
+    }, 800);
+    
+    const messageInterval = progressInterval; // Keep reference for cleanup
     try {
       // Call the generate-thumbnail edge function
       const response = await supabase.functions.invoke("generate-thumbnail", {
@@ -356,6 +371,8 @@ export function ThumbnailLibrary({
       });
     } finally {
       clearInterval(messageInterval);
+      setLoadingProgress(100);
+      setTimeout(() => setLoadingProgress(0), 500);
       setGeneratingThumbnail(false);
     }
   };
@@ -850,27 +867,58 @@ export function ThumbnailLibrary({
             </div>
           </div>
 
-          {/* Generate Button */}
-          <Button
-            onClick={handleGenerateThumbnail}
-            disabled={generatingThumbnail || !videoTitle.trim()}
-            className="w-full bg-primary text-primary-foreground h-12 text-base"
-          >
-            {generatingThumbnail ? (
-              <div className="flex items-center">
-                <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                <span className="animate-pulse">{thumbnailLoadingMessage}</span>
+          {/* Generate Button with Progress Bar */}
+          <div className="space-y-3">
+            <Button
+              onClick={handleGenerateThumbnail}
+              disabled={generatingThumbnail || !videoTitle.trim()}
+              className="w-full bg-primary text-primary-foreground h-14 text-base relative overflow-hidden"
+            >
+              {generatingThumbnail ? (
+                <div className="flex items-center z-10 relative">
+                  <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+                  <span className="font-medium">{thumbnailLoadingMessage}</span>
+                </div>
+              ) : (
+                <>
+                  <Rocket className="w-5 h-5 mr-2" />
+                  Gerar Thumbnail Completa
+                </>
+              )}
+              {/* Progress bar overlay */}
+              {generatingThumbnail && (
+                <div 
+                  className="absolute left-0 top-0 h-full bg-white/10 transition-all duration-300 ease-out"
+                  style={{ width: `${loadingProgress}%` }}
+                />
+              )}
+            </Button>
+            
+            {/* Progress indicator with percentage */}
+            {generatingThumbnail && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Gerando thumbnails premium...</span>
+                  <span className="text-primary font-semibold">{Math.round(loadingProgress)}%</span>
+                </div>
+                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-primary via-primary to-amber-400 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${loadingProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-center text-muted-foreground italic">
+                  Aguarde enquanto nossa IA cria obras-primas visuais exclusivas para você
+                </p>
               </div>
-            ) : (
-              <>
-                <Rocket className="w-5 h-5 mr-2" />
-                Gerar Thumbnail Completa
-              </>
             )}
-          </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            O sistema gerará 4 variações da thumbnail com headline, SEO e tags prontos
-          </p>
+            
+            {!generatingThumbnail && (
+              <p className="text-xs text-muted-foreground text-center">
+                O sistema gerará 4 variações da thumbnail com headline, SEO e tags prontos
+              </p>
+            )}
+          </div>
 
           {/* Generated Thumbnails Grid - Layout igual à referência */}
           {generatedThumbnails.length > 0 && (
