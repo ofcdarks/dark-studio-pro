@@ -160,13 +160,6 @@ const Auth = () => {
             `,
           }}
         >
-          {/* Glass shine effect */}
-          <div 
-            className="absolute inset-0 pointer-events-none rounded-2xl overflow-hidden"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 40%)',
-            }}
-          />
 
           {/* Logo - bigger, no ring */}
           <div className="flex flex-col items-center mb-6 relative">
