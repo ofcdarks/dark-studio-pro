@@ -3,7 +3,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -12,10 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Mic, Video, Key, Download, Volume2, Plus, Info, Loader2 } from "lucide-react";
+import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { Json } from "@/integrations/supabase/types";
 
 interface ApiProvider {
   id: string;
@@ -26,16 +26,50 @@ interface ApiProvider {
   is_active: number;
 }
 
+interface ApiKeyConfig {
+  key: string;
+  setKey: (v: string) => void;
+  keyName: string;
+  displayName: string;
+  provider: string;
+  validated: boolean;
+  setValidated: (v: boolean) => void;
+  icon: React.ReactNode;
+  description: string;
+  showPassword: boolean;
+  setShowPassword: (v: boolean) => void;
+}
+
 export function AdminAPIsTab() {
-  const [vozPremiumKey, setVozPremiumKey] = useState("");
-  const [openaiVoiceKey, setOpenaiVoiceKey] = useState("");
-  const [geminiVideoKey, setGeminiVideoKey] = useState("");
-  const [googleVoiceKey, setGoogleVoiceKey] = useState("");
+  // API Keys
+  const [openaiKey, setOpenaiKey] = useState("");
+  const [openaiValidated, setOpenaiValidated] = useState(false);
+  const [openaiShowPassword, setOpenaiShowPassword] = useState(false);
+  
+  const [geminiKey, setGeminiKey] = useState("");
+  const [geminiValidated, setGeminiValidated] = useState(false);
+  const [geminiShowPassword, setGeminiShowPassword] = useState(false);
+  
+  const [claudeKey, setClaudeKey] = useState("");
+  const [claudeValidated, setClaudeValidated] = useState(false);
+  const [claudeShowPassword, setClaudeShowPassword] = useState(false);
+  
+  const [elevenlabsKey, setElevenlabsKey] = useState("");
+  const [elevenlabsValidated, setElevenlabsValidated] = useState(false);
+  const [elevenlabsShowPassword, setElevenlabsShowPassword] = useState(false);
+  
+  const [youtubeKey, setYoutubeKey] = useState("");
+  const [youtubeValidated, setYoutubeValidated] = useState(false);
+  const [youtubeShowPassword, setYoutubeShowPassword] = useState(false);
+  
   const [downsubKey, setDownsubKey] = useState("");
-  const [darkvozKey, setDarkvozKey] = useState("");
-  const [useDarkvozDefault, setUseDarkvozDefault] = useState(false);
+  const [downsubValidated, setDownsubValidated] = useState(false);
+  const [downsubShowPassword, setDownsubShowPassword] = useState(false);
+
   const [apiProviders, setApiProviders] = useState<ApiProvider[]>([]);
   const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
 
   useEffect(() => {
     loadApiSettings();
@@ -47,16 +81,22 @@ export function AdminAPIsTab() {
       .from("admin_settings")
       .select("value")
       .eq("key", "api_keys")
-      .single();
+      .maybeSingle();
 
     if (data?.value) {
-      const keys = data.value as Record<string, string>;
-      setVozPremiumKey(keys.voz_premium || "");
-      setOpenaiVoiceKey(keys.openai_voice || "");
-      setGeminiVideoKey(keys.gemini_video || "");
-      setGoogleVoiceKey(keys.google_voice || "");
-      setDownsubKey(keys.downsub || "");
-      setDarkvozKey(keys.darkvoz || "");
+      const keys = data.value as Record<string, unknown>;
+      setOpenaiKey((keys.openai as string) || "");
+      setOpenaiValidated(!!(keys.openai_validated));
+      setGeminiKey((keys.gemini as string) || "");
+      setGeminiValidated(!!(keys.gemini_validated));
+      setClaudeKey((keys.claude as string) || "");
+      setClaudeValidated(!!(keys.claude_validated));
+      setElevenlabsKey((keys.elevenlabs as string) || "");
+      setElevenlabsValidated(!!(keys.elevenlabs_validated));
+      setYoutubeKey((keys.youtube as string) || "");
+      setYoutubeValidated(!!(keys.youtube_validated));
+      setDownsubKey((keys.downsub as string) || "");
+      setDownsubValidated(!!(keys.downsub_validated));
     }
   };
 
@@ -67,239 +107,260 @@ export function AdminAPIsTab() {
     setLoading(false);
   };
 
-  const saveApiKey = async (keyName: string, value: string, displayName: string) => {
-    const { data: current } = await supabase
-      .from("admin_settings")
-      .select("value")
-      .eq("key", "api_keys")
-      .single();
+  const saveApiKey = async (keyName: string, value: string, validated: boolean, displayName: string) => {
+    setSaving(keyName);
+    
+    try {
+      const { data: current } = await supabase
+        .from("admin_settings")
+        .select("value")
+        .eq("key", "api_keys")
+        .maybeSingle();
 
-    const currentValue = (current?.value as Record<string, string>) || {};
-    const newValue = { ...currentValue, [keyName]: value };
+      const currentValue = (current?.value as Record<string, string | boolean>) || {};
+      const newValue: Json = { 
+        ...currentValue, 
+        [keyName]: value,
+        [`${keyName}_validated`]: validated
+      };
 
-    const { error } = await supabase
-      .from("admin_settings")
-      .update({ value: newValue, updated_at: new Date().toISOString() })
-      .eq("key", "api_keys");
+      // Check if record exists
+      if (current) {
+        const { error } = await supabase
+          .from("admin_settings")
+          .update({ 
+            value: newValue,
+            updated_at: new Date().toISOString() 
+          })
+          .eq("key", "api_keys");
 
-    if (error) {
-      toast.error(`Erro ao salvar ${displayName}`);
-    } else {
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("admin_settings")
+          .insert([{ 
+            key: "api_keys", 
+            value: newValue
+          }]);
+
+        if (error) throw error;
+      }
+
       toast.success(`${displayName} salva com sucesso!`);
+    } catch (error) {
+      console.error("Error saving API key:", error);
+      toast.error(`Erro ao salvar ${displayName}`);
+    } finally {
+      setSaving(null);
     }
   };
 
-  const validateApiKey = async (provider: string, apiKey: string) => {
-    toast.info(`Validando chave ${provider}...`);
-    // Here you would call a validation endpoint
-    toast.success(`Chave ${provider} validada!`);
+  const validateApiKey = async (provider: string, apiKey: string, setValidated: (v: boolean) => void) => {
+    if (!apiKey.trim()) {
+      toast.error("Insira uma chave de API válida");
+      return;
+    }
+
+    setValidating(provider);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-api-key', {
+        body: { provider, apiKey }
+      });
+
+      if (error) throw error;
+
+      if (data.valid) {
+        setValidated(true);
+        toast.success(`Chave ${provider.toUpperCase()} validada com sucesso!`);
+      } else {
+        setValidated(false);
+        toast.error(`Chave ${provider.toUpperCase()} inválida: ${data.error || 'Verifique a chave'}`);
+      }
+    } catch (error) {
+      console.error('Error validating API key:', error);
+      setValidated(false);
+      toast.error(`Erro ao validar chave ${provider}`);
+    } finally {
+      setValidating(null);
+    }
   };
+
+  const apiConfigs: ApiKeyConfig[] = [
+    {
+      key: openaiKey,
+      setKey: setOpenaiKey,
+      keyName: "openai",
+      displayName: "OpenAI",
+      provider: "openai",
+      validated: openaiValidated,
+      setValidated: setOpenaiValidated,
+      icon: <Key className="w-5 h-5 text-green-500" />,
+      description: "Chave para GPT-4o, GPT-4, e modelos de voz TTS. Usada para análises e geração de conteúdo.",
+      showPassword: openaiShowPassword,
+      setShowPassword: setOpenaiShowPassword,
+    },
+    {
+      key: geminiKey,
+      setKey: setGeminiKey,
+      keyName: "gemini",
+      displayName: "Google Gemini",
+      provider: "gemini",
+      validated: geminiValidated,
+      setValidated: setGeminiValidated,
+      icon: <Key className="w-5 h-5 text-blue-500" />,
+      description: "Chave para Gemini Pro e Flash. Usada para análises multimodais e geração de imagens.",
+      showPassword: geminiShowPassword,
+      setShowPassword: setGeminiShowPassword,
+    },
+    {
+      key: claudeKey,
+      setKey: setClaudeKey,
+      keyName: "claude",
+      displayName: "Anthropic Claude",
+      provider: "claude",
+      validated: claudeValidated,
+      setValidated: setClaudeValidated,
+      icon: <Key className="w-5 h-5 text-orange-500" />,
+      description: "Chave para Claude 3 Sonnet/Opus. Usada para análises de alta qualidade.",
+      showPassword: claudeShowPassword,
+      setShowPassword: setClaudeShowPassword,
+    },
+    {
+      key: elevenlabsKey,
+      setKey: setElevenlabsKey,
+      keyName: "elevenlabs",
+      displayName: "ElevenLabs",
+      provider: "elevenlabs",
+      validated: elevenlabsValidated,
+      setValidated: setElevenlabsValidated,
+      icon: <Mic className="w-5 h-5 text-purple-500" />,
+      description: "Chave para vozes premium de alta qualidade. Usada na geração de áudio.",
+      showPassword: elevenlabsShowPassword,
+      setShowPassword: setElevenlabsShowPassword,
+    },
+    {
+      key: youtubeKey,
+      setKey: setYoutubeKey,
+      keyName: "youtube",
+      displayName: "YouTube Data API",
+      provider: "youtube",
+      validated: youtubeValidated,
+      setValidated: setYoutubeValidated,
+      icon: <Video className="w-5 h-5 text-red-500" />,
+      description: "Chave para acessar dados do YouTube. Usada para análise de vídeos e canais.",
+      showPassword: youtubeShowPassword,
+      setShowPassword: setYoutubeShowPassword,
+    },
+    {
+      key: downsubKey,
+      setKey: setDownsubKey,
+      keyName: "downsub",
+      displayName: "DownSub",
+      provider: "downsub",
+      validated: downsubValidated,
+      setValidated: setDownsubValidated,
+      icon: <Download className="w-5 h-5 text-cyan-500" />,
+      description: "Chave para extração de legendas/transcrições de vídeos do YouTube.",
+      showPassword: downsubShowPassword,
+      setShowPassword: setDownsubShowPassword,
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Voz Premium */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Mic className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold text-foreground">Configuração de Voz Premium</h3>
-        </div>
-        <label className="text-sm text-muted-foreground mb-2 block">Chave da API</label>
-        <div className="flex gap-2 mb-2">
-          <Input
-            placeholder="ey4hbGci...xNqw"
-            value={vozPremiumKey}
-            onChange={(e) => setVozPremiumKey(e.target.value)}
-            className="bg-secondary border-border flex-1"
-            type="password"
-          />
-          <Button variant="outline" onClick={() => validateApiKey("Voz Premium", vozPremiumKey)}>
-            Verificar Saldo
-          </Button>
-          <Button onClick={() => saveApiKey("voz_premium", vozPremiumKey, "Voz Premium")}>
-            Editar
-          </Button>
-        </div>
-        <Alert className="border-primary/50 bg-primary/10">
-          <Info className="w-4 h-4 text-primary" />
-          <AlertDescription className="text-primary">
-            Após salvar a chave, você poderá adicionar saldo aos usuários através do sistema de créditos.
-          </AlertDescription>
-        </Alert>
-      </Card>
+      {/* Info Alert */}
+      <Alert className="border-primary/50 bg-primary/10">
+        <Info className="w-4 h-4 text-primary" />
+        <AlertDescription className="text-primary">
+          Configure as chaves de API do sistema. Essas chaves serão usadas como fallback quando os usuários não tiverem suas próprias chaves configuradas.
+          <strong className="block mt-1">Importante:</strong> Valide cada chave antes de salvar para garantir que está funcionando.
+        </AlertDescription>
+      </Alert>
 
-      {/* OpenAI Voice */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Volume2 className="w-5 h-5 text-muted-foreground" />
-          <h3 className="font-semibold text-foreground">Configuração de Chave de Voz OpenAI</h3>
-        </div>
-        <label className="text-sm text-muted-foreground mb-2 block">Chave da API OpenAI</label>
-        <div className="flex gap-2 mb-2">
-          <Input
-            placeholder="Cole sua chave da API OpenAI aqui"
-            value={openaiVoiceKey}
-            onChange={(e) => setOpenaiVoiceKey(e.target.value)}
-            className="bg-secondary border-border flex-1"
-            type="password"
-          />
-          <Button variant="outline" onClick={() => validateApiKey("OpenAI", openaiVoiceKey)}>
-            Validar
-          </Button>
-          <Button onClick={() => saveApiKey("openai_voice", openaiVoiceKey, "OpenAI Voice")}>
-            Salvar Chave
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Esta chave é usada para gerar vozes com a API OpenAI. Será usada automaticamente quando o usuário solicitar voz "OpenAI".
-        </p>
-      </Card>
-
-      {/* Gemini/Veo Video */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Video className="w-5 h-5 text-muted-foreground" />
-          <h3 className="font-semibold text-foreground">Configuração de API de Vídeo (Gemini/Veo)</h3>
-        </div>
-        <label className="text-sm text-muted-foreground mb-2 block">Chave da API para Vídeo</label>
-        <div className="flex gap-2 mb-2">
-          <Input
-            placeholder="Cole sua chave do Gemini/Veo aqui"
-            value={geminiVideoKey}
-            onChange={(e) => setGeminiVideoKey(e.target.value)}
-            className="bg-secondary border-border flex-1"
-            type="password"
-          />
-          <Button variant="outline" onClick={() => validateApiKey("Gemini", geminiVideoKey)}>
-            Validar
-          </Button>
-          <Button onClick={() => saveApiKey("gemini_video", geminiVideoKey, "Gemini Video")}>
-            Salvar Chave
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Para usuários que querem gerar vídeos com modelos Veo. Esta API possui preços e cotas diferentes.
-        </p>
-      </Card>
-
-      {/* Google Cloud Voice */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Mic className="w-5 h-5 text-muted-foreground" />
-          <h3 className="font-semibold text-foreground">Configuração de Chave de Voz</h3>
-        </div>
-        <label className="text-sm text-muted-foreground mb-2 block">
-          Chave da API para Voz (Google Cloud/Gemini)
-        </label>
-        <div className="flex gap-2 mb-2">
-          <Input
-            placeholder="Cole sua chave da API do Google Cloud ou Gemini aqui"
-            value={googleVoiceKey}
-            onChange={(e) => setGoogleVoiceKey(e.target.value)}
-            className="bg-secondary border-border flex-1"
-            type="password"
-          />
-          <Button variant="outline" onClick={() => validateApiKey("Google", googleVoiceKey)}>
-            Validar
-          </Button>
-          <Button onClick={() => saveApiKey("google_voice", googleVoiceKey, "Google Voice")}>
-            Salvar Chave
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Esta chave é usada para transcrição/TTS quando o usuário solicita a API própria. Se não configurada, será usado o saldo de voz padrão.
-        </p>
-        <Alert className="mt-2 border-primary/50 bg-primary/10">
-          <Info className="w-4 h-4 text-primary" />
-          <AlertDescription className="text-primary">
-            Esta chave é usada quando o usuário seleciona "Gemini" como provedor de voz na API própria. Se não configurada, será reduzido o limite da chave de voz padrão.
-          </AlertDescription>
-        </Alert>
-      </Card>
-
-      {/* DownSub */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Download className="w-5 h-5 text-muted-foreground" />
-          <h3 className="font-semibold text-foreground">Configuração de API DownSub (Transcrições)</h3>
-        </div>
-        <label className="text-sm text-muted-foreground mb-2 block">Chave da API DownSub</label>
-        <div className="flex gap-2 mb-2">
-          <Input
-            placeholder="Cole sua chave da API DownSub aqui"
-            value={downsubKey}
-            onChange={(e) => setDownsubKey(e.target.value)}
-            className="bg-secondary border-border flex-1"
-            type="password"
-          />
-          <Button onClick={() => saveApiKey("downsub", downsubKey, "DownSub")}>
-            Verificar
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground mb-2">
-          Configure a chave da API DownSub para extrair transcrições de vídeos do YouTube e outras mídias suportadas.
-        </p>
-        <Alert className="border-primary/50 bg-primary/10">
-          <Info className="w-4 h-4 text-primary" />
-          <AlertDescription className="text-primary">
-            A API DownSub permite baixar legendas/transcrições de vídeos do YouTube e outros sites suportados. 
-            Cada chamada pode ter custos associados. Os créditos não são consumidos interativamente pelo Pro/3000 e creditados após finalizados.
-          </AlertDescription>
-        </Alert>
-      </Card>
-
-      {/* DarkVoz */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Mic className="w-5 h-5 text-muted-foreground" />
-          <h3 className="font-semibold text-foreground">Configuração de DarkVoz</h3>
-        </div>
-        <label className="text-sm text-muted-foreground mb-2 block">Chave da API</label>
-        <div className="flex gap-2 mb-2">
-          <Input
-            placeholder="Cole sua chave da API do DarkVoz aqui"
-            value={darkvozKey}
-            onChange={(e) => setDarkvozKey(e.target.value)}
-            className="bg-secondary border-border flex-1"
-            type="password"
-          />
-          <Button onClick={() => saveApiKey("darkvoz", darkvozKey, "DarkVoz")}>
-            Verificar
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground mb-2">
-          Configure a chave da API do DarkVoz para usar as vozes disponíveis na plataforma.
-        </p>
-        <div className="flex items-center gap-2 mb-2">
-          <Checkbox
-            checked={useDarkvozDefault}
-            onCheckedChange={(v) => setUseDarkvozDefault(!!v)}
-          />
-          <span className="text-sm text-muted-foreground">
-            Usar DarkVoz como padrão para todas as funções
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Quando ativado, todas as operações de voz do sistema usarão a DarkVoz, independente das preferências do usuário.
-        </p>
-        <Alert className="mt-2 border-primary/50 bg-primary/10">
-          <Info className="w-4 h-4 text-primary" />
-          <AlertDescription className="text-primary">
-            A chave do DarkVoz será usada para acessar as APIs disponíveis na plataforma Casa Dark Coin. 
-            Há uma opção extra para usar como padrão em todas as funções.
-          </AlertDescription>
-        </Alert>
-      </Card>
+      {/* API Keys Cards */}
+      {apiConfigs.map((config) => (
+        <Card key={config.keyName} className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              {config.icon}
+              <h3 className="font-semibold text-foreground">{config.displayName}</h3>
+              {config.validated ? (
+                <Badge variant="outline" className="text-success border-success">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Validada
+                </Badge>
+              ) : config.key ? (
+                <Badge variant="outline" className="text-destructive border-destructive">
+                  <XCircle className="w-3 h-3 mr-1" />
+                  Não validada
+                </Badge>
+              ) : null}
+            </div>
+          </div>
+          
+          <label className="text-sm text-muted-foreground mb-2 block">Chave da API</label>
+          <div className="flex gap-2 mb-3">
+            <div className="relative flex-1">
+              <Input
+                placeholder={`Cole sua chave da API ${config.displayName} aqui`}
+                value={config.key}
+                onChange={(e) => {
+                  config.setKey(e.target.value);
+                  config.setValidated(false);
+                }}
+                className="bg-secondary border-border pr-10"
+                type={config.showPassword ? "text" : "password"}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                onClick={() => config.setShowPassword(!config.showPassword)}
+              >
+                {config.showPassword ? (
+                  <EyeOff className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="w-4 h-4 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => validateApiKey(config.provider, config.key, config.setValidated)}
+              disabled={validating === config.provider || !config.key.trim()}
+            >
+              {validating === config.provider ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+              ) : null}
+              Verificar
+            </Button>
+            <Button 
+              onClick={() => saveApiKey(config.keyName, config.key, config.validated, config.displayName)}
+              disabled={saving === config.keyName}
+              className="bg-primary"
+            >
+              {saving === config.keyName ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+              ) : null}
+              Salvar
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">{config.description}</p>
+        </Card>
+      ))}
 
       {/* API Providers Table */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Key className="w-5 h-5 text-muted-foreground" />
-            <h3 className="font-semibold text-foreground">Gerenciamento de APIs</h3>
+            <h3 className="font-semibold text-foreground">Provedores de API Configurados</h3>
           </div>
           <Button size="sm" className="bg-primary">
             <Plus className="w-4 h-4 mr-1" />
-            Adicionar API
+            Adicionar Provedor
           </Button>
         </div>
         
@@ -312,6 +373,7 @@ export function AdminAPIsTab() {
             <TableHeader>
               <TableRow>
                 <TableHead>NOME</TableHead>
+                <TableHead>PROVEDOR</TableHead>
                 <TableHead>MODELO</TableHead>
                 <TableHead>CRÉDITOS/UNIDADE</TableHead>
                 <TableHead>STATUS</TableHead>
@@ -321,14 +383,15 @@ export function AdminAPIsTab() {
             <TableBody>
               {apiProviders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    Carregando...
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    Nenhum provedor configurado
                   </TableCell>
                 </TableRow>
               ) : (
                 apiProviders.map((api) => (
                   <TableRow key={api.id}>
-                    <TableCell>{api.name}</TableCell>
+                    <TableCell className="font-medium">{api.name}</TableCell>
+                    <TableCell>{api.provider}</TableCell>
                     <TableCell>{api.model}</TableCell>
                     <TableCell>{api.credits_per_unit}</TableCell>
                     <TableCell>
