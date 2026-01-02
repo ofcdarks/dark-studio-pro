@@ -615,6 +615,7 @@ export function AdminAPIsTab() {
                     <SelectItem value="claude">Anthropic Claude</SelectItem>
                     <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
                     <SelectItem value="lovable">Lovable AI</SelectItem>
+                    <SelectItem value="laozhang">Laozhang AI</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
