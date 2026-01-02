@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { SessionIndicator } from "@/components/ui/session-indicator";
 
 interface GeneratedAudio {
   id: string;
@@ -172,7 +173,14 @@ const VoiceGenerator = () => {
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
+          {/* Session Indicator */}
+          <SessionIndicator 
+            storageKeys={["voice_text"]}
+            label="Texto anterior"
+            onClear={() => setText("")}
+          />
+
+          <div className="mb-8 mt-4">
             <h1 className="text-3xl font-bold text-foreground mb-2">Gerador de Voz</h1>
             <p className="text-muted-foreground">
               Converta texto em áudio com vozes realistas usando IA

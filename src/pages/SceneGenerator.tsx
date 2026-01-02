@@ -10,6 +10,7 @@ import { Loader2, Film, Copy, Check, Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { SessionIndicator } from "@/components/ui/session-indicator";
 
 interface ScenePrompt {
   number: number;
@@ -93,7 +94,19 @@ const SceneGenerator = () => {
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
+          {/* Session Indicator */}
+          <SessionIndicator 
+            storageKeys={["scene_script", "scene_title", "scene_niche", "scene_scenes"]}
+            label="Cenas anteriores"
+            onClear={() => {
+              setScript("");
+              setTitle("");
+              setNiche("");
+              setScenes([]);
+            }}
+          />
+
+          <div className="mb-8 mt-4">
             <h1 className="text-3xl font-bold text-foreground mb-2">Gerador de Cenas</h1>
             <p className="text-muted-foreground">
               Gere prompts de imagem para cada cena do seu roteiro

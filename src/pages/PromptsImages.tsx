@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { SessionIndicator } from "@/components/ui/session-indicator";
 
 const PromptsImages = () => {
   // Persisted states
@@ -143,7 +144,18 @@ const PromptsImages = () => {
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
+          {/* Session Indicator */}
+          <SessionIndicator 
+            storageKeys={["prompts_prompt", "prompts_generatedImage"]}
+            label="Prompt anterior"
+            onClear={() => {
+              setPrompt("");
+              setPromptTitle("");
+              setGeneratedImage(null);
+            }}
+          />
+
+          <div className="mb-8 mt-4">
             <h1 className="text-3xl font-bold text-foreground mb-2">Prompts e Imagens</h1>
             <p className="text-muted-foreground">
               Crie e gerencie prompts para geração de imagens

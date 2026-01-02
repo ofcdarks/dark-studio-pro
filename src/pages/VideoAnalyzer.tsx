@@ -30,6 +30,7 @@ import { TranscriptionSection } from "@/components/analyzer/TranscriptionSection
 import { CreateAgentModal } from "@/components/analyzer/CreateAgentModal";
 import { ThumbnailLibrary } from "@/components/analyzer/ThumbnailLibrary";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { SessionIndicator } from "@/components/ui/session-indicator";
 
 interface GeneratedTitle {
   id: string;
@@ -649,8 +650,28 @@ const VideoAnalyzer = () => {
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
+          {/* Session Indicator */}
+          <SessionIndicator 
+            storageKeys={[
+              "analyzer_videoUrl", 
+              "analyzer_videoInfo", 
+              "analyzer_generatedTitles",
+              "analyzer_currentTranscription"
+            ]}
+            label="Análise anterior"
+            onClear={() => {
+              setVideoUrl("");
+              setVideoInfo(null);
+              setGeneratedTitles([]);
+              setSelectedTitles([]);
+              setSelectedTitleForThumbnail("");
+              setCurrentTranscription("");
+              setCurrentAnalysisId(null);
+            }}
+          />
+
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-8 mt-4">
             <h1 className="text-4xl font-bold text-foreground mb-3">
               Analisador de Títulos Virais
             </h1>
