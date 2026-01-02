@@ -178,17 +178,14 @@ const Landing = () => {
           <img
             src="/images/hero-porsche.jpg"
             alt="Porsche de luxo no fundo da landing page"
-            className="absolute inset-0 h-full w-full object-cover object-right opacity-40 md:opacity-60 brightness-90 contrast-125"
+            className="absolute inset-0 h-full w-full object-cover object-center opacity-50 md:opacity-70"
             loading="eager"
           />
 
-          {/* Gradient overlay - less aggressive to show Porsche */}
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/40 md:to-background/30" />
+          {/* Gradient overlay - left side dark for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
           {/* Vertical fade for seamless section transitions */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-transparent to-background" />
-
-          {/* Subtle amber glow accents - desktop only */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent hidden md:block" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background" />
         </div>
 
         {/* Parallax orbs - desktop only */}
