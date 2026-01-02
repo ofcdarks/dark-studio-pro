@@ -972,7 +972,11 @@ const VideoAnalyzer = () => {
 
               <div className="space-y-4">
                 {generatedTitles.map((title) => (
-                  <Card key={title.id} className="p-4 border-border/50">
+                  <Card key={title.id} className={`p-4 border-border/50 transition-all duration-500 ${
+                    title.isBest 
+                      ? "ring-2 ring-primary/50 border-primary/50 bg-primary/5 animate-pulse-once" 
+                      : ""
+                  }`}>
                     <div className="flex items-start gap-3">
                       <Checkbox
                         checked={selectedTitles.includes(title.id)}
@@ -994,7 +998,7 @@ const VideoAnalyzer = () => {
                             {title.model}
                           </Badge>
                           {title.isBest && (
-                            <Badge className="bg-success/20 text-success border-success/30 text-xs shrink-0">
+                            <Badge className="bg-success/20 text-success border-success/30 text-xs shrink-0 animate-bounce">
                               <Rocket className="w-3 h-3 mr-1" />
                               Melhor título
                             </Badge>

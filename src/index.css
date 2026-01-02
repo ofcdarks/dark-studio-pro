@@ -312,6 +312,19 @@
   }
 }
 
+@keyframes pulse-once {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(38, 92%, 50%, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px hsl(38, 92%, 50%, 0.4);
+  }
+}
+
+.animate-pulse-once {
+  animation: pulse-once 1.5s ease-in-out 2;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
