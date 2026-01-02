@@ -137,13 +137,13 @@ const Auth = () => {
             : 'opacity-0 translate-y-8 scale-95'
         }`}
       >
-        {/* Glass card with glossy effect */}
+        {/* Glass card with glossy effect - more transparent */}
         <div 
-          className="relative rounded-3xl p-8 backdrop-blur-2xl overflow-hidden"
+          className="relative rounded-3xl p-8 backdrop-blur-xl overflow-hidden"
           style={{
-            background: 'linear-gradient(180deg, rgba(30, 30, 35, 0.85) 0%, rgba(15, 15, 20, 0.95) 100%)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            background: 'linear-gradient(180deg, rgba(20, 20, 25, 0.6) 0%, rgba(10, 10, 15, 0.75) 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
           }}
         >
           {/* Top glossy shine */}
