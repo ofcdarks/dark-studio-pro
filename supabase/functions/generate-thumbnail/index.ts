@@ -292,23 +292,18 @@ async function generateImageWithLovable(prompt: string, apiKey: string): Promise
   return null;
 }
 
-// Get user's ImageFX cookies
+// Get user's ImageFX cookies - ALWAYS use ImageFX for images when available
 async function getUserImageFXCookies(userId: string, supabaseAdmin: any): Promise<string | null> {
   try {
     const { data, error } = await supabaseAdmin
       .from('user_api_settings')
-      .select('imagefx_cookies, imagefx_validated, use_platform_credits')
+      .select('imagefx_cookies, imagefx_validated')
       .eq('user_id', userId)
       .maybeSingle();
 
     if (error || !data) return null;
     
-    // If using platform credits, don't use ImageFX (use Lovable AI instead)
-    if (data.use_platform_credits) {
-      console.log('[Thumbnail] User is using platform credits, skipping ImageFX');
-      return null;
-    }
-
+    // Always use ImageFX for images when cookies are available and validated
     if (!data.imagefx_validated || !data.imagefx_cookies) return null;
 
     return data.imagefx_cookies;
