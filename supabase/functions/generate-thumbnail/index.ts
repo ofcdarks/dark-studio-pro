@@ -11,6 +11,12 @@ const CREDIT_PRICING = {
   THUMBNAIL_GENERATION: { base: 8, gemini: 10, claude: 12 },
 };
 
+const DefaultImageFXHeader = {
+  "Origin": "https://labs.google",
+  "Content-Type": "application/json",
+  "Referer": "https://labs.google/fx/tools/image-fx"
+};
+
 interface ThumbnailRequest {
   videoTitle: string;
   niche?: string;
@@ -23,6 +29,7 @@ interface ThumbnailRequest {
   referencePrompt?: string;
   referenceHeadlineStyle?: string;
   language?: string;
+  imageProvider?: 'imagefx' | 'lovable';
 }
 
 interface ThumbnailVariation {
@@ -41,6 +48,114 @@ const VARIATION_STYLES = [
   { name: "Mistério/Suspense", description: "Dark and mysterious atmosphere, shadows, silhouettes, intriguing elements, moody lighting" },
   { name: "Impacto visual", description: "Bold visual impact with contrasting colors, eye-catching elements, professional composition" },
 ];
+
+// Session cache for ImageFX
+const sessionCache = new Map<string, { token: string; expires: Date }>();
+
+async function fetchImageFXSession(cookie: string): Promise<{ access_token: string; expires: string }> {
+  console.log('[ImageFX] Fetching session...');
+  
+  const res = await fetch("https://labs.google/fx/api/auth/session", {
+    headers: {
+      "Origin": "https://labs.google",
+      "Referer": "https://labs.google/fx/tools/image-fx",
+      "Cookie": cookie
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error(`ImageFX session error: ${res.status}`);
+  }
+
+  const data = await res.json();
+  
+  if (!data.access_token || !data.expires) {
+    throw new Error("Invalid ImageFX session response");
+  }
+
+  return data;
+}
+
+function generateSessionId(): string {
+  const randomHex = Array.from(crypto.getRandomValues(new Uint8Array(8)))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `${Date.now()}-${randomHex}`;
+}
+
+async function generateImageWithImageFX(
+  prompt: string, 
+  cookie: string, 
+  userId: string
+): Promise<string | null> {
+  try {
+    // Check cached session
+    const cached = sessionCache.get(userId);
+    let token: string;
+    
+    if (cached && cached.expires > new Date(Date.now() + 30000)) {
+      token = cached.token;
+    } else {
+      const session = await fetchImageFXSession(cookie);
+      token = session.access_token;
+      sessionCache.set(userId, {
+        token: session.access_token,
+        expires: new Date(session.expires)
+      });
+    }
+
+    const payload = JSON.stringify({
+      userInput: {
+        candidatesCount: 1,
+        prompts: [prompt],
+        seed: Math.floor(Math.random() * 2147483647)
+      },
+      clientContext: {
+        sessionId: generateSessionId(),
+        tool: "IMAGE_FX"
+      },
+      modelInput: {
+        modelNameType: "IMAGEN_3_5"
+      },
+      aspectRatio: "IMAGE_ASPECT_RATIO_LANDSCAPE" // 16:9 for thumbnails
+    });
+
+    console.log('[ImageFX] Generating image...');
+    
+    const res = await fetch("https://aisandbox-pa.googleapis.com/v1:runImageFx", {
+      method: "POST",
+      body: payload,
+      headers: {
+        ...DefaultImageFXHeader,
+        "Cookie": cookie,
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('[ImageFX] Generation error:', res.status, errText);
+      
+      if ([401, 403].includes(res.status)) {
+        sessionCache.delete(userId);
+      }
+      return null;
+    }
+
+    const json = await res.json();
+    const images = json?.imagePanels?.[0]?.generatedImages;
+    
+    if (images && images.length > 0 && images[0].encodedImage) {
+      console.log('[ImageFX] Image generated successfully');
+      return `data:image/png;base64,${images[0].encodedImage}`;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('[ImageFX] Error:', error);
+    return null;
+  }
+}
 
 async function generateHeadlines(title: string, niche: string, language: string, apiKey: string): Promise<string[]> {
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -80,7 +195,6 @@ Formato: ["HEADLINE1", "HEADLINE2", "HEADLINE3"]`
   const content = data.choices?.[0]?.message?.content || "";
   
   try {
-    // Extract JSON from response
     const jsonMatch = content.match(/\[[\s\S]*?\]/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
@@ -146,7 +260,7 @@ Gere descrição SEO (400-500 caracteres) e tags separadas por vírgula.`
   };
 }
 
-async function generateImage(prompt: string, apiKey: string): Promise<string | null> {
+async function generateImageWithLovable(prompt: string, apiKey: string): Promise<string | null> {
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -164,7 +278,7 @@ async function generateImage(prompt: string, apiKey: string): Promise<string | n
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Image generation error:", response.status, errorText);
+    console.error("Lovable image generation error:", response.status, errorText);
     return null;
   }
 
@@ -176,6 +290,32 @@ async function generateImage(prompt: string, apiKey: string): Promise<string | n
   }
   
   return null;
+}
+
+// Get user's ImageFX cookies
+async function getUserImageFXCookies(userId: string, supabaseAdmin: any): Promise<string | null> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('user_api_settings')
+      .select('imagefx_cookies, imagefx_validated, use_platform_credits')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    
+    // If using platform credits, don't use ImageFX (use Lovable AI instead)
+    if (data.use_platform_credits) {
+      console.log('[Thumbnail] User is using platform credits, skipping ImageFX');
+      return null;
+    }
+
+    if (!data.imagefx_validated || !data.imagefx_cookies) return null;
+
+    return data.imagefx_cookies;
+  } catch (e) {
+    console.error('Error fetching ImageFX cookies:', e);
+    return null;
+  }
 }
 
 serve(async (req) => {
@@ -195,12 +335,16 @@ serve(async (req) => {
     // Get user from auth header
     const authHeader = req.headers.get("Authorization");
     let userId: string | null = null;
+    let supabaseAdmin: any = null;
 
-    if (authHeader && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user } } = await supabase.auth.getUser(token);
-      userId = user?.id || null;
+    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      
+      if (authHeader) {
+        const token = authHeader.replace("Bearer ", "");
+        const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+        userId = user?.id || null;
+      }
     }
 
     const body: ThumbnailRequest = await req.json();
@@ -215,7 +359,8 @@ serve(async (req) => {
       referenceThumbnailUrl,
       referencePrompt,
       referenceHeadlineStyle,
-      language = "Português"
+      language = "Português",
+      imageProvider
     } = body;
 
     if (!videoTitle) {
@@ -223,6 +368,31 @@ serve(async (req) => {
     }
 
     console.log("Generating thumbnails for:", videoTitle);
+
+    // Determine image provider
+    let useImageFX = false;
+    let imageFXCookies: string | null = null;
+    let shouldDebitCredits = true;
+
+    if (userId && supabaseAdmin) {
+      imageFXCookies = await getUserImageFXCookies(userId, supabaseAdmin);
+      
+      if (imageFXCookies) {
+        useImageFX = true;
+        shouldDebitCredits = false; // Using own ImageFX = no credits
+        console.log('[Thumbnail] Using ImageFX (user cookies)');
+      } else {
+        console.log('[Thumbnail] Using Lovable AI (platform credits)');
+      }
+    }
+
+    // Override if explicit provider requested
+    if (imageProvider === 'lovable') {
+      useImageFX = false;
+      shouldDebitCredits = true;
+    } else if (imageProvider === 'imagefx' && !imageFXCookies) {
+      throw new Error("ImageFX cookies não configurados. Configure em Configurações.");
+    }
 
     // Generate headlines if needed
     let headlines: string[] = [];
@@ -241,27 +411,24 @@ serve(async (req) => {
       let headline: string | null = null;
       if (includeHeadline) {
         if (useTitle) {
-          // Use the video title as headline
           headline = videoTitle.length > 50 ? videoTitle.substring(0, 47) + "..." : videoTitle;
         } else {
           headline = headlines[i % headlines.length];
         }
       }
       
-      // Build the image generation prompt with art style
+      // Build the image generation prompt
       let imagePrompt = `${stylePromptPrefix} Create a YouTube thumbnail image (16:9 aspect ratio, 1280x720 resolution). 
 Style: ${style}, ${variationStyle.description}
 Topic: ${videoTitle}
 Niche: ${niche}${subNiche ? `, Sub-niche: ${subNiche}` : ""}`;
 
-      // Add headline instructions if needed
       if (headline && includeHeadline) {
         imagePrompt += `
 
 IMPORTANT HEADLINE REQUIREMENT:
 - Add this text as a bold, eye-catching headline on the thumbnail: "${headline}"`;
 
-        // If we have a reference headline style, use it
         if (referenceHeadlineStyle) {
           imagePrompt += `
 
@@ -280,7 +447,6 @@ ${referenceHeadlineStyle}
         }
       }
 
-      // Add reference style if available
       if (referencePrompt) {
         imagePrompt += `
 
@@ -299,9 +465,24 @@ Requirements:
 - ${style} style
 ${!includeHeadline ? '- DO NOT include any text in the image' : ''}`;
 
-      console.log(`Generating variation ${i + 1} with style: ${variationStyle.name}`);
+      console.log(`Generating variation ${i + 1} with style: ${variationStyle.name}, provider: ${useImageFX ? 'ImageFX' : 'Lovable'}`);
       
-      const imageBase64 = await generateImage(imagePrompt, LOVABLE_API_KEY);
+      let imageBase64: string | null = null;
+      
+      // Try ImageFX first if available
+      if (useImageFX && imageFXCookies && userId) {
+        imageBase64 = await generateImageWithImageFX(imagePrompt, imageFXCookies, userId);
+        
+        // Fallback to Lovable if ImageFX fails
+        if (!imageBase64) {
+          console.log(`[Thumbnail] ImageFX failed for variation ${i + 1}, falling back to Lovable`);
+          imageBase64 = await generateImageWithLovable(imagePrompt, LOVABLE_API_KEY);
+          shouldDebitCredits = true; // Using Lovable = debit credits
+        }
+      } else {
+        // Use Lovable AI
+        imageBase64 = await generateImageWithLovable(imagePrompt, LOVABLE_API_KEY);
+      }
       
       if (!imageBase64) {
         console.error(`Failed to generate variation ${i + 1}`);
@@ -324,12 +505,10 @@ ${!includeHeadline ? '- DO NOT include any text in the image' : ''}`;
       console.log(`Variation ${i + 1} generated successfully`);
     }
 
-    // Debit credits if user is authenticated
-    if (userId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    // Debit credits if using platform (Lovable AI)
+    if (userId && supabaseAdmin && shouldDebitCredits && variations.length > 0) {
       const creditsUsed = CREDIT_PRICING.THUMBNAIL_GENERATION.gemini * variations.length;
       
-      // Get current balance and update
       const { data: currentCredits } = await supabaseAdmin
         .from('user_credits')
         .select('balance')
@@ -343,7 +522,6 @@ ${!includeHeadline ? '- DO NOT include any text in the image' : ''}`;
           .eq('user_id', userId);
       }
 
-      // Log usage
       await supabaseAdmin.from('credit_usage').insert({
         user_id: userId,
         operation_type: 'thumbnail_generation',
@@ -351,6 +529,10 @@ ${!includeHeadline ? '- DO NOT include any text in the image' : ''}`;
         model_used: 'gemini-2.5-flash-image',
         details: { variations_count: variations.length, video_title: videoTitle }
       });
+      
+      console.log(`[Thumbnail] Debited ${creditsUsed} credits`);
+    } else if (!shouldDebitCredits) {
+      console.log('[Thumbnail] No credits debited (using ImageFX)');
     }
 
     console.log(`Generated ${variations.length} thumbnail variations`);
@@ -362,7 +544,8 @@ ${!includeHeadline ? '- DO NOT include any text in the image' : ''}`;
         headlines,
         videoTitle,
         niche,
-        subNiche
+        subNiche,
+        provider: useImageFX ? 'imagefx' : 'lovable'
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
