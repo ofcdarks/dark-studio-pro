@@ -174,18 +174,18 @@ const Landing = () => {
         <ParticleBackground particleCount={40} className="opacity-40 md:opacity-60" />
 
         {/* Background Image - Porsche */}
-        <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 z-0 pointer-events-none">
           <img
             src="/images/hero-porsche.jpg"
             alt="Porsche de luxo no fundo da landing page"
-            className="absolute inset-0 h-full w-full object-cover object-center opacity-50 md:opacity-70"
+            className="absolute inset-0 h-full w-full object-cover object-center opacity-60 md:opacity-80"
             loading="eager"
           />
 
           {/* Gradient overlay - left side dark for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
           {/* Vertical fade for seamless section transitions */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-transparent to-background" />
         </div>
 
         {/* Parallax orbs - desktop only */}
