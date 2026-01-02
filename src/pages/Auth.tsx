@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { z } from "zod";
 import logo from "@/assets/logo.gif";
+import authBg from "@/assets/auth-porsche.jpg";
 
 const authSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -102,16 +103,16 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-background">
-      {/* Background with Porsche - same as landing */}
+      {/* Background with new Porsche angle */}
       <div className="absolute inset-0 -z-10">
         <img
-          src="/images/hero-porsche.jpg"
+          src={authBg}
           alt="Background"
-          className="absolute inset-0 h-full w-full object-cover object-center opacity-40"
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-50"
         />
         {/* Dark overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/90 to-background/80" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-background/80" />
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/85 to-background/70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-background/60" />
       </div>
 
       {/* Subtle floating orbs */}
@@ -129,7 +130,7 @@ const Auth = () => {
         <span>Voltar</span>
       </Link>
       
-      {/* Compact Login Card */}
+      {/* Compact Login Card with animated border */}
       <div 
         className={`relative z-10 w-full max-w-md transition-all duration-700 ease-out ${
           isVisible 
@@ -137,13 +138,24 @@ const Auth = () => {
             : 'opacity-0 translate-y-8 scale-95'
         }`}
       >
+        {/* Animated border glow */}
+        <div className="absolute -inset-[2px] rounded-2xl bg-gradient-to-r from-primary via-amber-400 to-primary opacity-60 blur-sm animate-pulse" />
         <div 
-          className="relative bg-card/95 backdrop-blur-xl rounded-2xl p-8 border border-border/50 shadow-2xl"
+          className="absolute -inset-[1px] rounded-2xl"
+          style={{
+            background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(45 100% 60%), hsl(var(--primary)))',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 3s linear infinite',
+          }}
+        />
+        
+        <div 
+          className="relative bg-card/98 backdrop-blur-xl rounded-2xl p-8 border-0 shadow-2xl"
           style={{
             boxShadow: `
               0 0 0 1px rgba(255,255,255,0.03) inset,
               0 25px 50px -12px rgba(0,0,0,0.5),
-              0 0 40px rgba(245,158,11,0.08)
+              0 0 60px rgba(245,158,11,0.15)
             `,
           }}
         >
@@ -155,13 +167,10 @@ const Auth = () => {
             }}
           />
 
-          {/* Logo and Title */}
+          {/* Logo - bigger, no ring */}
           <div className="flex flex-col items-center mb-6 relative">
-            <div className="relative mb-4">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary via-amber-400 to-primary animate-spin-slow opacity-60 blur-sm" />
-              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-primary relative z-10">
-                <img src={logo} alt="Logo" className="w-full h-full object-cover" />
-              </div>
+            <div className="w-28 h-28 rounded-full overflow-hidden mb-4">
+              <img src={logo} alt="Logo" className="w-full h-full object-cover" />
             </div>
             
             <h1 className="text-2xl font-bold text-foreground">
