@@ -29,7 +29,7 @@ import SettingsPage from "./pages/SettingsPage";
 import AdminPanel from "./pages/AdminPanel";
 import ThumbnailsPage from "./pages/ThumbnailsPage";
 import SceneGenerator from "./pages/SceneGenerator";
-
+import AnalysisHistory from "./pages/AnalysisHistory";
 import PlansCredits from "./pages/PlansCredits";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -49,7 +49,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/analyzer" element={<ProtectedRoute><VideoAnalyzer /></ProtectedRoute>} />
-            <Route path="/history" element={<ProtectedRoute><Folders /></ProtectedRoute>} />
+            <Route path="/history" element={<ProtectedRoute><AnalysisHistory /></ProtectedRoute>} />
             <Route path="/explore" element={<ProtectedRoute><ExploreNiche /></ProtectedRoute>} />
             <Route path="/folders" element={<ProtectedRoute><Folders /></ProtectedRoute>} />
             <Route path="/channels" element={<ProtectedRoute><MonitoredChannels /></ProtectedRoute>} />
