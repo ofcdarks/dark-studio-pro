@@ -111,16 +111,16 @@ const Auth = () => {
           alt="Background"
           className="absolute inset-0 h-full w-full object-cover object-center animate-[slowZoom_25s_ease-in-out_infinite_alternate]"
           style={{
-            filter: 'brightness(0.7) contrast(1.15) saturate(1.1)',
+            filter: 'brightness(0.85) contrast(1.1) saturate(1.05)',
           }}
         />
-        {/* Darker overlay for more depth */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/85 to-background/70" />
-        {/* Vignette effect */}
+        {/* Lighter overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/40 to-transparent" />
+        {/* Subtle vignette effect */}
         <div 
           className="absolute inset-0"
           style={{
-            background: 'radial-gradient(ellipse at center, transparent 30%, rgba(10, 10, 15, 0.7) 100%)',
+            background: 'radial-gradient(ellipse at center, transparent 40%, rgba(10, 10, 15, 0.5) 100%)',
           }}
         />
       </div>
