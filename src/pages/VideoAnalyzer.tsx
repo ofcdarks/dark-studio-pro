@@ -133,12 +133,8 @@ const VideoAnalyzer = () => {
     "gemini-pro": "Gemini 2.5 Pro (2025)",
   };
 
-  // Map model IDs to Lovable AI gateway models
-  const modelMapping: Record<string, string> = {
-    "gpt-4o": "openai/gpt-5",
-    "claude-4-sonnet": "openai/gpt-5-mini", // Claude via gateway
-    "gemini-pro": "google/gemini-2.5-pro",
-  };
+  // O backend decide o provedor (Laozhang/OpenAI/Gemini/Lovable) e o modelo final.
+  // Aqui enviamos apenas o ID do modelo selecionado na UI (ex: gpt-4o, claude-4-sonnet, gemini-pro).
 
   const handleAnalyze = async () => {
     if (!videoUrl.trim()) {
@@ -226,13 +222,11 @@ const VideoAnalyzer = () => {
 
       // Helper function to call AI and generate titles
       const generateTitlesWithModel = async (modelId: string, modelLabel: string) => {
-        const gatewayModel = modelMapping[modelId] || "google/gemini-2.5-flash";
-        
         const response = await supabase.functions.invoke("ai-assistant", {
           body: {
             type: "analyze_video_titles",
-            model: gatewayModel,
-            videoData: { 
+            model: modelId,
+            videoData: {
               url: videoUrl,
               title: realVideoData?.title,
               description: realVideoData?.description,
