@@ -1,25 +1,21 @@
-import { Rocket, Video, Settings, BarChart3 } from "lucide-react";
+import { Rocket, Video, Settings, BarChart3, Check } from "lucide-react";
 import { motion } from "framer-motion";
 
-const steps = [
-  {
-    number: 1,
-    icon: Video,
-    text: "Analise seu primeiro vídeo viral",
-  },
-  {
-    number: 2,
-    icon: Settings,
-    text: "Configure suas chaves de API",
-  },
-  {
-    number: 3,
-    icon: BarChart3,
-    text: "Acompanhe na seção Analytics",
-  },
-];
+interface NextStepsCardProps {
+  stats: {
+    totalVideos: number;
+    scriptsGenerated: number;
+    imagesGenerated: number;
+  };
+}
 
-export function NextStepsCard() {
+export function NextStepsCard({ stats }: NextStepsCardProps) {
+  const steps = [
+    { number: 1, icon: Video, text: "Analise seu primeiro vídeo viral", done: stats.totalVideos > 0 },
+    { number: 2, icon: Settings, text: "Configure suas chaves de API", done: false },
+    { number: 3, icon: BarChart3, text: "Gere seu primeiro roteiro", done: stats.scriptsGenerated > 0 },
+  ];
+
   return (
     <div className="group h-full bg-card/60 backdrop-blur-sm border border-border/50 rounded-xl p-5 transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5">
       <div className="flex items-center gap-2 mb-4">
@@ -29,18 +25,18 @@ export function NextStepsCard() {
         <h3 className="font-semibold text-foreground text-sm">Próximos Passos</h3>
       </div>
       <div className="space-y-2">
-        {steps.map((step, idx) => (
+        {steps.map((step) => (
           <motion.div
             key={step.number}
-            className="flex items-center gap-3 p-3 bg-secondary/30 border border-border/30 rounded-lg transition-all duration-200 hover:bg-secondary/50 hover:border-primary/20 cursor-pointer"
+            className={`flex items-center gap-3 p-3 border rounded-lg transition-all duration-200 cursor-pointer ${step.done ? "bg-success/5 border-success/20" : "bg-secondary/30 border-border/30 hover:bg-secondary/50 hover:border-primary/20"}`}
             whileHover={{ x: 4 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 text-primary flex items-center justify-center font-bold text-xs">
-              {step.number}
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${step.done ? "bg-success/20 border border-success/30 text-success" : "bg-primary/20 border border-primary/30 text-primary"}`}>
+              {step.done ? <Check className="w-3 h-3" /> : step.number}
             </div>
-            <step.icon className="w-4 h-4 text-primary/70 flex-shrink-0" />
-            <p className="text-xs text-muted-foreground">{step.text}</p>
+            <step.icon className={`w-4 h-4 flex-shrink-0 ${step.done ? "text-success/70" : "text-primary/70"}`} />
+            <p className={`text-xs ${step.done ? "text-success line-through" : "text-muted-foreground"}`}>{step.text}</p>
           </motion.div>
         ))}
       </div>
