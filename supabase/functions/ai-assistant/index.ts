@@ -472,6 +472,124 @@ serve(async (req) => {
         { "titles": ["título1", "título2", ...] }`;
         break;
 
+      case "find_subniches":
+        // Busca de subnichos com análise de demanda e concorrência
+        const mainNicheInput = niche || prompt;
+        const competitorSubnicheInput = text || "";
+        systemPrompt = `Você é um analista estratégico especializado em descoberta de nichos no YouTube.
+        
+        Analise o nicho principal "${mainNicheInput}" e encontre subnichos promissores com ALTA DEMANDA e BAIXA CONCORRÊNCIA.
+        
+        ${competitorSubnicheInput ? `O usuário também considerou o subnicho "${competitorSubnicheInput}" que provavelmente é concorrido. Use isso como referência para encontrar alternativas melhores.` : ""}
+        
+        Para cada subnicho, avalie:
+        1. DEMANDA: Volume de buscas, interesse do público, tendências de crescimento
+        2. CONCORRÊNCIA: Número de canais, qualidade do conteúdo existente, saturação
+        3. OPORTUNIDADE: Potencial de monetização, crescimento projetado, facilidade de entrada
+        4. DIFERENCIAÇÃO: Como se destacar neste subnicho
+        
+        Retorne EXATAMENTE 5 subnichos promissores em formato JSON:
+        {
+          "mainNiche": "${mainNicheInput}",
+          "analysis": "Breve análise do mercado do nicho principal",
+          "subniches": [
+            {
+              "name": "Nome do subnicho específico",
+              "potential": "Muito Alto" | "Alto" | "Médio" | "Baixo",
+              "competition": "Muito Baixa" | "Baixa" | "Média" | "Alta",
+              "demandScore": número de 1-10,
+              "competitionScore": número de 1-10,
+              "opportunityScore": número de 1-10,
+              "description": "Descrição detalhada do subnicho e por que é uma boa oportunidade",
+              "contentIdeas": ["ideia 1", "ideia 2", "ideia 3"],
+              "keywords": ["palavra-chave 1", "palavra-chave 2"],
+              "monetizationPotential": "Alto" | "Médio" | "Baixo",
+              "growthTrend": "Crescendo" | "Estável" | "Declinando",
+              "entryDifficulty": "Fácil" | "Moderada" | "Difícil"
+            }
+          ],
+          "recommendations": "Recomendações gerais para o usuário",
+          "bestChoice": "Nome do subnicho mais recomendado e por quê"
+        }
+        
+        IMPORTANTE:
+        - Priorize subnichos com ALTA demanda e BAIXA concorrência
+        - Seja específico e prático nos subnichos sugeridos
+        - Considere tendências atuais de 2025/2026
+        - Foque em oportunidades reais e acionáveis
+        - Os subnichos devem ser diferentes o suficiente para diversificar
+        Responda APENAS com o JSON válido, sem texto adicional.`;
+        userPrompt = `Encontre subnichos promissores para o nicho: ${mainNicheInput}`;
+        break;
+
+      case "analyze_competitor_channel":
+        // Análise de canal concorrente e plano estratégico
+        const channelUrlInput = channelUrl || prompt;
+        systemPrompt = `Você é um estrategista de conteúdo especializado em análise competitiva de canais do YouTube.
+        
+        Analise o canal concorrente fornecido e crie um PLANO ESTRATÉGICO COMPLETO para um novo canal competir neste nicho.
+        
+        Baseado na URL/nome do canal "${channelUrlInput}", faça:
+        
+        1. ANÁLISE DO CONCORRENTE:
+           - Identifique o nicho e subnicho exato do canal
+           - Analise a estratégia de conteúdo atual
+           - Identifique pontos fortes e fracos
+           - Detecte padrões de sucesso nos vídeos
+        
+        2. OPORTUNIDADES:
+           - Gaps de conteúdo não explorados
+           - Formatos que funcionam mas são pouco usados
+           - Tendências emergentes no nicho
+        
+        3. PLANO ESTRATÉGICO:
+           - Como se diferenciar do concorrente
+           - Estratégia de conteúdo recomendada
+           - Frequência ideal de postagem
+           - Tipos de vídeos prioritários
+        
+        Retorne em formato JSON:
+        {
+          "channelAnalysis": {
+            "name": "Nome do canal (ou estimado pela URL)",
+            "niche": "Nicho principal identificado",
+            "subNiche": "Subnicho específico",
+            "estimatedSubscribers": "Faixa estimada de inscritos",
+            "strengths": ["ponto forte 1", "ponto forte 2"],
+            "weaknesses": ["fraqueza 1", "fraqueza 2"],
+            "contentPatterns": ["padrão 1", "padrão 2"],
+            "postingFrequency": "Frequência estimada"
+          },
+          "opportunities": [
+            {
+              "type": "Gap de conteúdo" | "Formato" | "Tendência",
+              "description": "Descrição da oportunidade",
+              "priority": "Alta" | "Média" | "Baixa"
+            }
+          ],
+          "strategicPlan": {
+            "positioning": "Como se posicionar para competir",
+            "uniqueValue": "Proposta de valor única recomendada",
+            "contentStrategy": "Estratégia de conteúdo detalhada",
+            "contentIdeas": ["ideia de vídeo 1", "ideia 2", "ideia 3", "ideia 4", "ideia 5"],
+            "differentials": ["diferencial 1", "diferencial 2", "diferencial 3"],
+            "recommendations": ["recomendação 1", "recomendação 2", "recomendação 3"],
+            "postingSchedule": "Frequência e dias recomendados",
+            "growthTimeline": "Expectativa de crescimento em 3, 6 e 12 meses"
+          },
+          "quickWins": ["ação imediata 1", "ação imediata 2", "ação imediata 3"],
+          "summary": "Resumo executivo do plano estratégico"
+        }
+        
+        IMPORTANTE:
+        - Seja específico e acionável nas recomendações
+        - Baseie-se em estratégias comprovadas do YouTube
+        - Considere tendências atuais de 2025/2026
+        - Foque em diferenciação real, não apenas cópia
+        Responda APENAS com o JSON válido, sem texto adicional.`;
+        userPrompt = `Analise este canal e crie um plano estratégico: ${channelUrlInput}`;
+        break;
+
       case "analyze_niche":
       case "explore_niche":
         systemPrompt = `Você é um analista de mercado especializado em nichos do YouTube.
