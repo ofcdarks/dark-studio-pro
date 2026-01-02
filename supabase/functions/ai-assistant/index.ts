@@ -220,6 +220,39 @@ interface UserApiSettings {
   gemini_validated: boolean | null;
 }
 
+// Interface for admin API settings
+interface AdminApiKeys {
+  openai?: string;
+  gemini?: string;
+  claude?: string;
+  laozhang?: string;
+  openai_validated?: boolean;
+  gemini_validated?: boolean;
+  claude_validated?: boolean;
+  laozhang_validated?: boolean;
+}
+
+// Function to get admin API keys from settings
+async function getAdminApiKeys(): Promise<AdminApiKeys | null> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'api_keys')
+      .maybeSingle();
+
+    if (error || !data) {
+      console.log('[AI Assistant] No admin API settings found');
+      return null;
+    }
+
+    return data.value as AdminApiKeys;
+  } catch (e) {
+    console.error('[AI Assistant] Error fetching admin API settings:', e);
+    return null;
+  }
+}
+
 // Function to get user's API keys from settings
 async function getUserApiKeys(userId: string): Promise<UserApiSettings | null> {
   try {
@@ -280,11 +313,15 @@ serve(async (req) => {
       }
     }
 
+    // Get admin API keys
+    const adminApiKeys = await getAdminApiKeys();
+
     // Get user's API settings
     let userApiKeys: UserApiSettings | null = null;
     let useUserApiKey = false;
     let userApiKeyToUse: string | null = null;
-    let apiProvider: 'openai' | 'gemini' | 'lovable' = 'lovable';
+    let apiProvider: 'openai' | 'gemini' | 'laozhang' | 'lovable' = 'lovable';
+    let laozhangModel: string | null = null;
 
     if (userId) {
       userApiKeys = await getUserApiKeys(userId);
@@ -315,6 +352,41 @@ serve(async (req) => {
           console.log('[AI Assistant] Using user Gemini API key (fallback)');
         }
       }
+    }
+
+    // If no user API key, check for admin Laozhang API key (priority over others)
+    if (!useUserApiKey && adminApiKeys?.laozhang && adminApiKeys.laozhang_validated) {
+      userApiKeyToUse = adminApiKeys.laozhang;
+      apiProvider = 'laozhang';
+      useUserApiKey = true;
+      
+      // Map model selection to Laozhang models
+      if (model === "gpt-4o" || model === "gpt-5" || model?.includes("gpt")) {
+        laozhangModel = "gpt-4o";
+      } else if (model === "claude" || model?.includes("claude")) {
+        laozhangModel = "claude-3-5-sonnet-20241022";
+      } else if (model === "gemini-pro" || model?.includes("pro")) {
+        laozhangModel = "gemini-1.5-pro";
+      } else {
+        laozhangModel = "gpt-4o-mini"; // Default cost-effective model
+      }
+      console.log(`[AI Assistant] Using admin Laozhang API key with model: ${laozhangModel}`);
+    }
+
+    // If no Laozhang, check for admin OpenAI key
+    if (!useUserApiKey && adminApiKeys?.openai && adminApiKeys.openai_validated) {
+      userApiKeyToUse = adminApiKeys.openai;
+      apiProvider = 'openai';
+      useUserApiKey = true;
+      console.log('[AI Assistant] Using admin OpenAI API key');
+    }
+
+    // If no admin OpenAI, check for admin Gemini key
+    if (!useUserApiKey && adminApiKeys?.gemini && adminApiKeys.gemini_validated) {
+      userApiKeyToUse = adminApiKeys.gemini;
+      apiProvider = 'gemini';
+      useUserApiKey = true;
+      console.log('[AI Assistant] Using admin Gemini API key');
     }
 
     // If no user API key, check for system OpenAI key
@@ -821,7 +893,17 @@ serve(async (req) => {
     let requestHeaders: Record<string, string>;
 
     if (useUserApiKey && userApiKeyToUse) {
-      if (apiProvider === 'openai') {
+      if (apiProvider === 'laozhang') {
+        // Laozhang AI Gateway - OpenAI compatible
+        apiUrl = "https://api.laozhang.ai/v1/chat/completions";
+        apiKey = userApiKeyToUse;
+        selectedModel = laozhangModel || "gpt-4o-mini";
+        requestHeaders = {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        };
+        console.log(`[AI Assistant] Using Laozhang AI API with model: ${selectedModel}`);
+      } else if (apiProvider === 'openai') {
         apiUrl = "https://api.openai.com/v1/chat/completions";
         apiKey = userApiKeyToUse;
         selectedModel = "gpt-4o-mini"; // Use gpt-4o-mini for cost efficiency
@@ -885,7 +967,7 @@ serve(async (req) => {
         }),
       });
     } else {
-      // OpenAI-compatible format (OpenAI and Lovable AI Gateway)
+      // OpenAI-compatible format (OpenAI, Laozhang AI, and Lovable AI Gateway)
       response = await fetch(apiUrl, {
         method: "POST",
         headers: requestHeaders,
