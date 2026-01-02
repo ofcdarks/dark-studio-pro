@@ -268,13 +268,14 @@ const Landing = () => {
           </AnimatedSection>
         </div>
 
-        {/* Scroll indicator - hide on mobile */}
-        <div className="hidden md:flex justify-center mt-16 md:mt-20">
-          <div className="w-8 md:w-10 h-12 md:h-14 rounded-full border-2 border-border flex items-start justify-center p-2">
-            <div className="w-1 md:w-1.5 h-3 md:h-4 rounded-full bg-primary animate-bounce" />
-          </div>
-        </div>
       </section>
+
+      {/* Scroll indicator - centered between sections */}
+      <div className="flex justify-center -mt-8 mb-4 relative z-20">
+        <div className="w-8 md:w-10 h-14 md:h-16 rounded-full border-2 border-border/50 bg-background/50 backdrop-blur-sm flex items-start justify-center p-2">
+          <div className="w-1.5 md:w-2 h-4 md:h-5 rounded-full bg-primary animate-bounce" />
+        </div>
+      </div>
 
       {/* Features Strip */}
       <section className="py-12 md:py-20 px-4">
