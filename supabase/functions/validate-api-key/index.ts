@@ -45,6 +45,9 @@ serve(async (req) => {
       case 'downsub':
         valid = await validateDownsub(apiKey);
         break;
+      case 'imagefx':
+        valid = await validateImageFX(apiKey);
+        break;
       default:
         error = 'Unknown provider';
     }
@@ -207,6 +210,43 @@ async function validateDownsub(apiKey: string): Promise<boolean> {
     return false;
   } catch (error) {
     console.error('Downsub validation error:', error);
+    return false;
+  }
+}
+
+async function validateImageFX(cookies: string): Promise<boolean> {
+  try {
+    console.log('ImageFX validation: checking cookies format...');
+    
+    // ImageFX cookies validation - check for required cookie patterns
+    // Usually contains __Secure-1PSID or similar Google cookies
+    if (!cookies || cookies.length < 50) {
+      console.log('ImageFX validation: cookies too short');
+      return false;
+    }
+    
+    // Check for common Google cookie patterns
+    const hasRequiredCookies = 
+      cookies.includes('__Secure-1PSID') || 
+      cookies.includes('__Secure-3PSID') ||
+      cookies.includes('SAPISID') ||
+      cookies.includes('SID=');
+    
+    if (hasRequiredCookies) {
+      console.log('ImageFX validation: cookies format valid');
+      return true;
+    }
+    
+    // If it has reasonable length but no specific patterns, still accept
+    if (cookies.length >= 100) {
+      console.log('ImageFX validation: cookies length acceptable');
+      return true;
+    }
+    
+    console.log('ImageFX validation: invalid cookies format');
+    return false;
+  } catch (error) {
+    console.error('ImageFX validation error:', error);
     return false;
   }
 }
