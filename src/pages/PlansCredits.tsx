@@ -6,11 +6,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { 
   Check, 
   X, 
   Zap, 
   ArrowLeft,
+  Sparkles,
+  Crown,
+  Star,
+  Shield,
+  ArrowRight,
 } from "lucide-react";
 
 interface PlanData {
@@ -38,16 +44,14 @@ const MONTHLY_PLANS = [
     price: 0,
     features: [
       { label: "Ambiente de avaliação", included: true },
-      { label: "Ferramentas limitadas (habilitadas)", included: true },
-      { label: "Ambiente exemplos (limitado)", included: true },
+      { label: "Ferramentas limitadas", included: true },
+      { label: "Ambiente de exemplos", included: true },
       { label: "Análise de vídeos (restrito)", included: true },
-      { label: "Geração de áudio (Inserto)", included: false },
-      { label: "Localização (Inserto) | Agentes", included: false },
-      { label: "Cláusula de Riscos e Rendimento", included: false },
-      { label: "Processamento interno da Lavador", included: false },
-      { label: "Armazenamento reduzido", included: false },
+      { label: "Geração de áudio", included: false },
+      { label: "Agentes automatizados", included: false },
+      { label: "Suporte prioritário", included: false },
     ],
-    buttonLabel: "ATIVAR ACESSO INICIAL",
+    buttonLabel: "ATIVAR ACESSO",
     highlighted: false,
   },
   {
@@ -56,21 +60,15 @@ const MONTHLY_PLANS = [
     price: 79.90,
     features: [
       { label: "Processamento de vídeo", included: true },
-      { label: "Ambiente exemplos virgens", included: true },
+      { label: "Ambiente completo", included: true },
       { label: "Áudio: até 40 min", included: true },
-      { label: "Transcrição Ilimitada", included: true },
-      { label: "API 8 agentes operacionais", included: true },
-      { label: "Atualização de vídeos", included: true },
-      { label: "Geração de Riscos e Rendimento", included: true },
+      { label: "Transcrição ilimitada", included: true },
+      { label: "8 agentes operacionais", included: true },
       { label: "Integração YouTube", included: true },
       { label: "Armazenamento: 10 GB", included: true },
     ],
     buttonLabel: "ATIVAR CAPACIDADE",
     highlighted: false,
-    extraInfo: {
-      label: "CONTA EXECUÇÃO (LIA min)",
-      items: ["90 análises + Cesta (ET) = 360", "análises = vídeo = 85 artigos", "com armazenamento ilimitado"],
-    },
   },
   {
     name: "TURBO MAKER",
@@ -78,44 +76,34 @@ const MONTHLY_PLANS = [
     price: 99.90,
     originalPrice: 149.90,
     features: [
-      { label: "60-120 transcrição mensal", included: true },
+      { label: "60-120 transcrições/mês", included: true },
       { label: "Claude + Sonnet: Ilimitado", included: true },
-      { label: "Multilíngua (IA fixa modo)", included: true },
+      { label: "Multilíngua IA", included: true },
       { label: "360+ análises", included: true },
-      { label: "API 10 agentes operacionais", included: true },
-      { label: "Geração de Riscos e Rendimento", included: true },
+      { label: "10 agentes operacionais", included: true },
       { label: "Armazenamento: 30 GB", included: true },
-      { label: "Integração YouTube exemplos", included: true },
-      { label: "Atualização semanal", included: true },
-      { label: "Armazenamento: 20 GB", included: true },
+      { label: "Atualizações semanais", included: true },
     ],
     buttonLabel: "HABILITAR EXECUÇÃO",
     highlighted: true,
-    extraInfo: {
-      label: "CONTA EXECUÇÃO:",
-      items: ["Orçamento de Ciclo (LLA min)", "60+ min", "Execuções Images (Ciclo): <800", "Transcrição: 2-15h", "com armazenamento ilimitado"],
-    },
+    badge: "POPULAR",
   },
   {
     name: "MASTER PRO",
     credits: 2400,
     price: 149.90,
     features: [
-      { label: "Capacidade estável de execução", included: true },
-      { label: "Criações de Rifas de 15 min +", included: true },
-      { label: "Todos os vídeos multi estátilo", included: true },
-      { label: "Transcrição Ilimitada", included: true },
-      { label: "Transcrição Ilimitada 15.000", included: true },
+      { label: "Capacidade máxima", included: true },
+      { label: "Roteiros de 15+ min", included: true },
+      { label: "Todos os estilos de vídeo", included: true },
+      { label: "Transcrição ilimitada", included: true },
       { label: "API própria liberada", included: true },
-      { label: "Acréscimo enterprise", included: true },
+      { label: "Recursos enterprise", included: true },
+      { label: "Armazenamento: 50 GB", included: true },
     ],
     buttonLabel: "ATIVAR INFRAESTRUTURA",
     highlighted: false,
     badge: "PRO",
-    extraInfo: {
-      label: "CONTA EXECUÇÃO FULL:",
-      items: ["Operação (Mestre)de + Agente", "0+", "Extração contínua de clips", "Armazenamento: 50 GB"],
-    },
   },
 ];
 
@@ -132,7 +120,7 @@ const ANNUAL_PLANS = [
       "API própria liberada",
       "Armazenamento: 15 GB",
     ],
-    buttonLabel: "ATIVAR CAPACIDADE ANUAL",
+    buttonLabel: "ATIVAR ANUAL",
     highlighted: false,
   },
   {
@@ -147,8 +135,9 @@ const ANNUAL_PLANS = [
       "API própria liberada",
       "Armazenamento: 30 GB",
     ],
-    buttonLabel: "HABILITAR EXECUÇÃO ANUAL",
+    buttonLabel: "HABILITAR ANUAL",
     highlighted: true,
+    badge: "MAIS VENDIDO",
   },
   {
     name: "MASTER PRO",
@@ -158,22 +147,22 @@ const ANNUAL_PLANS = [
     savings: 1000,
     features: [
       "Todos os recursos do MASTER",
-      "Infraestrutura exemplos do CORE",
+      "Infraestrutura do CORE",
       "API própria liberada",
-      "Acréscimo enterprise",
+      "Recursos enterprise",
       "Armazenamento: 50 GB",
     ],
-    buttonLabel: "ATIVAR INFRAESTRUTURA ANUAL",
+    buttonLabel: "ATIVAR ANUAL",
     highlighted: false,
     badge: "PRO",
   },
 ];
 
 const COMPARISON_DATA = [
-  { feature: "Avaliação", creditos: "50", roteiros: "ad 45", valor: "Grátis", audio: "35-mín", transcricao: "1", agentes: "1" },
-  { feature: "START", creditos: "800", roteiros: "50-85", valor: "~R80", audio: "25-mín", transcricao: "35-mín", agentes: "5" },
-  { feature: "TURBO", creditos: "1.600", roteiros: "80-150", valor: "~600", audio: "1-1.5h", transcricao: "50 análises", agentes: "10" },
-  { feature: "MASTER", creditos: "2.400", roteiros: "100-180", valor: "+1.800", audio: "Ilimitado", transcricao: "Ilimitado", agentes: "15.000" },
+  { feature: "Avaliação", creditos: "50", roteiros: "~5", valor: "Grátis", audio: "5 min", transcricao: "1", agentes: "1" },
+  { feature: "START", creditos: "800", roteiros: "50-85", valor: "R$80", audio: "40 min", transcricao: "35 min", agentes: "5" },
+  { feature: "TURBO", creditos: "1.600", roteiros: "80-150", valor: "R$100", audio: "1.5h", transcricao: "50+", agentes: "10" },
+  { feature: "MASTER", creditos: "2.400", roteiros: "100-180", valor: "R$150", audio: "Ilimitado", transcricao: "Ilimitado", agentes: "15+" },
 ];
 
 export default function PlansCredits() {
@@ -207,362 +196,471 @@ export default function PlansCredits() {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          {/* Animated gradient orbs */}
+          <motion.div 
+            className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(circle, hsl(38, 92%, 50%, 0.08) 0%, transparent 60%)' }}
+            animate={{ x: [0, 50, 0], y: [0, 30, 0], scale: [1, 1.1, 1] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div 
+            className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(circle, hsl(32, 95%, 45%, 0.06) 0%, transparent 60%)' }}
+            animate={{ x: [0, -40, 0], y: [0, -20, 0], scale: [1, 1.15, 1] }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          />
+          
+          {/* Floating particles */}
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-primary/30 rounded-full"
+              style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%` }}
+              animate={{ y: [0, -30, 0], opacity: [0.2, 0.6, 0.2] }}
+              transition={{ duration: 4 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 3 }}
+            />
+          ))}
+        </div>
+
         {/* Header */}
-        <div className="border-b border-border bg-card/50">
-          <div className="container mx-auto px-4 py-3">
+        <div className="sticky top-0 z-50 border-b border-border/50 backdrop-blur-xl bg-background/80">
+          <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <span className="text-primary font-playfair font-bold text-lg">La Casa Dark Core</span>
-                <nav className="hidden md:flex items-center gap-4 text-sm text-muted-foreground">
-                  <a href="#mensais" className="hover:text-foreground cursor-pointer">Mensais</a>
-                  <a href="#anuais" className="hover:text-foreground cursor-pointer">Anuais</a>
-                  <a href="#pacotes" className="hover:text-foreground cursor-pointer">Pacotes</a>
-                  <a href="#comparacao" className="hover:text-foreground cursor-pointer">Comparação</a>
-                  <a href="#faq" className="hover:text-foreground cursor-pointer">FAQ</a>
+                <span className="text-primary font-bold text-lg">La Casa Dark <span className="text-foreground">Core</span></span>
+                <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
+                  <a href="#mensais" className="hover:text-primary transition-colors">Mensais</a>
+                  <a href="#anuais" className="hover:text-primary transition-colors">Anuais</a>
+                  <a href="#pacotes" className="hover:text-primary transition-colors">Pacotes</a>
+                  <a href="#comparacao" className="hover:text-primary transition-colors">Comparação</a>
+                  <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
                 </nav>
               </div>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => navigate(-1)}
-                className="border-primary text-primary"
+                className="border-primary/50 text-primary hover:bg-primary/10"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
-                VOLTAR
+                Voltar
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="container mx-auto px-4 py-8 space-y-16">
+        <div className="container mx-auto px-4 py-12 space-y-20 relative z-10">
           {/* Hero Section */}
-          <section className="text-center space-y-4">
-            <Badge className="bg-primary/20 text-primary border-primary">
-              <Zap className="w-3 h-3 mr-1" />
-              PRIVATE CORE - Alocação de Recursos
-            </Badge>
-            <h1 className="text-3xl md:text-4xl font-playfair font-bold text-foreground">
-              Defina sua Capacidade Operacional
+          <motion.section 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center space-y-6"
+          >
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/10 border border-primary/40"
+            >
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-sm font-bold text-primary">PRIVATE CORE - Alocação de Recursos</span>
+            </motion.div>
+            
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-foreground">
+              Defina sua <span className="bg-gradient-to-r from-primary via-yellow-400 to-primary bg-clip-text text-transparent">Capacidade Operacional</span>
             </h1>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-sm">
-              Os créditos determinam o volume, a frequência e a complexidade das execuções dentro do CORE.
+            
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Os créditos determinam o volume, frequência e complexidade das suas operações dentro do CORE.
             </p>
-            <p className="text-muted-foreground max-w-xl mx-auto text-sm">
-              Selecione a capacidade adequada ao seu ritmo de operação.
-            </p>
-          </section>
+
+            <div className="flex flex-wrap justify-center gap-4 text-muted-foreground">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 border border-border/50">
+                <Shield className="w-4 h-4 text-primary" />
+                <span className="text-sm">Pagamento Seguro</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 border border-border/50">
+                <Zap className="w-4 h-4 text-primary" />
+                <span className="text-sm">Ativação Imediata</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 border border-border/50">
+                <Star className="w-4 h-4 text-primary" />
+                <span className="text-sm">Suporte 24/7</span>
+              </div>
+            </div>
+          </motion.section>
 
           {/* Monthly Plans Section */}
-          <section id="mensais" className="space-y-6 scroll-mt-20">
-            <div className="text-center space-y-2">
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                <h2 className="text-xl font-semibold text-foreground">
-                  Execução Recorrente (Capacidade Mensal)
+          <section id="mensais" className="space-y-8 scroll-mt-24">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center space-y-3"
+            >
+              <div className="flex items-center justify-center gap-3">
+                <motion.div 
+                  className="w-3 h-3 rounded-full bg-primary"
+                  animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+                  Execução Recorrente <span className="text-primary">(Mensal)</span>
                 </h2>
               </div>
-              <p className="text-sm text-muted-foreground">Execução recorrente com recursos mensais</p>
-            </div>
+              <p className="text-muted-foreground">Escolha a capacidade ideal para sua operação</p>
+            </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {MONTHLY_PLANS.map((plan, idx) => (
-                <Card 
-                  key={idx} 
-                  className={`relative overflow-hidden ${
-                    plan.highlighted 
-                      ? "border-2 border-primary bg-card" 
-                      : "border-border bg-card"
-                  }`}
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
                 >
-                  {plan.badge && (
-                    <div className="absolute top-2 right-2">
-                      <Badge className="bg-destructive text-destructive-foreground text-xs">
-                        {plan.badge}
-                      </Badge>
-                    </div>
-                  )}
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="space-y-2">
-                      <h3 className="font-semibold text-foreground">{plan.name}</h3>
-                      <Badge className={`${plan.highlighted ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-                        {plan.credits.toLocaleString()} créditos/mês
-                      </Badge>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-primary">
-                          R${plan.price.toFixed(2).replace(".", ",")}
-                        </span>
-                        <span className="text-sm text-muted-foreground">/mês</span>
-                      </div>
-                      {plan.originalPrice && (
-                        <span className="text-sm text-muted-foreground line-through">
-                          R${plan.originalPrice.toFixed(2).replace(".", ",")}
-                        </span>
-                      )}
-                    </div>
-
-                    <ul className="space-y-1.5 text-xs">
-                      {plan.features.map((feature, fIdx) => (
-                        <li key={fIdx} className="flex items-start gap-2 text-muted-foreground">
-                          {feature.included ? (
-                            <Check className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
-                          ) : (
-                            <X className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
-                          )}
-                          <span>{feature.label}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <Button 
-                      variant={plan.highlighted ? "default" : "outline"}
-                      className={`w-full text-xs ${plan.highlighted ? "bg-primary" : ""}`}
-                      size="sm"
-                    >
-                      {plan.buttonLabel}
-                    </Button>
-
-                    {plan.extraInfo && (
-                      <div className="mt-4 pt-4 border-t border-border">
-                        <p className="text-xs text-primary font-semibold mb-2">{plan.extraInfo.label}</p>
-                        <ul className="space-y-1 text-xs text-muted-foreground">
-                          {plan.extraInfo.items.map((item, iIdx) => (
-                            <li key={iIdx}>{item}</li>
-                          ))}
-                        </ul>
-                        <Button variant="outline" size="sm" className="w-full mt-3 text-xs">
-                          ATIVAR CAPACIDADE
-                        </Button>
+                  <Card 
+                    className={`relative overflow-hidden h-full backdrop-blur-sm ${
+                      plan.highlighted 
+                        ? "border-2 border-primary bg-card/80 shadow-xl shadow-primary/20" 
+                        : "border-border/50 bg-card/60"
+                    }`}
+                  >
+                    {plan.highlighted && (
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-yellow-400 to-primary" />
+                    )}
+                    {plan.badge && (
+                      <div className="absolute top-3 right-3">
+                        <Badge className={`${plan.badge === "POPULAR" ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"} text-xs`}>
+                          {plan.badge}
+                        </Badge>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                    <CardContent className="pt-8 pb-6 space-y-5">
+                      <div className="space-y-3">
+                        <h3 className="font-bold text-lg text-foreground">{plan.name}</h3>
+                        <Badge className={`${plan.highlighted ? "bg-primary/20 text-primary border-primary/30" : "bg-secondary text-secondary-foreground"}`}>
+                          <Zap className="w-3 h-3 mr-1" />
+                          {plan.credits.toLocaleString()} créditos/mês
+                        </Badge>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl font-black text-foreground">
+                            R${plan.price.toFixed(2).replace(".", ",")}
+                          </span>
+                          <span className="text-sm text-muted-foreground">/mês</span>
+                        </div>
+                        {plan.originalPrice && (
+                          <span className="text-sm text-muted-foreground line-through">
+                            R${plan.originalPrice.toFixed(2).replace(".", ",")}
+                          </span>
+                        )}
+                      </div>
+
+                      <ul className="space-y-2 text-sm">
+                        {plan.features.map((feature, fIdx) => (
+                          <li key={fIdx} className="flex items-start gap-2">
+                            {feature.included ? (
+                              <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                            ) : (
+                              <X className="w-4 h-4 text-muted-foreground/50 shrink-0 mt-0.5" />
+                            )}
+                            <span className={feature.included ? "text-muted-foreground" : "text-muted-foreground/50"}>
+                              {feature.label}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <Button 
+                        className={`w-full ${plan.highlighted ? "gradient-button text-primary-foreground" : ""}`}
+                        variant={plan.highlighted ? "default" : "outline"}
+                      >
+                        {plan.buttonLabel}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           </section>
 
           {/* Annual Plans Section */}
-          <section id="anuais" className="space-y-6 scroll-mt-20">
-            <div className="text-center space-y-2">
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                <h2 className="text-xl font-semibold text-foreground">
-                  Execução Prolongada (Capacidade Anual)
+          <section id="anuais" className="space-y-8 scroll-mt-24">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center space-y-3"
+            >
+              <div className="flex items-center justify-center gap-3">
+                <Crown className="w-6 h-6 text-primary" />
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+                  Execução Prolongada <span className="text-primary">(Anual)</span>
                 </h2>
-                <Badge className="bg-success/20 text-success border-success text-xs">
-                  Economize
+                <Badge className="bg-success/20 text-success border-success/50">
+                  Economize até 40%
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground">Execução prolongada com otimização de recursos</p>
-            </div>
+              <p className="text-muted-foreground">Maximize seus resultados com economia significativa</p>
+            </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {ANNUAL_PLANS.map((plan, idx) => (
-                <Card 
-                  key={idx} 
-                  className={`relative overflow-hidden ${
-                    plan.highlighted 
-                      ? "border-2 border-primary bg-card" 
-                      : "border-border bg-card"
-                  }`}
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
                 >
-                  {plan.badge && (
-                    <div className="absolute top-2 right-2">
-                      <Badge className="bg-destructive text-destructive-foreground text-xs">
-                        {plan.badge}
-                      </Badge>
-                    </div>
-                  )}
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="space-y-2">
-                      <h3 className="font-semibold text-foreground">{plan.name}</h3>
-                      <Badge className={`${plan.highlighted ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-                        {plan.credits.toLocaleString()} créditos/ano
-                      </Badge>
-                      <div className="text-xs text-muted-foreground">
-                        + {(plan.credits * 0.1).toLocaleString()} créditos/mês
+                  <Card 
+                    className={`relative overflow-hidden h-full backdrop-blur-sm ${
+                      plan.highlighted 
+                        ? "border-2 border-primary bg-card/80 shadow-xl shadow-primary/20" 
+                        : "border-border/50 bg-card/60"
+                    }`}
+                  >
+                    {plan.highlighted && (
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-yellow-400 to-primary" />
+                    )}
+                    {plan.badge && (
+                      <div className="absolute top-3 right-3">
+                        <Badge className={`${plan.badge === "MAIS VENDIDO" ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"} text-xs`}>
+                          {plan.badge}
+                        </Badge>
                       </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-primary">
-                          R${plan.price.toFixed(2).replace(".", ",")}
-                        </span>
-                        <span className="text-sm text-muted-foreground">/ano</span>
+                    )}
+                    <CardContent className="pt-8 pb-6 space-y-5">
+                      <div className="space-y-3">
+                        <h3 className="font-bold text-lg text-foreground">{plan.name}</h3>
+                        <Badge className={`${plan.highlighted ? "bg-primary/20 text-primary border-primary/30" : "bg-secondary text-secondary-foreground"}`}>
+                          <Zap className="w-3 h-3 mr-1" />
+                          {plan.credits.toLocaleString()} créditos/ano
+                        </Badge>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl font-black text-foreground">
+                            R${plan.price.toFixed(2).replace(".", ",")}
+                          </span>
+                          <span className="text-sm text-muted-foreground">/ano</span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm text-muted-foreground line-through">
+                            R${plan.originalPrice.toFixed(2).replace(".", ",")}
+                          </span>
+                          <div className="flex items-center gap-1 text-sm text-success font-semibold">
+                            <Sparkles className="w-3 h-3" />
+                            Economia de R$ {plan.savings.toFixed(0)}/ano
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-sm text-muted-foreground line-through">
-                        R${plan.originalPrice.toFixed(2).replace(".", ",")}
-                      </span>
-                      <div className="flex items-center gap-1 text-xs text-success">
-                        <Zap className="w-3 h-3" />
-                        Economia de R$ {plan.savings.toFixed(0)}/ano
-                      </div>
-                    </div>
 
-                    <ul className="space-y-1.5 text-xs">
-                      {plan.features.map((feature, fIdx) => (
-                        <li key={fIdx} className="flex items-start gap-2 text-muted-foreground">
-                          <Check className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
+                      <ul className="space-y-2 text-sm">
+                        {plan.features.map((feature, fIdx) => (
+                          <li key={fIdx} className="flex items-start gap-2">
+                            <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                            <span className="text-muted-foreground">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
 
-                    <Button 
-                      variant={plan.highlighted ? "default" : "outline"}
-                      className={`w-full text-xs ${plan.highlighted ? "bg-primary" : ""}`}
-                      size="sm"
-                    >
-                      {plan.buttonLabel}
-                    </Button>
-                  </CardContent>
-                </Card>
+                      <Button 
+                        className={`w-full ${plan.highlighted ? "gradient-button text-primary-foreground" : ""}`}
+                        variant={plan.highlighted ? "default" : "outline"}
+                      >
+                        {plan.buttonLabel}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           </section>
 
           {/* Credit Packages Section */}
-          <section id="pacotes" className="space-y-6 scroll-mt-20">
-            <div className="text-center space-y-2">
-              <h2 className="text-xl font-semibold text-foreground flex items-center justify-center gap-2">
-                <Zap className="w-5 h-5 text-primary" />
+          <section id="pacotes" className="space-y-8 scroll-mt-24">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center space-y-3"
+            >
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground flex items-center justify-center gap-3">
+                <Zap className="w-6 h-6 text-primary" />
                 Expansão Pontual de Capacidade
               </h2>
-              <p className="text-sm text-muted-foreground">Reforço temporário para picos de execução</p>
-            </div>
+              <p className="text-muted-foreground">Reforço adicional para picos de execução</p>
+            </motion.div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {CREDIT_PACKAGES.map((pkg, idx) => (
-                <Card 
-                  key={idx} 
-                  className={`border-border bg-card text-center ${idx === 4 ? "border-primary" : ""}`}
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.05 }}
+                  whileHover={{ scale: 1.03 }}
                 >
-                  <CardContent className="pt-6 space-y-3">
-                    <div className="text-sm font-bold text-foreground">
-                      {pkg.credits.toLocaleString()} CRÉDITOS
-                    </div>
-                    <div className="text-xl font-bold text-primary">
-                      R$ {pkg.price.toFixed(2).replace(".", ",")}
-                    </div>
-                    <p className="text-xs text-muted-foreground">{pkg.label}</p>
-                    <Button variant="outline" size="sm" className="w-full text-xs">
-                      ALOCAR CRÉDITOS
-                    </Button>
-                  </CardContent>
-                </Card>
+                  <Card 
+                    className={`text-center backdrop-blur-sm ${idx === 4 ? "border-2 border-primary bg-card/80 shadow-lg shadow-primary/20" : "border-border/50 bg-card/60"}`}
+                  >
+                    <CardContent className="pt-6 pb-4 space-y-3">
+                      <div className="flex items-center justify-center gap-1">
+                        <Zap className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-bold text-foreground">
+                          {pkg.credits.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="text-2xl font-black text-foreground">
+                        R$ {pkg.price.toFixed(2).replace(".", ",")}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{pkg.label}</p>
+                      <Button variant="outline" size="sm" className="w-full text-xs border-primary/30 hover:bg-primary/10 hover:text-primary">
+                        ALOCAR
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           </section>
 
           {/* Comparison Table */}
-          <section id="comparacao" className="space-y-6 scroll-mt-20">
-            <div className="text-center space-y-2">
-              <h2 className="text-xl font-semibold text-foreground">Comparação de Planos</h2>
-              <p className="text-sm text-muted-foreground">Compare todos os planos em uma única tabela</p>
-            </div>
+          <section id="comparacao" className="space-y-8 scroll-mt-24">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center space-y-3"
+            >
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">Comparação de Planos</h2>
+              <p className="text-muted-foreground">Compare todos os planos em uma única tabela</p>
+            </motion.div>
 
-            <Card className="border-border bg-card overflow-hidden">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border">
-                      <TableHead className="text-muted-foreground text-xs">Capacidade</TableHead>
-                      <TableHead className="text-muted-foreground text-xs">Créditos</TableHead>
-                      <TableHead className="text-muted-foreground text-xs">Roteiros/mês</TableHead>
-                      <TableHead className="text-muted-foreground text-xs">Valor (mês)</TableHead>
-                      <TableHead className="text-muted-foreground text-xs">Áudio</TableHead>
-                      <TableHead className="text-muted-foreground text-xs">Transcrição</TableHead>
-                      <TableHead className="text-muted-foreground text-xs">Agentes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {COMPARISON_DATA.map((row, idx) => (
-                      <TableRow 
-                        key={idx} 
-                        className={`border-border ${row.feature === "TURBO" ? "bg-primary/10" : ""}`}
-                      >
-                        <TableCell className={`font-medium text-xs ${row.feature === "TURBO" ? "text-primary" : "text-foreground"}`}>
-                          {row.feature}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{row.creditos}</TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{row.roteiros}</TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{row.valor}</TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{row.audio}</TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{row.transcricao}</TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{row.agentes}</TableCell>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <Card className="border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border/50 bg-card/80">
+                        <TableHead className="text-foreground font-semibold">Plano</TableHead>
+                        <TableHead className="text-foreground font-semibold">Créditos</TableHead>
+                        <TableHead className="text-foreground font-semibold">Roteiros/mês</TableHead>
+                        <TableHead className="text-foreground font-semibold">Valor</TableHead>
+                        <TableHead className="text-foreground font-semibold">Áudio</TableHead>
+                        <TableHead className="text-foreground font-semibold">Transcrição</TableHead>
+                        <TableHead className="text-foreground font-semibold">Agentes</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {COMPARISON_DATA.map((row, idx) => (
+                        <TableRow 
+                          key={idx} 
+                          className={`border-border/50 ${row.feature === "TURBO" ? "bg-primary/10" : ""}`}
+                        >
+                          <TableCell className={`font-semibold ${row.feature === "TURBO" ? "text-primary" : "text-foreground"}`}>
+                            {row.feature}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{row.creditos}</TableCell>
+                          <TableCell className="text-muted-foreground">{row.roteiros}</TableCell>
+                          <TableCell className="text-muted-foreground">{row.valor}</TableCell>
+                          <TableCell className="text-muted-foreground">{row.audio}</TableCell>
+                          <TableCell className="text-muted-foreground">{row.transcricao}</TableCell>
+                          <TableCell className="text-muted-foreground">{row.agentes}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            </motion.div>
           </section>
 
           {/* FAQ Section */}
-          <section id="faq" className="space-y-6 scroll-mt-20">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-foreground">Perguntas Frequentes</h2>
-            </div>
+          <section id="faq" className="space-y-8 scroll-mt-24">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">Perguntas Frequentes</h2>
+            </motion.div>
 
-            <div className="max-w-2xl mx-auto space-y-3">
-              <Card className="border-border bg-card">
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-foreground text-sm mb-2">Os créditos expiram?</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Créditos de execução recorrente expiram ao final do ciclo ativo.<br />
-                    Créditos de expansão pontual não expiram.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border bg-card">
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-foreground text-sm mb-2">Posso ajustar minha capacidade?</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Sim. A capacidade pode ser ampliada ou reduzida conforme sua<br />
-                    necessidade operacional.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border bg-card">
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-foreground text-sm mb-2">O que acontece ao atingir o limite?</h3>
-                  <p className="text-xs text-muted-foreground">
-                    As execuções são suspensas até nova alocação de créditos.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-primary bg-card border-2">
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-primary text-sm mb-2">Posso combinar planos e pacotes?</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Sim. Pacotes funcionam como reforço adicional sobre qualquer<br />
-                    capacidade ativa.
-                  </p>
-                </CardContent>
-              </Card>
+            <div className="max-w-2xl mx-auto space-y-4">
+              {[
+                { q: "Os créditos expiram?", a: "Créditos de planos mensais expiram ao final do ciclo. Créditos de pacotes avulsos não expiram.", highlight: false },
+                { q: "Posso ajustar minha capacidade?", a: "Sim. Você pode fazer upgrade ou downgrade a qualquer momento conforme sua necessidade.", highlight: false },
+                { q: "O que acontece ao atingir o limite?", a: "As execuções são pausadas até nova alocação de créditos ou renovação do plano.", highlight: false },
+                { q: "Posso combinar planos e pacotes?", a: "Sim! Pacotes funcionam como reforço adicional sobre qualquer plano ativo.", highlight: true },
+              ].map((faq, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                >
+                  <Card className={`backdrop-blur-sm ${faq.highlight ? "border-2 border-primary bg-card/80" : "border-border/50 bg-card/60"}`}>
+                    <CardContent className="p-5">
+                      <h3 className={`font-semibold text-base mb-2 ${faq.highlight ? "text-primary" : "text-foreground"}`}>
+                        {faq.q}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">{faq.a}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
             </div>
           </section>
 
           {/* CTA Section */}
-          <section className="text-center space-y-6 py-8">
-            <h2 className="text-xl font-semibold text-foreground">Pronto para começar?</h2>
-            <p className="text-sm text-muted-foreground">
-              Escolha o plano ideal e comece a criar conteúdo profissional hoje mesmo.
-            </p>
-            <Button 
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8"
-              onClick={() => document.getElementById('mensais')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              VER MEUS CRÉDITOS
-            </Button>
-          </section>
+          <motion.section 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center space-y-6 py-12"
+          >
+            <div className="relative inline-block">
+              <motion.div 
+                className="absolute -inset-4 bg-gradient-to-r from-primary/30 via-yellow-500/20 to-primary/30 rounded-3xl blur-2xl"
+                animate={{ opacity: [0.4, 0.7, 0.4] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
+              <div className="relative p-8 rounded-2xl bg-card/80 backdrop-blur-xl border border-primary/30">
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">Pronto para escalar?</h2>
+                <p className="text-muted-foreground mb-6">
+                  Escolha seu plano e comece a criar conteúdo profissional hoje mesmo.
+                </p>
+                <Button 
+                  className="gradient-button text-primary-foreground px-8 h-12 text-base"
+                  onClick={() => document.getElementById('mensais')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  <Zap className="w-5 h-5 mr-2" />
+                  Ver Planos
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </div>
+            </div>
+          </motion.section>
 
           {/* Footer */}
-          <footer className="text-center space-y-4 py-8 border-t border-border">
-            <p className="text-xs text-muted-foreground">
-              Ambiente validado para execução em escala.<br />
-              Gerenciamento das máquinas operacionais.
+          <footer className="text-center space-y-4 py-8 border-t border-border/30">
+            <p className="text-sm text-muted-foreground">
+              Ambiente validado para execução em escala.
             </p>
             <p className="text-xs text-muted-foreground">
               © 2025 La Casa Dark Core. Todos os direitos reservados.
