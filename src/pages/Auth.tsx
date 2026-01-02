@@ -137,28 +137,12 @@ const Auth = () => {
             : 'opacity-0 translate-y-8 scale-95'
         }`}
       >
-        {/* Animated border glow */}
-        <div className="absolute -inset-[2px] rounded-2xl bg-gradient-to-r from-primary via-amber-400 to-primary opacity-70 blur-sm animate-pulse" />
-        <div 
-          className="absolute -inset-[1px] rounded-2xl"
-          style={{
-            background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(45 100% 60%), hsl(var(--primary)))',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 3s linear infinite',
-          }}
-        />
+        {/* Animated border glow (external only) */}
+        <div className="absolute -inset-[2px] rounded-2xl bg-gradient-to-r from-primary via-primary/40 to-primary opacity-70 blur-sm animate-pulse" />
         
-        {/* Glass card */}
+        {/* Glass card (no inner effects) */}
         <div 
-          className="relative rounded-2xl p-8 border border-primary/30 shadow-2xl backdrop-blur-xl"
-          style={{
-            background: 'rgba(10, 10, 15, 0.75)',
-            boxShadow: `
-              0 0 0 1px rgba(255,255,255,0.05) inset,
-              0 25px 50px -12px rgba(0,0,0,0.6),
-              0 0 80px rgba(245,158,11,0.2)
-            `,
-          }}
+          className="relative rounded-2xl p-8 border border-primary/30 shadow-2xl backdrop-blur-xl bg-card/50"
         >
 
           {/* Logo - bigger, no ring */}
