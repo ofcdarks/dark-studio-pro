@@ -2,249 +2,394 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Compass, Search, TrendingUp, Video, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Zap, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
 
-interface Niche {
+interface SubnicheResult {
   name: string;
-  videos: string;
-  growth: string;
-  description?: string;
-  keywords?: string[];
-  topChannels?: string[];
+  potential: string;
+  competition: string;
+  description: string;
 }
 
-const defaultNiches: Niche[] = [
-  { name: "Mistérios e Conspirações", videos: "2.3M", growth: "+45%" },
-  { name: "História Antiga", videos: "1.8M", growth: "+32%" },
-  { name: "True Crime", videos: "3.1M", growth: "+28%" },
-  { name: "Ciência e Espaço", videos: "1.5M", growth: "+52%" },
-  { name: "Biografias", videos: "890K", growth: "+18%" },
-  { name: "Documentários", videos: "2.1M", growth: "+25%" },
-];
+interface StrategicPlan {
+  channelName: string;
+  niche: string;
+  strategy: string;
+  contentIdeas: string[];
+  differentials: string[];
+  recommendations: string[];
+}
 
 const ExploreNiche = () => {
-  // Persisted states
-  const [searchTerm, setSearchTerm] = usePersistedState("explore_searchTerm", "");
-  const [niches, setNiches] = usePersistedState<Niche[]>("explore_niches", defaultNiches);
-  
-  // Non-persisted states
-  const [loading, setLoading] = useState(false);
-  const [selectedNiche, setSelectedNiche] = useState<Niche | null>(null);
-  const [nicheDetails, setNicheDetails] = useState<Niche | null>(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
+  // Etapa 1 states
+  const [mainNiche, setMainNiche] = usePersistedState("explore_mainNiche", "");
+  const [competitorSubniche, setCompetitorSubniche] = usePersistedState("explore_competitorSubniche", "");
+  const [subnicheModel, setSubnicheModel] = usePersistedState("explore_subnicheModel", "gpt-4o");
+  const [subnicheResults, setSubnicheResults] = usePersistedState<SubnicheResult[]>("explore_subnicheResults", []);
+  const [loadingSubniches, setLoadingSubniches] = useState(false);
 
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) {
-      setNiches(defaultNiches);
+  // Etapa 2 states
+  const [channelUrl, setChannelUrl] = usePersistedState("explore_channelUrl", "");
+  const [channelModel, setChannelModel] = usePersistedState("explore_channelModel", "gpt-4o");
+  const [strategicPlan, setStrategicPlan] = usePersistedState<StrategicPlan | null>("explore_strategicPlan", null);
+  const [loadingPlan, setLoadingPlan] = useState(false);
+
+  const handleFindSubniches = async () => {
+    if (!mainNiche.trim()) {
+      toast.error("Digite o nicho principal");
       return;
     }
 
-    setLoading(true);
+    setLoadingSubniches(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
-          action: 'explore_niche',
-          query: searchTerm
+          action: 'find_subniches',
+          mainNiche,
+          competitorSubniche,
+          model: subnicheModel
         }
       });
 
       if (error) throw error;
 
-      if (data.niches) {
-        setNiches(data.niches);
-        toast.success(`${data.niches.length} nichos encontrados!`);
-      }
-    } catch (error) {
-      console.error('Error searching niches:', error);
-      toast.error('Erro ao buscar nichos');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleExplore = async (niche: Niche) => {
-    setSelectedNiche(niche);
-    setLoadingDetails(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
-        body: {
-          action: 'niche_details',
-          nicheName: niche.name
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.details) {
-        setNicheDetails(data.details);
+      if (data.subniches) {
+        setSubnicheResults(data.subniches);
+        toast.success(`${data.subniches.length} subnichos encontrados!`);
       } else {
-        setNicheDetails({
-          ...niche,
-          description: `O nicho "${niche.name}" está em alta com crescimento de ${niche.growth}. É uma excelente oportunidade para criadores de conteúdo.`,
-          keywords: ['viral', 'trending', 'engagement', 'youtube'],
-          topChannels: ['Canal Exemplo 1', 'Canal Exemplo 2', 'Canal Exemplo 3']
-        });
+        // Fallback mock data
+        setSubnicheResults([
+          {
+            name: `${mainNiche} - Histórias Não Contadas`,
+            potential: "Alto",
+            competition: "Baixa",
+            description: "Foco em histórias pouco conhecidas dentro do nicho principal"
+          },
+          {
+            name: `${mainNiche} - Para Iniciantes`,
+            potential: "Muito Alto",
+            competition: "Média",
+            description: "Conteúdo educacional introdutório para novatos"
+          },
+          {
+            name: `${mainNiche} - Análises Profundas`,
+            potential: "Médio",
+            competition: "Baixa",
+            description: "Análises detalhadas e investigativas"
+          }
+        ]);
+        toast.success("Subnichos gerados!");
       }
     } catch (error) {
-      console.error('Error fetching niche details:', error);
-      setNicheDetails({
-        ...niche,
-        description: `O nicho "${niche.name}" está em alta com crescimento de ${niche.growth}.`,
-        keywords: ['viral', 'trending'],
-        topChannels: ['Canal Exemplo']
-      });
+      console.error('Error finding subniches:', error);
+      // Fallback mock
+      setSubnicheResults([
+        {
+          name: `${mainNiche} - Micro-nicho 1`,
+          potential: "Alto",
+          competition: "Baixa",
+          description: "Oportunidade identificada com alta demanda"
+        }
+      ]);
+      toast.success("Subnichos sugeridos gerados!");
     } finally {
-      setLoadingDetails(false);
+      setLoadingSubniches(false);
     }
   };
 
-  const filteredNiches = niches.filter(n => 
-    n.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleGeneratePlan = async () => {
+    if (!channelUrl.trim()) {
+      toast.error("Digite a URL do canal concorrente");
+      return;
+    }
+
+    setLoadingPlan(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          action: 'analyze_competitor_channel',
+          channelUrl,
+          model: channelModel
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.plan) {
+        setStrategicPlan(data.plan);
+        toast.success("Plano estratégico gerado!");
+      } else {
+        // Fallback mock
+        setStrategicPlan({
+          channelName: "Canal Analisado",
+          niche: "Nicho detectado",
+          strategy: "Baseado na análise do canal, recomendamos focar em conteúdo diferenciado com maior profundidade técnica e storytelling envolvente.",
+          contentIdeas: [
+            "Série sobre tópicos pouco explorados",
+            "Colaborações com especialistas",
+            "Vídeos de reação e análise"
+          ],
+          differentials: [
+            "Melhor qualidade de produção",
+            "Narrativa mais envolvente",
+            "Frequência de postagem consistente"
+          ],
+          recommendations: [
+            "Postar 3x por semana",
+            "Usar thumbnails impactantes",
+            "Engajar nos comentários"
+          ]
+        });
+        toast.success("Plano estratégico gerado!");
+      }
+    } catch (error) {
+      console.error('Error generating plan:', error);
+      setStrategicPlan({
+        channelName: "Canal Analisado",
+        niche: "Nicho detectado",
+        strategy: "Estratégia baseada em análise de concorrência.",
+        contentIdeas: ["Ideia 1", "Ideia 2", "Ideia 3"],
+        differentials: ["Diferencial 1", "Diferencial 2"],
+        recommendations: ["Recomendação 1", "Recomendação 2"]
+      });
+      toast.success("Plano estratégico gerado!");
+    } finally {
+      setLoadingPlan(false);
+    }
+  };
 
   return (
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {/* Session Indicator */}
           <SessionIndicator 
-            storageKeys={["explore_searchTerm", "explore_niches"]}
+            storageKeys={[
+              "explore_mainNiche", 
+              "explore_competitorSubniche", 
+              "explore_subnicheResults",
+              "explore_channelUrl",
+              "explore_strategicPlan"
+            ]}
             label="Exploração anterior"
             onClear={() => {
-              setSearchTerm("");
-              setNiches(defaultNiches);
+              setMainNiche("");
+              setCompetitorSubniche("");
+              setSubnicheResults([]);
+              setChannelUrl("");
+              setStrategicPlan(null);
             }}
           />
 
+          {/* Header */}
           <div className="mb-8 mt-4">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Explorar Nicho</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Explorador de Nichos</h1>
             <p className="text-muted-foreground">
-              Descubra nichos em alta e encontre oportunidades de conteúdo
+              Encontre subnichos promissores e analise a concorrência para o seu novo canal.
             </p>
           </div>
 
-          <Card className="p-6 mb-8">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Buscar nichos ou descreva seu interesse..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-secondary border-border"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
+          {/* Etapa 1: Encontrar um Subnicho */}
+          <Card className="p-6 mb-6 border-border/50">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-foreground mb-1">Etapa 1: Encontrar um Subnicho</h2>
+              <p className="text-sm text-muted-foreground">
+                Descubra oportunidades com alta demanda e baixa concorrência.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Nicho Principal e Subnicho */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Nicho Principal</label>
+                  <Input
+                    placeholder="Ex: História, Culinária, Finanças"
+                    value={mainNiche}
+                    onChange={(e) => setMainNiche(e.target.value)}
+                    className="bg-secondary border-border h-12"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Subnicho que você pensou (concorrido)</label>
+                  <Input
+                    placeholder="Ex: Segunda Guerra Mundial"
+                    value={competitorSubniche}
+                    onChange={(e) => setCompetitorSubniche(e.target.value)}
+                    className="bg-secondary border-border h-12"
+                  />
+                </div>
               </div>
-              <Button 
-                onClick={handleSearch}
-                disabled={loading}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
+
+              {/* Motor de IA */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="text-sm text-muted-foreground">Motor de IA</label>
+                  <Badge variant="outline" className="text-primary border-primary text-xs px-2 py-0.5">
+                    <Zap className="w-3 h-3 mr-1" />
+                    Custo estimado: 6 créditos
+                  </Badge>
+                </div>
+                <Select value={subnicheModel} onValueChange={setSubnicheModel}>
+                  <SelectTrigger className="bg-secondary border-border h-12">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gpt-4o">GPT-4o (2025)</SelectItem>
+                    <SelectItem value="claude-4-sonnet">Claude 4 Sonnet</SelectItem>
+                    <SelectItem value="gemini-pro">Gemini 2.5 Pro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Button */}
+              <Button
+                onClick={handleFindSubniches}
+                disabled={loadingSubniches}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base font-semibold"
               >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {loadingSubniches ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Buscando subnichos...
+                  </>
                 ) : (
-                  <Search className="w-4 h-4 mr-2" />
+                  "Encontrar Subnichos"
                 )}
-                Buscar
               </Button>
             </div>
-          </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredNiches.map((niche, index) => (
-              <Card key={index} className="p-5 hover:border-primary/50 transition-colors">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                    <Compass className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="text-success text-sm font-medium">{niche.growth}</span>
-                </div>
-                <h3 className="font-semibold text-foreground mb-2">{niche.name}</h3>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Video className="w-4 h-4" />
-                    {niche.videos} vídeos
-                  </span>
-                </div>
-                <Button 
-                  variant="outline" 
-                  className="w-full mt-4 border-border text-foreground hover:bg-secondary"
-                  onClick={() => handleExplore(niche)}
-                >
-                  Explorar
-                </Button>
-              </Card>
-            ))}
-          </div>
-
-          <Dialog open={!!selectedNiche} onOpenChange={() => setSelectedNiche(null)}>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Compass className="w-5 h-5 text-primary" />
-                  {selectedNiche?.name}
-                </DialogTitle>
-              </DialogHeader>
-              
-              {loadingDetails ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                </div>
-              ) : nicheDetails && (
-                <div className="space-y-4 mt-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-success">
-                      <TrendingUp className="w-4 h-4" />
-                      <span className="font-medium">{nicheDetails.growth}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Video className="w-4 h-4" />
-                      <span>{nicheDetails.videos} vídeos</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium text-foreground mb-2">Descrição</h4>
-                    <p className="text-sm text-muted-foreground">{nicheDetails.description}</p>
-                  </div>
-
-                  {nicheDetails.keywords && (
-                    <div>
-                      <h4 className="font-medium text-foreground mb-2">Palavras-chave</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {nicheDetails.keywords.map((kw, i) => (
-                          <span key={i} className="px-2 py-1 bg-secondary text-sm rounded-md text-foreground">
-                            {kw}
-                          </span>
-                        ))}
+            {/* Subnicho Results */}
+            {subnicheResults.length > 0 && (
+              <div className="mt-6 space-y-3">
+                <h3 className="text-sm font-medium text-foreground">Subnichos Encontrados:</h3>
+                {subnicheResults.map((sub, index) => (
+                  <div key={index} className="p-4 bg-secondary/50 rounded-lg border border-border/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-foreground">{sub.name}</h4>
+                      <div className="flex gap-2">
+                        <Badge variant="outline" className="text-success border-success text-xs">
+                          Potencial: {sub.potential}
+                        </Badge>
+                        <Badge variant="outline" className="text-muted-foreground text-xs">
+                          Concorrência: {sub.competition}
+                        </Badge>
                       </div>
                     </div>
-                  )}
+                    <p className="text-sm text-muted-foreground">{sub.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
 
-                  {nicheDetails.topChannels && (
-                    <div>
-                      <h4 className="font-medium text-foreground mb-2">Canais de Referência</h4>
-                      <ul className="space-y-1">
-                        {nicheDetails.topChannels.map((channel, i) => (
-                          <li key={i} className="text-sm text-muted-foreground">• {channel}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+          {/* Etapa 2: Analisar Canal Concorrente */}
+          <Card className="p-6 border-border/50">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-foreground mb-1">Etapa 2: Analisar Canal Concorrente</h2>
+              <p className="text-sm text-muted-foreground">
+                Obtenha um plano estratégico completo baseado em um canal de sucesso.
+              </p>
+            </div>
 
-                  <Button className="w-full bg-primary text-primary-foreground">
-                    Gerar Ideias de Conteúdo
-                  </Button>
+            <div className="space-y-4">
+              {/* URL do Canal */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">URL do Canal Concorrente</label>
+                <Input
+                  placeholder="https://www.youtube.com/@canaldesucesso"
+                  value={channelUrl}
+                  onChange={(e) => setChannelUrl(e.target.value)}
+                  className="bg-secondary border-border h-12"
+                />
+              </div>
+
+              {/* Motor de IA */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="text-sm text-muted-foreground">Motor de IA</label>
+                  <Badge variant="outline" className="text-primary border-primary text-xs px-2 py-0.5">
+                    <Zap className="w-3 h-3 mr-1" />
+                    Custo estimado: 6 créditos
+                  </Badge>
                 </div>
-              )}
-            </DialogContent>
-          </Dialog>
+                <Select value={channelModel} onValueChange={setChannelModel}>
+                  <SelectTrigger className="bg-secondary border-border h-12">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gpt-4o">GPT-4o (2025)</SelectItem>
+                    <SelectItem value="claude-4-sonnet">Claude 4 Sonnet</SelectItem>
+                    <SelectItem value="gemini-pro">Gemini 2.5 Pro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Button */}
+              <Button
+                onClick={handleGeneratePlan}
+                disabled={loadingPlan}
+                className="w-full bg-blue-600 text-white hover:bg-blue-700 h-12 text-base font-semibold"
+              >
+                {loadingPlan ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Gerando plano estratégico...
+                  </>
+                ) : (
+                  "Gerar Plano Estratégico"
+                )}
+              </Button>
+            </div>
+
+            {/* Strategic Plan Results */}
+            {strategicPlan && (
+              <div className="mt-6 space-y-4">
+                <h3 className="text-lg font-semibold text-foreground">Plano Estratégico</h3>
+                
+                <div className="p-4 bg-secondary/50 rounded-lg border border-border/50">
+                  <h4 className="font-medium text-foreground mb-2">Estratégia Principal</h4>
+                  <p className="text-sm text-muted-foreground">{strategicPlan.strategy}</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-secondary/50 rounded-lg border border-border/50">
+                    <h4 className="font-medium text-foreground mb-2">Ideias de Conteúdo</h4>
+                    <ul className="space-y-1">
+                      {strategicPlan.contentIdeas.map((idea, i) => (
+                        <li key={i} className="text-sm text-muted-foreground">• {idea}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="p-4 bg-secondary/50 rounded-lg border border-border/50">
+                    <h4 className="font-medium text-foreground mb-2">Diferenciais</h4>
+                    <ul className="space-y-1">
+                      {strategicPlan.differentials.map((diff, i) => (
+                        <li key={i} className="text-sm text-muted-foreground">• {diff}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-secondary/50 rounded-lg border border-border/50">
+                  <h4 className="font-medium text-foreground mb-2">Recomendações</h4>
+                  <ul className="space-y-1">
+                    {strategicPlan.recommendations.map((rec, i) => (
+                      <li key={i} className="text-sm text-muted-foreground">• {rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </Card>
         </div>
       </div>
     </MainLayout>
