@@ -41,7 +41,7 @@ import { ParticleBackground } from "@/components/landing/ParticleBackground";
 import { GlassCard } from "@/components/landing/GlassCard";
 import { AdSenseCard } from "@/components/landing/AdSenseCard";
 import FloatingElements from "@/components/landing/FloatingElements";
-import CustomCursor from "@/components/landing/CustomCursor";
+
 import { Tool3DCard } from "@/components/landing/Tool3DCard";
 import { Dream3DCard } from "@/components/landing/Dream3DCard";
 import logo from "@/assets/logo.gif";
@@ -138,8 +138,6 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden relative">
-      {/* Custom Cursor */}
-      <CustomCursor />
       {/* Global Floating Elements */}
       <FloatingElements />
       {/* Navigation */}
@@ -175,22 +173,22 @@ const Landing = () => {
         {/* Particle Background - reduced for mobile */}
         <ParticleBackground particleCount={40} className="opacity-40 md:opacity-60" />
 
-        {/* Background Image */}
+        {/* Background Image - Porsche */}
         <div className="absolute inset-0 -z-10">
           <img
             src="/images/hero-porsche.jpg"
             alt="Porsche de luxo no fundo da landing page"
-            className="absolute inset-0 h-full w-full object-cover object-right opacity-30 md:opacity-50 brightness-90 contrast-110"
+            className="absolute inset-0 h-full w-full object-cover object-right opacity-40 md:opacity-60 brightness-90 contrast-125"
             loading="eager"
           />
 
-          {/* Heavy unified dark overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/98 to-background/70 md:to-background/60" />
-          {/* Strong vertical fade for seamless section transitions */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/30 to-background" />
+          {/* Gradient overlay - less aggressive to show Porsche */}
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/40 md:to-background/30" />
+          {/* Vertical fade for seamless section transitions */}
+          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-transparent to-background" />
 
           {/* Subtle amber glow accents - desktop only */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent hidden md:block" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent hidden md:block" />
         </div>
 
         {/* Parallax orbs - desktop only */}
