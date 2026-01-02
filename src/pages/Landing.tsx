@@ -171,79 +171,80 @@ const Landing = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-36 pb-24 px-4 relative overflow-hidden">
-        {/* Particle Background */}
-        <ParticleBackground particleCount={80} className="opacity-60" />
+      <section className="pt-28 md:pt-36 pb-16 md:pb-24 px-4 relative overflow-hidden min-h-[90vh] flex items-center">
+        {/* Particle Background - reduced for mobile */}
+        <ParticleBackground particleCount={40} className="opacity-40 md:opacity-60" />
 
         {/* Background Image */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 -z-10">
           <img
             src="/images/hero-porsche.jpg"
             alt="Porsche de luxo no fundo da landing page"
-            className="absolute inset-0 h-full w-full object-cover object-right opacity-50 brightness-90 contrast-110"
+            className="absolute inset-0 h-full w-full object-cover object-right opacity-30 md:opacity-50 brightness-90 contrast-110"
             loading="eager"
           />
 
           {/* Heavy unified dark overlay */}
-          <div className="absolute inset-0 z-10 bg-gradient-to-r from-background via-background/95 to-background/60" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/98 to-background/70 md:to-background/60" />
           {/* Strong vertical fade for seamless section transitions */}
-          <div className="absolute inset-0 z-10 bg-gradient-to-b from-background/90 via-background/20 to-background" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/30 to-background" />
 
-          {/* Subtle amber glow accents */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_right,_var(--tw-gradient-stops))] from-primary/8 via-transparent to-transparent z-10" />
+          {/* Subtle amber glow accents - desktop only */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent hidden md:block" />
         </div>
 
-        <ParallaxLayer depth={0.3} className="absolute top-32 left-1/4 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl pointer-events-none animate-float" />
-        <ParallaxLayer depth={0.5} className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
+        {/* Parallax orbs - desktop only */}
+        <ParallaxLayer depth={0.3} className="absolute top-32 left-1/4 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-primary/10 rounded-full blur-3xl pointer-events-none animate-float hidden md:block" />
+        <ParallaxLayer depth={0.5} className="absolute bottom-0 right-1/4 w-60 md:w-80 h-60 md:h-80 bg-primary/8 rounded-full blur-2xl pointer-events-none hidden lg:block" />
 
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
-          <AnimatedSection animation="fade-right" className="space-y-8">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-16 items-center relative z-10 w-full">
+          <AnimatedSection animation="fade-right" className="space-y-6 md:space-y-8">
               {/* Private Elite Access Badge */}
-              <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-border">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <span className="text-base font-medium">PRIVATE ELITE ACCESS</span>
-                <Sparkles className="w-5 h-5 text-primary" />
+              <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-card border border-border">
+                <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                <span className="text-sm md:text-base font-medium">PRIVATE ELITE ACCESS</span>
+                <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
               </div>
 
               {/* Warning Badge */}
-              <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-primary/20 border border-primary/30">
-                <AlertTriangle className="w-5 h-5 text-primary" />
-                <span className="text-base font-medium text-primary">Fuja dos "marketeiros" e de quem só vende curso!</span>
+              <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-primary/20 border border-primary/30">
+                <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-primary flex-shrink-0" />
+                <span className="text-sm md:text-base font-medium text-primary">Fuja dos "marketeiros" e de quem só vende curso!</span>
               </div>
 
               {/* Main Heading */}
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
                 <span className="block">Escale seus</span>
                 <span className="block text-primary">Canais Dark</span>
                 <span className="block">com IA</span>
               </h1>
 
               {/* Description */}
-              <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
+              <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
                 Criado por quem <span className="text-primary font-semibold">vive e respira</span> o mercado do YouTube diariamente. Nada de promessas vazias — aqui é <span className="text-primary font-semibold">ferramenta real</span> feita por quem está no campo de batalha.
               </p>
 
-              {/* Quote */}
-              <p className="text-base text-muted-foreground italic">
+              {/* Quote - hide on mobile */}
+              <p className="text-sm md:text-base text-muted-foreground italic hidden sm:block">
                 "Enquanto outros vendem sonhos, nós entregamos resultados com tecnologia de ponta."
               </p>
 
               {/* CTA Buttons */}
-              <div className="flex flex-wrap gap-5">
-                <Link to="/auth">
-                  <Button size="lg" className="gradient-button text-primary-foreground font-semibold h-16 px-10 text-xl glow-primary hover:scale-105 transition-transform">
-                    <Zap className="w-6 h-6 mr-3" />
+              <div className="flex flex-col sm:flex-row gap-4 md:gap-5">
+                <Link to="/auth" className="w-full sm:w-auto">
+                  <Button size="lg" className="gradient-button text-primary-foreground font-semibold h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl glow-primary hover:scale-105 transition-transform w-full">
+                    <Zap className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
                     Solicitar Acesso Elite
-                    <ArrowRight className="w-6 h-6 ml-3" />
+                    <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2 md:ml-3" />
                   </Button>
                 </Link>
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="h-16 px-10 text-xl border-border hover:bg-card hover:scale-105 transition-transform"
+                  className="h-14 md:h-16 px-6 md:px-10 text-lg md:text-xl border-border hover:bg-card hover:scale-105 transition-transform w-full sm:w-auto"
                   onClick={() => scrollToSection("demo")}
                 >
-                  <Play className="w-6 h-6 mr-3" />
+                  <Play className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
                   Ver Demonstração
                 </Button>
               </div>
@@ -251,45 +252,45 @@ const Landing = () => {
               {/* Operators Online - Dynamic */}
               <OperatorsOnline />
 
-              {/* Feature Badges */}
-              <div className="flex flex-wrap gap-4">
-                <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-primary/30">
-                  <Zap className="w-5 h-5 text-primary" />
-                  <span className="text-base">Melhores APIs do mercado</span>
+              {/* Feature Badges - stack on mobile */}
+              <div className="flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4">
+                <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-card border border-primary/30">
+                  <Zap className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                  <span className="text-sm md:text-base">Melhores APIs do mercado</span>
                 </div>
-                <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-border">
-                  <Check className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-base text-muted-foreground">Ferramenta em constante atualização</span>
+                <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-card border border-border">
+                  <Check className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
+                  <span className="text-sm md:text-base text-muted-foreground">Ferramenta em constante atualização</span>
                 </div>
               </div>
           </AnimatedSection>
 
-          {/* AdSense Card */}
-          <AnimatedSection animation="fade-left" delay={200}>
+          {/* AdSense Card - hide on very small screens */}
+          <AnimatedSection animation="fade-left" delay={200} className="hidden sm:block">
             <AdSenseCard />
           </AnimatedSection>
         </div>
 
-        {/* Scroll indicator */}
-        <div className="flex justify-center mt-20">
-          <div className="w-10 h-14 rounded-full border-2 border-border flex items-start justify-center p-2">
-            <div className="w-1.5 h-4 rounded-full bg-primary animate-bounce" />
+        {/* Scroll indicator - hide on mobile */}
+        <div className="hidden md:flex justify-center mt-16 md:mt-20">
+          <div className="w-8 md:w-10 h-12 md:h-14 rounded-full border-2 border-border flex items-start justify-center p-2">
+            <div className="w-1 md:w-1.5 h-3 md:h-4 rounded-full bg-primary animate-bounce" />
           </div>
         </div>
       </section>
 
       {/* Features Strip */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-8">
             {features.map((feature, index) => (
               <AnimatedItem key={index} index={index} staggerDelay={100}>
-                <Card className={`p-8 bg-card border-border hover:border-primary/50 transition-all duration-300 ${index === 0 ? 'ring-1 ring-primary/30' : ''}`}>
-                  <div className={`w-16 h-16 rounded-xl ${feature.color} flex items-center justify-center mb-5`}>
-                    <feature.icon className="w-8 h-8 text-white" />
+                <Card className={`p-4 md:p-8 bg-card border-border hover:border-primary/50 transition-all duration-300 ${index === 0 ? 'ring-1 ring-primary/30' : ''}`}>
+                  <div className={`w-12 h-12 md:w-16 md:h-16 rounded-xl ${feature.color} flex items-center justify-center mb-3 md:mb-5`}>
+                    <feature.icon className="w-6 h-6 md:w-8 md:h-8 text-white" />
                   </div>
-                  <h3 className="font-bold text-2xl">{feature.title}</h3>
-                  <p className="text-base text-muted-foreground mt-1">{feature.desc}</p>
+                  <h3 className="font-bold text-lg md:text-2xl">{feature.title}</h3>
+                  <p className="text-sm md:text-base text-muted-foreground mt-1">{feature.desc}</p>
                 </Card>
               </AnimatedItem>
             ))}
@@ -298,26 +299,26 @@ const Landing = () => {
       </section>
 
       {/* Demo Section */}
-      <section id="demo" className="py-24 px-4 scroll-mt-20 relative overflow-hidden">
-        <ParallaxLayer depth={0.2} className="absolute top-0 left-0 w-full h-full">
+      <section id="demo" className="py-16 md:py-24 px-4 scroll-mt-20 relative overflow-hidden">
+        <ParallaxLayer depth={0.2} className="absolute top-0 left-0 w-full h-full hidden md:block">
           <div className="absolute top-10 left-10 w-3 h-3 rounded-full bg-primary/50" />
           <div className="absolute top-20 right-20 w-2 h-2 rounded-full bg-primary/30" />
           <div className="absolute bottom-40 left-1/4 w-2 h-2 rounded-full bg-primary/40" />
         </ParallaxLayer>
 
-        <AnimatedSection className="max-w-5xl mx-auto text-center space-y-10">
-          <div className="space-y-5">
-            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-border">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <span className="text-base font-medium text-primary">VEJA EM AÇÃO</span>
+        <AnimatedSection className="max-w-5xl mx-auto text-center space-y-8 md:space-y-10">
+          <div className="space-y-4 md:space-y-5">
+            <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-card border border-border">
+              <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+              <span className="text-sm md:text-base font-medium text-primary">VEJA EM AÇÃO</span>
             </div>
-            <h2 className="text-4xl md:text-6xl font-bold italic">
+            <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic">
               Conheça o Poder do
             </h2>
-            <h2 className="text-4xl md:text-6xl font-bold italic text-primary">
+            <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic text-primary">
               La Casa Dark CORE
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Assista uma demonstração completa das funcionalidades que vão revolucionar sua operação no YouTube.
             </p>
           </div>
@@ -325,42 +326,42 @@ const Landing = () => {
           <AnimatedSection animation="scale" delay={200}>
             <Card className="aspect-video bg-card border-primary/30 relative overflow-hidden group cursor-pointer">
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className="w-32 h-32 rounded-full bg-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-primary/50">
-                  <Play className="w-16 h-16 text-primary-foreground ml-2" fill="currentColor" />
+                <div className="w-20 h-20 md:w-32 md:h-32 rounded-full bg-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-primary/50">
+                  <Play className="w-10 h-10 md:w-16 md:h-16 text-primary-foreground ml-1 md:ml-2" fill="currentColor" />
                 </div>
               </div>
               
-              {/* Bottom info */}
-              <div className="absolute bottom-0 left-0 right-0 p-8 flex justify-between items-end">
+              {/* Bottom info - responsive */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-2 md:gap-0">
                 <div>
-                  <p className="text-primary font-semibold text-lg">DEMONSTRAÇÃO COMPLETA</p>
-                  <p className="text-muted-foreground text-base">Duração: 5 minutos</p>
+                  <p className="text-primary font-semibold text-sm md:text-lg">DEMONSTRAÇÃO COMPLETA</p>
+                  <p className="text-muted-foreground text-xs md:text-base">Duração: 5 minutos</p>
                 </div>
-                <div className="flex items-center gap-3 text-muted-foreground">
+                <div className="hidden md:flex items-center gap-3 text-muted-foreground">
                   <Zap className="w-5 h-5 text-primary" />
                   <span className="text-base">Tour pelas funcionalidades</span>
                 </div>
               </div>
             </Card>
 
-            {/* Bottom bar */}
-            <div className="bg-card rounded-xl p-6 mt-6 flex items-center justify-between border border-border">
+            {/* Bottom bar - stack on mobile */}
+            <div className="bg-card rounded-xl p-4 md:p-6 mt-4 md:mt-6 flex flex-col md:flex-row items-start md:items-center justify-between border border-border gap-4">
               <div>
-                <h3 className="font-bold text-xl">Tour Completo das Funcionalidades</h3>
-                <p className="text-base text-muted-foreground">Veja como criar conteúdo viral em minutos com IA avançada</p>
+                <h3 className="font-bold text-lg md:text-xl">Tour Completo das Funcionalidades</h3>
+                <p className="text-sm md:text-base text-muted-foreground">Veja como criar conteúdo viral em minutos</p>
               </div>
-              <Link to="/auth">
-                <Button className="gradient-button text-primary-foreground font-semibold text-lg h-12 px-6">
-                  <Zap className="w-5 h-5 mr-2" />
+              <Link to="/auth" className="w-full md:w-auto">
+                <Button className="gradient-button text-primary-foreground font-semibold text-base md:text-lg h-11 md:h-12 px-5 md:px-6 w-full md:w-auto">
+                  <Zap className="w-4 h-4 md:w-5 md:h-5 mr-2" />
                   Começar Agora
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5 ml-2" />
                 </Button>
               </Link>
             </div>
           </AnimatedSection>
 
           {/* Demo Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 pt-8 md:pt-10">
             {[
               { value: "PRO", label: "Geração de Roteiros" },
               { value: "4x", label: "Thumbnails Premium" },
@@ -368,8 +369,8 @@ const Landing = () => {
               { value: "Real-time", label: "Analytics Avançado" },
             ].map((stat, i) => (
               <div key={i} className="text-center">
-                <p className="text-3xl md:text-4xl font-bold text-gradient">{stat.value}</p>
-                <p className="text-base text-muted-foreground">{stat.label}</p>
+                <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-gradient">{stat.value}</p>
+                <p className="text-sm md:text-base text-muted-foreground">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -377,29 +378,29 @@ const Landing = () => {
       </section>
 
       {/* Dreams Section */}
-      <section className="py-24 px-4 relative overflow-hidden">
-        <ParallaxLayer depth={0.4} className="absolute -top-20 -right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+      <section className="py-16 md:py-24 px-4 relative overflow-hidden">
+        <ParallaxLayer depth={0.4} className="absolute -top-20 -right-20 w-64 md:w-96 h-64 md:h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none hidden md:block" />
         
-        <div className="max-w-7xl mx-auto text-center space-y-14 relative">
-          <AnimatedSection className="space-y-5">
-            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-border">
-              <ChevronDown className="w-5 h-5 text-primary rotate-45" />
-              <span className="text-base font-medium text-primary">REALIZE SEUS SONHOS</span>
-              <ChevronDown className="w-5 h-5 text-primary -rotate-45" />
+        <div className="max-w-7xl mx-auto text-center space-y-10 md:space-y-14 relative">
+          <AnimatedSection className="space-y-4 md:space-y-5">
+            <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-card border border-border">
+              <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-primary rotate-45" />
+              <span className="text-sm md:text-base font-medium text-primary">REALIZE SEUS SONHOS</span>
+              <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-primary -rotate-45" />
             </div>
-            <h2 className="text-4xl md:text-6xl font-bold italic">
+            <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic">
               O Que Você Pode
             </h2>
-            <h2 className="text-4xl md:text-6xl font-bold italic text-primary">
+            <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic text-primary">
               Conquistar Com YouTube
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Dedicando apenas <span className="text-primary font-semibold">2 a 3 horas por dia</span>, você pode transformar sua vida e conquistar tudo isso com canais Dark no YouTube.
             </p>
           </AnimatedSection>
 
           {/* Dreams Grid */}
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
             {dreams.map((dream, index) => (
               <AnimatedItem key={index} index={index} staggerDelay={100}>
                 <Dream3DCard
@@ -413,15 +414,16 @@ const Landing = () => {
 
           {/* CTA */}
           <AnimatedSection animation="scale" delay={400}>
-            <div className="space-y-5 pt-10">
-              <h3 className="text-3xl font-bold">
+            <div className="space-y-4 md:space-y-5 pt-6 md:pt-10">
+              <h3 className="text-2xl md:text-3xl font-bold">
                 Tudo isso é <span className="text-primary">possível</span> para você
               </h3>
-              <p className="text-lg text-muted-foreground">Milhares de criadores já estão vivendo esse estilo de vida</p>
+              <p className="text-base md:text-lg text-muted-foreground">Milhares de criadores já estão vivendo esse estilo de vida</p>
               <Link to="/auth">
-                <Button size="lg" className="gradient-button text-primary-foreground font-semibold h-16 px-10 mt-5 text-lg">
-                  <Check className="w-6 h-6 mr-3" />
-                  Faça o teste <span className="text-primary-foreground/80 ml-2">e comprove você mesmo os resultados</span>
+                <Button size="lg" className="gradient-button text-primary-foreground font-semibold h-14 md:h-16 px-6 md:px-10 mt-4 md:mt-5 text-base md:text-lg">
+                  <Check className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
+                  <span className="hidden sm:inline">Faça o teste e comprove você mesmo</span>
+                  <span className="sm:hidden">Faça o teste agora</span>
                 </Button>
               </Link>
             </div>
@@ -430,28 +432,28 @@ const Landing = () => {
       </section>
 
       {/* Tools Section */}
-      <section id="funcionalidades" className="py-24 px-4 scroll-mt-20 relative overflow-hidden">
-        <ParallaxLayer depth={0.3} className="absolute top-40 -left-32 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+      <section id="funcionalidades" className="py-16 md:py-24 px-4 scroll-mt-20 relative overflow-hidden">
+        <ParallaxLayer depth={0.3} className="absolute top-40 -left-32 w-60 md:w-80 h-60 md:h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none hidden md:block" />
         
-        <div className="max-w-7xl mx-auto space-y-14 relative">
-          <AnimatedSection className="text-center space-y-5">
-            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary text-primary-foreground">
-              <Crown className="w-5 h-5" />
-              <span className="text-base font-medium">18+ FUNCIONALIDADES PREMIUM</span>
-              <Crown className="w-5 h-5" />
+        <div className="max-w-7xl mx-auto space-y-10 md:space-y-14 relative">
+          <AnimatedSection className="text-center space-y-4 md:space-y-5">
+            <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 rounded-full bg-primary text-primary-foreground">
+              <Crown className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="text-sm md:text-base font-medium">18+ FUNCIONALIDADES PREMIUM</span>
+              <Crown className="w-4 h-4 md:w-5 md:h-5" />
             </div>
-            <h2 className="text-4xl md:text-6xl font-bold italic">
+            <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic">
               Arsenal Completo para
             </h2>
-            <h2 className="text-4xl md:text-6xl font-bold italic text-primary">
+            <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic text-primary">
               Operações Dark
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Todas as ferramentas que você precisa para criar, otimizar e escalar seus canais de forma automatizada.
             </p>
           </AnimatedSection>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {tools.map((tool, index) => (
               <AnimatedItem key={index} index={index} staggerDelay={50}>
                 <Tool3DCard
@@ -467,17 +469,17 @@ const Landing = () => {
           </div>
 
           {/* Bottom Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pt-6 md:pt-10">
             {[
               { icon: Zap, value: "18+", label: "Ferramentas" },
               { icon: ImagePlus, value: "∞", label: "Imagens/Mês" },
               { icon: Clock, value: "24/7", label: "Automação" },
               { icon: Star, value: "5min", label: "Setup Rápido" },
             ].map((stat, i) => (
-              <Card key={i} className="p-6 bg-card border-border text-center hover:border-primary/30 transition-all duration-300 group">
-                <stat.icon className="w-8 h-8 text-primary mx-auto mb-3 group-hover:scale-110 transition-transform" />
-                <p className="text-3xl font-bold text-gradient">{stat.value}</p>
-                <p className="text-base text-muted-foreground">{stat.label}</p>
+              <Card key={i} className="p-4 md:p-6 bg-card border-border text-center hover:border-primary/30 transition-all duration-300 group">
+                <stat.icon className="w-6 h-6 md:w-8 md:h-8 text-primary mx-auto mb-2 md:mb-3 group-hover:scale-110 transition-transform" />
+                <p className="text-2xl md:text-3xl font-bold text-gradient">{stat.value}</p>
+                <p className="text-sm md:text-base text-muted-foreground">{stat.label}</p>
               </Card>
             ))}
           </div>
