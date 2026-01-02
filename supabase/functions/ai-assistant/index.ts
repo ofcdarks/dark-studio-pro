@@ -349,6 +349,7 @@ serve(async (req) => {
         apiProvider = 'laozhang';
         
         // Laozhang supports many models - map the UI model ID to a Laozhang model name
+        // Note: Use actual model names supported by Laozhang API
         const laozhangModelMap: Record<string, string> = {
           // GPT Models
           "gpt-4o": "gpt-4o",
@@ -359,22 +360,21 @@ serve(async (req) => {
           "gpt-4o-mini": "gpt-4o-mini",
           "gpt-4-turbo": "gpt-4-turbo",
 
-          // Claude Models (UI)
-          "claude-4-sonnet": "claude-sonnet-4-5",
+          // Claude Models - Use claude-3-5-sonnet-20241022 as it's widely supported
+          "claude-4-sonnet": "claude-3-5-sonnet-20241022",
           "claude": "claude-3-5-sonnet-20241022",
           "claude-3-5-sonnet": "claude-3-5-sonnet-20241022",
           "claude-3-opus": "claude-3-opus-20240229",
           "claude-sonnet": "claude-3-5-sonnet-20241022",
-          "claude-sonnet-4-5": "claude-sonnet-4-5",
 
-          // Gemini Models (UI)
-          "gemini": "gemini-2.5-flash",
-          "gemini-flash": "gemini-2.5-flash",
-          "gemini-pro": "gemini-2.5-pro",
-          "gemini-2.5-flash": "gemini-2.5-flash",
-          "gemini-2.5-pro": "gemini-2.5-pro",
-          "google/gemini-2.5-flash": "gemini-2.5-flash",
-          "google/gemini-2.5-pro": "gemini-2.5-pro",
+          // Gemini Models
+          "gemini": "gemini-1.5-flash",
+          "gemini-flash": "gemini-1.5-flash",
+          "gemini-pro": "gemini-1.5-pro",
+          "gemini-2.5-flash": "gemini-1.5-flash",
+          "gemini-2.5-pro": "gemini-1.5-pro",
+          "google/gemini-2.5-flash": "gemini-1.5-flash",
+          "google/gemini-2.5-pro": "gemini-1.5-pro",
         };
         
         // Try exact match first, then partial match, then default
@@ -384,18 +384,12 @@ serve(async (req) => {
           laozhangModel = "gpt-4o";
         } else if (model?.includes("gpt-5") || model?.includes("gpt")) {
           laozhangModel = "gpt-4o";
-        } else if (model?.includes("claude-4") || model?.includes("claude-sonnet-4")) {
-          laozhangModel = "claude-sonnet-4-5";
-        } else if (model?.includes("claude-3-5") || model?.includes("claude-sonnet")) {
-          laozhangModel = "claude-3-5-sonnet-20241022";
-        } else if (model?.includes("claude-opus") || model?.includes("claude-3-opus")) {
-          laozhangModel = "claude-3-opus-20240229";
         } else if (model?.includes("claude")) {
           laozhangModel = "claude-3-5-sonnet-20241022";
-        } else if (model?.includes("gemini-pro") || model?.includes("gemini-2.5-pro")) {
-          laozhangModel = "gemini-2.5-pro";
+        } else if (model?.includes("gemini-pro")) {
+          laozhangModel = "gemini-1.5-pro";
         } else if (model?.includes("gemini")) {
-          laozhangModel = "gemini-2.5-flash";
+          laozhangModel = "gemini-1.5-flash";
         } else {
           laozhangModel = "gpt-4o-mini"; // Default cost-effective model
         }
