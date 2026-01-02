@@ -932,7 +932,8 @@ serve(async (req) => {
     let selectedModel: string;
     let requestHeaders: Record<string, string>;
 
-    if (useUserApiKey && userApiKeyToUse) {
+    // Use external provider when we have a key (user or admin), otherwise use Lovable AI Gateway
+    if (userApiKeyToUse && apiProvider !== 'lovable') {
       if (apiProvider === 'laozhang') {
         // Laozhang AI Gateway - OpenAI compatible
         apiUrl = "https://api.laozhang.ai/v1/chat/completions";
@@ -946,8 +947,8 @@ serve(async (req) => {
       } else if (apiProvider === 'openai') {
         apiUrl = "https://api.openai.com/v1/chat/completions";
         apiKey = userApiKeyToUse;
-        selectedModel = "gpt-4o-mini"; // Use gpt-4o-mini for cost efficiency
-        if (model === "gpt-4o" || model === "gpt-5") {
+        selectedModel = "gpt-4o-mini"; // default cost-effective
+        if (model === "gpt-4o" || model === "gpt-5" || model?.includes("gpt")) {
           selectedModel = "gpt-4o";
         }
         requestHeaders = {
@@ -956,12 +957,12 @@ serve(async (req) => {
         };
         console.log(`[AI Assistant] Using OpenAI API directly with model: ${selectedModel}`);
       } else if (apiProvider === 'gemini') {
-        apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKeyToUse}`;
         apiKey = userApiKeyToUse;
         selectedModel = "gemini-1.5-flash";
+        apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         if (model === "gemini-pro" || model?.includes("pro")) {
-          apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${userApiKeyToUse}`;
           selectedModel = "gemini-1.5-pro";
+          apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
         }
         requestHeaders = {
           "Content-Type": "application/json",
@@ -991,7 +992,7 @@ serve(async (req) => {
 
     let response: Response;
 
-    if (apiProvider === 'gemini' && useUserApiKey) {
+    if (apiProvider === 'gemini' && userApiKeyToUse) {
       // Gemini API has a different request format
       response = await fetch(apiUrl, {
         method: "POST",
