@@ -1,4 +1,4 @@
-import { Video, Eye, Coins, TrendingUp, Type, Image } from "lucide-react";
+import { Video, Eye, Coins, TrendingUp, Type, Image, Sparkles } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
@@ -10,13 +10,18 @@ import { NextStepsCard } from "./NextStepsCard";
 import { DailyQuoteCard } from "./DailyQuoteCard";
 import { RecentVideosCard } from "./RecentVideosCard";
 import { OperationalLogsCard } from "./OperationalLogsCard";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export function Dashboard() {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { balance: credits, loading: creditsLoading } = useCredits();
   const { stats, recentVideos, activityLogs, loading } = useDashboardData();
+  const navigate = useNavigate();
+
+  const isLowCredits = credits < 100;
 
   const displayName = profile?.full_name || user?.email?.split("@")[0] || "Usuário";
 
@@ -73,7 +78,22 @@ export function Dashboard() {
             <StatsCard icon={Type} label="Títulos Gerados" value={stats.titlesGenerated} subLabel={stats.titlesGenerated > 0 ? "CRIADOS" : "INÍCIO"} />
           </motion.div>
           <motion.div variants={itemVariants}>
-            <StatsCard icon={Coins} label="Créditos" value={credits.toLocaleString()} status="active" />
+            <StatsCard 
+              icon={Coins} 
+              label="Créditos" 
+              value={credits.toLocaleString()} 
+              status={isLowCredits ? undefined : "active"} 
+              action={
+                <Button 
+                  size="sm" 
+                  onClick={() => navigate('/plans')} 
+                  className={`w-full gradient-button text-primary-foreground text-xs ${isLowCredits ? 'animate-pulse' : ''}`}
+                >
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Comprar Créditos
+                </Button>
+              }
+            />
           </motion.div>
           <motion.div variants={itemVariants}>
             <StatsCard icon={Image} label="Imagens Geradas" value={stats.imagesGenerated} subLabel={stats.imagesGenerated > 0 ? "CRIADAS" : "INÍCIO"} />
