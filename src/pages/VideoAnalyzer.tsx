@@ -73,18 +73,16 @@ interface ScriptFormulaAnalysis {
   gatilhosMentais: string[];
 }
 
-// Motivational messages for loading states
+// Elite motivational messages for loading states (La Casa Dark Core style)
 const LOADING_MESSAGES = [
-  "🔍 Analisando padrões virais...",
-  "🧠 Decodificando fórmulas de sucesso...",
-  "⚡ Processando insights da IA...",
-  "🎯 Identificando gatilhos mentais...",
-  "📊 Calculando métricas de engajamento...",
-  "✨ Gerando títulos otimizados...",
-  "🚀 Quase lá! Finalizando análise...",
-  "💡 Descobrindo o segredo do viral...",
-  "🔥 Aplicando estratégias comprovadas...",
-  "📈 Maximizando potencial de cliques...",
+  "Conectando ao motor de análise premium...",
+  "Decodificando fórmulas de sucesso comprovado...",
+  "Analisando padrões de viralização de elite...",
+  "Processando insights exclusivos da IA...",
+  "Identificando gatilhos mentais de alta conversão...",
+  "Calculando métricas de engajamento avançadas...",
+  "Gerando títulos otimizados para máximo impacto...",
+  "Finalizando sua análise profissional...",
 ];
 
 const VideoAnalyzer = () => {
@@ -94,6 +92,7 @@ const VideoAnalyzer = () => {
   const [saveFolder, setSaveFolder] = useState("general");
   const [analyzing, setAnalyzing] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(LOADING_MESSAGES[0]);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
   const [generatedTitles, setGeneratedTitles] = useState<GeneratedTitle[]>([]);
   const [selectedTitles, setSelectedTitles] = useState<string[]>([]);
@@ -147,15 +146,29 @@ const VideoAnalyzer = () => {
     setVideoInfo(null);
     setGeneratedTitles([]);
     setLoadingMessage(LOADING_MESSAGES[0]);
+    setLoadingProgress(0);
     
-    // Rotate loading messages every 3 seconds
-    const messageInterval = setInterval(() => {
-      setLoadingMessage(prev => {
-        const currentIndex = LOADING_MESSAGES.indexOf(prev);
-        const nextIndex = (currentIndex + 1) % LOADING_MESSAGES.length;
-        return LOADING_MESSAGES[nextIndex];
-      });
-    }, 3000);
+    // Animate progress and rotate messages
+    let progressValue = 0;
+    let messageIndex = 0;
+    
+    const progressInterval = setInterval(() => {
+      progressValue += Math.random() * 6 + 2; // Random increment between 2-8
+      if (progressValue > 92) progressValue = 92; // Cap at 92% until complete
+      setLoadingProgress(progressValue);
+      
+      // Update message based on progress
+      const newMessageIndex = Math.min(
+        Math.floor((progressValue / 100) * LOADING_MESSAGES.length),
+        LOADING_MESSAGES.length - 1
+      );
+      if (newMessageIndex !== messageIndex) {
+        messageIndex = newMessageIndex;
+        setLoadingMessage(LOADING_MESSAGES[messageIndex]);
+      }
+    }, 1000);
+    
+    const messageInterval = progressInterval; // Keep reference for cleanup
 
     try {
       // Extract video ID from URL for thumbnail fallback
@@ -369,6 +382,8 @@ const VideoAnalyzer = () => {
       });
     } finally {
       clearInterval(messageInterval);
+      setLoadingProgress(100);
+      setTimeout(() => setLoadingProgress(0), 500);
       setAnalyzing(false);
     }
   };
@@ -690,21 +705,49 @@ const VideoAnalyzer = () => {
                 </div>
               </div>
 
-              {/* Analyze Button */}
-              <Button
-                onClick={handleAnalyze}
-                disabled={analyzing}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-14 text-lg font-semibold"
-              >
-                {analyzing ? (
-                  <div className="flex items-center">
-                    <Loader2 className="w-6 h-6 mr-3 animate-spin" />
-                    <span className="animate-pulse">{loadingMessage}</span>
+              {/* Analyze Button with Progress Bar */}
+              <div className="space-y-3">
+                <Button
+                  onClick={handleAnalyze}
+                  disabled={analyzing}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-14 text-lg font-semibold relative overflow-hidden"
+                >
+                  {analyzing ? (
+                    <div className="flex items-center z-10 relative">
+                      <Loader2 className="w-6 h-6 mr-3 animate-spin" />
+                      <span className="font-medium">{loadingMessage}</span>
+                    </div>
+                  ) : (
+                    "Analisar e Gerar Títulos"
+                  )}
+                  {/* Progress bar overlay */}
+                  {analyzing && (
+                    <div 
+                      className="absolute left-0 top-0 h-full bg-white/10 transition-all duration-300 ease-out"
+                      style={{ width: `${loadingProgress}%` }}
+                    />
+                  )}
+                </Button>
+                
+                {/* Progress indicator with percentage */}
+                {analyzing && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Analisando vídeo viral...</span>
+                      <span className="text-primary font-semibold">{Math.round(loadingProgress)}%</span>
+                    </div>
+                    <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-primary via-primary to-amber-400 rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${loadingProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-center text-muted-foreground italic">
+                      Nossa IA está extraindo os segredos do sucesso viral deste vídeo
+                    </p>
                   </div>
-                ) : (
-                  "Analisar e Gerar Títulos"
                 )}
-              </Button>
+              </div>
             </div>
           </Card>
 
