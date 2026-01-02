@@ -41,6 +41,7 @@ import { ParticleBackground } from "@/components/landing/ParticleBackground";
 import { GlassCard } from "@/components/landing/GlassCard";
 import { AdSenseCard } from "@/components/landing/AdSenseCard";
 import FloatingElements from "@/components/landing/FloatingElements";
+import { Tool3DCard } from "@/components/landing/Tool3DCard";
 import logo from "@/assets/logo.gif";
 
 // Dream images
@@ -458,18 +459,14 @@ const Landing = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tools.map((tool, index) => (
               <AnimatedItem key={index} index={index} staggerDelay={50}>
-                <Card className={`p-6 bg-card border-border hover:border-primary/30 transition-all duration-300 relative ${index === 5 ? 'ring-1 ring-primary/50 bg-primary/5' : ''}`}>
-                  {tool.badge && (
-                    <span className="absolute top-4 right-4 px-3 py-1 rounded text-sm bg-red-500 text-white font-medium">
-                      {tool.badge}
-                    </span>
-                  )}
-                  <div className={`w-14 h-14 rounded-xl ${tool.color} flex items-center justify-center mb-4`}>
-                    <tool.icon className="w-7 h-7 text-white" />
-                  </div>
-                  <h3 className="font-bold text-lg mb-2">{tool.title}</h3>
-                  <p className="text-base text-muted-foreground">{tool.desc}</p>
-                </Card>
+                <Tool3DCard
+                  icon={tool.icon}
+                  title={tool.title}
+                  desc={tool.desc}
+                  badge={tool.badge}
+                  color={tool.color}
+                  isHighlighted={index === 5}
+                />
               </AnimatedItem>
             ))}
           </div>
