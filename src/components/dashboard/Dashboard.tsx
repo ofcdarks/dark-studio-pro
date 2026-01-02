@@ -1,6 +1,7 @@
-import { Video, Eye, DollarSign, Coins, HardDrive, TrendingUp } from "lucide-react";
+import { Video, Eye, MessageCircle, Coins, HardDrive, TrendingUp, FileText, Image, Mic, Type } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { StatsCard } from "./StatsCard";
 import { MetricsCard } from "./MetricsCard";
 import { DirectivesCard } from "./DirectivesCard";
@@ -11,10 +12,13 @@ import { OperationalLogsCard } from "./OperationalLogsCard";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export function Dashboard() {
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { stats, recentVideos, activityLogs, loading } = useDashboardData();
+  const navigate = useNavigate();
 
   const displayName = profile?.full_name || user?.email?.split("@")[0] || "Usuário";
   const credits = profile?.credits ?? 0;
@@ -25,25 +29,23 @@ export function Dashboard() {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0.1,
-      },
+      transition: { staggerChildren: 0.08, delayChildren: 0.1 },
     },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.4 }
-    },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  };
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
   };
 
   return (
     <div className="flex-1 overflow-auto bg-background relative">
-      {/* Subtle background effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <motion.div 
           className="absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl"
@@ -51,148 +53,64 @@ export function Dashboard() {
           animate={{ x: [0, 30, 0], y: [0, 20, 0] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
         />
-        <motion.div 
-          className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.02) 0%, transparent 60%)' }}
-          animate={{ x: [0, -20, 0], y: [0, -15, 0] }}
-          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-        />
       </div>
 
       <div className="p-6 lg:p-8 max-w-7xl mx-auto relative z-10">
-        {/* Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-10"
-        >
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-10">
           <div className="flex items-center gap-3 mb-2">
-            <motion.div 
-              className="w-2 h-2 rounded-full bg-primary"
-              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
+            <motion.div className="w-2 h-2 rounded-full bg-primary" animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }} transition={{ duration: 2, repeat: Infinity }} />
             <span className="text-xs font-medium text-primary uppercase tracking-wider">Painel de Controle</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
             Bem-vindo, <span className="text-primary">{displayName}</span>
           </h1>
-          <p className="text-muted-foreground">
-            Visão geral da sua execução ativa
-          </p>
+          <p className="text-muted-foreground">Visão geral da sua execução ativa</p>
         </motion.div>
 
-        {/* Stats Grid */}
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10"
-        >
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
           <motion.div variants={itemVariants}>
-            <StatsCard
-              icon={Video}
-              label="Total de Vídeos"
-              value={0}
-              subLabel="SEM DADOS"
-            />
+            <StatsCard icon={Video} label="Vídeos Analisados" value={stats.totalVideos} subLabel={stats.totalVideos > 0 ? "ATIVO" : "INÍCIO"} />
           </motion.div>
           <motion.div variants={itemVariants}>
-            <StatsCard
-              icon={Eye}
-              label="Total de Views"
-              value="0"
-              subLabel="SEM DADOS"
-            />
+            <StatsCard icon={Eye} label="Views Totais" value={formatNumber(stats.totalViews)} subLabel={stats.totalViews > 0 ? "ANALISADOS" : "SEM DADOS"} />
           </motion.div>
           <motion.div variants={itemVariants}>
-            <StatsCard
-              icon={DollarSign}
-              label="Receita Total"
-              value="$0"
-              subLabel="SEM DADOS"
-            />
+            <StatsCard icon={Type} label="Títulos Gerados" value={stats.titlesGenerated} subLabel={stats.titlesGenerated > 0 ? "CRIADOS" : "INÍCIO"} />
           </motion.div>
           <motion.div variants={itemVariants}>
-            <StatsCard
-              icon={Coins}
-              label="Créditos Disponíveis"
-              value={credits.toLocaleString()}
-              status="active"
-              action={
-                <Button size="sm" className="w-full gradient-button text-primary-foreground text-xs">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  Rebalancear
-                </Button>
-              }
-            />
+            <StatsCard icon={Coins} label="Créditos" value={credits.toLocaleString()} status="active" action={
+              <Button size="sm" onClick={() => navigate('/plans')} className="w-full gradient-button text-primary-foreground text-xs">
+                <Sparkles className="w-3 h-3 mr-1" />Rebalancear
+              </Button>
+            } />
           </motion.div>
           <motion.div variants={itemVariants}>
-            <StatsCard
-              icon={HardDrive}
-              label="Armazenamento"
-              value={`${storageUsed.toFixed(1)} GB`}
-              progress={{ value: storageUsed, max: storageLimit }}
-            />
+            <StatsCard icon={HardDrive} label="Armazenamento" value={`${storageUsed.toFixed(1)} GB`} progress={{ value: storageUsed, max: storageLimit }} />
           </motion.div>
           <motion.div variants={itemVariants}>
-            <StatsCard
-              icon={TrendingUp}
-              label="Vídeos Virais"
-              value={0}
-            />
+            <StatsCard icon={TrendingUp} label="Vídeos Virais" value={stats.viralVideos} subLabel="100K+ views" />
           </motion.div>
         </motion.div>
 
-        {/* Main Content Grid */}
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
-        >
-          {/* Left Column */}
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Metrics */}
             <motion.div variants={itemVariants}>
-              <MetricsCard
-                title="Métricas de Performance"
-                metrics={[
-                  { label: "CTR Médio", value: "0.0%" },
-                  { label: "Total de Likes", value: "0" },
-                  { label: "Total de Comentários", value: "0" },
-                  { label: "RPM Médio", value: "$0.00" },
-                ]}
-              />
+              <MetricsCard title="Produção de Conteúdo" metrics={[
+                { label: "Roteiros Gerados", value: stats.scriptsGenerated },
+                { label: "Imagens Criadas", value: stats.imagesGenerated },
+                { label: "Áudios Gerados", value: stats.audiosGenerated },
+                { label: "Total Comentários", value: formatNumber(stats.totalComments) },
+              ]} />
             </motion.div>
-
-            {/* Directives and Next Steps */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <motion.div variants={itemVariants}>
-                <DirectivesCard />
-              </motion.div>
-              <motion.div variants={itemVariants}>
-                <NextStepsCard />
-              </motion.div>
+              <motion.div variants={itemVariants}><DirectivesCard videosCount={stats.totalVideos} /></motion.div>
+              <motion.div variants={itemVariants}><NextStepsCard stats={stats} /></motion.div>
             </div>
-
-            {/* Daily Quote */}
-            <motion.div variants={itemVariants}>
-              <DailyQuoteCard />
-            </motion.div>
-
-            {/* Recent Videos */}
-            <motion.div variants={itemVariants}>
-              <RecentVideosCard />
-            </motion.div>
+            <motion.div variants={itemVariants}><DailyQuoteCard /></motion.div>
+            <motion.div variants={itemVariants}><RecentVideosCard videos={recentVideos} /></motion.div>
           </div>
-
-          {/* Right Column */}
           <div className="space-y-6">
-            <motion.div variants={itemVariants}>
-              <OperationalLogsCard />
-            </motion.div>
+            <motion.div variants={itemVariants}><OperationalLogsCard logs={activityLogs} /></motion.div>
           </div>
         </motion.div>
       </div>
