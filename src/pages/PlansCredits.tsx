@@ -323,38 +323,81 @@ export default function PlansCredits() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.1 }}
-                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                  whileHover={{ 
+                    y: -8, 
+                    scale: 1.02,
+                    transition: { duration: 0.3, ease: "easeOut" } 
+                  }}
+                  className="group perspective-1000"
                 >
                   <Card 
-                    className={`relative overflow-hidden h-full backdrop-blur-sm ${
+                    className={`relative overflow-hidden h-full backdrop-blur-sm transition-all duration-500 ${
                       plan.highlighted 
-                        ? "border-2 border-primary bg-card/80 shadow-xl shadow-primary/20" 
-                        : "border-border/50 bg-card/60"
+                        ? "border-2 border-primary bg-card/80 shadow-xl shadow-primary/20 group-hover:shadow-2xl group-hover:shadow-primary/40" 
+                        : "border-border/50 bg-card/60 group-hover:border-primary/50 group-hover:shadow-xl group-hover:shadow-primary/10"
                     }`}
                   >
+                    {/* Animated glow effect on hover */}
+                    <motion.div 
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                      style={{
+                        background: 'radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.15) 0%, transparent 60%)',
+                      }}
+                    />
+                    
+                    {/* Shimmer effect */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none overflow-hidden">
+                      <motion.div
+                        className="absolute inset-0 -translate-x-full"
+                        animate={{ x: ['-100%', '200%'] }}
+                        transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2 }}
+                        style={{
+                          background: 'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent)',
+                          width: '50%',
+                        }}
+                      />
+                    </div>
+
                     {plan.highlighted && (
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-yellow-400 to-primary" />
+                      <>
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-yellow-400 to-primary" />
+                        {/* Pulsing glow for highlighted card */}
+                        <motion.div 
+                          className="absolute -inset-[1px] rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none -z-10"
+                          style={{ background: 'linear-gradient(135deg, hsl(var(--primary) / 0.3), transparent, hsl(var(--primary) / 0.3))' }}
+                          animate={{ opacity: [0.3, 0.6, 0.3] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        />
+                      </>
                     )}
                     {plan.badge && (
-                      <div className="absolute top-3 right-3">
+                      <motion.div 
+                        className="absolute top-3 right-3"
+                        whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
+                        transition={{ duration: 0.3 }}
+                      >
                         <Badge className={`${plan.badge === "POPULAR" ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"} text-xs`}>
                           {plan.badge}
                         </Badge>
-                      </div>
+                      </motion.div>
                     )}
-                    <CardContent className="pt-8 pb-6 space-y-5">
+                    <CardContent className="pt-8 pb-6 space-y-5 relative z-10">
                       <div className="space-y-3">
-                        <h3 className="font-bold text-lg text-foreground">{plan.name}</h3>
-                        <Badge className={`${plan.highlighted ? "bg-primary/20 text-primary border-primary/30" : "bg-secondary text-secondary-foreground"}`}>
-                          <Zap className="w-3 h-3 mr-1" />
+                        <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors duration-300">{plan.name}</h3>
+                        <Badge className={`transition-all duration-300 ${plan.highlighted ? "bg-primary/20 text-primary border-primary/30 group-hover:bg-primary/30" : "bg-secondary text-secondary-foreground group-hover:bg-primary/20 group-hover:text-primary"}`}>
+                          <Zap className="w-3 h-3 mr-1 group-hover:animate-pulse" />
                           {plan.credits.toLocaleString()} créditos/mês
                         </Badge>
-                        <div className="flex items-baseline gap-2">
+                        <motion.div 
+                          className="flex items-baseline gap-2"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.2 }}
+                        >
                           <span className="text-3xl font-black text-foreground">
                             R${plan.price.toFixed(2).replace(".", ",")}
                           </span>
                           <span className="text-sm text-muted-foreground">/mês</span>
-                        </div>
+                        </motion.div>
                         {plan.originalPrice && (
                           <span className="text-sm text-muted-foreground line-through">
                             R${plan.originalPrice.toFixed(2).replace(".", ",")}
@@ -364,26 +407,37 @@ export default function PlansCredits() {
 
                       <ul className="space-y-2 text-sm">
                         {plan.features.map((feature, fIdx) => (
-                          <li key={fIdx} className="flex items-start gap-2">
+                          <motion.li 
+                            key={fIdx} 
+                            className="flex items-start gap-2"
+                            initial={{ opacity: 1, x: 0 }}
+                            whileHover={{ x: 4 }}
+                            transition={{ duration: 0.2 }}
+                          >
                             {feature.included ? (
-                              <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                              <Check className="w-4 h-4 text-primary shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-200" />
                             ) : (
                               <X className="w-4 h-4 text-muted-foreground/50 shrink-0 mt-0.5" />
                             )}
-                            <span className={feature.included ? "text-muted-foreground" : "text-muted-foreground/50"}>
+                            <span className={`transition-colors duration-200 ${feature.included ? "text-muted-foreground group-hover:text-foreground" : "text-muted-foreground/50"}`}>
                               {feature.label}
                             </span>
-                          </li>
+                          </motion.li>
                         ))}
                       </ul>
 
-                      <Button 
-                        className={`w-full ${plan.highlighted ? "gradient-button text-primary-foreground" : ""}`}
-                        variant={plan.highlighted ? "default" : "outline"}
+                      <motion.div
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        {plan.buttonLabel}
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Button>
+                        <Button 
+                          className={`w-full transition-all duration-300 ${plan.highlighted ? "gradient-button text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/30" : "group-hover:border-primary group-hover:text-primary group-hover:bg-primary/10"}`}
+                          variant={plan.highlighted ? "default" : "outline"}
+                        >
+                          {plan.buttonLabel}
+                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+                        </Button>
+                      </motion.div>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -419,65 +473,122 @@ export default function PlansCredits() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.1 }}
-                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                  whileHover={{ 
+                    y: -8, 
+                    scale: 1.02,
+                    transition: { duration: 0.3, ease: "easeOut" } 
+                  }}
+                  className="group perspective-1000"
                 >
                   <Card 
-                    className={`relative overflow-hidden h-full backdrop-blur-sm ${
+                    className={`relative overflow-hidden h-full backdrop-blur-sm transition-all duration-500 ${
                       plan.highlighted 
-                        ? "border-2 border-primary bg-card/80 shadow-xl shadow-primary/20" 
-                        : "border-border/50 bg-card/60"
+                        ? "border-2 border-primary bg-card/80 shadow-xl shadow-primary/20 group-hover:shadow-2xl group-hover:shadow-primary/40" 
+                        : "border-border/50 bg-card/60 group-hover:border-primary/50 group-hover:shadow-xl group-hover:shadow-primary/10"
                     }`}
                   >
+                    {/* Animated glow effect on hover */}
+                    <motion.div 
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                      style={{
+                        background: 'radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.15) 0%, transparent 60%)',
+                      }}
+                    />
+                    
+                    {/* Shimmer effect */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none overflow-hidden">
+                      <motion.div
+                        className="absolute inset-0 -translate-x-full"
+                        animate={{ x: ['-100%', '200%'] }}
+                        transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2 }}
+                        style={{
+                          background: 'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent)',
+                          width: '50%',
+                        }}
+                      />
+                    </div>
+
                     {plan.highlighted && (
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-yellow-400 to-primary" />
+                      <>
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-yellow-400 to-primary" />
+                        {/* Pulsing glow for highlighted card */}
+                        <motion.div 
+                          className="absolute -inset-[1px] rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none -z-10"
+                          style={{ background: 'linear-gradient(135deg, hsl(var(--primary) / 0.3), transparent, hsl(var(--primary) / 0.3))' }}
+                          animate={{ opacity: [0.3, 0.6, 0.3] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        />
+                      </>
                     )}
                     {plan.badge && (
-                      <div className="absolute top-3 right-3">
+                      <motion.div 
+                        className="absolute top-3 right-3"
+                        whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
+                        transition={{ duration: 0.3 }}
+                      >
                         <Badge className={`${plan.badge === "MAIS VENDIDO" ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"} text-xs`}>
                           {plan.badge}
                         </Badge>
-                      </div>
+                      </motion.div>
                     )}
-                    <CardContent className="pt-8 pb-6 space-y-5">
+                    <CardContent className="pt-8 pb-6 space-y-5 relative z-10">
                       <div className="space-y-3">
-                        <h3 className="font-bold text-lg text-foreground">{plan.name}</h3>
-                        <Badge className={`${plan.highlighted ? "bg-primary/20 text-primary border-primary/30" : "bg-secondary text-secondary-foreground"}`}>
-                          <Zap className="w-3 h-3 mr-1" />
+                        <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors duration-300">{plan.name}</h3>
+                        <Badge className={`transition-all duration-300 ${plan.highlighted ? "bg-primary/20 text-primary border-primary/30 group-hover:bg-primary/30" : "bg-secondary text-secondary-foreground group-hover:bg-primary/20 group-hover:text-primary"}`}>
+                          <Zap className="w-3 h-3 mr-1 group-hover:animate-pulse" />
                           {plan.credits.toLocaleString()} créditos/ano
                         </Badge>
-                        <div className="flex items-baseline gap-2">
+                        <motion.div 
+                          className="flex items-baseline gap-2"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.2 }}
+                        >
                           <span className="text-3xl font-black text-foreground">
                             R${plan.price.toFixed(2).replace(".", ",")}
                           </span>
                           <span className="text-sm text-muted-foreground">/ano</span>
-                        </div>
+                        </motion.div>
                         <div className="flex flex-col gap-1">
                           <span className="text-sm text-muted-foreground line-through">
                             R${plan.originalPrice.toFixed(2).replace(".", ",")}
                           </span>
-                          <div className="flex items-center gap-1 text-sm text-success font-semibold">
-                            <Sparkles className="w-3 h-3" />
+                          <motion.div 
+                            className="flex items-center gap-1 text-sm text-success font-semibold"
+                            whileHover={{ scale: 1.05 }}
+                          >
+                            <Sparkles className="w-3 h-3 group-hover:animate-spin" />
                             Economia de R$ {plan.savings.toFixed(0)}/ano
-                          </div>
+                          </motion.div>
                         </div>
                       </div>
 
                       <ul className="space-y-2 text-sm">
                         {plan.features.map((feature, fIdx) => (
-                          <li key={fIdx} className="flex items-start gap-2">
-                            <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                            <span className="text-muted-foreground">{feature}</span>
-                          </li>
+                          <motion.li 
+                            key={fIdx} 
+                            className="flex items-start gap-2"
+                            initial={{ opacity: 1, x: 0 }}
+                            whileHover={{ x: 4 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Check className="w-4 h-4 text-primary shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-200" />
+                            <span className="text-muted-foreground group-hover:text-foreground transition-colors duration-200">{feature}</span>
+                          </motion.li>
                         ))}
                       </ul>
 
-                      <Button 
-                        className={`w-full ${plan.highlighted ? "gradient-button text-primary-foreground" : ""}`}
-                        variant={plan.highlighted ? "default" : "outline"}
+                      <motion.div
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        {plan.buttonLabel}
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Button>
+                        <Button 
+                          className={`w-full transition-all duration-300 ${plan.highlighted ? "gradient-button text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/30" : "group-hover:border-primary group-hover:text-primary group-hover:bg-primary/10"}`}
+                          variant={plan.highlighted ? "default" : "outline"}
+                        >
+                          {plan.buttonLabel}
+                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+                        </Button>
+                      </motion.div>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -508,25 +619,50 @@ export default function PlansCredits() {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.05 }}
-                  whileHover={{ scale: 1.03 }}
+                  whileHover={{ 
+                    scale: 1.05,
+                    y: -5,
+                    transition: { duration: 0.25, ease: "easeOut" }
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group cursor-pointer"
                 >
                   <Card 
-                    className={`text-center backdrop-blur-sm ${idx === 4 ? "border-2 border-primary bg-card/80 shadow-lg shadow-primary/20" : "border-border/50 bg-card/60"}`}
+                    className={`text-center backdrop-blur-sm transition-all duration-400 ${idx === 4 ? "border-2 border-primary bg-card/80 shadow-lg shadow-primary/20 group-hover:shadow-2xl group-hover:shadow-primary/40" : "border-border/50 bg-card/60 group-hover:border-primary/50 group-hover:shadow-lg group-hover:shadow-primary/10"}`}
                   >
-                    <CardContent className="pt-6 pb-4 space-y-3">
-                      <div className="flex items-center justify-center gap-1">
-                        <Zap className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-bold text-foreground">
+                    {/* Hover glow */}
+                    <motion.div 
+                      className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-400 pointer-events-none"
+                      style={{
+                        background: 'radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.1) 0%, transparent 70%)',
+                      }}
+                    />
+                    
+                    <CardContent className="pt-6 pb-4 space-y-3 relative z-10">
+                      <motion.div 
+                        className="flex items-center justify-center gap-1"
+                        whileHover={{ scale: 1.1 }}
+                      >
+                        <Zap className="w-4 h-4 text-primary group-hover:animate-pulse" />
+                        <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors duration-200">
                           {pkg.credits.toLocaleString()}
                         </span>
-                      </div>
-                      <div className="text-2xl font-black text-foreground">
+                      </motion.div>
+                      <motion.div 
+                        className="text-2xl font-black text-foreground"
+                        whileHover={{ scale: 1.05 }}
+                      >
                         R$ {pkg.price.toFixed(2).replace(".", ",")}
-                      </div>
-                      <p className="text-xs text-muted-foreground">{pkg.label}</p>
-                      <Button variant="outline" size="sm" className="w-full text-xs border-primary/30 hover:bg-primary/10 hover:text-primary">
-                        ALOCAR
-                      </Button>
+                      </motion.div>
+                      <p className="text-xs text-muted-foreground group-hover:text-foreground/70 transition-colors duration-200">{pkg.label}</p>
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Button variant="outline" size="sm" className="w-full text-xs border-primary/30 transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary">
+                          ALOCAR
+                        </Button>
+                      </motion.div>
                     </CardContent>
                   </Card>
                 </motion.div>
