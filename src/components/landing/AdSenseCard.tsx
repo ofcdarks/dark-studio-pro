@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Check } from "lucide-react";
@@ -30,8 +30,12 @@ const paymentAmounts = [
 ];
 
 export const AdSenseCard = () => {
+  const cardRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [rotateX, setRotateX] = useState(0);
+  const [rotateY, setRotateY] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -48,141 +52,259 @@ export const AdSenseCard = () => {
     return () => clearInterval(dateInterval);
   }, []);
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    
+    const rect = cardRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const mouseX = e.clientX - centerX;
+    const mouseY = e.clientY - centerY;
+    
+    const rotateXValue = (mouseY / (rect.height / 2)) * -8;
+    const rotateYValue = (mouseX / (rect.width / 2)) * 8;
+    
+    setRotateX(rotateXValue);
+    setRotateY(rotateYValue);
+  };
+
+  const handleMouseLeave = () => {
+    setRotateX(0);
+    setRotateY(0);
+    setIsHovered(false);
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
   const current = paymentAmounts[currentIndex];
   
   // Format date in Portuguese
   const formattedDate = format(currentDate, "d 'de' MMMM, yyyy", { locale: ptBR });
 
   return (
-    <Card className="p-0 bg-card border-border overflow-hidden max-w-md mx-auto shadow-2xl">
-      {/* Header - Blue like reference */}
-      <div className="bg-gradient-to-r from-[#1a73e8] to-[#1557b0] p-5 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-xl bg-white p-1 flex items-center justify-center overflow-hidden shadow-lg">
-            <AdSenseLogo />
-          </div>
-          <div>
-            <p className="font-bold text-white text-lg tracking-tight">Google AdSense</p>
-            <p className="text-sm text-white/80">Pagamento processado</p>
-          </div>
-        </div>
-        <span className="px-4 py-1.5 rounded-full text-xs bg-green-500/30 text-green-100 flex items-center gap-2 backdrop-blur-sm border border-green-400/30">
-          <motion.div 
-            className="w-2 h-2 rounded-full bg-green-400"
-            animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
+    <motion.div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        transformStyle: "preserve-3d",
+        perspective: "1000px",
+      }}
+      animate={{
+        rotateX,
+        rotateY,
+        scale: isHovered ? 1.02 : 1,
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 300,
+        damping: 20,
+      }}
+      className="relative max-w-md mx-auto"
+    >
+      {/* Glow effect */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-br from-blue-500/30 to-primary/20 opacity-0 rounded-2xl blur-2xl -z-10"
+        animate={{
+          opacity: isHovered ? 0.5 : 0,
+          scale: isHovered ? 1.1 : 1,
+        }}
+        transition={{ duration: 0.3 }}
+      />
+
+      <Card 
+        className="p-0 bg-card border-border overflow-hidden shadow-2xl rounded-2xl"
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        {/* Shimmer overlay on hover */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent z-20 pointer-events-none"
+          initial={{ x: "-100%" }}
+          animate={{ x: isHovered ? "100%" : "-100%" }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
+        />
+
+        {/* Header - Blue like reference */}
+        <motion.div 
+          className="bg-gradient-to-r from-[#1a73e8] to-[#1557b0] p-5 flex items-center justify-between relative overflow-hidden"
+          style={{ transform: "translateZ(10px)" }}
+        >
+          {/* Header shimmer */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+            animate={{
+              x: isHovered ? ["0%", "100%"] : "0%",
+            }}
+            transition={{ duration: 1, ease: "easeInOut" }}
           />
-          Ativo
-        </span>
-      </div>
 
-      {/* Content */}
-      <div className="p-6 space-y-6">
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">Pagamento Recebido</p>
-          <AnimatePresence mode="wait">
-            <motion.p 
-              key={current.amount}
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              transition={{ duration: 0.5 }}
-              className="text-5xl font-bold mt-2"
+          <div className="flex items-center gap-4 relative z-10">
+            <motion.div 
+              className="w-14 h-14 rounded-xl bg-white p-1 flex items-center justify-center overflow-hidden shadow-lg"
+              animate={{
+                scale: isHovered ? 1.1 : 1,
+                rotate: isHovered ? 5 : 0,
+              }}
+              transition={{ duration: 0.3 }}
+              style={{ transform: "translateZ(20px)" }}
             >
-              <span className="text-muted-foreground text-2xl">$</span>
-              {current.amount}
-            </motion.p>
-          </AnimatePresence>
-          <motion.p 
-            className="text-sm text-muted-foreground mt-2"
-            key={formattedDate}
+              <AdSenseLogo />
+            </motion.div>
+            <div>
+              <p className="font-bold text-white text-lg tracking-tight">Google AdSense</p>
+              <p className="text-sm text-white/80">Pagamento processado</p>
+            </div>
+          </div>
+          <motion.span 
+            className="px-4 py-1.5 rounded-full text-xs bg-green-500/30 text-green-100 flex items-center gap-2 backdrop-blur-sm border border-green-400/30 relative z-10"
+            animate={{
+              scale: isHovered ? 1.05 : 1,
+            }}
+            transition={{ duration: 0.2 }}
           >
-            USD · {formattedDate}
-          </motion.p>
-        </div>
+            <motion.div 
+              className="w-2 h-2 rounded-full bg-green-400"
+              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+            Ativo
+          </motion.span>
+        </motion.div>
 
-        <div className="space-y-3 border-t border-border pt-5">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Método de pagamento</span>
-            <span className="font-medium">Transferência bancária</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Conta</span>
-            <span className="font-medium">****4892</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Status</span>
-            <span className="text-green-500 flex items-center gap-1.5 font-medium">
-              <Check className="w-4 h-4" />
-              Concluído
-            </span>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 border-t border-border pt-5">
+        {/* Content */}
+        <motion.div 
+          className="p-6 space-y-6 relative"
+          style={{ transform: "translateZ(5px)" }}
+        >
           <div className="text-center">
+            <p className="text-sm text-muted-foreground">Pagamento Recebido</p>
             <AnimatePresence mode="wait">
               <motion.p 
-                key={current.impressions}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="text-2xl font-bold"
+                key={current.amount}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ duration: 0.5 }}
+                className="text-5xl font-bold mt-2"
+                style={{ transform: "translateZ(15px)" }}
               >
-                {current.impressions}
+                <span className="text-muted-foreground text-2xl">$</span>
+                {current.amount}
               </motion.p>
             </AnimatePresence>
-            <p className="text-xs text-muted-foreground">Impressões</p>
+            <motion.p 
+              className="text-sm text-muted-foreground mt-2"
+              key={formattedDate}
+            >
+              USD · {formattedDate}
+            </motion.p>
           </div>
-          <div className="text-center border-x border-border">
-            <AnimatePresence mode="wait">
-              <motion.p 
-                key={current.rpm}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="text-2xl font-bold text-blue-500"
-              >
-                ${current.rpm}
-              </motion.p>
-            </AnimatePresence>
-            <p className="text-xs text-muted-foreground">RPM</p>
-          </div>
-          <div className="text-center">
-            <AnimatePresence mode="wait">
-              <motion.p 
-                key={current.growth}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="text-2xl font-bold text-green-500"
-              >
-                +{current.growth}%
-              </motion.p>
-            </AnimatePresence>
-            <p className="text-xs text-muted-foreground">vs mês anterior</p>
-          </div>
-        </div>
 
-        {/* Next Payment */}
-        <div className="bg-muted/30 rounded-xl p-4 text-center border border-border">
-          <p className="text-sm text-muted-foreground">
-            Próximo pagamento estimado:{" "}
-            <AnimatePresence mode="wait">
-              <motion.span 
-                key={current.next}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-foreground font-bold text-lg"
-              >
-                ${current.next}
-              </motion.span>
-            </AnimatePresence>
-          </p>
-        </div>
-      </div>
-    </Card>
+          <div className="space-y-3 border-t border-border pt-5">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Método de pagamento</span>
+              <span className="font-medium">Transferência bancária</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Conta</span>
+              <span className="font-medium">****4892</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Status</span>
+              <span className="text-green-500 flex items-center gap-1.5 font-medium">
+                <Check className="w-4 h-4" />
+                Concluído
+              </span>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 border-t border-border pt-5">
+            <div className="text-center">
+              <AnimatePresence mode="wait">
+                <motion.p 
+                  key={current.impressions}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="text-2xl font-bold"
+                >
+                  {current.impressions}
+                </motion.p>
+              </AnimatePresence>
+              <p className="text-xs text-muted-foreground">Impressões</p>
+            </div>
+            <div className="text-center border-x border-border">
+              <AnimatePresence mode="wait">
+                <motion.p 
+                  key={current.rpm}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="text-2xl font-bold text-blue-500"
+                >
+                  ${current.rpm}
+                </motion.p>
+              </AnimatePresence>
+              <p className="text-xs text-muted-foreground">RPM</p>
+            </div>
+            <div className="text-center">
+              <AnimatePresence mode="wait">
+                <motion.p 
+                  key={current.growth}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="text-2xl font-bold text-green-500"
+                >
+                  +{current.growth}%
+                </motion.p>
+              </AnimatePresence>
+              <p className="text-xs text-muted-foreground">vs mês anterior</p>
+            </div>
+          </div>
+
+          {/* Next Payment */}
+          <motion.div 
+            className="bg-muted/30 rounded-xl p-4 text-center border border-border"
+            animate={{
+              borderColor: isHovered ? "hsl(38, 92%, 50%, 0.3)" : "hsl(var(--border))",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <p className="text-sm text-muted-foreground">
+              Próximo pagamento estimado:{" "}
+              <AnimatePresence mode="wait">
+                <motion.span 
+                  key={current.next}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-foreground font-bold text-lg"
+                >
+                  ${current.next}
+                </motion.span>
+              </AnimatePresence>
+            </p>
+          </motion.div>
+        </motion.div>
+
+        {/* Bottom gradient line on hover */}
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-primary to-blue-500"
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ 
+            scaleX: isHovered ? 1 : 0,
+            opacity: isHovered ? 1 : 0,
+          }}
+          transition={{ duration: 0.3 }}
+          style={{ transformOrigin: "left" }}
+        />
+      </Card>
+    </motion.div>
   );
 };
