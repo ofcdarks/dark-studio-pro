@@ -50,6 +50,7 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  Youtube,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,6 +64,7 @@ import { AdminPaymentsTab } from "@/components/admin/AdminPaymentsTab";
 import { AdminSubscriptionsTab } from "@/components/admin/AdminSubscriptionsTab";
 import { AdminStorageTab } from "@/components/admin/AdminStorageTab";
 import { AdminNotificationsTab } from "@/components/admin/AdminNotificationsTab";
+import { AdminVideoTab } from "@/components/admin/AdminVideoTab";
 
 interface AdminStats {
   totalUsers: number;
@@ -439,6 +441,10 @@ const AdminPanel = () => {
                 <Settings className="w-4 h-4" />
                 Permissões de Planos
               </TabsTrigger>
+              <TabsTrigger value="video" className="flex items-center gap-2">
+                <Youtube className="w-4 h-4" />
+                Vídeo Landing
+              </TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -720,6 +726,10 @@ const AdminPanel = () => {
 
             <TabsContent value="permissions">
               <AdminPermissionsTab />
+            </TabsContent>
+
+            <TabsContent value="video">
+              <AdminVideoTab />
             </TabsContent>
           </Tabs>
         </div>

@@ -1,10 +1,36 @@
 import { motion } from "framer-motion";
-import { Play, Zap, Sparkles, ArrowRight } from "lucide-react";
+import { Play, Zap, Sparkles, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const VideoShowcaseSection = () => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [videoId, setVideoId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchVideoUrl = async () => {
+      try {
+        const { data } = await supabase
+          .from("admin_settings")
+          .select("value")
+          .eq("key", "landing_video_url")
+          .maybeSingle();
+
+        if (data) {
+          const videoData = data.value as { videoId?: string };
+          setVideoId(videoData?.videoId || null);
+        }
+      } catch (error) {
+        console.error("Error fetching video:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVideoUrl();
+  }, []);
 
   return (
     <section id="demo" className="py-24 relative overflow-hidden">
@@ -153,66 +179,83 @@ const VideoShowcaseSection = () => {
             
             {/* Video placeholder - replace with actual video */}
             <div className="relative aspect-video bg-gradient-to-br from-card via-background to-card flex items-center justify-center">
-              {!isPlaying ? (
-                <>
-                  {/* Thumbnail overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
-                  
-                  {/* Animated background pattern */}
-                  <div className="absolute inset-0 opacity-10">
-                    <div className="absolute inset-0" style={{
-                      backgroundImage: `radial-gradient(circle at 2px 2px, hsl(var(--primary)) 1px, transparent 1px)`,
-                      backgroundSize: '40px 40px'
-                    }} />
-                  </div>
-                  
-                  {/* Play button */}
-                  <motion.button
-                    onClick={() => setIsPlaying(true)}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="relative z-10 group"
-                  >
-                    <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl group-hover:blur-2xl transition-all" />
-                    <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-primary via-orange-500 to-yellow-500 flex items-center justify-center shadow-2xl shadow-primary/50 group-hover:shadow-primary/70 transition-all">
-                      <Play className="w-10 h-10 sm:w-14 sm:h-14 text-white fill-white ml-2" />
-                    </div>
-                    {/* Ripple effect */}
-                    <motion.div
-                      className="absolute inset-0 rounded-full border-2 border-primary/50"
-                      animate={{ scale: [1, 1.5, 1.5], opacity: [0.5, 0, 0] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
-                    <motion.div
-                      className="absolute inset-0 rounded-full border-2 border-primary/30"
-                      animate={{ scale: [1, 1.8, 1.8], opacity: [0.3, 0, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
-                    />
-                  </motion.button>
-                  
-                  {/* Video info overlay */}
-                  <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-primary font-bold mb-1">DEMONSTRAÇÃO COMPLETA</p>
-                      <p className="text-xs text-muted-foreground">Duração: 5 minutos</p>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Zap className="w-4 h-4 text-primary" />
-                      <span>Tour pelas funcionalidades</span>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                /* Embed your video here - example with iframe placeholder */
-                <div className="w-full h-full flex items-center justify-center bg-black text-muted-foreground">
-                  <p className="text-center">
-                    <span className="block text-2xl mb-2">🎬</span>
-                    Seu vídeo será reproduzido aqui
-                    <br />
-                    <span className="text-xs">(Substitua pelo embed do seu vídeo)</span>
-                  </p>
-                </div>
-              )}
+                  {!isPlaying ? (
+                    <>
+                      {/* Thumbnail overlay - show YouTube thumbnail if available */}
+                      {videoId && (
+                        <img 
+                          src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+                          alt="Video thumbnail"
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
+                      
+                      {/* Animated background pattern */}
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute inset-0" style={{
+                          backgroundImage: `radial-gradient(circle at 2px 2px, hsl(var(--primary)) 1px, transparent 1px)`,
+                          backgroundSize: '40px 40px'
+                        }} />
+                      </div>
+                      
+                      {/* Play button */}
+                      <motion.button
+                        onClick={() => setIsPlaying(true)}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="relative z-10 group"
+                      >
+                        <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl group-hover:blur-2xl transition-all" />
+                        <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-primary via-orange-500 to-yellow-500 flex items-center justify-center shadow-2xl shadow-primary/50 group-hover:shadow-primary/70 transition-all">
+                          <Play className="w-10 h-10 sm:w-14 sm:h-14 text-white fill-white ml-2" />
+                        </div>
+                        {/* Ripple effect */}
+                        <motion.div
+                          className="absolute inset-0 rounded-full border-2 border-primary/50"
+                          animate={{ scale: [1, 1.5, 1.5], opacity: [0.5, 0, 0] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        />
+                        <motion.div
+                          className="absolute inset-0 rounded-full border-2 border-primary/30"
+                          animate={{ scale: [1, 1.8, 1.8], opacity: [0.3, 0, 0] }}
+                          transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
+                        />
+                      </motion.button>
+                      
+                      {/* Video info overlay */}
+                      <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-primary font-bold mb-1">DEMONSTRAÇÃO COMPLETA</p>
+                          <p className="text-xs text-muted-foreground">Duração: 5 minutos</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Zap className="w-4 h-4 text-primary" />
+                          <span>Tour pelas funcionalidades</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    /* YouTube embed */
+                    videoId ? (
+                      <iframe
+                        src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
+                        title="Demonstração La Casa Dark Core"
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-black text-muted-foreground">
+                        <p className="text-center">
+                          <span className="block text-2xl mb-2">🎬</span>
+                          Nenhum vídeo configurado
+                          <br />
+                          <span className="text-xs">(Configure no painel admin)</span>
+                        </p>
+                      </div>
+                    )
+                  )}
             </div>
             
             {/* Bottom info bar */}
