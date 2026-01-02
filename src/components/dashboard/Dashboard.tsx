@@ -83,16 +83,6 @@ export function Dashboard() {
               label="Créditos" 
               value={credits.toLocaleString()} 
               status={isLowCredits ? undefined : "active"} 
-              action={
-                <Button 
-                  size="sm" 
-                  onClick={() => navigate('/plans')} 
-                  className={`w-full gradient-button text-primary-foreground text-xs ${isLowCredits ? 'animate-pulse' : ''}`}
-                >
-                  <Rocket className="w-3 h-3 mr-1" />
-                  Comprar Créditos
-                </Button>
-              }
             />
           </motion.div>
           <motion.div variants={itemVariants}>
