@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Eye,
   Calendar,
@@ -88,6 +89,8 @@ export default function AnalysisHistory() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
+  const [selectedTitles, setSelectedTitles] = useState<string[]>([]);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [itemToMove, setItemToMove] = useState<{
     id: string;
@@ -218,6 +221,74 @@ export default function AnalysisHistory() {
     },
   });
 
+  // Delete multiple videos mutation
+  const deleteMultipleVideosMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      for (const id of ids) {
+        const { error } = await supabase
+          .from("analyzed_videos")
+          .delete()
+          .eq("id", id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["analyzed-videos"] });
+      setSelectedVideos([]);
+      toast({ title: "Excluídos!", description: `${selectedVideos.length} análises removidas` });
+    },
+  });
+
+  // Delete multiple titles mutation
+  const deleteMultipleTitlesMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      for (const id of ids) {
+        const { error } = await supabase
+          .from("generated_titles")
+          .delete()
+          .eq("id", id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["generated-titles"] });
+      setSelectedTitles([]);
+      toast({ title: "Excluídos!", description: `${selectedTitles.length} títulos removidos` });
+    },
+  });
+
+  // Toggle video selection
+  const toggleVideoSelection = (id: string) => {
+    setSelectedVideos(prev => 
+      prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
+    );
+  };
+
+  // Toggle title selection
+  const toggleTitleSelection = (id: string) => {
+    setSelectedTitles(prev => 
+      prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
+    );
+  };
+
+  // Toggle all videos
+  const toggleAllVideos = () => {
+    if (selectedVideos.length === filteredVideos?.length) {
+      setSelectedVideos([]);
+    } else {
+      setSelectedVideos(filteredVideos?.map(v => v.id) || []);
+    }
+  };
+
+  // Toggle all titles
+  const toggleAllTitles = () => {
+    if (selectedTitles.length === filteredTitles?.length) {
+      setSelectedTitles([]);
+    } else {
+      setSelectedTitles(filteredTitles?.map(t => t.id) || []);
+    }
+  };
+
   const copyToClipboard = async (id: string, text: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -329,6 +400,38 @@ export default function AnalysisHistory() {
 
             {/* Videos Tab */}
             <TabsContent value="videos" className="space-y-4">
+              {/* Selection bar */}
+              {filteredVideos && filteredVideos.length > 0 && (
+                <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg border border-border">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={selectedVideos.length === filteredVideos.length && filteredVideos.length > 0}
+                      onCheckedChange={toggleAllVideos}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {selectedVideos.length > 0 
+                        ? `${selectedVideos.length} selecionado(s)` 
+                        : "Selecionar todos"}
+                    </span>
+                  </div>
+                  {selectedVideos.length > 0 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteMultipleVideosMutation.mutate(selectedVideos)}
+                      disabled={deleteMultipleVideosMutation.isPending}
+                    >
+                      {deleteMultipleVideosMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 mr-2" />
+                      )}
+                      Excluir Selecionados
+                    </Button>
+                  )}
+                </div>
+              )}
+
               {loadingVideos ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -346,8 +449,15 @@ export default function AnalysisHistory() {
               ) : (
                 <div className="grid gap-4">
                   {filteredVideos?.map((video) => (
-                    <Card key={video.id} className="p-4 border-border/50 hover:border-primary/50 transition-colors">
+                    <Card key={video.id} className={`p-4 border-border/50 hover:border-primary/50 transition-colors ${selectedVideos.includes(video.id) ? 'border-primary bg-primary/5' : ''}`}>
                       <div className="flex gap-4">
+                        {/* Checkbox */}
+                        <div className="flex items-start pt-1">
+                          <Checkbox
+                            checked={selectedVideos.includes(video.id)}
+                            onCheckedChange={() => toggleVideoSelection(video.id)}
+                          />
+                        </div>
                         {/* Thumbnail */}
                         {video.original_thumbnail_url && (
                           <div className="flex-shrink-0">
@@ -462,6 +572,38 @@ export default function AnalysisHistory() {
 
             {/* Titles Tab */}
             <TabsContent value="titles" className="space-y-4">
+              {/* Selection bar */}
+              {filteredTitles && filteredTitles.length > 0 && (
+                <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg border border-border">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={selectedTitles.length === filteredTitles.length && filteredTitles.length > 0}
+                      onCheckedChange={toggleAllTitles}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {selectedTitles.length > 0 
+                        ? `${selectedTitles.length} selecionado(s)` 
+                        : "Selecionar todos"}
+                    </span>
+                  </div>
+                  {selectedTitles.length > 0 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteMultipleTitlesMutation.mutate(selectedTitles)}
+                      disabled={deleteMultipleTitlesMutation.isPending}
+                    >
+                      {deleteMultipleTitlesMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 mr-2" />
+                      )}
+                      Excluir Selecionados
+                    </Button>
+                  )}
+                </div>
+              )}
+
               {loadingTitles ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -480,21 +622,27 @@ export default function AnalysisHistory() {
                     <Card
                       key={title.id}
                       className={`p-4 border-border/50 transition-colors ${
-                        title.is_favorite ? "border-primary/50 bg-primary/5" : "hover:border-primary/30"
+                        selectedTitles.includes(title.id) ? "border-primary bg-primary/5" : title.is_favorite ? "border-primary/50 bg-primary/5" : "hover:border-primary/30"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-foreground">{title.title_text}</p>
-                            {title.pontuacao && (
-                              <Badge
-                                variant={title.pontuacao >= 90 ? "default" : "secondary"}
-                                className={title.pontuacao >= 90 ? "bg-green-500" : ""}
-                              >
-                                {title.pontuacao}%
-                              </Badge>
-                            )}
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <Checkbox
+                            checked={selectedTitles.includes(title.id)}
+                            onCheckedChange={() => toggleTitleSelection(title.id)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-foreground">{title.title_text}</p>
+                              {title.pontuacao && (
+                                <Badge
+                                  variant={title.pontuacao >= 90 ? "default" : "secondary"}
+                                  className={title.pontuacao >= 90 ? "bg-green-500" : ""}
+                                >
+                                  {title.pontuacao}%
+                                </Badge>
+                              )}
                           </div>
                           {title.formula && (
                             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -514,6 +662,7 @@ export default function AnalysisHistory() {
                                 size="sm"
                               />
                             ))}
+                          </div>
                           </div>
                         </div>
 
