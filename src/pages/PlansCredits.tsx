@@ -749,13 +749,34 @@ export default function PlansCredits() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.1 }}
+                  whileHover={{ 
+                    scale: 1.02,
+                    x: 8,
+                    transition: { duration: 0.25, ease: "easeOut" }
+                  }}
+                  className="group cursor-pointer"
                 >
-                  <Card className={`backdrop-blur-sm ${faq.highlight ? "border-2 border-primary bg-card/80" : "border-border/50 bg-card/60"}`}>
-                    <CardContent className="p-5">
-                      <h3 className={`font-semibold text-base mb-2 ${faq.highlight ? "text-primary" : "text-foreground"}`}>
+                  <Card className={`backdrop-blur-sm overflow-hidden transition-all duration-300 ${faq.highlight ? "border-2 border-primary bg-card/80 group-hover:shadow-xl group-hover:shadow-primary/30" : "border-border/50 bg-card/60 group-hover:border-primary/50 group-hover:shadow-lg group-hover:shadow-primary/10"}`}>
+                    {/* Hover glow effect */}
+                    <motion.div 
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-400 pointer-events-none"
+                      style={{
+                        background: faq.highlight 
+                          ? 'linear-gradient(90deg, hsl(var(--primary) / 0.1) 0%, transparent 50%)'
+                          : 'linear-gradient(90deg, hsl(var(--primary) / 0.05) 0%, transparent 50%)',
+                      }}
+                    />
+                    
+                    {/* Left accent line on hover */}
+                    <motion.div 
+                      className="absolute left-0 top-0 bottom-0 w-1 bg-primary origin-top scale-y-0 group-hover:scale-y-100 transition-transform duration-300"
+                    />
+                    
+                    <CardContent className="p-5 relative z-10">
+                      <h3 className={`font-semibold text-base mb-2 transition-colors duration-200 ${faq.highlight ? "text-primary" : "text-foreground group-hover:text-primary"}`}>
                         {faq.q}
                       </h3>
-                      <p className="text-sm text-muted-foreground">{faq.a}</p>
+                      <p className="text-sm text-muted-foreground group-hover:text-foreground/80 transition-colors duration-200">{faq.a}</p>
                     </CardContent>
                   </Card>
                 </motion.div>
