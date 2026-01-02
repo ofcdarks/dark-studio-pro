@@ -73,12 +73,27 @@ interface ScriptFormulaAnalysis {
   gatilhosMentais: string[];
 }
 
+// Motivational messages for loading states
+const LOADING_MESSAGES = [
+  "🔍 Analisando padrões virais...",
+  "🧠 Decodificando fórmulas de sucesso...",
+  "⚡ Processando insights da IA...",
+  "🎯 Identificando gatilhos mentais...",
+  "📊 Calculando métricas de engajamento...",
+  "✨ Gerando títulos otimizados...",
+  "🚀 Quase lá! Finalizando análise...",
+  "💡 Descobrindo o segredo do viral...",
+  "🔥 Aplicando estratégias comprovadas...",
+  "📈 Maximizando potencial de cliques...",
+];
+
 const VideoAnalyzer = () => {
   const [videoUrl, setVideoUrl] = useState("");
   const [aiModel, setAiModel] = useState("gemini-pro");
   const [language, setLanguage] = useState("pt-BR");
   const [saveFolder, setSaveFolder] = useState("general");
   const [analyzing, setAnalyzing] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState(LOADING_MESSAGES[0]);
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
   const [generatedTitles, setGeneratedTitles] = useState<GeneratedTitle[]>([]);
   const [selectedTitles, setSelectedTitles] = useState<string[]>([]);
@@ -131,6 +146,16 @@ const VideoAnalyzer = () => {
     setAnalyzing(true);
     setVideoInfo(null);
     setGeneratedTitles([]);
+    setLoadingMessage(LOADING_MESSAGES[0]);
+    
+    // Rotate loading messages every 3 seconds
+    const messageInterval = setInterval(() => {
+      setLoadingMessage(prev => {
+        const currentIndex = LOADING_MESSAGES.indexOf(prev);
+        const nextIndex = (currentIndex + 1) % LOADING_MESSAGES.length;
+        return LOADING_MESSAGES[nextIndex];
+      });
+    }, 3000);
 
     try {
       // Extract video ID from URL for thumbnail fallback
@@ -343,6 +368,7 @@ const VideoAnalyzer = () => {
         description: "Dados gerados para demonstração",
       });
     } finally {
+      clearInterval(messageInterval);
       setAnalyzing(false);
     }
   };
@@ -671,10 +697,10 @@ const VideoAnalyzer = () => {
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-14 text-lg font-semibold"
               >
                 {analyzing ? (
-                  <>
-                    <Loader2 className="w-6 h-6 mr-2 animate-spin" />
-                    Analisando...
-                  </>
+                  <div className="flex items-center">
+                    <Loader2 className="w-6 h-6 mr-3 animate-spin" />
+                    <span className="animate-pulse">{loadingMessage}</span>
+                  </div>
                 ) : (
                   "Analisar e Gerar Títulos"
                 )}
