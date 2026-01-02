@@ -147,33 +147,24 @@ async function generateImageWithLovable(prompt: string, apiKey: string): Promise
   return { images: images || [], message: content || "" };
 }
 
-async function getUserImageFXCookies(userId: string, supabaseAdmin: any): Promise<{ cookies: string | null; usePlatformCredits: boolean }> {
+// ALWAYS use ImageFX for images when cookies are available
+async function getUserImageFXCookies(userId: string, supabaseAdmin: any): Promise<string | null> {
   try {
     const { data, error } = await supabaseAdmin
       .from('user_api_settings')
-      .select('imagefx_cookies, imagefx_validated, use_platform_credits')
+      .select('imagefx_cookies, imagefx_validated')
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (error || !data) {
-      return { cookies: null, usePlatformCredits: true };
-    }
+    if (error || !data) return null;
 
-    const usePlatformCredits = data.use_platform_credits ?? true;
-    
-    // If using platform credits, don't use ImageFX
-    if (usePlatformCredits) {
-      return { cookies: null, usePlatformCredits: true };
-    }
+    // Always use ImageFX when cookies are available and validated
+    if (!data.imagefx_validated || !data.imagefx_cookies) return null;
 
-    if (!data.imagefx_validated || !data.imagefx_cookies) {
-      return { cookies: null, usePlatformCredits };
-    }
-
-    return { cookies: data.imagefx_cookies, usePlatformCredits };
+    return data.imagefx_cookies;
   } catch (e) {
     console.error('Error fetching ImageFX cookies:', e);
-    return { cookies: null, usePlatformCredits: true };
+    return null;
   }
 }
 
@@ -223,11 +214,11 @@ serve(async (req) => {
 
     let result: { images: any[]; message: string; provider: string } | null = null;
 
-    // Try ImageFX first if user has cookies configured and is not using platform credits
+    // Always try ImageFX first if user has cookies configured
     if (userId && supabaseAdmin) {
-      const { cookies, usePlatformCredits } = await getUserImageFXCookies(userId, supabaseAdmin);
+      const cookies = await getUserImageFXCookies(userId, supabaseAdmin);
       
-      if (cookies && !usePlatformCredits) {
+      if (cookies) {
         console.log('[Image] Using ImageFX (user cookies)');
         const imageBase64 = await generateImageWithImageFX(prompt, cookies, userId, imageFXAspectRatio);
         
