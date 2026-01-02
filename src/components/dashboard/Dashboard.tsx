@@ -1,4 +1,4 @@
-import { Video, Eye, MessageCircle, Coins, HardDrive, TrendingUp, FileText, Image, Mic, Type } from "lucide-react";
+import { Video, Eye, Coins, TrendingUp, Type, Image } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
@@ -23,8 +23,6 @@ export function Dashboard() {
   const navigate = useNavigate();
 
   const displayName = profile?.full_name || user?.email?.split("@")[0] || "Usuário";
-  const storageUsed = profile?.storage_used ?? 0;
-  const storageLimit = profile?.storage_limit ?? 1;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -86,7 +84,7 @@ export function Dashboard() {
             } />
           </motion.div>
           <motion.div variants={itemVariants}>
-            <StatsCard icon={HardDrive} label="Armazenamento" value={`${storageUsed.toFixed(1)} GB`} progress={{ value: storageUsed, max: storageLimit }} />
+            <StatsCard icon={Image} label="Imagens Geradas" value={stats.imagesGenerated} subLabel={stats.imagesGenerated > 0 ? "CRIADAS" : "INÍCIO"} />
           </motion.div>
           <motion.div variants={itemVariants}>
             <StatsCard icon={TrendingUp} label="Vídeos Virais" value={stats.viralVideos} subLabel="100K+ views" />
