@@ -43,16 +43,43 @@ export function FolderSelect({
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data: folders, isLoading } = useQuery({
-    queryKey: ["folders", user?.id],
+    queryKey: ["folders-with-counts", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
+      
+      // Get folders
+      const { data: folderData, error: folderError } = await supabase
         .from("folders")
         .select("*")
         .eq("user_id", user.id)
         .order("name", { ascending: true });
-      if (error) throw error;
-      return data;
+      if (folderError) throw folderError;
+      
+      // Count items for each folder (analyzed_videos + generated_titles)
+      const foldersWithCounts = await Promise.all(
+        (folderData || []).map(async (folder) => {
+          // Count analyzed_videos in this folder
+          const { count: videoCount } = await supabase
+            .from("analyzed_videos")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .eq("folder_id", folder.id);
+          
+          // Count generated_titles in this folder
+          const { count: titleCount } = await supabase
+            .from("generated_titles")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .eq("folder_id", folder.id);
+          
+          return {
+            ...folder,
+            items_count: (videoCount || 0) + (titleCount || 0),
+          };
+        })
+      );
+      
+      return foldersWithCounts;
     },
     enabled: !!user,
   });
@@ -73,6 +100,7 @@ export function FolderSelect({
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["folders"] });
+      queryClient.invalidateQueries({ queryKey: ["folders-with-counts"] });
       setNewFolderName("");
       setDialogOpen(false);
       onChange(data.id);
