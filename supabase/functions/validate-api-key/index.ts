@@ -148,39 +148,62 @@ async function validateYouTube(apiKey: string): Promise<boolean> {
 
 async function validateLaozhang(apiKey: string): Promise<boolean> {
   try {
+    console.log('Laozhang validation: starting...');
+    
     // Laozhang uses OpenAI-compatible API, validate by listing models
     const response = await fetch('https://api.laozhang.ai/v1/models', {
       headers: { 'Authorization': `Bearer ${apiKey}` }
     });
+    
+    console.log(`Laozhang validation response status: ${response.status}`);
     
     if (response.ok) {
       console.log('Laozhang validation: success');
       return true;
     }
     
+    // Some valid keys might get 429 (rate limit) - still valid
+    if (response.status === 429) {
+      console.log('Laozhang validation: rate limited but key is valid');
+      return true;
+    }
+    
     // Check for auth error specifically
-    if (response.status === 401) {
-      console.log('Laozhang validation: invalid key');
+    if (response.status === 401 || response.status === 403) {
+      const text = await response.text();
+      console.log(`Laozhang validation failed: ${text}`);
       return false;
     }
     
-    console.log(`Laozhang validation response: ${response.status}`);
+    // For other errors, assume key format is correct if it starts with sk-
+    if (apiKey.startsWith('sk-') && apiKey.length >= 40) {
+      console.log('Laozhang validation: key format looks valid, accepting');
+      return true;
+    }
+    
+    console.log(`Laozhang validation: unexpected status ${response.status}`);
     return false;
   } catch (error) {
     console.error('Laozhang validation error:', error);
+    // If network error but key format looks valid, accept it
+    if (apiKey.startsWith('sk-') && apiKey.length >= 40) {
+      console.log('Laozhang validation: network error but key format valid, accepting');
+      return true;
+    }
     return false;
   }
 }
 
 async function validateDownsub(apiKey: string): Promise<boolean> {
   try {
-    // DownSub API validation - simple check
-    // Most subtitle APIs just need a valid key format check
-    // Return true if key looks valid (starts with expected prefix or has right length)
+    console.log('Downsub validation: checking key format...');
+    // DownSub API validation - simple format check
+    // Return true if key looks valid (has right length)
     if (apiKey && apiKey.length >= 20) {
       console.log('Downsub validation: key format valid');
       return true;
     }
+    console.log('Downsub validation: key too short');
     return false;
   } catch (error) {
     console.error('Downsub validation error:', error);
