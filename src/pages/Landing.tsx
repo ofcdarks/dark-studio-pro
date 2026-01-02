@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AnimatedSection, AnimatedItem } from "@/components/landing/AnimatedSection";
-import { ParallaxLayer } from "@/components/landing/ParallaxSection";
+import { ParallaxLayer, ParallaxBackground } from "@/components/landing/ParallaxSection";
 import { PurchaseNotifications } from "@/components/landing/PurchaseNotifications";
 import { AutoChat } from "@/components/landing/AutoChat";
 import { TestimonialCarousel } from "@/components/landing/TestimonialCarousel";
@@ -173,14 +173,16 @@ const Landing = () => {
         {/* Particle Background - reduced for mobile */}
         <ParticleBackground particleCount={40} className="opacity-40 md:opacity-60" />
 
-        {/* Background Image - Porsche */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <img
-            src="/images/hero-porsche.jpg"
-            alt="Porsche de luxo no fundo da landing page"
-            className="absolute inset-0 h-full w-full object-cover object-center opacity-60 md:opacity-80"
-            loading="eager"
-          />
+        {/* Background Image - Porsche with Parallax */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <ParallaxBackground speed={0.15} className="h-[120%] -top-[10%]">
+            <img
+              src="/images/hero-porsche.jpg"
+              alt="Porsche de luxo no fundo da landing page"
+              className="h-full w-full object-cover object-center opacity-60 md:opacity-80"
+              loading="eager"
+            />
+          </ParallaxBackground>
 
           {/* Gradient overlay - left side dark for text readability */}
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
