@@ -67,7 +67,9 @@ interface GeneratedTitle {
   model_used: string | null;
   video_analysis_id: string | null;
   created_at: string | null;
+  folder_id: string | null;
 }
+
 
 interface Folder {
   id: string;
@@ -134,7 +136,10 @@ export default function AnalysisHistory() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (selectedFolderId) {
+      // Folder filter: null = "Sem pasta" (folder_id IS NULL)
+      if (selectedFolderId === null) {
+        query = query.is("folder_id", null);
+      } else {
         query = query.eq("folder_id", selectedFolderId);
       }
 
@@ -147,16 +152,25 @@ export default function AnalysisHistory() {
 
   // Fetch generated titles
   const { data: generatedTitles, isLoading: loadingTitles } = useQuery({
-    queryKey: ["generated-titles", user?.id],
+    queryKey: ["generated-titles", user?.id, selectedFolderId],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from("generated_titles")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
+
+      // Folder filter: null = "Sem pasta" (folder_id IS NULL)
+      if (selectedFolderId === null) {
+        query = query.is("folder_id", null);
+      } else {
+        query = query.eq("folder_id", selectedFolderId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      return data as GeneratedTitle[];
+      return data as unknown as GeneratedTitle[];
     },
     enabled: !!user,
   });
@@ -266,36 +280,41 @@ export default function AnalysisHistory() {
   // Move multiple videos to folder mutation
   const moveMultipleVideosMutation = useMutation({
     mutationFn: async ({ ids, folderId }: { ids: string[]; folderId: string | null }) => {
-      for (const id of ids) {
-        const { error } = await supabase
-          .from("analyzed_videos")
-          .update({ folder_id: folderId })
-          .eq("id", id);
-        if (error) throw error;
-      }
+      const { error } = await supabase
+        .from("analyzed_videos")
+        .update({ folder_id: folderId })
+        .in("id", ids);
+      if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["analyzed-videos"] });
+      queryClient.invalidateQueries({ queryKey: ["folders"] });
       setSelectedVideos([]);
-      toast({ title: "Movidos!", description: `${selectedVideos.length} vídeos movidos para a pasta` });
+      toast({
+        title: "Movidos!",
+        description: `${variables.ids.length} vídeos movidos para a pasta`,
+      });
     },
   });
+
 
   // Move multiple titles to folder mutation
   const moveMultipleTitlesMutation = useMutation({
     mutationFn: async ({ ids, folderId }: { ids: string[]; folderId: string | null }) => {
-      for (const id of ids) {
-        const { error } = await supabase
-          .from("generated_titles")
-          .update({ folder_id: folderId } as any)
-          .eq("id", id);
-        if (error) throw error;
-      }
+      const { error } = await supabase
+        .from("generated_titles")
+        .update({ folder_id: folderId })
+        .in("id", ids);
+      if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["generated-titles"] });
+      queryClient.invalidateQueries({ queryKey: ["folders"] });
       setSelectedTitles([]);
-      toast({ title: "Movidos!", description: `${selectedTitles.length} títulos movidos para a pasta` });
+      toast({
+        title: "Movidos!",
+        description: `${variables.ids.length} títulos movidos para a pasta`,
+      });
     },
   });
 
