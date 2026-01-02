@@ -1031,7 +1031,7 @@ const VideoAnalyzer = () => {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-success text-success-foreground">
+                        <Badge variant="outline" className="border-success text-success bg-success/10">
                           <Check className="w-3 h-3 mr-1" />
                           Qualidade {title.quality}/10
                         </Badge>
