@@ -102,6 +102,7 @@ const VideoAnalyzer = () => {
   const [currentFormula, setCurrentFormula] = useState<ScriptFormulaAnalysis | null>(null);
   const [currentTranscription, setCurrentTranscription] = useState("");
   const [loadingTranscription, setLoadingTranscription] = useState(false);
+  const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -346,8 +347,46 @@ const VideoAnalyzer = () => {
       // Set generated titles
       setGeneratedTitles(allTitles);
 
-      // Save to database
+      // Save to database and get the analysis ID
       if (user?.id) {
+        // First save the analyzed_video to get an ID for linking titles
+        const { data: analyzedVideoData, error: analyzedVideoError } = await supabase
+          .from("analyzed_videos")
+          .insert({
+            user_id: user.id,
+            video_url: videoUrl,
+            original_title: realVideoData?.title || aiVideoInfo?.title || "Análise de Vídeo",
+            original_thumbnail_url: realVideoData?.thumbnail,
+            original_views: realVideoData?.views,
+            original_comments: realVideoData?.comments,
+            detected_niche: aiVideoInfo?.niche,
+            detected_subniche: aiVideoInfo?.subNiche,
+            detected_microniche: aiVideoInfo?.microNiche,
+            analysis_data_json: JSON.parse(JSON.stringify({ videoInfo: aiVideoInfo, titles: allTitles })),
+            folder_id: saveFolder !== "general" ? saveFolder : null,
+          })
+          .select("id")
+          .single();
+
+        if (!analyzedVideoError && analyzedVideoData) {
+          setCurrentAnalysisId(analyzedVideoData.id);
+
+          // Save all titles linked to this analysis
+          const titlesToInsert = allTitles.map((t: GeneratedTitle) => ({
+            user_id: user.id,
+            title_text: t.title,
+            formula: t.formula,
+            pontuacao: Math.round((t.quality + t.impact) / 2 * 10),
+            model_used: t.model,
+            video_analysis_id: analyzedVideoData.id,
+            is_favorite: false,
+            folder_id: saveFolder !== "general" ? saveFolder : null,
+          }));
+
+          await supabase.from("generated_titles").insert(titlesToInsert);
+        }
+
+        // Also save to video_analyses for legacy
         await supabase.from("video_analyses").insert({
           user_id: user.id,
           video_url: videoUrl,
@@ -565,40 +604,31 @@ const VideoAnalyzer = () => {
       setSelectedTitleForThumbnail(titleText);
     }
     
-    // Save to database
-    if (user) {
+    // Update is_favorite in database for the title linked to current analysis
+    if (user && currentAnalysisId) {
       const titleData = generatedTitles.find(t => t.id === id);
       if (titleData) {
-        // Check if already exists
-        const { data: existing } = await supabase
+        // Find the title by text and analysis_id
+        const { data: existingTitle } = await supabase
           .from("generated_titles")
-          .select("id")
+          .select("id, is_favorite")
           .eq("user_id", user.id)
           .eq("title_text", titleData.title)
+          .eq("video_analysis_id", currentAnalysisId)
           .single();
         
-        if (existing) {
-          // Update is_favorite
+        if (existingTitle) {
           await supabase
             .from("generated_titles")
             .update({ is_favorite: !isSelected })
-            .eq("id", existing.id);
-        } else {
-          // Insert new with is_favorite = true
-          await supabase
-            .from("generated_titles")
-            .insert({
-              user_id: user.id,
-              title_text: titleData.title,
-              formula: titleData.formula,
-              pontuacao: (titleData.quality + titleData.impact) / 2,
-              is_favorite: true,
-            });
+            .eq("id", existingTitle.id);
         }
         
         toast({
-          title: isSelected ? "Título desmarcado" : "Título salvo!",
-          description: isSelected ? "Título removido dos favoritos" : "Título marcado e adicionado ao gerador de thumbnail",
+          title: isSelected ? "Título desmarcado" : "Título marcado!",
+          description: isSelected 
+            ? "Título removido dos favoritos" 
+            : "Título salvo como favorito e disponível no histórico",
         });
       }
     }

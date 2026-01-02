@@ -26,6 +26,7 @@ import {
   FileText,
   FolderInput,
   FolderOpen,
+  RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -100,6 +101,9 @@ export default function AnalysisHistory() {
   const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
   const [selectedTitles, setSelectedTitles] = useState<string[]>([]);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [expandedAnalysisId, setExpandedAnalysisId] = useState<string | null>(null);
+  const [relatedTitles, setRelatedTitles] = useState<GeneratedTitle[]>([]);
+  const [loadingRelatedTitles, setLoadingRelatedTitles] = useState(false);
   const [itemToMove, setItemToMove] = useState<{
     id: string;
     type: "analyzed_videos" | "generated_titles";
@@ -408,6 +412,44 @@ export default function AnalysisHistory() {
     if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M`;
     if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
     return views.toString();
+  };
+
+  // Load all related titles from the same analysis
+  const loadRelatedTitles = async (videoAnalysisId: string) => {
+    if (expandedAnalysisId === videoAnalysisId) {
+      // Collapse if already expanded
+      setExpandedAnalysisId(null);
+      setRelatedTitles([]);
+      return;
+    }
+
+    setLoadingRelatedTitles(true);
+    setExpandedAnalysisId(videoAnalysisId);
+
+    try {
+      const { data, error } = await supabase
+        .from("generated_titles")
+        .select("*")
+        .eq("video_analysis_id", videoAnalysisId)
+        .order("pontuacao", { ascending: false });
+
+      if (error) throw error;
+
+      setRelatedTitles(data as unknown as GeneratedTitle[]);
+      toast({
+        title: "Títulos carregados!",
+        description: `${data?.length || 0} títulos encontrados desta análise`,
+      });
+    } catch (error) {
+      console.error("Error loading related titles:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os títulos relacionados",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingRelatedTitles(false);
+    }
   };
 
   return (
@@ -804,6 +846,23 @@ export default function AnalysisHistory() {
                         </div>
 
                         <div className="flex items-center gap-1">
+                          {/* Load all related titles button */}
+                          {title.video_analysis_id && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => loadRelatedTitles(title.video_analysis_id!)}
+                              title="Carregar todos os títulos desta análise"
+                              className={expandedAnalysisId === title.video_analysis_id ? "text-primary" : "text-muted-foreground"}
+                              disabled={loadingRelatedTitles}
+                            >
+                              {loadingRelatedTitles && expandedAnalysisId === title.video_analysis_id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <RefreshCw className={`w-4 h-4 ${expandedAnalysisId === title.video_analysis_id ? "text-primary" : ""}`} />
+                              )}
+                            </Button>
+                          )}
                           <TagManager
                             itemId={title.id}
                             itemType="title"
@@ -835,6 +894,75 @@ export default function AnalysisHistory() {
                           </Button>
                         </div>
                       </div>
+
+                      {/* Expanded related titles section */}
+                      {expandedAnalysisId === title.video_analysis_id && relatedTitles.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-border/50">
+                          <p className="text-sm font-medium text-muted-foreground mb-3">
+                            Todos os {relatedTitles.length} títulos desta análise:
+                          </p>
+                          <div className="space-y-2">
+                            {relatedTitles.map((relatedTitle) => (
+                              <div
+                                key={relatedTitle.id}
+                                className={`p-3 rounded-lg bg-secondary/30 flex items-center justify-between gap-2 ${
+                                  relatedTitle.is_favorite ? "border border-primary/30" : ""
+                                }`}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    {relatedTitle.is_favorite && (
+                                      <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 shrink-0" />
+                                    )}
+                                    <p className="text-sm text-foreground truncate">{relatedTitle.title_text}</p>
+                                    {relatedTitle.pontuacao && (
+                                      <Badge variant="secondary" className="text-xs shrink-0">
+                                        {relatedTitle.pontuacao}%
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {relatedTitle.model_used && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {relatedTitle.model_used}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() =>
+                                      toggleFavoriteMutation.mutate({
+                                        id: relatedTitle.id,
+                                        isFavorite: relatedTitle.is_favorite || false,
+                                      })
+                                    }
+                                  >
+                                    <Star
+                                      className={`w-4 h-4 ${
+                                        relatedTitle.is_favorite ? "text-yellow-500 fill-yellow-500" : "text-muted-foreground"
+                                      }`}
+                                    />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => copyToClipboard(relatedTitle.id, relatedTitle.title_text)}
+                                  >
+                                    {copiedId === relatedTitle.id ? (
+                                      <Check className="w-4 h-4 text-green-500" />
+                                    ) : (
+                                      <Copy className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </Card>
                   ))}
                 </div>
