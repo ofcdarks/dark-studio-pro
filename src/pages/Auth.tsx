@@ -5,11 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ArrowLeft } from "lucide-react";
+import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { z } from "zod";
 import logo from "@/assets/logo.gif";
-import authBg from "@/assets/auth-bg.jpg";
-import FloatingParticles from "@/components/auth/FloatingParticles";
 
 const authSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -30,7 +28,6 @@ const Auth = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Trigger entrance animation on mount
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100);
     return () => clearTimeout(timer);
@@ -104,25 +101,24 @@ const Auth = () => {
   };
 
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        backgroundImage: `url(${authBg})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
-      {/* Gloss overlay with blur effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/70 to-black/80 backdrop-blur-sm" />
-      
-      {/* Gloss shine effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-radial from-primary/10 via-transparent to-transparent rotate-12 animate-pulse" />
-        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-radial from-primary/5 via-transparent to-transparent -rotate-12" />
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-background">
+      {/* Background with Porsche - same as landing */}
+      <div className="absolute inset-0 -z-10">
+        <img
+          src="/images/hero-porsche.jpg"
+          alt="Background"
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-40"
+        />
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/90 to-background/80" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-background/80" />
       </div>
 
-      {/* Floating Particles */}
-      <FloatingParticles />
+      {/* Subtle floating orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-primary/10 blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full bg-primary/5 blur-[80px] animate-pulse" style={{ animationDelay: '1s' }} />
+      </div>
 
       {/* Back to Landing Button */}
       <Link 
@@ -133,85 +129,60 @@ const Auth = () => {
         <span>Voltar</span>
       </Link>
       
-      {/* Login Card with Mirror/Glass Effect */}
+      {/* Compact Login Card */}
       <div 
-        className={`relative z-10 w-full max-w-2xl transition-all duration-700 ease-out ${
+        className={`relative z-10 w-full max-w-md transition-all duration-700 ease-out ${
           isVisible 
             ? 'opacity-100 translate-y-0 scale-100' 
             : 'opacity-0 translate-y-8 scale-95'
         }`}
-        style={{
-          perspective: '1000px',
-        }}
       >
-        {/* Mirror reflection effect */}
         <div 
-          className="absolute inset-0 bg-gradient-to-b from-foreground/5 via-transparent to-transparent rounded-2xl pointer-events-none"
-          style={{
-            transform: 'rotateX(180deg) translateY(100%)',
-            maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15), transparent 50%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15), transparent 50%)',
-          }}
-        />
-        
-        <div 
-          className="relative bg-background/90 backdrop-blur-md rounded-2xl px-16 py-16 border border-border/30 shadow-2xl overflow-hidden"
+          className="relative bg-card/95 backdrop-blur-xl rounded-2xl p-8 border border-border/50 shadow-2xl"
           style={{
             boxShadow: `
-              0 0 0 1px rgba(255,255,255,0.05) inset,
+              0 0 0 1px rgba(255,255,255,0.03) inset,
               0 25px 50px -12px rgba(0,0,0,0.5),
-              0 0 60px rgba(245,158,11,0.1)
+              0 0 40px rgba(245,158,11,0.08)
             `,
           }}
         >
-          {/* Glass shine overlay */}
+          {/* Glass shine */}
           <div 
-            className="absolute inset-0 pointer-events-none"
+            className="absolute inset-0 pointer-events-none rounded-2xl"
             style={{
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.05) 100%)',
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%)',
             }}
           />
 
-          {/* Private Core Badge */}
-          <div className="flex justify-center mb-8 relative">
-            <span className="bg-primary/20 text-primary text-base font-semibold px-5 py-2.5 rounded-full flex items-center gap-2">
-              <Lock className="w-4 h-4" />
-              PRIVATE CORE
-            </span>
-          </div>
-
-          {/* Logo */}
-          <div className="flex justify-center mb-10 relative">
-            <div className="w-40 h-40 rounded-full ring-4 ring-primary/80 overflow-hidden bg-background shadow-lg shadow-primary/30">
-              <img 
-                src={logo} 
-                alt="Logo" 
-                className="w-full h-full object-cover"
-              />
+          {/* Logo and Title */}
+          <div className="flex flex-col items-center mb-6 relative">
+            <div className="relative mb-4">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary via-amber-400 to-primary animate-spin-slow opacity-60 blur-sm" />
+              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-primary relative z-10">
+                <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+              </div>
+            </div>
+            
+            <h1 className="text-2xl font-bold text-foreground">
+              La Casa Dark <span className="text-primary">CORE</span>
+            </h1>
+            
+            <div className="flex items-center gap-2 mt-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30">
+              <Sparkles className="w-3 h-3 text-primary" />
+              <span className="text-xs font-medium text-primary">PRIVATE ACCESS</span>
             </div>
           </div>
 
-          {/* Title */}
-          <h1 className="text-5xl font-bold text-foreground text-center tracking-wide relative">
-            LA CASA DARK
-          </h1>
-          <p className="text-primary text-2xl font-bold text-center tracking-[0.3em] mb-4">
-            CORE
-          </p>
-
           {/* Subtitle */}
-          <h2 className="text-xl font-semibold text-foreground text-center mb-3">
-            {isLogin ? "Acesso ao Núcleo Privado" : "Criar Acesso ao Núcleo"}
-          </h2>
-          <p className="text-base text-muted-foreground text-center mb-10">
-            Ferramentas usadas por criadores que operam canais dark em escala
+          <p className="text-sm text-muted-foreground text-center mb-6">
+            {isLogin ? "Acesse o núcleo de operações" : "Solicite acesso ao núcleo"}
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-6 relative">
+          <form onSubmit={handleSubmit} className="space-y-4 relative">
             {!isLogin && (
               <div>
-                <label className="text-base text-muted-foreground mb-2 flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-primary" />
+                <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
                   Nome completo
                 </label>
                 <Input
@@ -219,15 +190,15 @@ const Auth = () => {
                   placeholder="Seu nome"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="bg-secondary/50 border-border/30 h-16 text-lg"
+                  className="bg-secondary/50 border-border/50 h-11"
                 />
               </div>
             )}
             
             {/* Email */}
             <div>
-              <label className="text-base text-muted-foreground mb-2 flex items-center gap-2">
-                <Mail className="w-5 h-5 text-primary" />
+              <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
                 E-mail
               </label>
               <Input
@@ -235,15 +206,15 @@ const Auth = () => {
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-secondary/50 border-border/30 h-16 text-lg"
+                className="bg-secondary/50 border-border/50 h-11"
                 required
               />
             </div>
 
             {/* Password */}
             <div>
-              <label className="text-base text-muted-foreground mb-2 flex items-center gap-2">
-                <Lock className="w-5 h-5 text-primary" />
+              <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-primary" />
                 Senha
               </label>
               <div className="relative">
@@ -252,120 +223,82 @@ const Auth = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-secondary/50 border-border/30 h-16 text-lg pr-14"
+                  className="bg-secondary/50 border-border/50 h-11 pr-10"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            {/* Remember password & Recover access */}
+            {/* Remember & Forgot */}
             {isLogin && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
                   <Checkbox
                     id="rememberPassword"
                     checked={rememberPassword}
                     onCheckedChange={(checked) => setRememberPassword(checked as boolean)}
-                    className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary w-4 h-4"
                   />
-                  <label 
-                    htmlFor="rememberPassword" 
-                    className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                  >
-                    Lembrar senha
+                  <label htmlFor="rememberPassword" className="text-muted-foreground cursor-pointer">
+                    Lembrar
                   </label>
                 </div>
-                <button
-                  type="button"
-                  className="text-primary text-sm hover:underline"
-                >
+                <button type="button" className="text-primary hover:underline">
                   Esqueceu a senha?
                 </button>
               </div>
             )}
 
-            {/* Submit Button with animated gradient */}
-            <div className="relative mt-4 group">
-              <div 
-                className="absolute -inset-0.5 rounded-xl opacity-75 blur-sm group-hover:opacity-100 transition-opacity"
-                style={{
-                  background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(38, 92%, 60%), hsl(var(--primary)), hsl(38, 92%, 60%))',
-                  backgroundSize: '300% 100%',
-                  animation: 'gradient-shift 3s ease infinite',
-                }}
-              />
-              <Button
-                type="submit"
-                className="relative w-full h-16 text-xl font-semibold hover:scale-[1.02] transition-transform overflow-hidden"
-                style={{
-                  background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(38, 92%, 55%), hsl(var(--primary)))',
-                  backgroundSize: '200% 100%',
-                  animation: 'gradient-shift 3s ease infinite',
-                }}
-                disabled={loading}
-              >
-                {loading ? (
-                  <Loader2 className="w-7 h-7 animate-spin mr-2" />
-                ) : (
-                  <ArrowRight className="w-7 h-7 mr-2" />
-                )}
-                {isLogin ? "Acessar o Core" : "Criar Acesso"}
-              </Button>
-            </div>
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              className="w-full h-12 text-base font-semibold gradient-button text-primary-foreground mt-2"
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+              ) : (
+                <ArrowRight className="w-5 h-5 mr-2" />
+              )}
+              {isLogin ? "Acessar Core" : "Criar Acesso"}
+            </Button>
           </form>
 
-          {/* Info text */}
-          <p className="text-sm text-muted-foreground text-center mt-6">
-            Canais dark não crescem por sorte. Crescem por sistema.
-          </p>
-
-          {/* Restricted access */}
-          <div className="text-center mt-6">
+          {/* Toggle Login/Signup */}
+          <div className="text-center mt-5 pt-5 border-t border-border/50">
             <p className="text-sm text-muted-foreground">
-              Acesso restrito · Validação obrigatória
+              {isLogin ? "Ainda não tem acesso?" : "Já tem acesso?"}
             </p>
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-primary text-base font-semibold hover:underline mt-2"
+              className="text-primary text-sm font-semibold hover:underline mt-1"
             >
-              {isLogin ? "Solicitar acesso ao Core" : "Já tenho acesso"}
+              {isLogin ? "Solicitar acesso" : "Fazer login"}
             </button>
           </div>
 
           {/* Security badge */}
-          <div className="flex items-center justify-center gap-2 mt-6 text-muted-foreground">
-            <Shield className="w-4 h-4 text-primary" />
-            <span className="text-sm">Ambiente isolado para operações dark</span>
+          <div className="flex items-center justify-center gap-2 mt-5 text-muted-foreground">
+            <Shield className="w-3 h-3 text-primary" />
+            <span className="text-xs">Ambiente seguro e criptografado</span>
           </div>
 
           {/* Terms */}
-          <p className="text-xs text-muted-foreground text-center mt-6">
-            Ao continuar, você concorda com nossos{" "}
-            <span className="text-primary hover:underline cursor-pointer">Termos de Uso</span>
+          <p className="text-xs text-muted-foreground text-center mt-4">
+            Ao continuar, você concorda com os{" "}
+            <Link to="/terms" className="text-primary hover:underline">Termos</Link>
             {" "}e{" "}
-            <span className="text-primary hover:underline cursor-pointer">Política de Privacidade</span>
+            <Link to="/privacy" className="text-primary hover:underline">Privacidade</Link>
           </p>
         </div>
-        
-        {/* Mirror reflection below card */}
-        <div 
-          className="absolute left-0 right-0 h-20 -bottom-1 rounded-2xl overflow-hidden pointer-events-none"
-          style={{
-            background: 'linear-gradient(to bottom, rgba(17,17,24,0.3), transparent)',
-            transform: 'rotateX(180deg) scaleY(0.3)',
-            transformOrigin: 'top',
-            filter: 'blur(2px)',
-            opacity: 0.4,
-          }}
-        />
       </div>
     </div>
   );
