@@ -41,6 +41,7 @@ import { ParticleBackground } from "@/components/landing/ParticleBackground";
 import { GlassCard } from "@/components/landing/GlassCard";
 import { AdSenseCard } from "@/components/landing/AdSenseCard";
 import FloatingElements from "@/components/landing/FloatingElements";
+import { ScrollIndicator } from "@/components/landing/ScrollIndicator";
 
 import { Tool3DCard } from "@/components/landing/Tool3DCard";
 import { Dream3DCard } from "@/components/landing/Dream3DCard";
@@ -270,12 +271,8 @@ const Landing = () => {
 
       </section>
 
-      {/* Scroll indicator - centered between sections */}
-      <div className="flex justify-center -mt-8 mb-4 relative z-20">
-        <div className="w-8 md:w-10 h-14 md:h-16 rounded-full border-2 border-border/50 bg-background/50 backdrop-blur-sm flex items-start justify-center p-2">
-          <div className="w-1.5 md:w-2 h-4 md:h-5 rounded-full bg-primary animate-bounce" />
-        </div>
-      </div>
+      {/* Scroll indicator - mouse style */}
+      <ScrollIndicator variant="mouse" />
 
       {/* Features Strip */}
       <section className="py-12 md:py-20 px-4">
@@ -375,6 +372,9 @@ const Landing = () => {
         </AnimatedSection>
       </section>
 
+      {/* Scroll indicator - arrow style */}
+      <ScrollIndicator variant="arrow" />
+
       {/* Dreams Section */}
       <section className="py-16 md:py-24 px-4 relative overflow-hidden">
         <ParallaxLayer depth={0.4} className="absolute -top-20 -right-20 w-64 md:w-96 h-64 md:h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none hidden md:block" />
@@ -428,6 +428,9 @@ const Landing = () => {
           </AnimatedSection>
         </div>
       </section>
+
+      {/* Scroll indicator - dots style */}
+      <ScrollIndicator variant="dots" />
 
       {/* Tools Section */}
       <section id="funcionalidades" className="py-16 md:py-24 px-4 scroll-mt-20 relative overflow-hidden">
@@ -484,6 +487,9 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Scroll indicator - line style */}
+      <ScrollIndicator variant="line" />
+
       {/* How it Works - Zigzag Timeline */}
       <section id="como-funciona" className="py-24 px-4 scroll-mt-20">
         <div className="max-w-5xl mx-auto space-y-14">
@@ -539,6 +545,9 @@ const Landing = () => {
           </div>
         </div>
       </section>
+
+      {/* Scroll indicator - mouse style */}
+      <ScrollIndicator variant="mouse" />
 
       {/* Results Section */}
       <section className="py-24 px-4 relative overflow-hidden">
@@ -606,6 +615,9 @@ const Landing = () => {
           </AnimatedSection>
         </div>
       </section>
+
+      {/* Scroll indicator - arrow style */}
+      <ScrollIndicator variant="arrow" />
 
       {/* Plans Section */}
       <section id="planos" className="py-24 px-4 scroll-mt-20 relative overflow-hidden">
