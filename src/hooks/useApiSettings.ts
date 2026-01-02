@@ -9,11 +9,14 @@ interface ApiSettings {
   gemini_api_key: string;
   elevenlabs_api_key: string;
   youtube_api_key: string;
+  imagefx_cookies: string;
   openai_validated: boolean;
   claude_validated: boolean;
   gemini_validated: boolean;
   elevenlabs_validated: boolean;
   youtube_validated: boolean;
+  imagefx_validated: boolean;
+  use_platform_credits: boolean;
 }
 
 const defaultSettings: ApiSettings = {
@@ -22,11 +25,14 @@ const defaultSettings: ApiSettings = {
   gemini_api_key: '',
   elevenlabs_api_key: '',
   youtube_api_key: '',
+  imagefx_cookies: '',
   openai_validated: false,
   claude_validated: false,
   gemini_validated: false,
   elevenlabs_validated: false,
   youtube_validated: false,
+  imagefx_validated: false,
+  use_platform_credits: true,
 };
 
 export function useApiSettings() {
@@ -60,11 +66,14 @@ export function useApiSettings() {
           gemini_api_key: data.gemini_api_key || '',
           elevenlabs_api_key: data.elevenlabs_api_key || '',
           youtube_api_key: data.youtube_api_key || '',
+          imagefx_cookies: (data as any).imagefx_cookies || '',
           openai_validated: data.openai_validated || false,
           claude_validated: data.claude_validated || false,
           gemini_validated: data.gemini_validated || false,
           elevenlabs_validated: data.elevenlabs_validated || false,
           youtube_validated: data.youtube_validated || false,
+          imagefx_validated: (data as any).imagefx_validated || false,
+          use_platform_credits: (data as any).use_platform_credits ?? true,
         });
       }
     } catch (error) {
@@ -150,6 +159,7 @@ export function useApiSettings() {
       case 'gemini': return settings.gemini_api_key;
       case 'elevenlabs': return settings.elevenlabs_api_key;
       case 'youtube': return settings.youtube_api_key;
+      case 'imagefx': return settings.imagefx_cookies;
       default: return '';
     }
   };
@@ -161,6 +171,7 @@ export function useApiSettings() {
       case 'gemini': return settings.gemini_validated;
       case 'elevenlabs': return settings.elevenlabs_validated;
       case 'youtube': return settings.youtube_validated;
+      case 'imagefx': return settings.imagefx_validated;
       default: return false;
     }
   };

@@ -793,9 +793,12 @@ export type Database = {
           gemini_api_key: string | null
           gemini_validated: boolean | null
           id: string
+          imagefx_cookies: string | null
+          imagefx_validated: boolean | null
           openai_api_key: string | null
           openai_validated: boolean | null
           updated_at: string
+          use_platform_credits: boolean | null
           user_id: string
           youtube_api_key: string | null
           youtube_validated: boolean | null
@@ -809,9 +812,12 @@ export type Database = {
           gemini_api_key?: string | null
           gemini_validated?: boolean | null
           id?: string
+          imagefx_cookies?: string | null
+          imagefx_validated?: boolean | null
           openai_api_key?: string | null
           openai_validated?: boolean | null
           updated_at?: string
+          use_platform_credits?: boolean | null
           user_id: string
           youtube_api_key?: string | null
           youtube_validated?: boolean | null
@@ -825,9 +831,12 @@ export type Database = {
           gemini_api_key?: string | null
           gemini_validated?: boolean | null
           id?: string
+          imagefx_cookies?: string | null
+          imagefx_validated?: boolean | null
           openai_api_key?: string | null
           openai_validated?: boolean | null
           updated_at?: string
+          use_platform_credits?: boolean | null
           user_id?: string
           youtube_api_key?: string | null
           youtube_validated?: boolean | null

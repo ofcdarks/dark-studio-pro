@@ -4,25 +4,32 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
+type UserPlan = 'free' | 'pro' | 'admin' | 'master' | 'annual';
+
 const SettingsPage = () => {
   const { user } = useAuth();
   const { profile, loading: profileLoading, refetch: refetchProfile } = useProfile();
   const { settings, loading: settingsLoading, validating, validateApiKey, saveSettings, isValidated } = useApiSettings();
 
+  const [userPlan, setUserPlan] = useState<UserPlan>('free');
   const [profileData, setProfileData] = useState({ full_name: '', email: '' });
+  const [usePlatformCredits, setUsePlatformCredits] = useState(true);
   const [apiKeys, setApiKeys] = useState({
     openai: '',
     claude: '',
     gemini: '',
     elevenlabs: '',
     youtube: '',
+    imagefx: '',
   });
   const [showKeys, setShowKeys] = useState({
     openai: false,
@@ -30,7 +37,41 @@ const SettingsPage = () => {
     gemini: false,
     elevenlabs: false,
     youtube: false,
+    imagefx: false,
   });
+
+  // Fetch user plan/role
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (roleData?.role) {
+          // Check if user has annual plan by checking subscriptions or plan_permissions
+          // For now, map the role to plan type
+          const role = roleData.role as string;
+          if (role === 'admin') {
+            setUserPlan('admin');
+          } else if (role === 'pro') {
+            // Check if it's annual pro
+            setUserPlan('pro');
+          } else {
+            setUserPlan('free');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user plan:', error);
+      }
+    };
+    
+    fetchUserPlan();
+  }, [user]);
 
   useEffect(() => {
     if (profile) {
@@ -49,9 +90,14 @@ const SettingsPage = () => {
         gemini: settings.gemini_api_key || '',
         elevenlabs: settings.elevenlabs_api_key || '',
         youtube: settings.youtube_api_key || '',
+        imagefx: settings.imagefx_cookies || '',
       });
+      setUsePlatformCredits(settings.use_platform_credits);
     }
   }, [settings]);
+
+  // Check if user can use their own API keys (annual plans or master/admin)
+  const canUseOwnApiKeys = userPlan === 'admin' || userPlan === 'master' || userPlan === 'annual';
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -74,6 +120,16 @@ const SettingsPage = () => {
     }
   };
 
+  const handleToggleCredits = async (checked: boolean) => {
+    if (!canUseOwnApiKeys && !checked) {
+      toast.error('Seu plano não permite usar API própria. Faça upgrade para um plano anual ou Master.');
+      return;
+    }
+    
+    setUsePlatformCredits(checked);
+    await saveSettings({ use_platform_credits: checked } as any);
+  };
+
   const handleValidateAndSave = async (provider: string) => {
     const key = apiKeys[provider as keyof typeof apiKeys];
     if (!key.trim()) {
@@ -84,10 +140,16 @@ const SettingsPage = () => {
     const valid = await validateApiKey(provider, key);
     
     const updateData: Record<string, string | boolean> = {};
-    updateData[`${provider}_api_key`] = key;
-    updateData[`${provider}_validated`] = valid;
     
-    await saveSettings(updateData);
+    if (provider === 'imagefx') {
+      updateData['imagefx_cookies'] = key;
+      updateData['imagefx_validated'] = valid;
+    } else {
+      updateData[`${provider}_api_key`] = key;
+      updateData[`${provider}_validated`] = valid;
+    }
+    
+    await saveSettings(updateData as any);
   };
 
   const toggleShowKey = (provider: string) => {
@@ -97,7 +159,9 @@ const SettingsPage = () => {
   const renderApiKeyField = (
     provider: string,
     label: string,
-    placeholder: string
+    placeholder: string,
+    isLocked: boolean = false,
+    isTextarea: boolean = false
   ) => {
     const key = apiKeys[provider as keyof typeof apiKeys];
     const validated = isValidated(provider);
@@ -107,8 +171,16 @@ const SettingsPage = () => {
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-sm text-muted-foreground">{label}</label>
-          {key && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground">{label}</label>
+            {isLocked && (
+              <Badge variant="outline" className="text-xs border-amber-500/50 text-amber-500">
+                <Lock className="w-3 h-3 mr-1" />
+                Plano Anual/Master
+              </Badge>
+            )}
+          </div>
+          {key && !isLocked && (
             <div className="flex items-center gap-1">
               {validated ? (
                 <span className="flex items-center gap-1 text-xs text-green-500">
@@ -122,26 +194,41 @@ const SettingsPage = () => {
             </div>
           )}
         </div>
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Input
-              type={showKey ? "text" : "password"}
-              placeholder={placeholder}
-              value={key}
-              onChange={(e) => setApiKeys(prev => ({ ...prev, [provider]: e.target.value }))}
-              className="bg-secondary border-border pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => toggleShowKey(provider)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
+        <div className={`flex gap-2 ${isTextarea ? 'flex-col' : ''}`}>
+          <div className={`relative ${isTextarea ? 'w-full' : 'flex-1'}`}>
+            {isTextarea ? (
+              <Textarea
+                placeholder={placeholder}
+                value={key}
+                onChange={(e) => setApiKeys(prev => ({ ...prev, [provider]: e.target.value }))}
+                className="bg-secondary border-border min-h-[100px] font-mono text-xs"
+                disabled={isLocked}
+              />
+            ) : (
+              <>
+                <Input
+                  type={showKey ? "text" : "password"}
+                  placeholder={placeholder}
+                  value={key}
+                  onChange={(e) => setApiKeys(prev => ({ ...prev, [provider]: e.target.value }))}
+                  className="bg-secondary border-border pr-10"
+                  disabled={isLocked}
+                />
+                {!isLocked && (
+                  <button
+                    type="button"
+                    onClick={() => toggleShowKey(provider)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                )}
+              </>
+            )}
           </div>
           <Button
             onClick={() => handleValidateAndSave(provider)}
-            disabled={isValidating || !key.trim()}
+            disabled={isValidating || !key.trim() || isLocked}
             variant="outline"
             className="border-border"
           >
@@ -152,6 +239,11 @@ const SettingsPage = () => {
             )}
           </Button>
         </div>
+        {isLocked && (
+          <p className="text-xs text-muted-foreground">
+            Disponível apenas para planos anuais ou Master. <a href="/plans" className="text-primary hover:underline">Fazer upgrade</a>
+          </p>
+        )}
       </div>
     );
   };
@@ -208,6 +300,43 @@ const SettingsPage = () => {
               </div>
             </Card>
 
+            {/* Credit Mode Selection */}
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <Coins className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold text-foreground">Modo de Uso</h3>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg border border-border">
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">Usar Créditos da Plataforma</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {usePlatformCredits 
+                        ? 'Suas operações consomem créditos da plataforma. Simples e sem configuração.'
+                        : 'Você está usando suas próprias chaves de API. Sem consumo de créditos.'}
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={usePlatformCredits} 
+                    onCheckedChange={handleToggleCredits}
+                  />
+                </div>
+                
+                {!canUseOwnApiKeys && (
+                  <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                    <Lock className="w-5 h-5 text-amber-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-amber-500">Recurso Premium</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Usar suas próprias chaves de API está disponível apenas para planos anuais ou Master. 
+                        <a href="/plans" className="text-primary hover:underline ml-1">Fazer upgrade</a>
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+
             <Card className="p-6">
               <div className="flex items-center gap-2 mb-6">
                 <Key className="w-5 h-5 text-primary" />
@@ -217,11 +346,32 @@ const SettingsPage = () => {
                 Configure suas chaves de API para usar funcionalidades avançadas. As chaves são validadas automaticamente.
               </p>
               <div className="space-y-4">
-                {renderApiKeyField('openai', 'OpenAI API Key', 'sk-...')}
-                {renderApiKeyField('claude', 'Claude API Key', 'sk-ant-...')}
-                {renderApiKeyField('gemini', 'Google Gemini API Key', 'AIza...')}
-                {renderApiKeyField('elevenlabs', 'ElevenLabs API Key', '...')}
-                {renderApiKeyField('youtube', 'YouTube Data API Key', 'AIza...')}
+                {/* YouTube is available for all plans */}
+                {renderApiKeyField('youtube', 'YouTube Data API Key', 'AIza...', false)}
+                
+                {/* AI APIs - locked for non-premium plans */}
+                {renderApiKeyField('openai', 'OpenAI API Key', 'sk-...', !canUseOwnApiKeys)}
+                {renderApiKeyField('claude', 'Claude API Key', 'sk-ant-...', !canUseOwnApiKeys)}
+                {renderApiKeyField('gemini', 'Google Gemini API Key', 'AIza...', !canUseOwnApiKeys)}
+                {renderApiKeyField('elevenlabs', 'ElevenLabs API Key', '...', !canUseOwnApiKeys)}
+              </div>
+            </Card>
+
+            {/* ImageFX Section */}
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <Image className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold text-foreground">ImageFX (Geração de Imagens)</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Cole os cookies do ImageFX para gerar imagens. Para obter os cookies, acesse{' '}
+                <a href="https://aitestkitchen.withgoogle.com/tools/image-fx" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  ImageFX
+                </a>
+                , faça login e extraia os cookies usando uma extensão como "EditThisCookie" ou "Cookie-Editor".
+              </p>
+              <div className="space-y-4">
+                {renderApiKeyField('imagefx', 'Cookies do ImageFX', 'Cole seus cookies aqui (ex: __Secure-1PSID=xxx; ...)', !canUseOwnApiKeys, true)}
               </div>
             </Card>
 
