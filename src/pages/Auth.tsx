@@ -165,7 +165,7 @@ const Auth = () => {
 
           {/* Logo */}
           <div className="flex flex-col items-center mb-6 relative">
-            <div className="w-24 h-24 rounded-full overflow-hidden mb-5 ring-2 ring-primary/30">
+            <div className="w-32 h-32 rounded-full overflow-hidden mb-5">
               <img src={logo} alt="Logo" className="w-full h-full object-cover" />
             </div>
             
