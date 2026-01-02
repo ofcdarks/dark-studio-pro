@@ -6,6 +6,7 @@ import { FileText, Upload, Download, Copy, RefreshCw, CheckCircle } from "lucide
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { SessionIndicator } from "@/components/ui/session-indicator";
 
 const SRTConverter = () => {
   // Persisted states
@@ -169,7 +170,17 @@ const SRTConverter = () => {
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
+          {/* Session Indicator */}
+          <SessionIndicator 
+            storageKeys={["srt_inputText", "srt_outputText"]}
+            label="Conteúdo anterior"
+            onClear={() => {
+              setInputText("");
+              setOutputText("");
+            }}
+          />
+
+          <div className="mb-8 mt-4">
             <h1 className="text-3xl font-bold text-foreground mb-2">Conversor SRT</h1>
             <p className="text-muted-foreground">
               Converta e edite arquivos de legendas SRT

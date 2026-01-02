@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { SessionIndicator } from "@/components/ui/session-indicator";
 
 interface Niche {
   name: string;
@@ -112,7 +113,17 @@ const ExploreNiche = () => {
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
+          {/* Session Indicator */}
+          <SessionIndicator 
+            storageKeys={["explore_searchTerm", "explore_niches"]}
+            label="Exploração anterior"
+            onClear={() => {
+              setSearchTerm("");
+              setNiches(defaultNiches);
+            }}
+          />
+
+          <div className="mb-8 mt-4">
             <h1 className="text-3xl font-bold text-foreground mb-2">Explorar Nicho</h1>
             <p className="text-muted-foreground">
               Descubra nichos em alta e encontre oportunidades de conteúdo
