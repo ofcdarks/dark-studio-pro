@@ -71,11 +71,15 @@ export const AutoChat = () => {
   return (
     <>
       {/* Chat Button */}
+      {/* Pulse ring effect */}
+      <div className="!fixed !bottom-6 !right-6 z-[9998] w-16 h-16 pointer-events-none">
+        <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping" />
+        <span className="absolute inset-0 rounded-full bg-primary/20 animate-pulse" style={{ animationDelay: '0.5s' }} />
+      </div>
+
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        className={`!fixed !bottom-6 !right-6 z-[9999] w-16 h-16 rounded-full gradient-button shadow-2xl shadow-primary/30 hover:scale-110 transition-all duration-300 ${
-          isOpen ? 'rotate-0' : 'animate-bounce'
-        }`}
+        className={`!fixed !bottom-6 !right-6 z-[9999] w-16 h-16 rounded-full gradient-button shadow-2xl shadow-primary/30 hover:scale-110 transition-all duration-300`}
         size="icon"
       >
         {isOpen ? (
