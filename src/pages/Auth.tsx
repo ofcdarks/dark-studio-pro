@@ -102,17 +102,16 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-background">
-      {/* Background with new Porsche angle */}
-      <div className="absolute inset-0 -z-10">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background with Porsche */}
+      <div className="absolute inset-0">
         <img
           src={authBg}
           alt="Background"
-          className="absolute inset-0 h-full w-full object-cover object-center opacity-50"
+          className="absolute inset-0 h-full w-full object-cover object-center"
         />
-        {/* Dark overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/85 to-background/70" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-background/60" />
+        {/* Subtle dark overlay to ensure readability */}
+        <div className="absolute inset-0 bg-background/60" />
       </div>
 
       {/* Subtle floating orbs */}
@@ -130,7 +129,7 @@ const Auth = () => {
         <span>Voltar</span>
       </Link>
       
-      {/* Compact Login Card with animated border */}
+      {/* Compact Login Card with animated border and glass effect */}
       <div 
         className={`relative z-10 w-full max-w-md transition-all duration-700 ease-out ${
           isVisible 
@@ -139,7 +138,7 @@ const Auth = () => {
         }`}
       >
         {/* Animated border glow */}
-        <div className="absolute -inset-[2px] rounded-2xl bg-gradient-to-r from-primary via-amber-400 to-primary opacity-60 blur-sm animate-pulse" />
+        <div className="absolute -inset-[2px] rounded-2xl bg-gradient-to-r from-primary via-amber-400 to-primary opacity-70 blur-sm animate-pulse" />
         <div 
           className="absolute -inset-[1px] rounded-2xl"
           style={{
@@ -149,21 +148,23 @@ const Auth = () => {
           }}
         />
         
+        {/* Glass card */}
         <div 
-          className="relative bg-card/98 backdrop-blur-xl rounded-2xl p-8 border-0 shadow-2xl"
+          className="relative rounded-2xl p-8 border border-primary/30 shadow-2xl backdrop-blur-xl"
           style={{
+            background: 'rgba(10, 10, 15, 0.75)',
             boxShadow: `
-              0 0 0 1px rgba(255,255,255,0.03) inset,
-              0 25px 50px -12px rgba(0,0,0,0.5),
-              0 0 60px rgba(245,158,11,0.15)
+              0 0 0 1px rgba(255,255,255,0.05) inset,
+              0 25px 50px -12px rgba(0,0,0,0.6),
+              0 0 80px rgba(245,158,11,0.2)
             `,
           }}
         >
-          {/* Glass shine */}
+          {/* Glass shine effect */}
           <div 
-            className="absolute inset-0 pointer-events-none rounded-2xl"
+            className="absolute inset-0 pointer-events-none rounded-2xl overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%)',
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 40%)',
             }}
           />
 
