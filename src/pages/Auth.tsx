@@ -110,9 +110,19 @@ const Auth = () => {
           src={authBg}
           alt="Background"
           className="absolute inset-0 h-full w-full object-cover object-center"
+          style={{
+            filter: 'brightness(0.7) contrast(1.15) saturate(1.1)',
+          }}
         />
-        {/* Subtle dark overlay to ensure readability */}
-        <div className="absolute inset-0 bg-background/60" />
+        {/* Darker overlay for more depth */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/85 to-background/70" />
+        {/* Vignette effect */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse at center, transparent 30%, rgba(10, 10, 15, 0.7) 100%)',
+          }}
+        />
       </div>
 
       {/* Subtle floating orbs */}
