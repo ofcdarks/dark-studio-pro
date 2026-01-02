@@ -253,12 +253,17 @@ async function getAdminApiKeys(): Promise<AdminApiKeys | null> {
   }
 }
 
+// Extended interface for user API settings with credit preference
+interface UserApiSettingsFull extends UserApiSettings {
+  use_platform_credits: boolean;
+}
+
 // Function to get user's API keys from settings
-async function getUserApiKeys(userId: string): Promise<UserApiSettings | null> {
+async function getUserApiKeys(userId: string): Promise<UserApiSettingsFull | null> {
   try {
     const { data, error } = await supabaseAdmin
       .from('user_api_settings')
-      .select('openai_api_key, claude_api_key, gemini_api_key, openai_validated, claude_validated, gemini_validated')
+      .select('openai_api_key, claude_api_key, gemini_api_key, openai_validated, claude_validated, gemini_validated, use_platform_credits')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -267,7 +272,10 @@ async function getUserApiKeys(userId: string): Promise<UserApiSettings | null> {
       return null;
     }
 
-    return data as UserApiSettings;
+    return {
+      ...data,
+      use_platform_credits: (data as any).use_platform_credits ?? true
+    } as UserApiSettingsFull;
   } catch (e) {
     console.error('[AI Assistant] Error fetching user API settings:', e);
     return null;
@@ -317,16 +325,67 @@ serve(async (req) => {
     const adminApiKeys = await getAdminApiKeys();
 
     // Get user's API settings
-    let userApiKeys: UserApiSettings | null = null;
+    let userApiKeys: UserApiSettingsFull | null = null;
     let useUserApiKey = false;
     let userApiKeyToUse: string | null = null;
     let apiProvider: 'openai' | 'gemini' | 'laozhang' | 'lovable' = 'lovable';
     let laozhangModel: string | null = null;
+    let shouldDebitCredits = true;
 
     if (userId) {
       userApiKeys = await getUserApiKeys(userId);
+    }
+
+    // Check if user wants to use platform credits (default: true)
+    const usePlatformCredits = userApiKeys?.use_platform_credits ?? true;
+    console.log(`[AI Assistant] User preference - Use platform credits: ${usePlatformCredits}`);
+
+    if (usePlatformCredits) {
+      // USER WANTS TO USE PLATFORM CREDITS
+      // Priority: Admin Laozhang > Admin OpenAI > Admin Gemini > System OpenAI > Lovable AI
       
-      // Determine which API key to use based on model selection
+      if (adminApiKeys?.laozhang && adminApiKeys.laozhang_validated) {
+        userApiKeyToUse = adminApiKeys.laozhang;
+        apiProvider = 'laozhang';
+        
+        // Map model selection to Laozhang models
+        if (model === "gpt-4o" || model === "gpt-5" || model?.includes("gpt")) {
+          laozhangModel = "gpt-4o";
+        } else if (model === "claude" || model?.includes("claude")) {
+          laozhangModel = "claude-3-5-sonnet-20241022";
+        } else if (model === "gemini-pro" || model?.includes("pro")) {
+          laozhangModel = "gemini-2.0-flash";
+        } else if (model?.includes("gemini")) {
+          laozhangModel = "gemini-2.0-flash";
+        } else {
+          laozhangModel = "gpt-4o-mini"; // Default cost-effective model
+        }
+        console.log(`[AI Assistant] Using Laozhang AI (platform credits) with model: ${laozhangModel}`);
+      } else if (adminApiKeys?.openai && adminApiKeys.openai_validated) {
+        userApiKeyToUse = adminApiKeys.openai;
+        apiProvider = 'openai';
+        console.log('[AI Assistant] Using admin OpenAI API key (platform credits)');
+      } else if (adminApiKeys?.gemini && adminApiKeys.gemini_validated) {
+        userApiKeyToUse = adminApiKeys.gemini;
+        apiProvider = 'gemini';
+        console.log('[AI Assistant] Using admin Gemini API key (platform credits)');
+      } else if (OPENAI_API_KEY) {
+        userApiKeyToUse = OPENAI_API_KEY;
+        apiProvider = 'openai';
+        console.log('[AI Assistant] Using system OpenAI API key (platform credits)');
+      } else if (LOVABLE_API_KEY) {
+        apiProvider = 'lovable';
+        console.log('[AI Assistant] Using Lovable AI gateway (platform credits)');
+      }
+      
+      // Platform credits mode = debit credits
+      shouldDebitCredits = true;
+      
+    } else {
+      // USER WANTS TO USE THEIR OWN API KEYS (no credits deducted)
+      console.log('[AI Assistant] User opted to use own API keys');
+      shouldDebitCredits = false;
+      
       if (userApiKeys) {
         if ((model === "gpt-4o" || model === "gpt-5" || model?.includes("gpt")) && userApiKeys.openai_api_key && userApiKeys.openai_validated) {
           userApiKeyToUse = userApiKeys.openai_api_key;
@@ -339,66 +398,47 @@ serve(async (req) => {
           useUserApiKey = true;
           console.log('[AI Assistant] Using user Gemini API key');
         } else if (userApiKeys.openai_api_key && userApiKeys.openai_validated) {
-          // Fallback to OpenAI if available
           userApiKeyToUse = userApiKeys.openai_api_key;
           apiProvider = 'openai';
           useUserApiKey = true;
           console.log('[AI Assistant] Using user OpenAI API key (fallback)');
         } else if (userApiKeys.gemini_api_key && userApiKeys.gemini_validated) {
-          // Fallback to Gemini if available
           userApiKeyToUse = userApiKeys.gemini_api_key;
           apiProvider = 'gemini';
           useUserApiKey = true;
           console.log('[AI Assistant] Using user Gemini API key (fallback)');
+        } else {
+          // No valid user API key found - fall back to platform with credits
+          console.log('[AI Assistant] No valid user API keys found, falling back to platform credits');
+          shouldDebitCredits = true;
+          
+          if (adminApiKeys?.laozhang && adminApiKeys.laozhang_validated) {
+            userApiKeyToUse = adminApiKeys.laozhang;
+            apiProvider = 'laozhang';
+            laozhangModel = "gpt-4o-mini";
+            console.log('[AI Assistant] Fallback to Laozhang AI');
+          } else if (LOVABLE_API_KEY) {
+            apiProvider = 'lovable';
+            console.log('[AI Assistant] Fallback to Lovable AI');
+          }
+        }
+      } else {
+        // No user settings at all - use platform with credits
+        console.log('[AI Assistant] No user API settings, using platform credits');
+        shouldDebitCredits = true;
+        
+        if (adminApiKeys?.laozhang && adminApiKeys.laozhang_validated) {
+          userApiKeyToUse = adminApiKeys.laozhang;
+          apiProvider = 'laozhang';
+          laozhangModel = "gpt-4o-mini";
+        } else if (LOVABLE_API_KEY) {
+          apiProvider = 'lovable';
         }
       }
     }
 
-    // If no user API key, check for admin Laozhang API key (priority over others)
-    if (!useUserApiKey && adminApiKeys?.laozhang && adminApiKeys.laozhang_validated) {
-      userApiKeyToUse = adminApiKeys.laozhang;
-      apiProvider = 'laozhang';
-      useUserApiKey = true;
-      
-      // Map model selection to Laozhang models
-      if (model === "gpt-4o" || model === "gpt-5" || model?.includes("gpt")) {
-        laozhangModel = "gpt-4o";
-      } else if (model === "claude" || model?.includes("claude")) {
-        laozhangModel = "claude-3-5-sonnet-20241022";
-      } else if (model === "gemini-pro" || model?.includes("pro")) {
-        laozhangModel = "gemini-1.5-pro";
-      } else {
-        laozhangModel = "gpt-4o-mini"; // Default cost-effective model
-      }
-      console.log(`[AI Assistant] Using admin Laozhang API key with model: ${laozhangModel}`);
-    }
-
-    // If no Laozhang, check for admin OpenAI key
-    if (!useUserApiKey && adminApiKeys?.openai && adminApiKeys.openai_validated) {
-      userApiKeyToUse = adminApiKeys.openai;
-      apiProvider = 'openai';
-      useUserApiKey = true;
-      console.log('[AI Assistant] Using admin OpenAI API key');
-    }
-
-    // If no admin OpenAI, check for admin Gemini key
-    if (!useUserApiKey && adminApiKeys?.gemini && adminApiKeys.gemini_validated) {
-      userApiKeyToUse = adminApiKeys.gemini;
-      apiProvider = 'gemini';
-      useUserApiKey = true;
-      console.log('[AI Assistant] Using admin Gemini API key');
-    }
-
-    // If no user API key, check for system OpenAI key
-    if (!useUserApiKey && OPENAI_API_KEY) {
-      userApiKeyToUse = OPENAI_API_KEY;
-      apiProvider = 'openai';
-      useUserApiKey = true;
-      console.log('[AI Assistant] Using system OpenAI API key');
-    }
-
-    // Final fallback to Lovable AI
-    if (!useUserApiKey && !LOVABLE_API_KEY) {
+    // Final check - ensure we have an API provider
+    if (apiProvider === 'lovable' && !LOVABLE_API_KEY) {
       throw new Error("Nenhuma chave de API disponível. Configure suas chaves em Configurações.");
     }
 
@@ -407,10 +447,10 @@ serve(async (req) => {
       duration: duration ? parseInt(duration) : 5 
     });
     
-    console.log(`[AI Assistant] Operation: ${type}, Model: ${model || 'gemini'}, Provider: ${apiProvider}, Credits needed: ${creditsNeeded}, User: ${userId}`);
+    console.log(`[AI Assistant] Operation: ${type}, Model: ${model || 'gemini'}, Provider: ${apiProvider}, Credits needed: ${creditsNeeded}, User: ${userId}, Debit credits: ${shouldDebitCredits}`);
 
-    // Verificar e debitar créditos se userId disponível (only for Lovable AI or system keys)
-    if (userId && !useUserApiKey) {
+    // Verificar e debitar créditos se shouldDebitCredits for true
+    if (userId && shouldDebitCredits) {
       const creditResult = await checkAndDebitCredits(userId, creditsNeeded, type, { model });
       
       if (!creditResult.success) {
@@ -420,8 +460,8 @@ serve(async (req) => {
         );
       }
       console.log(`[AI Assistant] Credits debited. New balance: ${creditResult.newBalance}`);
-    } else if (useUserApiKey) {
-      console.log('[AI Assistant] Using user API key - no credits debited');
+    } else if (!shouldDebitCredits) {
+      console.log('[AI Assistant] Using own API keys - no credits debited');
     }
 
     let systemPrompt = "";
