@@ -424,6 +424,7 @@ export type Database = {
           formula: string | null
           id: string
           is_favorite: boolean | null
+          is_used: boolean | null
           model_used: string | null
           pontuacao: number | null
           title_text: string
@@ -437,6 +438,7 @@ export type Database = {
           formula?: string | null
           id?: string
           is_favorite?: boolean | null
+          is_used?: boolean | null
           model_used?: string | null
           pontuacao?: number | null
           title_text: string
@@ -450,6 +452,7 @@ export type Database = {
           formula?: string | null
           id?: string
           is_favorite?: boolean | null
+          is_used?: boolean | null
           model_used?: string | null
           pontuacao?: number | null
           title_text?: string

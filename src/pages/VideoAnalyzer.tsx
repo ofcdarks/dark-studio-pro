@@ -41,6 +41,7 @@ interface GeneratedTitle {
   impact: number;
   isBest?: boolean;
   model: string;
+  isUsed?: boolean;
 }
 
 interface OriginalTitleAnalysis {
@@ -640,6 +641,43 @@ const VideoAnalyzer = () => {
     }
   };
 
+  const toggleTitleUsed = async (id: string) => {
+    const titleData = generatedTitles.find(t => t.id === id);
+    if (!titleData) return;
+    
+    const newIsUsed = !titleData.isUsed;
+    
+    // Update local state
+    setGeneratedTitles(prev => prev.map(t => 
+      t.id === id ? { ...t, isUsed: newIsUsed } : t
+    ));
+    
+    // Update in database
+    if (user && currentAnalysisId) {
+      const { data: existingTitle } = await supabase
+        .from("generated_titles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("title_text", titleData.title)
+        .eq("video_analysis_id", currentAnalysisId)
+        .single();
+      
+      if (existingTitle) {
+        await supabase
+          .from("generated_titles")
+          .update({ is_used: newIsUsed })
+          .eq("id", existingTitle.id);
+      }
+    }
+    
+    toast({
+      title: newIsUsed ? "Título marcado como utilizado" : "Título desmarcado",
+      description: newIsUsed 
+        ? "Este título foi marcado como já utilizado" 
+        : "Este título foi desmarcado",
+    });
+  };
+
   const handleCreateAgent = (formula: ScriptFormulaAnalysis | null, transcription: string) => {
     setCurrentFormula(formula);
     setCurrentTranscription(transcription);
@@ -1003,7 +1041,22 @@ const VideoAnalyzer = () => {
                               Melhor título
                             </Badge>
                           )}
-                          <span className="text-foreground font-semibold">{title.title}</span>
+                          {title.isUsed && (
+                            <Badge variant="outline" className="text-xs shrink-0 text-muted-foreground border-muted-foreground/50">
+                              Utilizado
+                            </Badge>
+                          )}
+                          <span 
+                            className={`font-semibold cursor-pointer transition-all ${
+                              title.isUsed 
+                                ? "text-muted-foreground line-through opacity-60" 
+                                : "text-foreground"
+                            }`}
+                            onClick={() => toggleTitleUsed(title.id)}
+                            title={title.isUsed ? "Clique para desmarcar" : "Clique para marcar como utilizado"}
+                          >
+                            {title.title}
+                          </span>
                         </div>
 
                         <Collapsible>
