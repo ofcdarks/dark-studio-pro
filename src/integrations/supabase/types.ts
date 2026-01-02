@@ -987,6 +987,51 @@ export type Database = {
         }
         Relationships: []
       }
+      viral_thumbnails: {
+        Row: {
+          created_at: string
+          headline: string | null
+          id: string
+          image_url: string
+          niche: string | null
+          prompt: string | null
+          seo_description: string | null
+          seo_tags: string | null
+          style: string | null
+          sub_niche: string | null
+          user_id: string
+          video_title: string
+        }
+        Insert: {
+          created_at?: string
+          headline?: string | null
+          id?: string
+          image_url: string
+          niche?: string | null
+          prompt?: string | null
+          seo_description?: string | null
+          seo_tags?: string | null
+          style?: string | null
+          sub_niche?: string | null
+          user_id: string
+          video_title: string
+        }
+        Update: {
+          created_at?: string
+          headline?: string | null
+          id?: string
+          image_url?: string
+          niche?: string | null
+          prompt?: string | null
+          seo_description?: string | null
+          seo_tags?: string | null
+          style?: string | null
+          sub_niche?: string | null
+          user_id?: string
+          video_title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

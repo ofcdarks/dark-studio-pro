@@ -66,6 +66,20 @@ interface GeneratedScript {
   agent_id: string | null;
 }
 
+interface ViralThumbnail {
+  id: string;
+  image_url: string;
+  video_title: string;
+  headline: string | null;
+  seo_description: string | null;
+  seo_tags: string | null;
+  prompt: string | null;
+  style: string | null;
+  niche: string | null;
+  sub_niche: string | null;
+  created_at: string;
+}
+
 const ViralLibrary = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -81,6 +95,7 @@ const ViralLibrary = () => {
   const [videos, setVideos] = useState<ViralVideo[]>([]);
   const [agents, setAgents] = useState<ScriptAgent[]>([]);
   const [scripts, setScripts] = useState<GeneratedScript[]>([]);
+  const [viralThumbnails, setViralThumbnails] = useState<ViralThumbnail[]>([]);
   const [loading, setLoading] = useState(true);
   const [newVideo, setNewVideo] = useState({ title: '', video_url: '', notes: '' });
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -94,6 +109,7 @@ const ViralLibrary = () => {
       fetchVideos();
       fetchAgents();
       fetchScripts();
+      fetchViralThumbnails();
     }
   }, [user]);
 
@@ -115,6 +131,20 @@ const ViralLibrary = () => {
       setScripts(data || []);
     } catch (error) {
       console.error('Error fetching scripts:', error);
+    }
+  };
+
+  const fetchViralThumbnails = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('viral_thumbnails')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setViralThumbnails(data || []);
+    } catch (error) {
+      console.error('Error fetching viral thumbnails:', error);
     }
   };
 
@@ -407,13 +437,84 @@ const ViralLibrary = () => {
 
             {/* Thumbnails Tab */}
             <TabsContent value="thumbnails" className="mt-0">
-              <Card className="p-12 text-center border-border/50">
-                <Image className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">Biblioteca de thumbnails vazia</h3>
-                <p className="text-lg text-muted-foreground">
-                  Analise vídeos para adicionar thumbnails à biblioteca
-                </p>
-              </Card>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : viralThumbnails.length === 0 ? (
+                <Card className="p-12 text-center border-border/50">
+                  <Image className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Biblioteca de thumbnails vazia</h3>
+                  <p className="text-lg text-muted-foreground">
+                    Gere thumbnails e clique em "Salvar" para adicioná-las à biblioteca
+                  </p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {viralThumbnails.filter(t => 
+                    t.video_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    t.headline?.toLowerCase().includes(searchTerm.toLowerCase())
+                  ).map((thumb) => (
+                    <Card key={thumb.id} className="border-border/50 hover:border-primary/50 transition-colors overflow-hidden">
+                      {/* Thumbnail Image */}
+                      <div className="aspect-video bg-secondary">
+                        <img 
+                          src={thumb.image_url} 
+                          alt={thumb.video_title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      <div className="p-4 space-y-3">
+                        {/* Title */}
+                        <h3 className="font-bold text-foreground line-clamp-2">{thumb.video_title}</h3>
+                        
+                        {/* Headline */}
+                        {thumb.headline && (
+                          <div>
+                            <p className="text-xs text-primary font-semibold mb-1">★ Headline</p>
+                            <p className="text-sm text-muted-foreground">{thumb.headline}</p>
+                          </div>
+                        )}
+                        
+                        {/* Niche badges */}
+                        <div className="flex gap-2 flex-wrap">
+                          {thumb.niche && (
+                            <Badge variant="outline" className="text-xs">{thumb.niche}</Badge>
+                          )}
+                          {thumb.sub_niche && (
+                            <Badge variant="outline" className="text-xs text-primary border-primary">{thumb.sub_niche}</Badge>
+                          )}
+                        </div>
+                        
+                        {/* Actions */}
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="flex-1"
+                            onClick={() => window.open(thumb.image_url, '_blank')}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            Ver
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={async () => {
+                              await supabase.from('viral_thumbnails').delete().eq('id', thumb.id);
+                              fetchViralThumbnails();
+                              toast.success('Thumbnail removida!');
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
             {/* Agents Tab */}
