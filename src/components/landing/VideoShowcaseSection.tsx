@@ -1,36 +1,12 @@
 import { motion } from "framer-motion";
-import { Play, Zap, Sparkles, ArrowRight, Loader2 } from "lucide-react";
+import { Play, Zap, Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { useLandingSettings } from "@/hooks/useLandingSettings";
 
 const VideoShowcaseSection = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [videoId, setVideoId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchVideoUrl = async () => {
-      try {
-        const { data } = await supabase
-          .from("admin_settings")
-          .select("value")
-          .eq("key", "landing_video_url")
-          .maybeSingle();
-
-        if (data) {
-          const videoData = data.value as { videoId?: string };
-          setVideoId(videoData?.videoId || null);
-        }
-      } catch (error) {
-        console.error("Error fetching video:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchVideoUrl();
-  }, []);
+  const { settings } = useLandingSettings();
 
   return (
     <section id="demo" className="py-24 relative overflow-hidden">
@@ -128,7 +104,7 @@ const VideoShowcaseSection = () => {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-bold mb-6"
           >
             <Sparkles className="w-4 h-4" />
-            VEJA EM AÇÃO
+            {settings.videoSectionBadge}
           </motion.span>
           <motion.h2 
             initial={{ opacity: 0, y: 30 }}
@@ -137,8 +113,8 @@ const VideoShowcaseSection = () => {
             transition={{ duration: 0.7, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-4"
           >
-            Conheça o Poder do
-            <span className="block text-gradient mt-2">La Casa Dark CORE</span>
+            {settings.videoSectionTitle}
+            <span className="block text-gradient mt-2">{settings.videoSectionHighlight}</span>
           </motion.h2>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -147,7 +123,7 @@ const VideoShowcaseSection = () => {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="text-muted-foreground text-lg max-w-2xl mx-auto"
           >
-            Assista uma demonstração completa das funcionalidades que vão revolucionar sua operação no YouTube.
+            {settings.videoSectionSubtitle}
           </motion.p>
         </motion.div>
 
@@ -182,9 +158,9 @@ const VideoShowcaseSection = () => {
                   {!isPlaying ? (
                     <>
                       {/* Thumbnail overlay - show YouTube thumbnail if available */}
-                      {videoId && (
+                      {settings.videoId && (
                         <img 
-                          src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+                          src={`https://img.youtube.com/vi/${settings.videoId}/maxresdefault.jpg`}
                           alt="Video thumbnail"
                           className="absolute inset-0 w-full h-full object-cover"
                         />
@@ -227,7 +203,7 @@ const VideoShowcaseSection = () => {
                       <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
                         <div>
                           <p className="text-sm text-primary font-bold mb-1">DEMONSTRAÇÃO COMPLETA</p>
-                          <p className="text-xs text-muted-foreground">Duração: 5 minutos</p>
+                          <p className="text-xs text-muted-foreground">Duração: {settings.videoDuration}</p>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Zap className="w-4 h-4 text-primary" />
@@ -237,9 +213,9 @@ const VideoShowcaseSection = () => {
                     </>
                   ) : (
                     /* YouTube embed */
-                    videoId ? (
+                    settings.videoId ? (
                       <iframe
-                        src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
+                        src={`https://www.youtube.com/embed/${settings.videoId}?autoplay=1&rel=0`}
                         title="Demonstração La Casa Dark Core"
                         className="w-full h-full"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

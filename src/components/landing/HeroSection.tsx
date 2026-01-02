@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Zap, Shield, Sparkles, Play, Star, Crown, Flame } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroBg from "@/assets/hero-porsche.jpg";
+import { useLandingSettings } from "@/hooks/useLandingSettings";
 
 const allOperators = [
   { initials: "JM" }, { initials: "AL" }, { initials: "CS" }, { initials: "RB" },
@@ -12,6 +13,7 @@ const allOperators = [
 ];
 
 const HeroSection = () => {
+  const { settings } = useLandingSettings();
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], [0, 200]);
@@ -303,7 +305,7 @@ const HeroSection = () => {
         >
           <div className="absolute inset-0 animate-shimmer" />
           <Sparkles className="w-4 h-4 relative z-10" />
-          <span className="text-sm font-bold relative z-10">PLATAFORMA EXCLUSIVA</span>
+          <span className="text-sm font-bold relative z-10">{settings.heroBadge}</span>
         </motion.div>
 
         {/* Title with enhanced gradient */}
@@ -313,10 +315,10 @@ const HeroSection = () => {
           transition={{ delay: 0.2 }} 
           className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-6 leading-tight"
         >
-          Escale seu Canal Dark<br />
+          {settings.heroTitle}<br />
           <span className="relative">
             <span className="bg-gradient-to-r from-primary via-yellow-400 to-primary bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
-              para $10K+/mês
+              {settings.heroHighlight}
             </span>
           </span>
         </motion.h1>
@@ -328,7 +330,7 @@ const HeroSection = () => {
           transition={{ delay: 0.3 }} 
           className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
         >
-          Ferramentas de IA, automação completa e estratégias comprovadas para dominar o YouTube sem aparecer.
+          {settings.heroSubtitle}
         </motion.p>
 
         {/* CTAs with glow effects */}
@@ -358,7 +360,7 @@ const HeroSection = () => {
               />
               <Button variant="hero" size="xl" className="relative w-full sm:w-auto">
                 <Zap className="w-5 h-5" />
-                Começar Agora
+                {settings.heroCta}
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </motion.div>
@@ -370,7 +372,7 @@ const HeroSection = () => {
             >
               <Button variant="heroOutline" size="xl" className="w-full sm:w-auto group">
                 <Play className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                Ver Demonstração
+                {settings.heroCtaSecondary}
               </Button>
             </motion.div>
           </a>
