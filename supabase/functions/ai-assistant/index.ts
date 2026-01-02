@@ -366,14 +366,14 @@ serve(async (req) => {
           "claude-3-opus": "claude-3-opus-20240229",
           "claude-sonnet": "claude-sonnet-4-20250514",
 
-          // Gemini Models
-          "gemini": "gemini-1.5-flash",
-          "gemini-flash": "gemini-1.5-flash",
-          "gemini-pro": "gemini-1.5-pro",
-          "gemini-2.5-flash": "gemini-1.5-flash",
-          "gemini-2.5-pro": "gemini-1.5-pro",
-          "google/gemini-2.5-flash": "gemini-1.5-flash",
-          "google/gemini-2.5-pro": "gemini-1.5-pro",
+          // Gemini Models - using gemini-2.0-flash which is available on Laozhang
+          "gemini": "gemini-2.0-flash",
+          "gemini-flash": "gemini-2.0-flash",
+          "gemini-pro": "gemini-2.0-flash",
+          "gemini-2.5-flash": "gemini-2.0-flash",
+          "gemini-2.5-pro": "gemini-2.0-flash",
+          "google/gemini-2.5-flash": "gemini-2.0-flash",
+          "google/gemini-2.5-pro": "gemini-2.0-flash",
         };
         
         // Try exact match first, then partial match, then default
@@ -388,9 +388,9 @@ serve(async (req) => {
         } else if (model?.includes("claude")) {
           laozhangModel = "claude-sonnet-4-20250514";
         } else if (model?.includes("gemini-pro")) {
-          laozhangModel = "gemini-1.5-pro";
+          laozhangModel = "gemini-2.0-flash";
         } else if (model?.includes("gemini")) {
-          laozhangModel = "gemini-1.5-flash";
+          laozhangModel = "gemini-2.0-flash";
         } else {
           laozhangModel = "gpt-4o-mini"; // Default cost-effective model
         }
