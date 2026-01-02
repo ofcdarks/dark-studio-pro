@@ -595,7 +595,35 @@ const VideoAnalyzer = () => {
     await navigator.clipboard.writeText(title);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
-    toast({ title: "Copiado!", description: "Título copiado para a área de transferência" });
+    
+    // Also mark as used when copying
+    const titleData = generatedTitles.find(t => t.id === id);
+    if (titleData && !titleData.isUsed) {
+      // Update local state
+      setGeneratedTitles(prev => prev.map(t => 
+        t.id === id ? { ...t, isUsed: true } : t
+      ));
+      
+      // Update in database
+      if (user && currentAnalysisId) {
+        const { data: existingTitle } = await supabase
+          .from("generated_titles")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("title_text", titleData.title)
+          .eq("video_analysis_id", currentAnalysisId)
+          .single();
+        
+        if (existingTitle) {
+          await supabase
+            .from("generated_titles")
+            .update({ is_used: true })
+            .eq("id", existingTitle.id);
+        }
+      }
+    }
+    
+    toast({ title: "Copiado e marcado!", description: "Título copiado e marcado como utilizado" });
   };
 
   const toggleTitleSelection = async (id: string, titleText: string) => {

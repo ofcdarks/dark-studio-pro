@@ -127,11 +127,15 @@ export function ThumbnailLibrary({
     "Finalizando extração de estilo...",
   ];
   
-  // Preview state
+  // Preview state for generated thumbnails
   const [previewOpen, setPreviewOpen] = useState(false);
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
   const [savingToLibrary, setSavingToLibrary] = useState<number | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  
+  // Preview state for reference thumbnails
+  const [referencePreviewOpen, setReferencePreviewOpen] = useState(false);
+  const [selectedReferenceThumbnail, setSelectedReferenceThumbnail] = useState<ReferenceThumbnail | null>(null);
 
   // Copy to clipboard helper
   const copyToClipboard = async (text: string, fieldId: string) => {
@@ -801,19 +805,39 @@ export function ThumbnailLibrary({
               {savedThumbnails.map((thumb) => (
                 <div key={thumb.id} className="relative group border border-border/50 rounded-lg overflow-hidden bg-secondary/20">
                   <div className="flex gap-4 p-4">
-                    {/* Thumbnail Image */}
+                    {/* Thumbnail Image - Clickable for preview */}
                     <div className="w-48 flex-shrink-0">
-                      <div className="aspect-video rounded-lg overflow-hidden bg-secondary relative">
+                      <div 
+                        className="aspect-video rounded-lg overflow-hidden bg-secondary relative cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                        onClick={() => {
+                          setSelectedReferenceThumbnail(thumb);
+                          setReferencePreviewOpen(true);
+                        }}
+                      >
                         <img
                           src={thumb.image_url}
                           alt="Reference thumbnail"
                           className="w-full h-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedReferenceThumbnail(thumb);
+                              setReferencePreviewOpen(true);
+                            }}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => handleDeleteThumbnail(thumb.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteThumbnail(thumb.id);
+                            }}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -1310,6 +1334,110 @@ export function ThumbnailLibrary({
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Reference Thumbnail Preview Modal */}
+      <Dialog open={referencePreviewOpen} onOpenChange={setReferencePreviewOpen}>
+        <DialogContent className="max-w-5xl w-full max-h-[90vh] overflow-y-auto border-primary/50 bg-card">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Preview da Thumbnail de Referência</span>
+              <Button variant="ghost" size="sm" onClick={() => setReferencePreviewOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedReferenceThumbnail && (
+            <div className="space-y-6">
+              {/* Main Image - 1280x720 ratio */}
+              <div className="relative bg-secondary/30 rounded-lg overflow-hidden">
+                <div className="w-full" style={{ aspectRatio: '1280/720' }}>
+                  <img
+                    src={selectedReferenceThumbnail.image_url}
+                    alt="Reference thumbnail"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+              
+              {/* Info Section */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  {selectedReferenceThumbnail.niche && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Nicho</p>
+                      <Badge variant="outline" className="border-primary text-primary">
+                        {selectedReferenceThumbnail.niche}
+                      </Badge>
+                    </div>
+                  )}
+                  {selectedReferenceThumbnail.sub_niche && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Subnicho</p>
+                      <Badge variant="outline">
+                        {selectedReferenceThumbnail.sub_niche}
+                      </Badge>
+                    </div>
+                  )}
+                  {selectedReferenceThumbnail.channel_name && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Canal</p>
+                      <p className="text-sm text-foreground">{selectedReferenceThumbnail.channel_name}</p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  {selectedReferenceThumbnail.description && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Descrição</p>
+                      <p className="text-sm text-foreground">{selectedReferenceThumbnail.description}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Extracted Prompt */}
+              {selectedReferenceThumbnail.extracted_prompt && (
+                <div className="bg-secondary/50 rounded-lg p-4 border border-primary/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-success/20 text-success border-success/30">
+                        <Check className="w-3 h-3 mr-1" />
+                        Prompt Extraído
+                      </Badge>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(selectedReferenceThumbnail.extracted_prompt || "", `preview-prompt-${selectedReferenceThumbnail.id}`)}
+                    >
+                      {copiedField === `preview-prompt-${selectedReferenceThumbnail.id}` ? (
+                        <Check className="w-3 h-3 mr-1 text-success" />
+                      ) : (
+                        <Copy className="w-3 h-3 mr-1" />
+                      )}
+                      {copiedField === `preview-prompt-${selectedReferenceThumbnail.id}` ? "Copiado!" : "Copiar Prompt"}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                    {selectedReferenceThumbnail.extracted_prompt}
+                  </p>
+                </div>
+              )}
+              
+              {!selectedReferenceThumbnail.extracted_prompt && (
+                <div className="bg-secondary/30 rounded-lg p-6 border border-border/50 text-center">
+                  <Lightbulb className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
+                  <p className="text-muted-foreground">
+                    Clique em "Analisar Estilo e Criar Prompt Padrão" para extrair o prompt desta thumbnail
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
