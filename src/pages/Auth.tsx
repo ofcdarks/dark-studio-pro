@@ -104,12 +104,12 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background with Porsche */}
-      <div className="absolute inset-0">
+      {/* Background with Porsche - animated */}
+      <div className="absolute inset-0 overflow-hidden">
         <img
           src={authBg}
           alt="Background"
-          className="absolute inset-0 h-full w-full object-cover object-center"
+          className="absolute inset-0 h-full w-full object-cover object-center animate-[slowZoom_25s_ease-in-out_infinite_alternate]"
           style={{
             filter: 'brightness(0.7) contrast(1.15) saturate(1.1)',
           }}
@@ -124,6 +124,18 @@ const Auth = () => {
           }}
         />
       </div>
+
+      {/* Animation keyframes */}
+      <style>{`
+        @keyframes slowZoom {
+          0% {
+            transform: scale(1) translateX(0);
+          }
+          100% {
+            transform: scale(1.08) translateX(-1%);
+          }
+        }
+      `}</style>
 
       {/* Subtle floating orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
