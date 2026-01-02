@@ -16,7 +16,6 @@ import {
   ImagePlus,
   FileType,
   Video,
-  Bot,
   Palette,
   Mic,
   Search,
@@ -27,7 +26,9 @@ import {
   ArrowRight,
   Star,
   Crown,
-  ChevronDown
+  ChevronDown,
+  Flame,
+  Diamond
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AnimatedSection, AnimatedItem } from "@/components/landing/AnimatedSection";
@@ -39,6 +40,7 @@ import { OperatorsOnline } from "@/components/landing/OperatorsOnline";
 import { ParticleBackground } from "@/components/landing/ParticleBackground";
 import { GlassCard } from "@/components/landing/GlassCard";
 import { AdSenseCard } from "@/components/landing/AdSenseCard";
+import FloatingElements from "@/components/landing/FloatingElements";
 import logo from "@/assets/logo.gif";
 
 // Dream images
@@ -58,32 +60,32 @@ const Landing = () => {
   };
 
   const features = [
-    { icon: Zap, title: "Inteligente", desc: "Automação com IA", color: "bg-green-500" },
-    { icon: Clock, title: "24/7", desc: "Suporte Premium", color: "bg-purple-500" },
-    { icon: TrendingUp, title: "Otimizada", desc: "Performance Alta", color: "bg-orange-500" },
-    { icon: Users, title: "Exclusiva", desc: "Comunidade VIP", color: "bg-cyan-500" },
-    { icon: Play, title: "Constantes", desc: "Updates Semanais", color: "bg-pink-500" },
+    { icon: Zap, title: "Inteligente", desc: "Automação Avançada", color: "bg-gradient-to-br from-green-500 to-emerald-600" },
+    { icon: Clock, title: "24/7", desc: "Suporte Premium", color: "bg-gradient-to-br from-purple-500 to-violet-600" },
+    { icon: TrendingUp, title: "Otimizada", desc: "Performance Alta", color: "bg-gradient-to-br from-orange-500 to-amber-600" },
+    { icon: Users, title: "Exclusiva", desc: "Comunidade VIP", color: "bg-gradient-to-br from-cyan-500 to-blue-600" },
+    { icon: Play, title: "Constantes", desc: "Updates Semanais", color: "bg-gradient-to-br from-pink-500 to-rose-600" },
   ];
 
   const tools = [
-    { icon: BarChart3, title: "Analisador de Títulos Virais", desc: "Análise de títulos com métricas de viralidade e sugestões de otimização.", badge: "POPULAR", color: "bg-green-500" },
-    { icon: Image, title: "Gerador de Thumbnails 4x", desc: "Crie 4 variações de thumbnails otimizadas para CTR máximo.", badge: "NOVO", color: "bg-orange-500" },
-    { icon: FileText, title: "Gerador de Roteiros", desc: "Roteiros completos com estrutura viral e ganchos de retenção.", color: "bg-emerald-500" },
-    { icon: Layers, title: "Gerador de Prompts Cenas", desc: "Prompts detalhados para cada cena do seu vídeo.", color: "bg-purple-500" },
-    { icon: ImagePlus, title: "Gerador de Imagens Ilimitado", desc: "Criação ilimitada de imagens com IA para seus vídeos.", badge: "∞", color: "bg-pink-500" },
-    { icon: FileType, title: "Gerador de SRT", desc: "Legendas sincronizadas automaticamente em formato SRT.", color: "bg-primary" },
-    { icon: Video, title: "Geração de Vídeo VO3 & Sora", desc: "Integração com VO3 e Sora para geração de vídeos com IA.", badge: "PRO", color: "bg-blue-500" },
-    { icon: Bot, title: "Criação de Agente Automático", desc: "Agentes que trabalham 24/7 automatizando suas operações.", badge: "IA", color: "bg-amber-500" },
-    { icon: TrendingUp, title: "Analytics Avançado", desc: "Métricas em tempo real: CTR, views, likes, comentários e RPM.", color: "bg-indigo-500" },
-    { icon: Users, title: "Análise de Canais Virais", desc: "Monitore e analise os canais mais virais do seu nicho.", color: "bg-teal-500" },
-    { icon: FileText, title: "Modelagem de Roteiro com Agente", desc: "IA avançada que modela roteiros baseados em padrões virais.", badge: "IA", color: "bg-rose-500" },
-    { icon: Palette, title: "Modelagem de Thumbnail", desc: "Templates e modelagem inteligente de thumbnails.", color: "bg-fuchsia-500" },
-    { icon: Video, title: "Processamento de Vídeos YouTube", desc: "Processamento e análise de vídeos diretamente do YouTube.", color: "bg-red-500" },
-    { icon: Mic, title: "Geração de Áudio (TTS)", desc: "Text-to-Speech com vozes ultra-realistas e naturais.", color: "bg-violet-500" },
-    { icon: FileText, title: "Análise de Transcrições", desc: "Transcreva e analise conteúdo de vídeos automaticamente.", color: "bg-sky-500" },
-    { icon: Search, title: "Explorador de Nicho", desc: "Descubra nichos lucrativos antes da concorrência.", badge: "HOT", color: "bg-lime-500" },
-    { icon: Key, title: "Gerenciamento de API Keys", desc: "Gerencie suas API keys com segurança e controle total.", color: "bg-slate-500" },
-    { icon: Youtube, title: "Integração YouTube Completa", desc: "Upload, gerenciamento e automação direto na plataforma.", color: "bg-red-600" },
+    { icon: BarChart3, title: "Analisador de Títulos Virais", desc: "Análise de títulos com métricas de viralidade e sugestões de otimização.", badge: "POPULAR", color: "bg-gradient-to-br from-green-500 to-emerald-600" },
+    { icon: Image, title: "Gerador de Thumbnails 4x", desc: "Crie 4 variações de thumbnails otimizadas para CTR máximo.", badge: "NOVO", color: "bg-gradient-to-br from-orange-500 to-amber-600" },
+    { icon: FileText, title: "Gerador de Roteiros", desc: "Roteiros completos com estrutura viral e ganchos de retenção.", color: "bg-gradient-to-br from-emerald-500 to-teal-600" },
+    { icon: Layers, title: "Gerador de Prompts Cenas", desc: "Prompts detalhados para cada cena do seu vídeo.", color: "bg-gradient-to-br from-purple-500 to-violet-600" },
+    { icon: ImagePlus, title: "Gerador de Imagens Ilimitado", desc: "Criação ilimitada de imagens para seus vídeos.", badge: "∞", color: "bg-gradient-to-br from-pink-500 to-rose-600" },
+    { icon: FileType, title: "Gerador de SRT", desc: "Legendas sincronizadas automaticamente em formato SRT.", color: "bg-gradient-to-br from-primary to-accent" },
+    { icon: Video, title: "Geração de Vídeo VO3 & Sora", desc: "Integração com VO3 e Sora para geração de vídeos.", badge: "PRO", color: "bg-gradient-to-br from-blue-500 to-indigo-600" },
+    { icon: Sparkles, title: "Criação de Agente Automático", desc: "Agentes que trabalham 24/7 automatizando suas operações.", badge: "AUTO", color: "bg-gradient-to-br from-amber-500 to-orange-600" },
+    { icon: TrendingUp, title: "Analytics Avançado", desc: "Métricas em tempo real: CTR, views, likes, comentários e RPM.", color: "bg-gradient-to-br from-indigo-500 to-purple-600" },
+    { icon: Users, title: "Análise de Canais Virais", desc: "Monitore e analise os canais mais virais do seu nicho.", color: "bg-gradient-to-br from-teal-500 to-cyan-600" },
+    { icon: FileText, title: "Modelagem de Roteiro Avançada", desc: "Modelagem avançada de roteiros baseados em padrões virais.", badge: "PRO", color: "bg-gradient-to-br from-rose-500 to-pink-600" },
+    { icon: Palette, title: "Modelagem de Thumbnail", desc: "Templates e modelagem inteligente de thumbnails.", color: "bg-gradient-to-br from-fuchsia-500 to-purple-600" },
+    { icon: Video, title: "Processamento de Vídeos YouTube", desc: "Processamento e análise de vídeos diretamente do YouTube.", color: "bg-gradient-to-br from-red-500 to-rose-600" },
+    { icon: Mic, title: "Geração de Áudio (TTS)", desc: "Text-to-Speech com vozes ultra-realistas e naturais.", color: "bg-gradient-to-br from-violet-500 to-purple-600" },
+    { icon: FileText, title: "Análise de Transcrições", desc: "Transcreva e analise conteúdo de vídeos automaticamente.", color: "bg-gradient-to-br from-sky-500 to-blue-600" },
+    { icon: Search, title: "Explorador de Nicho", desc: "Descubra nichos lucrativos antes da concorrência.", badge: "HOT", color: "bg-gradient-to-br from-lime-500 to-green-600" },
+    { icon: Key, title: "Gerenciamento de API Keys", desc: "Gerencie suas API keys com segurança e controle total.", color: "bg-gradient-to-br from-slate-500 to-zinc-600" },
+    { icon: Youtube, title: "Integração YouTube Completa", desc: "Upload, gerenciamento e automação direto na plataforma.", color: "bg-gradient-to-br from-red-500 to-red-700" },
   ];
 
   const dreams = [
@@ -132,7 +134,9 @@ const Landing = () => {
   // Removed static operatorsOnline - now using dynamic component
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden relative">
+      {/* Global Floating Elements */}
+      <FloatingElements />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -353,13 +357,13 @@ const Landing = () => {
           {/* Demo Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-10">
             {[
-              { value: "IA", label: "Geração de Roteiros" },
+              { value: "PRO", label: "Geração de Roteiros" },
               { value: "4x", label: "Thumbnails Premium" },
               { value: "24/7", label: "Automação Total" },
               { value: "Real-time", label: "Analytics Avançado" },
             ].map((stat, i) => (
               <div key={i} className="text-center">
-                <p className="text-3xl md:text-4xl font-bold text-primary">{stat.value}</p>
+                <p className="text-3xl md:text-4xl font-bold text-gradient">{stat.value}</p>
                 <p className="text-base text-muted-foreground">{stat.label}</p>
               </div>
             ))}
@@ -475,12 +479,12 @@ const Landing = () => {
             {[
               { icon: Zap, value: "18+", label: "Ferramentas" },
               { icon: ImagePlus, value: "∞", label: "Imagens/Mês" },
-              { icon: Bot, value: "24/7", label: "Automação" },
+              { icon: Clock, value: "24/7", label: "Automação" },
               { icon: Star, value: "5min", label: "Setup Rápido" },
             ].map((stat, i) => (
-              <Card key={i} className="p-6 bg-card border-border text-center">
-                <stat.icon className="w-8 h-8 text-primary mx-auto mb-3" />
-                <p className="text-3xl font-bold">{stat.value}</p>
+              <Card key={i} className="p-6 bg-card border-border text-center hover:border-primary/30 transition-all duration-300 group">
+                <stat.icon className="w-8 h-8 text-primary mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                <p className="text-3xl font-bold text-gradient">{stat.value}</p>
                 <p className="text-base text-muted-foreground">{stat.label}</p>
               </Card>
             ))}
