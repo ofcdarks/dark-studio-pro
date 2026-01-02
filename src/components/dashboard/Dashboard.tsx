@@ -103,7 +103,7 @@ export function Dashboard() {
               ]} />
             </motion.div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <motion.div variants={itemVariants}><DirectivesCard videosCount={stats.totalVideos} /></motion.div>
+              <motion.div variants={itemVariants}><DirectivesCard stats={stats} /></motion.div>
               <motion.div variants={itemVariants}><NextStepsCard stats={stats} /></motion.div>
             </div>
             <motion.div variants={itemVariants}><DailyQuoteCard /></motion.div>
