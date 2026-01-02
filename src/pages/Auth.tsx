@@ -145,7 +145,7 @@ const Auth = () => {
 
       {/* Back to Landing Button */}
       <Link 
-        to="/" 
+        to="/landing" 
         className="absolute top-6 left-6 z-20 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
