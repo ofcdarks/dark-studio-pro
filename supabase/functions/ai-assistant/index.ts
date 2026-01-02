@@ -366,14 +366,14 @@ serve(async (req) => {
           "claude-3-opus": "claude-3-opus-20240229",
           "claude-sonnet": "claude-sonnet-4-20250514",
 
-          // Gemini Models - using gemini-2.0-flash which is available on Laozhang
-          "gemini": "gemini-2.0-flash",
-          "gemini-flash": "gemini-2.0-flash",
-          "gemini-pro": "gemini-2.0-flash",
-          "gemini-2.5-flash": "gemini-2.0-flash",
-          "gemini-2.5-pro": "gemini-2.0-flash",
-          "google/gemini-2.5-flash": "gemini-2.0-flash",
-          "google/gemini-2.5-pro": "gemini-2.0-flash",
+          // Gemini Models - Laozhang supports gemini-2.5-pro and gemini-2.5-flash
+          "gemini": "gemini-2.5-flash",
+          "gemini-flash": "gemini-2.5-flash",
+          "gemini-pro": "gemini-2.5-pro",
+          "gemini-2.5-flash": "gemini-2.5-flash",
+          "gemini-2.5-pro": "gemini-2.5-pro",
+          "google/gemini-2.5-flash": "gemini-2.5-flash",
+          "google/gemini-2.5-pro": "gemini-2.5-pro",
         };
         
         // Try exact match first, then partial match, then default
@@ -387,30 +387,14 @@ serve(async (req) => {
           laozhangModel = "claude-sonnet-4-20250514";
         } else if (model?.includes("claude")) {
           laozhangModel = "claude-sonnet-4-20250514";
-        } else if (model?.includes("gemini-pro")) {
-          laozhangModel = "gemini-2.0-flash";
+        } else if (model?.includes("gemini-pro") || model?.includes("gemini-2.5-pro")) {
+          laozhangModel = "gemini-2.5-pro";
         } else if (model?.includes("gemini")) {
-          laozhangModel = "gemini-2.0-flash";
+          laozhangModel = "gemini-2.5-flash";
         } else {
           laozhangModel = "gpt-4o-mini"; // Default cost-effective model
         }
-
-        // Laozhang não tem canais Gemini disponíveis em todos os grupos.
-        // Para requisições Gemini (ex: multimodal), tentamos admin Gemini key primeiro, depois Lovable AI.
-        if (model?.includes("gemini")) {
-          if (adminApiKeys?.gemini && adminApiKeys.gemini_validated) {
-            userApiKeyToUse = adminApiKeys.gemini ?? null;
-            apiProvider = 'gemini';
-            laozhangModel = null;
-            console.log(`[AI Assistant] Laozhang Gemini unavailable; using admin Gemini key for model: ${model}`);
-          } else {
-            apiProvider = 'lovable';
-            laozhangModel = null;
-            console.log(`[AI Assistant] Laozhang Gemini unavailable; falling back to Lovable AI for model: ${model}`);
-          }
-        } else {
-          console.log(`[AI Assistant] Using Laozhang AI (platform credits) - Requested: ${model}, Using: ${laozhangModel}`);
-        }
+        console.log(`[AI Assistant] Using Laozhang AI (platform credits) - Requested: ${model}, Using: ${laozhangModel}`);
       } else if (adminApiKeys?.openai && adminApiKeys.openai_validated) {
         userApiKeyToUse = adminApiKeys.openai ?? null;
         apiProvider = 'openai';
