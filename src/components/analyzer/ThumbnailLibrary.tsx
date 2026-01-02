@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Save,
   Check,
+  Copy,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -85,6 +86,7 @@ export function ThumbnailLibrary({
   
   // Generation states
   const [generatingThumbnail, setGeneratingThumbnail] = useState(false);
+  const [thumbnailLoadingMessage, setThumbnailLoadingMessage] = useState("🎨 Iniciando geração...");
   const [videoTitle, setVideoTitle] = useState(currentTitle || "");
   const [selectedPrompt, setSelectedPrompt] = useState<string>("1");
   const [genModel, setGenModel] = useState("gpt-4o");
@@ -93,13 +95,33 @@ export function ThumbnailLibrary({
   const [includeHeadline, setIncludeHeadline] = useState(true);
   const [useTitle, setUseTitle] = useState(false);
   
+  // Motivational messages for thumbnail generation
+  const THUMBNAIL_LOADING_MESSAGES = [
+    "🎨 Criando arte visual única...",
+    "✨ Aplicando estilos profissionais...",
+    "🖌️ Renderizando variações...",
+    "🔥 Otimizando para máximo impacto...",
+    "📐 Ajustando composição perfeita...",
+    "💡 Gerando headlines de impacto...",
+    "🏷️ Criando tags SEO otimizadas...",
+    "🚀 Finalizando suas thumbnails...",
+  ];
+  
   // Generated thumbnails preview state
   const [generatedThumbnails, setGeneratedThumbnails] = useState<GeneratedThumbnail[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
   const [savingToLibrary, setSavingToLibrary] = useState<number | null>(null);
   const [savedToLibrary, setSavedToLibrary] = useState<number[]>([]);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  // Copy to clipboard helper
+  const copyToClipboard = async (text: string, fieldId: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedField(fieldId);
+    setTimeout(() => setCopiedField(null), 2000);
+    toast({ title: "Copiado!", description: "Texto copiado para a área de transferência" });
+  };
   // Sync videoTitle when currentTitle changes (from selected title in VideoAnalyzer)
   useEffect(() => {
     if (currentTitle) {
@@ -287,7 +309,16 @@ export function ThumbnailLibrary({
     setGeneratingThumbnail(true);
     setGeneratedThumbnails([]);
     setSavedToLibrary([]);
+    setThumbnailLoadingMessage(THUMBNAIL_LOADING_MESSAGES[0]);
     
+    // Rotate loading messages every 2.5 seconds
+    const messageInterval = setInterval(() => {
+      setThumbnailLoadingMessage(prev => {
+        const currentIndex = THUMBNAIL_LOADING_MESSAGES.indexOf(prev);
+        const nextIndex = (currentIndex + 1) % THUMBNAIL_LOADING_MESSAGES.length;
+        return THUMBNAIL_LOADING_MESSAGES[nextIndex];
+      });
+    }, 2500);
     try {
       // Call the generate-thumbnail edge function
       const response = await supabase.functions.invoke("generate-thumbnail", {
@@ -324,6 +355,7 @@ export function ThumbnailLibrary({
         variant: "destructive",
       });
     } finally {
+      clearInterval(messageInterval);
       setGeneratingThumbnail(false);
     }
   };
@@ -825,11 +857,16 @@ export function ThumbnailLibrary({
             className="w-full bg-primary text-primary-foreground h-12 text-base"
           >
             {generatingThumbnail ? (
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              <div className="flex items-center">
+                <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+                <span className="animate-pulse">{thumbnailLoadingMessage}</span>
+              </div>
             ) : (
-              <Rocket className="w-5 h-5 mr-2" />
+              <>
+                <Rocket className="w-5 h-5 mr-2" />
+                Gerar Thumbnail Completa
+              </>
             )}
-            Gerar Thumbnail Completa
           </Button>
           <p className="text-xs text-muted-foreground text-center">
             O sistema gerará 4 variações da thumbnail com headline, SEO e tags prontos
@@ -888,14 +925,44 @@ export function ThumbnailLibrary({
                       {/* Headline de Impacto */}
                       {thumb.headline && (
                         <div className="mb-4">
-                          <p className="text-sm font-semibold text-primary mb-1">★ Headline de Impacto</p>
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-semibold text-primary">★ Headline de Impacto</p>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-xs"
+                              onClick={() => copyToClipboard(thumb.headline || "", `headline-${index}`)}
+                            >
+                              {copiedField === `headline-${index}` ? (
+                                <Check className="w-3 h-3 mr-1 text-green-500" />
+                              ) : (
+                                <Copy className="w-3 h-3 mr-1" />
+                              )}
+                              {copiedField === `headline-${index}` ? "Copiado!" : "Copiar"}
+                            </Button>
+                          </div>
                           <p className="text-foreground font-medium">{thumb.headline}</p>
                         </div>
                       )}
                       
                       {/* Descrição SEO */}
                       <div className="mb-4">
-                        <p className="text-sm font-semibold text-primary mb-1">★ Descrição SEO</p>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-semibold text-primary">★ Descrição SEO</p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => copyToClipboard(thumb.seoDescription || "", `desc-${index}`)}
+                          >
+                            {copiedField === `desc-${index}` ? (
+                              <Check className="w-3 h-3 mr-1 text-green-500" />
+                            ) : (
+                              <Copy className="w-3 h-3 mr-1" />
+                            )}
+                            {copiedField === `desc-${index}` ? "Copiado!" : "Copiar"}
+                          </Button>
+                        </div>
                         <p className="text-sm text-muted-foreground leading-relaxed">
                           {thumb.seoDescription || "Descrição SEO otimizada para o vídeo..."}
                         </p>
@@ -903,7 +970,25 @@ export function ThumbnailLibrary({
                       
                       {/* Tags Principais */}
                       <div>
-                        <p className="text-sm font-semibold text-primary mb-2">★ Tags Principais</p>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-semibold text-primary">★ Tags Principais</p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => copyToClipboard(
+                              Array.isArray(thumb.seoTags) ? thumb.seoTags.join(", ") : (thumb.seoTags || ""),
+                              `tags-${index}`
+                            )}
+                          >
+                            {copiedField === `tags-${index}` ? (
+                              <Check className="w-3 h-3 mr-1 text-green-500" />
+                            ) : (
+                              <Copy className="w-3 h-3 mr-1" />
+                            )}
+                            {copiedField === `tags-${index}` ? "Copiado!" : "Copiar"}
+                          </Button>
+                        </div>
                         <p className="text-sm text-muted-foreground leading-relaxed">
                           {Array.isArray(thumb.seoTags) ? thumb.seoTags.join(", ") : (thumb.seoTags || "Tags otimizadas para SEO...")}
                         </p>
