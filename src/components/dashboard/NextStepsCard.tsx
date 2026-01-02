@@ -2,7 +2,7 @@ import { Rocket, Video, Settings, BarChart3, Check } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface NextStepsCardProps {
-  stats: {
+  stats?: {
     totalVideos: number;
     scriptsGenerated: number;
     imagesGenerated: number;
@@ -10,10 +10,12 @@ interface NextStepsCardProps {
 }
 
 export function NextStepsCard({ stats }: NextStepsCardProps) {
+  const safeStats = stats || { totalVideos: 0, scriptsGenerated: 0, imagesGenerated: 0 };
+  
   const steps = [
-    { number: 1, icon: Video, text: "Analise seu primeiro vídeo viral", done: stats.totalVideos > 0 },
+    { number: 1, icon: Video, text: "Analise seu primeiro vídeo viral", done: safeStats.totalVideos > 0 },
     { number: 2, icon: Settings, text: "Configure suas chaves de API", done: false },
-    { number: 3, icon: BarChart3, text: "Gere seu primeiro roteiro", done: stats.scriptsGenerated > 0 },
+    { number: 3, icon: BarChart3, text: "Gere seu primeiro roteiro", done: safeStats.scriptsGenerated > 0 },
   ];
 
   return (
