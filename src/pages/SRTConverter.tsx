@@ -5,10 +5,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { FileText, Upload, Download, Copy, RefreshCw, CheckCircle } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 const SRTConverter = () => {
-  const [inputText, setInputText] = useState("");
-  const [outputText, setOutputText] = useState("");
+  // Persisted states
+  const [inputText, setInputText] = usePersistedState("srt_inputText", "");
+  const [outputText, setOutputText] = usePersistedState("srt_outputText", "");
+  
+  // Non-persisted states
   const [activeConversion, setActiveConversion] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface Niche {
   name: string;
@@ -27,9 +28,12 @@ const defaultNiches: Niche[] = [
 ];
 
 const ExploreNiche = () => {
-  const [searchTerm, setSearchTerm] = useState("");
+  // Persisted states
+  const [searchTerm, setSearchTerm] = usePersistedState("explore_searchTerm", "");
+  const [niches, setNiches] = usePersistedState<Niche[]>("explore_niches", defaultNiches);
+  
+  // Non-persisted states
   const [loading, setLoading] = useState(false);
-  const [niches, setNiches] = useState<Niche[]>(defaultNiches);
   const [selectedNiche, setSelectedNiche] = useState<Niche | null>(null);
   const [nicheDetails, setNicheDetails] = useState<Niche | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);

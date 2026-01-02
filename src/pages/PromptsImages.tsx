@@ -9,12 +9,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 const PromptsImages = () => {
-  const [prompt, setPrompt] = useState("");
-  const [promptTitle, setPromptTitle] = useState("");
+  // Persisted states
+  const [prompt, setPrompt] = usePersistedState("prompts_prompt", "");
+  const [promptTitle, setPromptTitle] = usePersistedState("prompts_promptTitle", "");
+  const [generatedImage, setGeneratedImage] = usePersistedState<string | null>("prompts_generatedImage", null);
+  
+  // Non-persisted states
   const [generating, setGenerating] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

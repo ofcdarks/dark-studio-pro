@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface GeneratedAudio {
   id: string;
@@ -30,9 +31,13 @@ const voices = [
 
 const VoiceGenerator = () => {
   const { user } = useAuth();
-  const [text, setText] = useState("");
-  const [selectedVoice, setSelectedVoice] = useState("nova");
-  const [speed, setSpeed] = useState([1]);
+  
+  // Persisted states
+  const [text, setText] = usePersistedState("voice_text", "");
+  const [selectedVoice, setSelectedVoice] = usePersistedState("voice_selectedVoice", "nova");
+  const [speed, setSpeed] = usePersistedState("voice_speed", [1]);
+  
+  // Non-persisted states
   const [loading, setLoading] = useState(false);
   const [audios, setAudios] = useState<GeneratedAudio[]>([]);
   const [loadingAudios, setLoadingAudios] = useState(true);
