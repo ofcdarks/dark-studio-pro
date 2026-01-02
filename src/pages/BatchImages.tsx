@@ -7,6 +7,7 @@ import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface BatchJob {
   id: string;
@@ -18,10 +19,14 @@ interface BatchJob {
 
 const BatchImages = () => {
   const { user } = useAuth();
-  const [prompts, setPrompts] = useState("");
+  
+  // Persisted states
+  const [prompts, setPrompts] = usePersistedState("batch_prompts", "");
+  const [results, setResults] = usePersistedState<string[]>("batch_results", []);
+  
+  // Non-persisted states
   const [isProcessing, setIsProcessing] = useState(false);
   const [batchJobs, setBatchJobs] = useState<BatchJob[]>([]);
-  const [results, setResults] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleProcessBatch = async () => {

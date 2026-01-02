@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Film, Copy, Check, Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface ScenePrompt {
   number: number;
@@ -27,13 +28,16 @@ const STYLES = [
 ];
 
 const SceneGenerator = () => {
-  const [script, setScript] = useState("");
-  const [title, setTitle] = useState("");
-  const [niche, setNiche] = useState("");
-  const [style, setStyle] = useState("photorealistic");
-  const [estimatedScenes, setEstimatedScenes] = useState("8");
+  // Persisted states
+  const [script, setScript] = usePersistedState("scene_script", "");
+  const [title, setTitle] = usePersistedState("scene_title", "");
+  const [niche, setNiche] = usePersistedState("scene_niche", "");
+  const [style, setStyle] = usePersistedState("scene_style", "photorealistic");
+  const [estimatedScenes, setEstimatedScenes] = usePersistedState("scene_estimatedScenes", "8");
+  const [scenes, setScenes] = usePersistedState<ScenePrompt[]>("scene_scenes", []);
+  
+  // Non-persisted states
   const [isGenerating, setIsGenerating] = useState(false);
-  const [scenes, setScenes] = useState<ScenePrompt[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const handleGenerate = async () => {

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface SimilarChannel {
   name: string;
@@ -18,9 +19,13 @@ interface SimilarChannel {
 
 const SearchChannels = () => {
   const { user } = useAuth();
-  const [channelUrl, setChannelUrl] = useState("");
+  
+  // Persisted states
+  const [channelUrl, setChannelUrl] = usePersistedState("searchChannels_url", "");
+  const [similarChannels, setSimilarChannels] = usePersistedState<SimilarChannel[]>("searchChannels_results", []);
+  
+  // Non-persisted states
   const [loading, setLoading] = useState(false);
-  const [similarChannels, setSimilarChannels] = useState<SimilarChannel[]>([]);
 
   const handleSearch = async () => {
     if (!channelUrl.trim()) {

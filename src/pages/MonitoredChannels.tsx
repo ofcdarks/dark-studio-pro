@@ -8,10 +8,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 const MonitoredChannels = () => {
-  const [channelUrl, setChannelUrl] = useState("");
-  const [channelName, setChannelName] = useState("");
+  // Persisted states
+  const [channelUrl, setChannelUrl] = usePersistedState("monitored_channelUrl", "");
+  const [channelName, setChannelName] = usePersistedState("monitored_channelName", "");
+  
+  // Non-persisted states
   const [adding, setAdding] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();

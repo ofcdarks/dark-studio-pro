@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useSearchParams } from "react-router-dom";
 import { GenerateScriptModal } from "@/components/library/GenerateScriptModal";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface ViralVideo {
   id: string;
@@ -68,11 +69,15 @@ interface GeneratedScript {
 const ViralLibrary = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Persisted states
+  const [searchTerm, setSearchTerm] = usePersistedState("library_searchTerm", "");
+  const [nicheFilter, setNicheFilter] = usePersistedState("library_nicheFilter", "all");
+  const [viewsFilter, setViewsFilter] = usePersistedState("library_viewsFilter", "all");
+  const [showFavorites, setShowFavorites] = usePersistedState("library_showFavorites", false);
+  
+  // Non-persisted states
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "titles");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [nicheFilter, setNicheFilter] = useState("all");
-  const [viewsFilter, setViewsFilter] = useState("all");
-  const [showFavorites, setShowFavorites] = useState(false);
   const [videos, setVideos] = useState<ViralVideo[]>([]);
   const [agents, setAgents] = useState<ScriptAgent[]>([]);
   const [scripts, setScripts] = useState<GeneratedScript[]>([]);
