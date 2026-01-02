@@ -210,6 +210,37 @@ async function refundCredits(
   }
 }
 
+// Interface for user API settings
+interface UserApiSettings {
+  openai_api_key: string | null;
+  claude_api_key: string | null;
+  gemini_api_key: string | null;
+  openai_validated: boolean | null;
+  claude_validated: boolean | null;
+  gemini_validated: boolean | null;
+}
+
+// Function to get user's API keys from settings
+async function getUserApiKeys(userId: string): Promise<UserApiSettings | null> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('user_api_settings')
+      .select('openai_api_key, claude_api_key, gemini_api_key, openai_validated, claude_validated, gemini_validated')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error || !data) {
+      console.log('[AI Assistant] No user API settings found');
+      return null;
+    }
+
+    return data as UserApiSettings;
+  } catch (e) {
+    console.error('[AI Assistant] Error fetching user API settings:', e);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -232,10 +263,7 @@ serve(async (req) => {
     } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
     // Extrair userId do token JWT ou do body
     let userId = bodyUserId;
@@ -252,15 +280,65 @@ serve(async (req) => {
       }
     }
 
+    // Get user's API settings
+    let userApiKeys: UserApiSettings | null = null;
+    let useUserApiKey = false;
+    let userApiKeyToUse: string | null = null;
+    let apiProvider: 'openai' | 'gemini' | 'lovable' = 'lovable';
+
+    if (userId) {
+      userApiKeys = await getUserApiKeys(userId);
+      
+      // Determine which API key to use based on model selection
+      if (userApiKeys) {
+        if ((model === "gpt-4o" || model === "gpt-5" || model?.includes("gpt")) && userApiKeys.openai_api_key && userApiKeys.openai_validated) {
+          userApiKeyToUse = userApiKeys.openai_api_key;
+          apiProvider = 'openai';
+          useUserApiKey = true;
+          console.log('[AI Assistant] Using user OpenAI API key');
+        } else if ((model === "gemini-pro" || model?.includes("gemini")) && userApiKeys.gemini_api_key && userApiKeys.gemini_validated) {
+          userApiKeyToUse = userApiKeys.gemini_api_key;
+          apiProvider = 'gemini';
+          useUserApiKey = true;
+          console.log('[AI Assistant] Using user Gemini API key');
+        } else if (userApiKeys.openai_api_key && userApiKeys.openai_validated) {
+          // Fallback to OpenAI if available
+          userApiKeyToUse = userApiKeys.openai_api_key;
+          apiProvider = 'openai';
+          useUserApiKey = true;
+          console.log('[AI Assistant] Using user OpenAI API key (fallback)');
+        } else if (userApiKeys.gemini_api_key && userApiKeys.gemini_validated) {
+          // Fallback to Gemini if available
+          userApiKeyToUse = userApiKeys.gemini_api_key;
+          apiProvider = 'gemini';
+          useUserApiKey = true;
+          console.log('[AI Assistant] Using user Gemini API key (fallback)');
+        }
+      }
+    }
+
+    // If no user API key, check for system OpenAI key
+    if (!useUserApiKey && OPENAI_API_KEY) {
+      userApiKeyToUse = OPENAI_API_KEY;
+      apiProvider = 'openai';
+      useUserApiKey = true;
+      console.log('[AI Assistant] Using system OpenAI API key');
+    }
+
+    // Final fallback to Lovable AI
+    if (!useUserApiKey && !LOVABLE_API_KEY) {
+      throw new Error("Nenhuma chave de API disponível. Configure suas chaves em Configurações.");
+    }
+
     // Calcular créditos necessários para esta operação
     const creditsNeeded = calculateCreditsForOperation(type, model || 'gemini', { 
       duration: duration ? parseInt(duration) : 5 
     });
     
-    console.log(`[AI Assistant] Operation: ${type}, Model: ${model || 'gemini'}, Credits needed: ${creditsNeeded}, User: ${userId}`);
+    console.log(`[AI Assistant] Operation: ${type}, Model: ${model || 'gemini'}, Provider: ${apiProvider}, Credits needed: ${creditsNeeded}, User: ${userId}`);
 
-    // Verificar e debitar créditos se userId disponível
-    if (userId) {
+    // Verificar e debitar créditos se userId disponível (only for Lovable AI or system keys)
+    if (userId && !useUserApiKey) {
       const creditResult = await checkAndDebitCredits(userId, creditsNeeded, type, { model });
       
       if (!creditResult.success) {
@@ -270,6 +348,8 @@ serve(async (req) => {
         );
       }
       console.log(`[AI Assistant] Credits debited. New balance: ${creditResult.newBalance}`);
+    } else if (useUserApiKey) {
+      console.log('[AI Assistant] Using user API key - no credits debited');
     }
 
     let systemPrompt = "";
@@ -734,35 +814,94 @@ serve(async (req) => {
     console.log("[AI Assistant] Request type:", type);
     console.log("[AI Assistant] System prompt length:", systemPrompt.length);
 
-    // Selecionar modelo conforme documentação
-    // Modelos suportados: gpt-4o, claude-sonnet, gemini-2.0-flash, gemini-2.5-flash
-    let selectedModel = "google/gemini-2.5-flash"; // Default conforme documentação
-    if (model === "gpt-5" || model === "gpt-4o") {
-      selectedModel = "openai/gpt-5";
-    } else if (model === "claude" || model?.includes("claude")) {
-      selectedModel = "google/gemini-2.5-pro"; // Usar pro para qualidade similar ao Claude
-    } else if (model === "gemini-pro" || model?.includes("pro")) {
-      selectedModel = "google/gemini-2.5-pro";
+    // Determine API endpoint and model based on provider
+    let apiUrl: string;
+    let apiKey: string;
+    let selectedModel: string;
+    let requestHeaders: Record<string, string>;
+
+    if (useUserApiKey && userApiKeyToUse) {
+      if (apiProvider === 'openai') {
+        apiUrl = "https://api.openai.com/v1/chat/completions";
+        apiKey = userApiKeyToUse;
+        selectedModel = "gpt-4o-mini"; // Use gpt-4o-mini for cost efficiency
+        if (model === "gpt-4o" || model === "gpt-5") {
+          selectedModel = "gpt-4o";
+        }
+        requestHeaders = {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        };
+        console.log(`[AI Assistant] Using OpenAI API directly with model: ${selectedModel}`);
+      } else if (apiProvider === 'gemini') {
+        apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKeyToUse}`;
+        apiKey = userApiKeyToUse;
+        selectedModel = "gemini-1.5-flash";
+        if (model === "gemini-pro" || model?.includes("pro")) {
+          apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${userApiKeyToUse}`;
+          selectedModel = "gemini-1.5-pro";
+        }
+        requestHeaders = {
+          "Content-Type": "application/json",
+        };
+        console.log(`[AI Assistant] Using Gemini API directly with model: ${selectedModel}`);
+      } else {
+        throw new Error("Provider não suportado");
+      }
+    } else {
+      // Use Lovable AI Gateway
+      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      apiKey = LOVABLE_API_KEY!;
+      selectedModel = "google/gemini-2.5-flash";
+      if (model === "gpt-5" || model === "gpt-4o") {
+        selectedModel = "openai/gpt-5";
+      } else if (model === "claude" || model?.includes("claude")) {
+        selectedModel = "google/gemini-2.5-pro";
+      } else if (model === "gemini-pro" || model?.includes("pro")) {
+        selectedModel = "google/gemini-2.5-pro";
+      }
+      requestHeaders = {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      };
+      console.log(`[AI Assistant] Using Lovable AI Gateway with model: ${selectedModel}`);
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      }),
-    });
+    let response: Response;
+
+    if (apiProvider === 'gemini' && useUserApiKey) {
+      // Gemini API has a different request format
+      response = await fetch(apiUrl, {
+        method: "POST",
+        headers: requestHeaders,
+        body: JSON.stringify({
+          contents: [
+            { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 8192,
+          },
+        }),
+      });
+    } else {
+      // OpenAI-compatible format (OpenAI and Lovable AI Gateway)
+      response = await fetch(apiUrl, {
+        method: "POST",
+        headers: requestHeaders,
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+        }),
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[AI Assistant] AI Gateway error:", response.status, errorText);
+      console.error("[AI Assistant] AI API error:", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
@@ -773,16 +912,32 @@ serve(async (req) => {
       
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "Créditos de IA esgotados. Adicione mais créditos para continuar." }),
+          JSON.stringify({ error: "Créditos de IA esgotados. Configure suas chaves de API em Configurações ou adicione mais créditos." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      if (response.status === 401) {
+        return new Response(
+          JSON.stringify({ error: "Chave de API inválida. Verifique suas configurações." }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       
-      throw new Error(`AI Gateway error: ${response.status}`);
+      throw new Error(`AI API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    
+    // Extract content based on provider
+    let content: string;
+    if (apiProvider === 'gemini' && useUserApiKey) {
+      // Gemini response format
+      content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    } else {
+      // OpenAI-compatible response format
+      content = data.choices?.[0]?.message?.content || "";
+    }
 
     console.log("[AI Assistant] AI response received, length:", content?.length);
 
@@ -806,8 +961,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         result,
-        creditsUsed: creditsNeeded,
-        model: selectedModel
+        creditsUsed: useUserApiKey ? 0 : creditsNeeded,
+        model: selectedModel,
+        provider: apiProvider
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
