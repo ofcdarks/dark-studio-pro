@@ -7,6 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Eye,
   Calendar,
   MessageSquare,
@@ -257,6 +263,24 @@ export default function AnalysisHistory() {
     },
   });
 
+  // Move multiple videos to folder mutation
+  const moveMultipleVideosMutation = useMutation({
+    mutationFn: async ({ ids, folderId }: { ids: string[]; folderId: string | null }) => {
+      for (const id of ids) {
+        const { error } = await supabase
+          .from("analyzed_videos")
+          .update({ folder_id: folderId })
+          .eq("id", id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["analyzed-videos"] });
+      setSelectedVideos([]);
+      toast({ title: "Movidos!", description: `${selectedVideos.length} vídeos movidos para a pasta` });
+    },
+  });
+
   // Toggle video selection
   const toggleVideoSelection = (id: string) => {
     setSelectedVideos(prev => 
@@ -415,19 +439,57 @@ export default function AnalysisHistory() {
                     </span>
                   </div>
                   {selectedVideos.length > 0 && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteMultipleVideosMutation.mutate(selectedVideos)}
-                      disabled={deleteMultipleVideosMutation.isPending}
-                    >
-                      {deleteMultipleVideosMutation.isPending ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4 mr-2" />
-                      )}
-                      Excluir Selecionados
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {/* Move to folder dropdown */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={moveMultipleVideosMutation.isPending}
+                          >
+                            {moveMultipleVideosMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <FolderInput className="w-4 h-4 mr-2" />
+                            )}
+                            Mover para Pasta
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuItem
+                            onClick={() => moveMultipleVideosMutation.mutate({ ids: selectedVideos, folderId: null })}
+                          >
+                            <FolderOpen className="w-4 h-4 mr-2" />
+                            Remover da pasta (Geral)
+                          </DropdownMenuItem>
+                          {folders?.map((folder) => (
+                            <DropdownMenuItem
+                              key={folder.id}
+                              onClick={() => moveMultipleVideosMutation.mutate({ ids: selectedVideos, folderId: folder.id })}
+                            >
+                              <FolderOpen className="w-4 h-4 mr-2" />
+                              {folder.name}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      {/* Delete button */}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteMultipleVideosMutation.mutate(selectedVideos)}
+                        disabled={deleteMultipleVideosMutation.isPending}
+                      >
+                        {deleteMultipleVideosMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4 mr-2" />
+                        )}
+                        Excluir Selecionados
+                      </Button>
+                    </div>
                   )}
                 </div>
               )}
