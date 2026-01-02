@@ -8,7 +8,7 @@ import {
   TrendingUp,
   Users,
   AlertTriangle,
-  Sparkles,
+  Rocket,
   BarChart3,
   Image,
   FileText,
@@ -80,7 +80,7 @@ const Landing = () => {
     { icon: ImagePlus, title: "Gerador de Imagens Ilimitado", desc: "Criação ilimitada de imagens para seus vídeos.", badge: "∞", color: "bg-gradient-to-br from-pink-500 to-rose-600" },
     { icon: FileType, title: "Gerador de SRT", desc: "Legendas sincronizadas automaticamente em formato SRT.", color: "bg-gradient-to-br from-primary to-accent" },
     { icon: Video, title: "Geração de Vídeo VO3 & Sora", desc: "Integração com VO3 e Sora para geração de vídeos.", badge: "PRO", color: "bg-gradient-to-br from-blue-500 to-indigo-600" },
-    { icon: Sparkles, title: "Criação de Agente Automático", desc: "Agentes que trabalham 24/7 automatizando suas operações.", badge: "AUTO", color: "bg-gradient-to-br from-amber-500 to-orange-600" },
+    { icon: Rocket, title: "Criação de Agente Automático", desc: "Agentes que trabalham 24/7 automatizando suas operações.", badge: "AUTO", color: "bg-gradient-to-br from-amber-500 to-orange-600" },
     { icon: TrendingUp, title: "Analytics Avançado", desc: "Métricas em tempo real: CTR, views, likes, comentários e RPM.", color: "bg-gradient-to-br from-indigo-500 to-purple-600" },
     { icon: Users, title: "Análise de Canais Virais", desc: "Monitore e analise os canais mais virais do seu nicho.", color: "bg-gradient-to-br from-teal-500 to-cyan-600" },
     { icon: FileText, title: "Modelagem de Roteiro Avançada", desc: "Modelagem avançada de roteiros baseados em padrões virais.", badge: "PRO", color: "bg-gradient-to-br from-rose-500 to-pink-600" },
@@ -206,9 +206,9 @@ const Landing = () => {
           <AnimatedSection animation="fade-right" className="space-y-6 md:space-y-8">
               {/* Private Elite Access Badge */}
               <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-card border border-border">
-                <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                <Rocket className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                 <span className="text-sm md:text-base font-medium">PRIVATE ELITE ACCESS</span>
-                <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                <Rocket className="w-4 h-4 md:w-5 md:h-5 text-primary" />
               </div>
 
               {/* Warning Badge */}
@@ -311,7 +311,7 @@ const Landing = () => {
         <AnimatedSection className="max-w-5xl mx-auto text-center space-y-8 md:space-y-10">
           <div className="space-y-4 md:space-y-5">
             <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-card border border-border">
-              <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+              <Rocket className="w-4 h-4 md:w-5 md:h-5 text-primary" />
               <span className="text-sm md:text-base font-medium text-primary">VEJA EM AÇÃO</span>
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic">

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
+import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ArrowLeft, Rocket } from "lucide-react";
 import { z } from "zod";
 import logo from "@/assets/logo.gif";
 import authBg from "@/assets/auth-porsche.jpg";

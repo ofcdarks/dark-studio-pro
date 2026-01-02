@@ -1,4 +1,4 @@
-import { Lightbulb, Sparkles, TrendingUp, Target, Zap, Brain } from "lucide-react";
+import { Lightbulb, Rocket, TrendingUp, Target, Zap, Brain } from "lucide-react";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 
@@ -63,7 +63,7 @@ const getAIDirective = (stats: DirectivesCardProps['stats']) => {
       });
     } else {
       directives.push({
-        icon: Sparkles,
+        icon: Rocket,
         title: "Escale sua Produção",
         tip: `Excelente! Média de ${(avgViews / 1000).toFixed(0)}K views. Mantenha consistência: 3-4 vídeos/semana é o sweet spot para canais Dark viralizarem.`,
         priority: 4,
@@ -84,7 +84,7 @@ const getAIDirective = (stats: DirectivesCardProps['stats']) => {
   // Default advanced tip for active users
   if (directives.length === 0) {
     directives.push({
-      icon: Sparkles,
+      icon: Rocket,
       title: "Dica do Especialista",
       tip: "Canais Dark com melhor performance postam às 18h-21h (horário do público). Hook nos primeiros 3 segundos retém 40% mais viewers.",
       priority: 10,

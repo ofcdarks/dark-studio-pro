@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Play, Zap, Sparkles, ArrowRight } from "lucide-react";
+import { Play, Zap, Rocket, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useLandingSettings } from "@/hooks/useLandingSettings";
@@ -103,7 +103,7 @@ const VideoShowcaseSection = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-bold mb-6"
           >
-            <Sparkles className="w-4 h-4" />
+            <Rocket className="w-4 h-4" />
             {settings.videoSectionBadge}
           </motion.span>
           <motion.h2 

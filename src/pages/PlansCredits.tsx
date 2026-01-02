@@ -12,7 +12,7 @@ import {
   X, 
   Zap, 
   ArrowLeft,
-  Sparkles,
+  Rocket,
   Crown,
   Star,
   Shield,
@@ -267,7 +267,7 @@ export default function PlansCredits() {
               transition={{ delay: 0.2 }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/10 border border-primary/40"
             >
-              <Sparkles className="w-4 h-4 text-primary" />
+              <Rocket className="w-4 h-4 text-primary" />
               <span className="text-sm font-bold text-primary">PRIVATE CORE - Alocação de Recursos</span>
             </motion.div>
             
@@ -557,7 +557,7 @@ export default function PlansCredits() {
                             className="flex items-center gap-1 text-sm text-success font-semibold"
                             whileHover={{ scale: 1.05 }}
                           >
-                            <Sparkles className="w-3 h-3 group-hover:animate-spin" />
+                            <Rocket className="w-3 h-3 group-hover:animate-spin" />
                             Economia de R$ {plan.savings.toFixed(0)}/ano
                           </motion.div>
                         </div>

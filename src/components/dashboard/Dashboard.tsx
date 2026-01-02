@@ -1,4 +1,4 @@
-import { Video, Eye, Coins, TrendingUp, Type, Image, Sparkles } from "lucide-react";
+import { Video, Eye, Coins, TrendingUp, Type, Image, Rocket } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
@@ -89,7 +89,7 @@ export function Dashboard() {
                   onClick={() => navigate('/plans')} 
                   className={`w-full gradient-button text-primary-foreground text-xs ${isLowCredits ? 'animate-pulse' : ''}`}
                 >
-                  <Sparkles className="w-3 h-3 mr-1" />
+                  <Rocket className="w-3 h-3 mr-1" />
                   Comprar Créditos
                 </Button>
               }

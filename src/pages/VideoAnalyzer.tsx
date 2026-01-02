@@ -19,7 +19,7 @@ import {
   Check,
   Loader2,
   ChevronDown,
-  Sparkles,
+  Rocket,
   RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -870,7 +870,7 @@ const VideoAnalyzer = () => {
                           </Badge>
                           {title.isBest && (
                             <Badge className="bg-success/20 text-success border-success/30 text-xs shrink-0">
-                              <Sparkles className="w-3 h-3 mr-1" />
+                              <Rocket className="w-3 h-3 mr-1" />
                               Melhor título
                             </Badge>
                           )}
@@ -879,7 +879,7 @@ const VideoAnalyzer = () => {
 
                         <Collapsible>
                           <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                            <Sparkles className="w-4 h-4 text-primary" />
+                            <Rocket className="w-4 h-4 text-primary" />
                             Análise da Estrutura/Fórmula
                             <ChevronDown className="w-4 h-4" />
                           </CollapsibleTrigger>
@@ -891,7 +891,7 @@ const VideoAnalyzer = () => {
                               </code>
                             </p>
                             <Badge variant="outline" className="text-xs text-primary border-primary">
-                              <Sparkles className="w-3 h-3 mr-1" />
+                              <Rocket className="w-3 h-3 mr-1" />
                               Fórmula surpresa: {title.formulaSurpresa}
                             </Badge>
                           </CollapsibleContent>
@@ -911,7 +911,7 @@ const VideoAnalyzer = () => {
                           Qualidade {title.quality}/10
                         </Badge>
                         <Badge className="bg-primary text-primary-foreground">
-                          <Sparkles className="w-3 h-3 mr-1" />
+                          <Rocket className="w-3 h-3 mr-1" />
                           Impacto {title.impact}/10
                         </Badge>
                         <Button
@@ -955,7 +955,7 @@ const VideoAnalyzer = () => {
           {/* Empty State */}
           {!videoInfo && !analyzing && (
             <Card className="p-12 text-center border-border/50">
-              <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <Rocket className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-foreground mb-2">
                 Pronto para analisar
               </h3>
