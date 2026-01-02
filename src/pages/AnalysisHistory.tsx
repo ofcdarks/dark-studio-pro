@@ -281,34 +281,21 @@ export default function AnalysisHistory() {
     },
   });
 
-  // Move multiple titles - note: generated_titles doesn't have folder_id, 
-  // but we can associate through video_analysis_id if needed
-  // For now, this is a placeholder that clears selection
+  // Move multiple titles to folder mutation
   const moveMultipleTitlesMutation = useMutation({
     mutationFn: async ({ ids, folderId }: { ids: string[]; folderId: string | null }) => {
-      // Titles don't have direct folder_id, but they're linked via video_analysis_id
-      // If the title has a linked video, move that video to the folder
       for (const id of ids) {
-        const { data: title } = await supabase
+        const { error } = await supabase
           .from("generated_titles")
-          .select("video_analysis_id")
-          .eq("id", id)
-          .single();
-        
-        if (title?.video_analysis_id) {
-          const { error } = await supabase
-            .from("analyzed_videos")
-            .update({ folder_id: folderId })
-            .eq("id", title.video_analysis_id);
-          if (error) throw error;
-        }
+          .update({ folder_id: folderId } as any)
+          .eq("id", id);
+        if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["analyzed-videos"] });
       queryClient.invalidateQueries({ queryKey: ["generated-titles"] });
       setSelectedTitles([]);
-      toast({ title: "Movidos!", description: `Títulos associados movidos para a pasta` });
+      toast({ title: "Movidos!", description: `${selectedTitles.length} títulos movidos para a pasta` });
     },
   });
 
