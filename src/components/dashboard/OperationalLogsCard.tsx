@@ -11,10 +11,10 @@ interface ActivityLog {
 }
 
 interface OperationalLogsCardProps {
-  logs: ActivityLog[];
+  logs?: ActivityLog[];
 }
 
-export function OperationalLogsCard({ logs }: OperationalLogsCardProps) {
+export function OperationalLogsCard({ logs = [] }: OperationalLogsCardProps) {
   return (
     <div className="group bg-card/60 backdrop-blur-sm border border-border/50 rounded-xl p-5 transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5">
       <div className="flex items-center gap-2 mb-4">

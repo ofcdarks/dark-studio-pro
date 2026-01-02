@@ -2,10 +2,10 @@ import { Lightbulb, Sparkles, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface DirectivesCardProps {
-  videosCount: number;
+  videosCount?: number;
 }
 
-export function DirectivesCard({ videosCount }: DirectivesCardProps) {
+export function DirectivesCard({ videosCount = 0 }: DirectivesCardProps) {
   const hasVideos = videosCount > 0;
 
   return (
