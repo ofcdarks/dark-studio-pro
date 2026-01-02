@@ -891,13 +891,6 @@ const VideoAnalyzer = () => {
                         <Eye className="w-8 h-8" />
                       </div>
                     )}
-                    <Button
-                      size="sm"
-                      className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs h-7"
-                    >
-                      <Search className="w-3 h-3 mr-1" />
-                      Semelhantes
-                    </Button>
                   </div>
                 </div>
 
@@ -962,10 +955,6 @@ const VideoAnalyzer = () => {
                         <FileText className="w-4 h-4 mr-2" />
                       )}
                       {loadingTranscription ? "Transcrevendo..." : "Carregar Transcrição"}
-                    </Button>
-                    <Button variant="outline" size="sm" className="border-primary text-primary" onClick={handleSearchSimilarVideos}>
-                      <Search className="w-4 h-4 mr-2" />
-                      Buscar Vídeos Semelhantes
                     </Button>
                   </div>
                 </div>
