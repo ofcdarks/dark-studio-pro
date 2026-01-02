@@ -41,6 +41,7 @@ import { ParticleBackground } from "@/components/landing/ParticleBackground";
 import { GlassCard } from "@/components/landing/GlassCard";
 import { AdSenseCard } from "@/components/landing/AdSenseCard";
 import FloatingElements from "@/components/landing/FloatingElements";
+import CustomCursor from "@/components/landing/CustomCursor";
 import { Tool3DCard } from "@/components/landing/Tool3DCard";
 import { Dream3DCard } from "@/components/landing/Dream3DCard";
 import logo from "@/assets/logo.gif";
@@ -137,6 +138,8 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden relative">
+      {/* Custom Cursor */}
+      <CustomCursor />
       {/* Global Floating Elements */}
       <FloatingElements />
       {/* Navigation */}
