@@ -42,6 +42,7 @@ import { GlassCard } from "@/components/landing/GlassCard";
 import { AdSenseCard } from "@/components/landing/AdSenseCard";
 import FloatingElements from "@/components/landing/FloatingElements";
 import { Tool3DCard } from "@/components/landing/Tool3DCard";
+import { Dream3DCard } from "@/components/landing/Dream3DCard";
 import logo from "@/assets/logo.gif";
 
 // Dream images
@@ -398,20 +399,11 @@ const Landing = () => {
           <div className="grid md:grid-cols-3 gap-8">
             {dreams.map((dream, index) => (
               <AnimatedItem key={index} index={index} staggerDelay={100}>
-                <Card className="overflow-hidden group cursor-pointer border-border hover:border-primary/50 transition-all duration-300">
-                  <div className="aspect-[4/3] relative overflow-hidden">
-                    <img 
-                      src={dream.image} 
-                      alt={dream.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <h3 className="font-bold text-xl">{dream.title}</h3>
-                      <p className="text-base text-muted-foreground">{dream.desc}</p>
-                    </div>
-                  </div>
-                </Card>
+                <Dream3DCard
+                  image={dream.image}
+                  title={dream.title}
+                  desc={dream.desc}
+                />
               </AnimatedItem>
             ))}
           </div>
