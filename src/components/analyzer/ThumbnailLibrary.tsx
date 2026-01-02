@@ -490,8 +490,8 @@ export function ThumbnailLibrary({
         .from("reference-thumbnails")
         .getPublicUrl(fileName);
 
-      // Save to database
-      const { error: dbError } = await supabase
+      // Save to reference_thumbnails for prompts extraction
+      await supabase
         .from("reference_thumbnails")
         .insert({
           user_id: user.id,
@@ -508,11 +508,28 @@ export function ThumbnailLibrary({
           },
         });
 
-      if (dbError) throw dbError;
+      // Also save to viral_thumbnails for the Viral Library
+      const { error: viralError } = await supabase
+        .from("viral_thumbnails")
+        .insert({
+          user_id: user.id,
+          image_url: urlData.publicUrl,
+          video_title: videoTitle,
+          headline: thumb.headline,
+          seo_description: thumb.seoDescription,
+          seo_tags: Array.isArray(thumb.seoTags) ? thumb.seoTags.join(", ") : thumb.seoTags,
+          prompt: thumb.prompt,
+          style: thumb.style,
+          niche: niche || null,
+          sub_niche: subNiche || null,
+        });
+
+      if (viralError) throw viralError;
 
       setSavedToLibrary(prev => [...prev, index]);
-      toast({ title: "Salvo na biblioteca!", description: "Thumbnail salva para reutilização futura" });
+      toast({ title: "Salvo na Biblioteca Viral!", description: "Thumbnail salva em Thumbnails Virais" });
       queryClient.invalidateQueries({ queryKey: ["reference-thumbnails"] });
+      queryClient.invalidateQueries({ queryKey: ["viral-thumbnails"] });
     } catch (error) {
       console.error("Save to library error:", error);
       toast({
