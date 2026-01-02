@@ -396,11 +396,18 @@ serve(async (req) => {
         }
 
         // Laozhang não tem canais Gemini disponíveis em todos os grupos.
-        // Para requisições Gemini (ex: multimodal), caímos para o Lovable AI Gateway.
+        // Para requisições Gemini (ex: multimodal), tentamos admin Gemini key primeiro, depois Lovable AI.
         if (model?.includes("gemini")) {
-          apiProvider = 'lovable';
-          laozhangModel = null;
-          console.log(`[AI Assistant] Laozhang Gemini unavailable; falling back to Lovable AI for model: ${model}`);
+          if (adminApiKeys?.gemini && adminApiKeys.gemini_validated) {
+            userApiKeyToUse = adminApiKeys.gemini ?? null;
+            apiProvider = 'gemini';
+            laozhangModel = null;
+            console.log(`[AI Assistant] Laozhang Gemini unavailable; using admin Gemini key for model: ${model}`);
+          } else {
+            apiProvider = 'lovable';
+            laozhangModel = null;
+            console.log(`[AI Assistant] Laozhang Gemini unavailable; falling back to Lovable AI for model: ${model}`);
+          }
         } else {
           console.log(`[AI Assistant] Using Laozhang AI (platform credits) - Requested: ${model}, Using: ${laozhangModel}`);
         }
