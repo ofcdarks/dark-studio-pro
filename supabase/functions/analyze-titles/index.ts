@@ -59,19 +59,114 @@ async function fetchYouTubeVideoData(videoId: string, apiKey: string) {
   };
 }
 
+// Helper function to get AI configuration
+async function getAIConfig(userId: string | null, supabaseAdmin: any, requestedModel: string) {
+  let apiKey: string | null = null;
+  let apiEndpoint = "https://ai.gateway.lovable.dev/v1/chat/completions";
+  let finalModel = "google/gemini-2.5-flash";
+  let provider = "lovable";
+
+  // Map frontend model names to actual model names
+  const modelMap: Record<string, string> = {
+    "gpt-4o": "gpt-4o",
+    "gpt-4o-2025": "gpt-4o",
+    "gemini": "google/gemini-2.5-flash",
+    "gemini-pro": "google/gemini-2.5-pro",
+    "claude": "claude-3-5-sonnet-20241022",
+  };
+
+  // Check user API settings first
+  if (userId) {
+    const { data: userSettings } = await supabaseAdmin
+      .from("user_api_settings")
+      .select("openai_api_key, openai_validated, gemini_api_key, gemini_validated, claude_api_key, claude_validated, use_platform_credits")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const usePlatformCredits = userSettings?.use_platform_credits ?? true;
+
+    // If user has their own API keys and not using platform credits
+    if (!usePlatformCredits && userSettings) {
+      if (requestedModel.includes("gpt") && userSettings.openai_api_key && userSettings.openai_validated) {
+        apiKey = userSettings.openai_api_key;
+        apiEndpoint = "https://api.openai.com/v1/chat/completions";
+        finalModel = "gpt-4o";
+        provider = "openai";
+        console.log("[AI Config] Using user OpenAI API key");
+      } else if (requestedModel.includes("claude") && userSettings.claude_api_key && userSettings.claude_validated) {
+        apiKey = userSettings.claude_api_key;
+        apiEndpoint = "https://api.anthropic.com/v1/messages";
+        finalModel = "claude-3-5-sonnet-20241022";
+        provider = "claude";
+        console.log("[AI Config] Using user Claude API key");
+      } else if (requestedModel.includes("gemini") && userSettings.gemini_api_key && userSettings.gemini_validated) {
+        apiKey = userSettings.gemini_api_key;
+        apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${userSettings.gemini_api_key}`;
+        finalModel = "gemini-2.0-flash";
+        provider = "gemini";
+        console.log("[AI Config] Using user Gemini API key");
+      }
+    }
+  }
+
+  // If no user key, check admin settings for Laozhang or other providers
+  if (!apiKey) {
+    const { data: adminSettings } = await supabaseAdmin
+      .from("admin_settings")
+      .select("key, value")
+      .in("key", ["laozhang_api_key", "openai_api_key", "gemini_api_key"]);
+
+    const adminLaozhangKey = adminSettings?.find((s: any) => s.key === "laozhang_api_key")?.value;
+    const adminOpenaiKey = adminSettings?.find((s: any) => s.key === "openai_api_key")?.value;
+    const adminGeminiKey = adminSettings?.find((s: any) => s.key === "gemini_api_key")?.value;
+
+    // Priority: Laozhang > OpenAI/Gemini > Lovable AI
+    if (adminLaozhangKey) {
+      apiKey = adminLaozhangKey;
+      apiEndpoint = "https://api.laozhang.ai/v1/chat/completions";
+      // Map model for Laozhang
+      if (requestedModel.includes("gpt")) {
+        finalModel = "gpt-4o";
+      } else if (requestedModel.includes("claude")) {
+        finalModel = "claude-3-5-sonnet-20241022";
+      } else {
+        finalModel = "gemini-2.0-flash-001";
+      }
+      provider = "laozhang";
+      console.log("[AI Config] Using admin Laozhang API key");
+    } else if (requestedModel.includes("gpt") && adminOpenaiKey) {
+      apiKey = adminOpenaiKey;
+      apiEndpoint = "https://api.openai.com/v1/chat/completions";
+      finalModel = "gpt-4o";
+      provider = "openai";
+      console.log("[AI Config] Using admin OpenAI API key");
+    } else if (requestedModel.includes("gemini") && adminGeminiKey) {
+      apiKey = adminGeminiKey;
+      apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${adminGeminiKey}`;
+      finalModel = "gemini-2.0-flash";
+      provider = "gemini";
+      console.log("[AI Config] Using admin Gemini API key");
+    } else {
+      // Fallback to Lovable AI
+      apiKey = Deno.env.get("LOVABLE_API_KEY") || null;
+      apiEndpoint = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      finalModel = modelMap[requestedModel] || "google/gemini-2.5-flash";
+      provider = "lovable";
+      console.log("[AI Config] Using Lovable AI fallback");
+    }
+  }
+
+  return { apiKey, apiEndpoint, finalModel, provider };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
 
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -102,7 +197,11 @@ serve(async (req) => {
       throw new Error("Invalid YouTube URL");
     }
 
-    console.log(`[Analyze Titles] Processing video: ${videoId}, Language: ${language}`);
+    console.log(`[Analyze Titles] Processing video: ${videoId}, Model: ${model}, Language: ${language}`);
+
+    // Get AI configuration based on hierarchy
+    const aiConfig = await getAIConfig(userId, supabaseAdmin, model);
+    console.log(`[Analyze Titles] Using provider: ${aiConfig.provider}, model: ${aiConfig.finalModel}`);
 
     // Passo 3: Buscar YouTube API Key do usuário (fallback para dados básicos)
     let videoData: any = null;
@@ -158,8 +257,8 @@ serve(async (req) => {
         user_id: userId,
         operation_type: "title_analysis",
         credits_used: creditsNeeded,
-        model_used: model,
-        details: { video_id: videoId, language }
+        model_used: `${aiConfig.provider}/${aiConfig.finalModel}`,
+        details: { video_id: videoId, language, provider: aiConfig.provider }
       });
     }
 
@@ -227,20 +326,53 @@ Retorne APENAS em formato JSON válido:
   ]
 }`;
 
-    // Passo 9: Chamar API de IA
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "user", content: analysisPrompt }
-        ],
-      }),
-    });
+    // Passo 9: Chamar API de IA usando a configuração dinâmica
+    if (!aiConfig.apiKey) {
+      throw new Error("No AI API key configured");
+    }
+
+    let aiResponse: Response;
+    
+    if (aiConfig.provider === "gemini") {
+      // Google Gemini API has different format
+      aiResponse = await fetch(aiConfig.apiEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: analysisPrompt }] }],
+        }),
+      });
+    } else if (aiConfig.provider === "claude") {
+      // Anthropic Claude API
+      aiResponse = await fetch(aiConfig.apiEndpoint, {
+        method: "POST",
+        headers: {
+          "x-api-key": aiConfig.apiKey,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: aiConfig.finalModel,
+          max_tokens: 4096,
+          messages: [{ role: "user", content: analysisPrompt }],
+        }),
+      });
+    } else {
+      // OpenAI-compatible format (OpenAI, Laozhang, Lovable AI)
+      aiResponse = await fetch(aiConfig.apiEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${aiConfig.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: aiConfig.finalModel,
+          messages: [{ role: "user", content: analysisPrompt }],
+        }),
+      });
+    }
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
@@ -249,7 +381,18 @@ Retorne APENAS em formato JSON válido:
     }
 
     const aiData = await aiResponse.json();
-    const aiContent = aiData.choices?.[0]?.message?.content || "";
+    
+    // Extract content based on provider
+    let aiContent = "";
+    if (aiConfig.provider === "gemini") {
+      aiContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    } else if (aiConfig.provider === "claude") {
+      aiContent = aiData.content?.[0]?.text || "";
+    } else {
+      aiContent = aiData.choices?.[0]?.message?.content || "";
+    }
+
+    console.log(`[Analyze Titles] AI response received from ${aiConfig.provider}, length: ${aiContent.length}`);
 
     // Parsear resposta JSON
     let analysis;
