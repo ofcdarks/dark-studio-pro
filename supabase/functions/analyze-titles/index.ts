@@ -111,14 +111,20 @@ async function getAIConfig(userId: string | null, supabaseAdmin: any, requestedM
 
   // If no user key, check admin settings for Laozhang or other providers
   if (!apiKey) {
+    // Admin keys are stored in api_keys object
     const { data: adminSettings } = await supabaseAdmin
       .from("admin_settings")
       .select("key, value")
-      .in("key", ["laozhang_api_key", "openai_api_key", "gemini_api_key"]);
+      .eq("key", "api_keys")
+      .maybeSingle();
 
-    const adminLaozhangKey = adminSettings?.find((s: any) => s.key === "laozhang_api_key")?.value;
-    const adminOpenaiKey = adminSettings?.find((s: any) => s.key === "openai_api_key")?.value;
-    const adminGeminiKey = adminSettings?.find((s: any) => s.key === "gemini_api_key")?.value;
+    const apiKeys = adminSettings?.value as any || {};
+    const adminLaozhangKey = apiKeys.laozhang;
+    const adminOpenaiKey = apiKeys.openai;
+    const adminGeminiKey = apiKeys.gemini;
+    const adminClaudeKey = apiKeys.claude;
+
+    console.log(`[AI Config] Admin keys found - Laozhang: ${!!adminLaozhangKey}, OpenAI: ${!!adminOpenaiKey}, Gemini: ${!!adminGeminiKey}`);
 
     // Priority: Laozhang > OpenAI/Gemini > Lovable AI
     if (adminLaozhangKey) {
