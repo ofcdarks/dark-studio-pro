@@ -1053,15 +1053,6 @@ const VideoAnalyzer = () => {
                           </span>
                         </div>
                         
-                        {/* Best title badge - centered below */}
-                        {title.isBest && (
-                          <div className="flex justify-center mt-2">
-                            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs animate-pulse">
-                              <Rocket className="w-3 h-3 mr-1" />
-                              Melhor título
-                            </Badge>
-                          </div>
-                        )}
 
                         <Collapsible>
                           <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
@@ -1091,27 +1082,37 @@ const VideoAnalyzer = () => {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="border-success text-success bg-success/10">
-                          <Check className="w-3 h-3 mr-1" />
-                          Qualidade {title.quality}/10
-                        </Badge>
-                        <Badge className="bg-primary text-primary-foreground">
-                          <Rocket className="w-3 h-3 mr-1" />
-                          Impacto {title.impact}/10
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => copyTitle(title.id, title.title)}
-                          className="h-8 w-8"
-                        >
-                          {copiedId === title.id ? (
-                            <Check className="w-4 h-4 text-success" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </Button>
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="border-success text-success bg-success/10">
+                            <Check className="w-3 h-3 mr-1" />
+                            Qualidade {title.quality}/10
+                          </Badge>
+                          <Badge className="bg-primary text-primary-foreground">
+                            <Rocket className="w-3 h-3 mr-1" />
+                            Impacto {title.impact}/10
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyTitle(title.id, title.title)}
+                            className="h-8 w-8"
+                          >
+                            {copiedId === title.id ? (
+                              <Check className="w-4 h-4 text-success" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                        
+                        {/* Best title badge below quality/impact */}
+                        {title.isBest && (
+                          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs animate-pulse">
+                            <Rocket className="w-3 h-3 mr-1" />
+                            Melhor título
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </Card>
