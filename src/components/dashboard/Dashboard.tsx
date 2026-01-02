@@ -10,17 +10,13 @@ import { NextStepsCard } from "./NextStepsCard";
 import { DailyQuoteCard } from "./DailyQuoteCard";
 import { RecentVideosCard } from "./RecentVideosCard";
 import { OperationalLogsCard } from "./OperationalLogsCard";
-import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
 
 export function Dashboard() {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { balance: credits, loading: creditsLoading } = useCredits();
   const { stats, recentVideos, activityLogs, loading } = useDashboardData();
-  const navigate = useNavigate();
 
   const displayName = profile?.full_name || user?.email?.split("@")[0] || "Usuário";
 
@@ -77,11 +73,7 @@ export function Dashboard() {
             <StatsCard icon={Type} label="Títulos Gerados" value={stats.titlesGenerated} subLabel={stats.titlesGenerated > 0 ? "CRIADOS" : "INÍCIO"} />
           </motion.div>
           <motion.div variants={itemVariants}>
-            <StatsCard icon={Coins} label="Créditos" value={credits.toLocaleString()} status="active" action={
-              <Button size="sm" onClick={() => navigate('/plans')} className="w-full gradient-button text-primary-foreground text-xs">
-                <Sparkles className="w-3 h-3 mr-1" />Rebalancear
-              </Button>
-            } />
+            <StatsCard icon={Coins} label="Créditos" value={credits.toLocaleString()} status="active" />
           </motion.div>
           <motion.div variants={itemVariants}>
             <StatsCard icon={Image} label="Imagens Geradas" value={stats.imagesGenerated} subLabel={stats.imagesGenerated > 0 ? "CRIADAS" : "INÍCIO"} />
