@@ -4,20 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-// Google AdSense official logo as SVG component
-const AdSenseLogo = () => (
-  <svg viewBox="0 0 48 48" className="w-full h-full">
-    {/* Outer blue circle */}
-    <circle cx="24" cy="24" r="22" fill="#4285F4"/>
-    {/* Green circle */}
-    <circle cx="24" cy="24" r="16" fill="#34A853"/>
-    {/* Yellow circle */}
-    <circle cx="24" cy="24" r="10" fill="#FBBC05"/>
-    {/* Red center */}
-    <circle cx="24" cy="24" r="5" fill="#EA4335"/>
-  </svg>
-);
+import adsenseLogo from "@/assets/adsense-logo.png";
 
 // Different payment amounts to cycle through
 const paymentAmounts = [
@@ -144,7 +131,7 @@ export const AdSenseCard = () => {
 
           <div className="flex items-center gap-4 relative z-10">
             <motion.div 
-              className="w-14 h-14 rounded-xl bg-white p-1 flex items-center justify-center overflow-hidden shadow-lg"
+              className="w-14 h-14 rounded-xl bg-white p-2 flex items-center justify-center overflow-hidden shadow-lg"
               animate={{
                 scale: isHovered ? 1.1 : 1,
                 rotate: isHovered ? 5 : 0,
@@ -152,7 +139,11 @@ export const AdSenseCard = () => {
               transition={{ duration: 0.3 }}
               style={{ transform: "translateZ(20px)" }}
             >
-              <AdSenseLogo />
+              <img 
+                src={adsenseLogo} 
+                alt="Google AdSense Logo" 
+                className="w-full h-full object-contain"
+              />
             </motion.div>
             <div>
               <p className="font-bold text-white text-lg tracking-tight">Google AdSense</p>
