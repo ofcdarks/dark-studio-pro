@@ -11,7 +11,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -23,7 +39,13 @@ interface ApiProvider {
   provider: string;
   model: string;
   credits_per_unit: number;
+  real_cost_per_unit: number;
+  unit_type: string;
+  unit_size: number;
+  markup: number;
   is_active: number;
+  is_default: number;
+  is_premium: number;
 }
 
 interface ApiKeyConfig {
@@ -70,6 +92,24 @@ export function AdminAPIsTab() {
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<ApiProvider | null>(null);
+  const [savingProvider, setSavingProvider] = useState(false);
+  
+  // Form states for modal
+  const [formName, setFormName] = useState("");
+  const [formProvider, setFormProvider] = useState("");
+  const [formModel, setFormModel] = useState("");
+  const [formCreditsPerUnit, setFormCreditsPerUnit] = useState(1);
+  const [formRealCostPerUnit, setFormRealCostPerUnit] = useState(0);
+  const [formUnitType, setFormUnitType] = useState("tokens");
+  const [formUnitSize, setFormUnitSize] = useState(1000);
+  const [formMarkup, setFormMarkup] = useState(1);
+  const [formIsActive, setFormIsActive] = useState(true);
+  const [formIsDefault, setFormIsDefault] = useState(false);
+  const [formIsPremium, setFormIsPremium] = useState(false);
 
   useEffect(() => {
     loadApiSettings();
@@ -183,6 +223,111 @@ export function AdminAPIsTab() {
       toast.error(`Erro ao validar chave ${provider}`);
     } finally {
       setValidating(null);
+    }
+  };
+
+  const openEditModal = (provider: ApiProvider) => {
+    setEditingProvider(provider);
+    setFormName(provider.name);
+    setFormProvider(provider.provider);
+    setFormModel(provider.model);
+    setFormCreditsPerUnit(provider.credits_per_unit);
+    setFormRealCostPerUnit(provider.real_cost_per_unit || 0);
+    setFormUnitType(provider.unit_type || "tokens");
+    setFormUnitSize(provider.unit_size || 1000);
+    setFormMarkup(provider.markup || 1);
+    setFormIsActive(provider.is_active === 1);
+    setFormIsDefault(provider.is_default === 1);
+    setFormIsPremium(provider.is_premium === 1);
+    setIsModalOpen(true);
+  };
+
+  const openAddModal = () => {
+    setEditingProvider(null);
+    setFormName("");
+    setFormProvider("");
+    setFormModel("");
+    setFormCreditsPerUnit(1);
+    setFormRealCostPerUnit(0);
+    setFormUnitType("tokens");
+    setFormUnitSize(1000);
+    setFormMarkup(1);
+    setFormIsActive(true);
+    setFormIsDefault(false);
+    setFormIsPremium(false);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingProvider(null);
+  };
+
+  const saveProvider = async () => {
+    if (!formName.trim() || !formProvider.trim() || !formModel.trim()) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    setSavingProvider(true);
+
+    try {
+      const providerData = {
+        name: formName,
+        provider: formProvider,
+        model: formModel,
+        credits_per_unit: formCreditsPerUnit,
+        real_cost_per_unit: formRealCostPerUnit,
+        unit_type: formUnitType,
+        unit_size: formUnitSize,
+        markup: formMarkup,
+        is_active: formIsActive ? 1 : 0,
+        is_default: formIsDefault ? 1 : 0,
+        is_premium: formIsPremium ? 1 : 0,
+      };
+
+      if (editingProvider) {
+        const { error } = await supabase
+          .from("api_providers")
+          .update(providerData)
+          .eq("id", editingProvider.id);
+
+        if (error) throw error;
+        toast.success("Provedor atualizado com sucesso!");
+      } else {
+        const { error } = await supabase
+          .from("api_providers")
+          .insert([providerData]);
+
+        if (error) throw error;
+        toast.success("Provedor adicionado com sucesso!");
+      }
+
+      closeModal();
+      fetchApiProviders();
+    } catch (error) {
+      console.error("Error saving provider:", error);
+      toast.error("Erro ao salvar provedor");
+    } finally {
+      setSavingProvider(false);
+    }
+  };
+
+  const deleteProvider = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir este provedor?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("api_providers")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      toast.success("Provedor excluído com sucesso!");
+      fetchApiProviders();
+    } catch (error) {
+      console.error("Error deleting provider:", error);
+      toast.error("Erro ao excluir provedor");
     }
   };
 
@@ -358,7 +503,7 @@ export function AdminAPIsTab() {
             <Key className="w-5 h-5 text-muted-foreground" />
             <h3 className="font-semibold text-foreground">Provedores de API Configurados</h3>
           </div>
-          <Button size="sm" className="bg-primary">
+          <Button size="sm" className="bg-primary" onClick={openAddModal}>
             <Plus className="w-4 h-4 mr-1" />
             Adicionar Provedor
           </Button>
@@ -376,6 +521,7 @@ export function AdminAPIsTab() {
                 <TableHead>PROVEDOR</TableHead>
                 <TableHead>MODELO</TableHead>
                 <TableHead>CRÉDITOS/UNIDADE</TableHead>
+                <TableHead>TIPO</TableHead>
                 <TableHead>STATUS</TableHead>
                 <TableHead>AÇÕES</TableHead>
               </TableRow>
@@ -383,26 +529,51 @@ export function AdminAPIsTab() {
             <TableBody>
               {apiProviders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     Nenhum provedor configurado
                   </TableCell>
                 </TableRow>
               ) : (
                 apiProviders.map((api) => (
                   <TableRow key={api.id}>
-                    <TableCell className="font-medium">{api.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {api.name}
+                        {api.is_default === 1 && (
+                          <Badge variant="outline" className="text-xs">Padrão</Badge>
+                        )}
+                        {api.is_premium === 1 && (
+                          <Badge variant="secondary" className="text-xs">Premium</Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{api.provider}</TableCell>
-                    <TableCell>{api.model}</TableCell>
+                    <TableCell className="font-mono text-xs">{api.model}</TableCell>
                     <TableCell>{api.credits_per_unit}</TableCell>
+                    <TableCell className="text-xs">{api.unit_size} {api.unit_type}</TableCell>
                     <TableCell>
                       <Badge variant={api.is_active ? "default" : "secondary"}>
                         {api.is_active ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button size="sm" variant="outline">
-                        Editar
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => openEditModal(api)}
+                        >
+                          <Pencil className="w-3 h-3 mr-1" />
+                          Editar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => deleteProvider(api.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -411,6 +582,153 @@ export function AdminAPIsTab() {
           </Table>
         )}
       </Card>
+
+      {/* Edit/Add Provider Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingProvider ? "Editar Provedor" : "Adicionar Provedor"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome *</Label>
+                <Input
+                  id="name"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="Ex: OpenAI GPT-4o"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="provider">Provedor *</Label>
+                <Select value={formProvider} onValueChange={setFormProvider}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o provedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="openai">OpenAI</SelectItem>
+                    <SelectItem value="gemini">Google Gemini</SelectItem>
+                    <SelectItem value="claude">Anthropic Claude</SelectItem>
+                    <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
+                    <SelectItem value="lovable">Lovable AI</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="model">Modelo *</Label>
+              <Input
+                id="model"
+                value={formModel}
+                onChange={(e) => setFormModel(e.target.value)}
+                placeholder="Ex: gpt-4o, gemini-2.5-pro, claude-3-sonnet"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="creditsPerUnit">Créditos/Unidade</Label>
+                <Input
+                  id="creditsPerUnit"
+                  type="number"
+                  step="0.01"
+                  value={formCreditsPerUnit}
+                  onChange={(e) => setFormCreditsPerUnit(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="realCost">Custo Real/Unidade ($)</Label>
+                <Input
+                  id="realCost"
+                  type="number"
+                  step="0.0001"
+                  value={formRealCostPerUnit}
+                  onChange={(e) => setFormRealCostPerUnit(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="markup">Markup (x)</Label>
+                <Input
+                  id="markup"
+                  type="number"
+                  step="0.1"
+                  value={formMarkup}
+                  onChange={(e) => setFormMarkup(Number(e.target.value))}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="unitSize">Tamanho da Unidade</Label>
+                <Input
+                  id="unitSize"
+                  type="number"
+                  value={formUnitSize}
+                  onChange={(e) => setFormUnitSize(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unitType">Tipo de Unidade</Label>
+                <Select value={formUnitType} onValueChange={setFormUnitType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tokens">Tokens</SelectItem>
+                    <SelectItem value="characters">Caracteres</SelectItem>
+                    <SelectItem value="requests">Requisições</SelectItem>
+                    <SelectItem value="minutes">Minutos</SelectItem>
+                    <SelectItem value="images">Imagens</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6 pt-2">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="isActive"
+                  checked={formIsActive}
+                  onCheckedChange={setFormIsActive}
+                />
+                <Label htmlFor="isActive">Ativo</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="isDefault"
+                  checked={formIsDefault}
+                  onCheckedChange={setFormIsDefault}
+                />
+                <Label htmlFor="isDefault">Padrão</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="isPremium"
+                  checked={formIsPremium}
+                  onCheckedChange={setFormIsPremium}
+                />
+                <Label htmlFor="isPremium">Premium</Label>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeModal}>
+              Cancelar
+            </Button>
+            <Button onClick={saveProvider} disabled={savingProvider}>
+              {savingProvider && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {editingProvider ? "Salvar Alterações" : "Adicionar Provedor"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
