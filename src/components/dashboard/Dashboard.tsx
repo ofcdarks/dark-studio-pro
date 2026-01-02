@@ -1,6 +1,7 @@
 import { Video, Eye, MessageCircle, Coins, HardDrive, TrendingUp, FileText, Image, Mic, Type } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
+import { useCredits } from "@/hooks/useCredits";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { StatsCard } from "./StatsCard";
 import { MetricsCard } from "./MetricsCard";
@@ -17,11 +18,11 @@ import { useNavigate } from "react-router-dom";
 export function Dashboard() {
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { balance: credits, loading: creditsLoading } = useCredits();
   const { stats, recentVideos, activityLogs, loading } = useDashboardData();
   const navigate = useNavigate();
 
   const displayName = profile?.full_name || user?.email?.split("@")[0] || "Usuário";
-  const credits = profile?.credits ?? 0;
   const storageUsed = profile?.storage_used ?? 0;
   const storageLimit = profile?.storage_limit ?? 1;
 
