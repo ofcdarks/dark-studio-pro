@@ -21,6 +21,7 @@ interface ThumbnailRequest {
   useTitle?: boolean;
   referenceThumbnailUrl?: string;
   referencePrompt?: string;
+  referenceHeadlineStyle?: string;
   language?: string;
 }
 
@@ -213,6 +214,7 @@ serve(async (req) => {
       useTitle = false,
       referenceThumbnailUrl,
       referencePrompt,
+      referenceHeadlineStyle,
       language = "Português"
     } = body;
 
@@ -257,12 +259,25 @@ Niche: ${niche}${subNiche ? `, Sub-niche: ${subNiche}` : ""}`;
         imagePrompt += `
 
 IMPORTANT HEADLINE REQUIREMENT:
-- Add this text as a bold, eye-catching headline on the thumbnail: "${headline}"
+- Add this text as a bold, eye-catching headline on the thumbnail: "${headline}"`;
+
+        // If we have a reference headline style, use it
+        if (referenceHeadlineStyle) {
+          imagePrompt += `
+
+HEADLINE STYLE FROM REFERENCE (FOLLOW EXACTLY):
+${referenceHeadlineStyle}
+- Replicate the exact style, position, font type, colors, and effects from the reference thumbnail
+- Match the text placement and size proportionally
+- Use the same visual treatment (shadows, outlines, gradients, glow effects)`;
+        } else {
+          imagePrompt += `
 - The headline should be positioned prominently (typically top or bottom third of the image)
 - Use a bold, impactful font style with high contrast against the background
 - Consider adding text effects like: drop shadow, outline, glow, or gradient
 - The text must be large enough to be readable even in small thumbnail sizes
 - Match the headline style to the overall visual theme`;
+        }
       }
 
       // Add reference style if available

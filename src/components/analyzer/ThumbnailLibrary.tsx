@@ -41,6 +41,13 @@ interface ReferenceThumbnail {
   extracted_prompt: string | null;
   folder_id: string | null;
   created_at: string;
+  style_analysis?: {
+    headlineStyle?: string;
+    commonStyle?: string;
+    colorPalette?: string;
+    composition?: string;
+    [key: string]: unknown;
+  } | null;
 }
 
 interface ThumbnailLibraryProps {
@@ -308,9 +315,16 @@ export function ThumbnailLibrary({
           Retorne um JSON com:
           - prompts: array de prompts (um para cada thumbnail)
           - commonStyle: descrição do estilo comum entre as thumbnails
-          - colorPalette: cores predominantes
+          - colorPalette: cores predominantes (ex: "preto, dourado, laranja vibrante")
           - composition: descrição da composição típica
-          - headlineStyle: descrição do estilo de headline usado (posição, cor, fonte, efeitos)`,
+          - headlineStyle: descrição DETALHADA do estilo de headline usado, incluindo:
+            * Posição na imagem (ex: "canto superior direito", "centro", "terço inferior")
+            * Cor do texto (ex: "branco com contorno preto", "amarelo vibrante")
+            * Estilo de fonte (ex: "sans-serif bold", "impacto", "condensada")
+            * Tamanho relativo (ex: "grande ocupando 1/3 da imagem", "médio")
+            * Efeitos (ex: "sombra preta", "outline duplo", "glow", "gradiente")
+            * Ângulo/Rotação (ex: "levemente inclinado", "horizontal")
+            * Qualquer outro detalhe visual importante do texto`,
         },
       });
 
@@ -393,10 +407,18 @@ export function ThumbnailLibrary({
       const selectedStyleObj = THUMBNAIL_STYLES.find(s => s.id === artStyle);
       const stylePromptPrefix = selectedStyleObj?.promptPrefix || "";
       
-      // Get reference thumbnail prompt if available
-      const referencePrompt = thumbnailsWithPrompts.length > 0 
-        ? thumbnailsWithPrompts[parseInt(selectedPrompt) - 1]?.extracted_prompt 
+      // Get reference thumbnail prompt and headline style if available
+      const selectedReference = thumbnailsWithPrompts.length > 0 
+        ? thumbnailsWithPrompts[parseInt(selectedPrompt) - 1]
         : undefined;
+      
+      const referencePrompt = selectedReference?.extracted_prompt;
+      
+      // Extract headline style from style_analysis if available
+      const referenceHeadlineStyle = selectedReference?.style_analysis?.headlineStyle || 
+        (selectedReference?.style_analysis?.commonStyle 
+          ? `Style: ${selectedReference.style_analysis.commonStyle}. Colors: ${selectedReference.style_analysis.colorPalette || 'high contrast'}. Composition: ${selectedReference.style_analysis.composition || 'centered'}` 
+          : undefined);
       
       // Call the generate-thumbnail edge function
       const response = await supabase.functions.invoke("generate-thumbnail", {
@@ -409,6 +431,7 @@ export function ThumbnailLibrary({
           includeHeadline,
           useTitle,
           referencePrompt,
+          referenceHeadlineStyle,
           language: genLanguage === "pt-BR" ? "Português" : genLanguage === "es" ? "Español" : "English",
         },
       });
