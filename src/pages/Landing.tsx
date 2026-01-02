@@ -42,6 +42,7 @@ import { GlassCard } from "@/components/landing/GlassCard";
 import { AdSenseCard } from "@/components/landing/AdSenseCard";
 import FloatingElements from "@/components/landing/FloatingElements";
 import { ScrollIndicator } from "@/components/landing/ScrollIndicator";
+import { MobileMenu } from "@/components/landing/MobileMenu";
 
 import { Tool3DCard } from "@/components/landing/Tool3DCard";
 import { Dream3DCard } from "@/components/landing/Dream3DCard";
@@ -160,7 +161,13 @@ const Landing = () => {
               <button onClick={() => scrollToSection("faq")} className="text-lg text-muted-foreground hover:text-foreground transition-colors">FAQ</button>
             </div>
 
-            <Link to="/auth">
+            {/* Mobile Menu */}
+            <div className="flex items-center gap-3 md:hidden">
+              <MobileMenu scrollToSection={scrollToSection} />
+            </div>
+
+            {/* Desktop CTA */}
+            <Link to="/auth" className="hidden md:block">
               <Button className="gradient-button text-primary-foreground font-semibold text-lg h-12 px-8">
                 Acessar Core
               </Button>
