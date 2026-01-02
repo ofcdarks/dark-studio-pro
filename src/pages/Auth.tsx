@@ -129,7 +129,7 @@ const Auth = () => {
         <span>Voltar</span>
       </Link>
       
-      {/* Compact Login Card with animated border and glass effect */}
+      {/* Glass Login Card */}
       <div 
         className={`relative z-10 w-full max-w-md transition-all duration-700 ease-out ${
           isVisible 
@@ -137,34 +137,51 @@ const Auth = () => {
             : 'opacity-0 translate-y-8 scale-95'
         }`}
       >
-        {/* Animated border glow (external only) */}
-        <div className="absolute -inset-[2px] rounded-2xl bg-gradient-to-r from-primary via-primary/40 to-primary opacity-70 blur-sm animate-pulse" />
-        
-        {/* Glass card (no inner effects) */}
+        {/* Glass card with glossy effect */}
         <div 
-          className="relative rounded-2xl p-8 border border-primary/30 shadow-2xl backdrop-blur-xl bg-card/50"
+          className="relative rounded-3xl p-8 backdrop-blur-2xl overflow-hidden"
+          style={{
+            background: 'linear-gradient(180deg, rgba(30, 30, 35, 0.85) 0%, rgba(15, 15, 20, 0.95) 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          }}
         >
+          {/* Top glossy shine */}
+          <div 
+            className="absolute top-0 left-0 right-0 h-32 pointer-events-none"
+            style={{
+              background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 100%)',
+              borderRadius: '1.5rem 1.5rem 0 0',
+            }}
+          />
 
-          {/* Logo - bigger, no ring */}
-          <div className="flex flex-col items-center mb-6 relative">
-            <div className="w-28 h-28 rounded-full overflow-hidden mb-4">
-              <img src={logo} alt="Logo" className="w-full h-full object-cover" />
-            </div>
-            
-            <h1 className="text-2xl font-bold text-foreground">
-              La Casa Dark <span className="text-primary">CORE</span>
-            </h1>
-            
-            <div className="flex items-center gap-2 mt-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30">
-              <Sparkles className="w-3 h-3 text-primary" />
-              <span className="text-xs font-medium text-primary">PRIVATE ACCESS</span>
+          {/* Private Core badge */}
+          <div className="flex justify-center mb-6 relative">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/40">
+              <Lock className="w-3 h-3 text-primary" />
+              <span className="text-xs font-semibold text-primary tracking-wide">PRIVATE CORE</span>
             </div>
           </div>
 
-          {/* Subtitle */}
-          <p className="text-sm text-muted-foreground text-center mb-6">
-            {isLogin ? "Acesse o núcleo de operações" : "Solicite acesso ao núcleo"}
-          </p>
+          {/* Logo */}
+          <div className="flex flex-col items-center mb-6 relative">
+            <div className="w-24 h-24 rounded-full overflow-hidden mb-5 ring-2 ring-primary/30">
+              <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+            </div>
+            
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">
+              LA CASA DARK
+            </h1>
+            <span className="text-2xl font-bold text-primary mt-1">CORE</span>
+            
+            <p className="text-base text-foreground mt-4 text-center">
+              Acesso ao Núcleo Privado
+            </p>
+            <p className="text-sm text-muted-foreground mt-2 text-center">
+              Ferramentas usadas por criadores que operam canais dark em escala
+            </p>
+          </div>
+
 
           <form onSubmit={handleSubmit} className="space-y-4 relative">
             {!isLogin && (
@@ -223,30 +240,22 @@ const Auth = () => {
               </div>
             </div>
 
-            {/* Remember & Forgot */}
+            {/* Recover access link */}
             {isLogin && (
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="rememberPassword"
-                    checked={rememberPassword}
-                    onCheckedChange={(checked) => setRememberPassword(checked as boolean)}
-                    className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary w-4 h-4"
-                  />
-                  <label htmlFor="rememberPassword" className="text-muted-foreground cursor-pointer">
-                    Lembrar
-                  </label>
-                </div>
-                <button type="button" className="text-primary hover:underline">
-                  Esqueceu a senha?
+              <div className="text-left">
+                <button type="button" className="text-primary text-sm hover:underline">
+                  Recuperar acesso ao Core
                 </button>
+                <p className="text-xs text-muted-foreground mt-1 italic">
+                  Sessão vinculada à infraestrutura do operador
+                </p>
               </div>
             )}
 
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full h-12 text-base font-semibold gradient-button text-primary-foreground mt-2"
+              className="w-full h-14 text-base font-semibold gradient-button text-primary-foreground mt-4"
               disabled={loading}
             >
               {loading ? (
@@ -254,36 +263,46 @@ const Auth = () => {
               ) : (
                 <ArrowRight className="w-5 h-5 mr-2" />
               )}
-              {isLogin ? "Acessar Core" : "Criar Acesso"}
+              {isLogin ? "Acessar o Core" : "Criar Acesso"}
             </Button>
           </form>
 
+          {/* Motivational text */}
+          <p className="text-xs text-muted-foreground text-center mt-4 italic">
+            Canais dark não crescem por sorte. Crescem por sistema.
+          </p>
+
           {/* Toggle Login/Signup */}
-          <div className="text-center mt-5 pt-5 border-t border-border/50">
+          <div className="text-center mt-6 pt-5 border-t border-border/30">
             <p className="text-sm text-muted-foreground">
-              {isLogin ? "Ainda não tem acesso?" : "Já tem acesso?"}
+              {isLogin ? "Acesso restrito · Validação obrigatória" : "Já tem acesso?"}
             </p>
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
               className="text-primary text-sm font-semibold hover:underline mt-1"
             >
-              {isLogin ? "Solicitar acesso" : "Fazer login"}
+              {isLogin ? "Solicitar acesso ao Core" : "Fazer login"}
             </button>
           </div>
 
           {/* Security badge */}
           <div className="flex items-center justify-center gap-2 mt-5 text-muted-foreground">
-            <Shield className="w-3 h-3 text-primary" />
-            <span className="text-xs">Ambiente seguro e criptografado</span>
+            <Shield className="w-4 h-4 text-primary" />
+            <span className="text-xs">Ambiente isolado para operações dark</span>
           </div>
 
           {/* Terms */}
           <p className="text-xs text-muted-foreground text-center mt-4">
-            Ao continuar, você concorda com os{" "}
-            <Link to="/terms" className="text-primary hover:underline">Termos</Link>
+            Ao continuar, você concorda com nossos{" "}
+            <Link to="/terms" className="text-primary hover:underline">Termos de Uso</Link>
             {" "}e{" "}
-            <Link to="/privacy" className="text-primary hover:underline">Privacidade</Link>
+            <Link to="/privacy" className="text-primary hover:underline">Política de Privacidade</Link>.
+          </p>
+
+          {/* Footer taglines */}
+          <p className="text-xs text-muted-foreground/60 text-center mt-3 italic">
+            Operadores reconhecem operadores.
           </p>
         </div>
       </div>
