@@ -1199,6 +1199,12 @@ const ViralAgents = () => {
               a.id === selectedAgent.id ? { ...a, preferred_model: model } : a
             ));
           }}
+          onTriggersUpdate={(triggers) => {
+            setSelectedAgent({ ...selectedAgent, mental_triggers: triggers });
+            setAgents(prev => prev.map(a => 
+              a.id === selectedAgent.id ? { ...a, mental_triggers: triggers } : a
+            ));
+          }}
         />
       )}
     </MainLayout>

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pencil, Check, Brain, RefreshCw } from "lucide-react";
+import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pencil, Check, Brain, RefreshCw, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -44,15 +44,17 @@ interface AgentChatModalProps {
   onOpenChange: (open: boolean) => void;
   agent: ScriptAgent;
   onModelChange?: (model: string) => void;
+  onTriggersUpdate?: (triggers: string[]) => void;
 }
 
-export function AgentChatModal({ open, onOpenChange, agent, onModelChange }: AgentChatModalProps) {
+export function AgentChatModal({ open, onOpenChange, agent, onModelChange, onTriggersUpdate }: AgentChatModalProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState(agent.preferred_model || "gpt-4o");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isSavingTriggers, setIsSavingTriggers] = useState(false);
   
   // Script generation state
   const [showScriptForm, setShowScriptForm] = useState(false);
@@ -286,6 +288,44 @@ Retorne APENAS os 8 gatilhos, um por linha, sem numeração ou explicação.`,
       toast.error("Erro ao gerar gatilhos mentais");
     } finally {
       setIsGeneratingTriggers(false);
+    }
+  };
+
+  const handleSaveTriggersToAgent = async () => {
+    if (autoTriggers.length === 0) {
+      toast.error("Nenhum gatilho para salvar");
+      return;
+    }
+
+    setIsSavingTriggers(true);
+    
+    try {
+      // Merge existing triggers with new ones (avoid duplicates)
+      const existingTriggers = agent.mental_triggers || [];
+      const mergedTriggers = [...new Set([...existingTriggers, ...autoTriggers])];
+      
+      const { error } = await supabase
+        .from('script_agents')
+        .update({ 
+          mental_triggers: mergedTriggers,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', agent.id);
+
+      if (error) throw error;
+
+      onTriggersUpdate?.(mergedTriggers);
+      toast.success(`${autoTriggers.length} gatilhos salvos no agente!`);
+      
+      // Clear auto triggers after saving
+      setAutoTriggers([]);
+      setUseAutoTriggers(false);
+      
+    } catch (error) {
+      console.error("Error saving triggers:", error);
+      toast.error("Erro ao salvar gatilhos");
+    } finally {
+      setIsSavingTriggers(false);
     }
   };
 
@@ -794,14 +834,32 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
                       </Badge>
                     ))}
                   </div>
-                  <label className="flex items-center gap-2 text-xs cursor-pointer">
-                    <Checkbox
-                      checked={useAutoTriggers}
-                      onCheckedChange={(c) => setUseAutoTriggers(c === true)}
-                      className="h-3.5 w-3.5"
-                    />
-                    <span className="text-muted-foreground">Usar estes gatilhos no roteiro</span>
-                  </label>
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="flex items-center gap-2 text-xs cursor-pointer">
+                      <Checkbox
+                        checked={useAutoTriggers}
+                        onCheckedChange={(c) => setUseAutoTriggers(c === true)}
+                        className="h-3.5 w-3.5"
+                      />
+                      <span className="text-muted-foreground">Usar no roteiro</span>
+                    </label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSaveTriggersToAgent}
+                      disabled={isSavingTriggers || autoTriggers.length === 0}
+                      className="h-6 px-2 text-xs bg-green-500/10 border-green-500/30 text-green-500 hover:bg-green-500/20"
+                    >
+                      {isSavingTriggers ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <>
+                          <Save className="w-3 h-3 mr-1" />
+                          Salvar no Agente
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground">
