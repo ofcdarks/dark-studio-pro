@@ -510,8 +510,26 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
   const [editedContent, setEditedContent] = useState("");
 
   const copyToClipboard = (content: string) => {
-    navigator.clipboard.writeText(content);
+    // Remove marcações de partes (Parte 1:, Parte 2:, etc.) e títulos
+    const cleanContent = content
+      .replace(/^(Parte\s*\d+\s*[:\.]\s*)/gim, '')
+      .replace(/^\*\*Parte\s*\d+\s*[:\.]\s*\*\*/gim, '')
+      .replace(/^#+ .+$/gm, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    navigator.clipboard.writeText(cleanContent);
     toast.success("Roteiro copiado!");
+  };
+
+  // Calculate word count and estimated time for a script
+  const getScriptStats = (content: string) => {
+    const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
+    const minutes = Math.floor(wordCount / 150);
+    const seconds = Math.round((wordCount % 150) / 2.5);
+    const formattedTime = minutes >= 1 
+      ? `${minutes}:${String(seconds).padStart(2, '0')}`
+      : `${Math.round(wordCount / 2.5)}s`;
+    return { wordCount, formattedTime };
   };
 
   const startEditing = (messageId: string, content: string) => {
@@ -739,7 +757,19 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
                     </div>
                   ) : (
                     <>
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <div className="relative">
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        {message.isScript && (
+                          <div className="absolute top-0 right-0 flex items-center gap-1.5 bg-background/80 backdrop-blur-sm rounded-bl-lg rounded-tr-lg px-2 py-1 border-l border-b border-border/30">
+                            <span className="text-[10px] text-muted-foreground font-medium">
+                              {getScriptStats(message.content).wordCount} palavras
+                            </span>
+                            <span className="text-[10px] text-primary font-medium">
+                              ~{getScriptStats(message.content).formattedTime}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                       <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
                         <p className="text-[10px] opacity-60">
                           {message.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
