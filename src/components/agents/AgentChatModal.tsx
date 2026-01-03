@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pencil, Check, Brain, RefreshCw, Save } from "lucide-react";
+import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pencil, Check, Brain, RefreshCw, Save, Rocket } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -549,9 +550,112 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
     setEditedContent("");
   };
 
+  // Loading modal steps for script generation
+  const loadingSteps = [
+    { text: "Analisando título e nicho...", icon: "🎯" },
+    { text: "Aplicando fórmula viral...", icon: "🧬" },
+    { text: "Ativando gatilhos mentais...", icon: "🧠" },
+    { text: "Gerando roteiro 10/10...", icon: "✨" },
+    { text: "Otimizando para retenção...", icon: "📈" },
+    { text: "Finalizando roteiro viral...", icon: "🚀" },
+  ];
+
+  const [currentStep, setCurrentStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (isGeneratingScript) {
+      setCurrentStep(0);
+      setProgress(0);
+      
+      const stepInterval = setInterval(() => {
+        setCurrentStep(prev => {
+          if (prev < loadingSteps.length - 1) return prev + 1;
+          return prev;
+        });
+      }, 3000);
+      
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev < 95) return prev + Math.random() * 5;
+          return prev;
+        });
+      }, 500);
+
+      return () => {
+        clearInterval(stepInterval);
+        clearInterval(progressInterval);
+      };
+    } else {
+      setProgress(100);
+    }
+  }, [isGeneratingScript]);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-primary/30 rounded-2xl max-w-2xl h-[80vh] flex flex-col p-0">
+    <>
+      {/* Loading Modal durante geração */}
+      <Dialog open={isGeneratingScript} onOpenChange={() => {}}>
+        <DialogContent className="bg-card border-primary/50 rounded-2xl max-w-md text-center p-8" onPointerDownOutside={(e) => e.preventDefault()}>
+          <div className="flex flex-col items-center gap-6">
+            {/* Animated Icon */}
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-amber-500/20 flex items-center justify-center border border-primary/30 animate-pulse">
+                <Rocket className="w-12 h-12 text-primary animate-bounce" />
+              </div>
+              <div className="absolute -inset-2 rounded-full border-2 border-primary/30 animate-ping opacity-30" />
+            </div>
+
+            {/* Title */}
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-foreground">
+                Gerando Roteiro Viral
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                Aguarde enquanto a IA cria seu roteiro perfeito
+              </p>
+            </div>
+
+            {/* Current Step */}
+            <div className="flex items-center gap-3 bg-background/50 rounded-xl px-4 py-3 border border-border/50 w-full">
+              <span className="text-2xl">{loadingSteps[currentStep]?.icon}</span>
+              <span className="text-foreground font-medium text-sm">
+                {loadingSteps[currentStep]?.text}
+              </span>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="w-full space-y-2">
+              <Progress value={progress} className="h-2" />
+              <p className="text-xs text-muted-foreground">
+                {Math.round(progress)}% concluído
+              </p>
+            </div>
+
+            {/* Steps indicator */}
+            <div className="flex gap-2">
+              {loadingSteps.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    idx <= currentStep 
+                      ? "bg-primary" 
+                      : "bg-muted-foreground/30"
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Tip */}
+            <p className="text-xs text-muted-foreground italic">
+              💡 Dica: Roteiros com gatilhos mentais têm 3x mais retenção
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Main Modal */}
+      <Dialog open={open && !isGeneratingScript} onOpenChange={onOpenChange}>
+        <DialogContent className="bg-card border-primary/30 rounded-2xl max-w-2xl h-[80vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-4 border-b border-border/50">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -976,5 +1080,6 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
