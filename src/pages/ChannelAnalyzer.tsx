@@ -691,8 +691,20 @@ const ChannelAnalyzer = () => {
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <Badge className="bg-primary text-primary-foreground border-0 font-bold px-3 py-1">
-                                    <Star className="w-3 h-3 mr-1 fill-primary-foreground" />
+                                  <Badge className={`font-bold px-3 py-1 border-0 ${
+                                    title.score >= 80 
+                                      ? 'bg-green-500 text-white' 
+                                      : title.score >= 60 
+                                        ? 'bg-primary text-primary-foreground' 
+                                        : 'bg-destructive text-destructive-foreground'
+                                  }`}>
+                                    <Star className={`w-3 h-3 mr-1 ${
+                                      title.score >= 80 
+                                        ? 'fill-white' 
+                                        : title.score >= 60 
+                                          ? 'fill-primary-foreground' 
+                                          : 'fill-destructive-foreground'
+                                    }`} />
                                     {title.score}/100
                                   </Badge>
                                   <Badge variant="outline" className="text-xs border-border/50 bg-background/50">
