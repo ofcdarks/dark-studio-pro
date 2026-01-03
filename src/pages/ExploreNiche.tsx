@@ -34,12 +34,10 @@ import {
   RefreshCw,
   AlertTriangle,
   Save,
-  FolderOpen,
   Video,
   Timer,
   Image,
-  History,
-  Download
+  History
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -128,33 +126,48 @@ const ExploreNiche = () => {
   const [selectedFolderForPlan, setSelectedFolderForPlan] = useState<string | null>(null);
   const [savingPlan, setSavingPlan] = useState(false);
   const [showSavedAnalyses, setShowSavedAnalyses] = useState(false);
+  const [loadChannelFolderFilter, setLoadChannelFolderFilter] = usePersistedState<"all" | string | null>(
+    "explore_loadChannelFolderFilter",
+    "all",
+  );
 
-  // Query para buscar análises salvas
-  const { data: savedAnalyses, refetch: refetchSavedAnalyses } = useQuery({
-    queryKey: ["saved-channel-analyses", user?.id],
+  // Query para buscar análises salvas (apenas análises de canal)
+  const { data: savedAnalyses, refetch: refetchSavedAnalyses, isLoading: loadingSavedAnalyses } = useQuery({
+    queryKey: ["saved-channel-analyses", user?.id, loadChannelFolderFilter],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
+
+      let query = supabase
         .from("analyzed_videos")
         .select("id, original_title, video_url, detected_niche, analysis_data_json, created_at, folder_id")
         .eq("user_id", user.id)
         .not("analysis_data_json", "is", null)
         .order("created_at", { ascending: false })
-        .limit(20);
-      
+        .limit(200);
+
+      // Filtro por pasta (all = todas)
+      if (loadChannelFolderFilter !== "all") {
+        if (loadChannelFolderFilter === null) query = query.is("folder_id", null);
+        else query = query.eq("folder_id", loadChannelFolderFilter);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      
+
       // Filtrar apenas análises de canal
-      return (data || []).filter((item: any) => 
-        item.analysis_data_json?.type === "channel_analysis"
-      );
+      return (data || []).filter((item: any) => item.analysis_data_json?.type === "channel_analysis");
     },
     enabled: !!user,
   });
 
+  useEffect(() => {
+    if (showSavedAnalyses) refetchSavedAnalyses();
+  }, [showSavedAnalyses, refetchSavedAnalyses]);
+
   const loadSavedAnalysis = (analysis: any) => {
     const data = analysis.analysis_data_json;
     setChannelUrl(analysis.video_url);
+    setSelectedFolderForPlan(analysis.folder_id ?? null);
     setStrategicPlan({
       channelName: data.channelName,
       niche: data.niche,
@@ -1236,12 +1249,17 @@ const ExploreNiche = () => {
               </div>
 
               {/* Botão para carregar análises salvas */}
-              {savedAnalyses && savedAnalyses.length > 0 && (
+              {user && (
                 <Dialog open={showSavedAnalyses} onOpenChange={setShowSavedAnalyses}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                      disabled={loadingSavedAnalyses}
+                    >
                       <History className="w-4 h-4 mr-2" />
-                      Carregar Análise ({savedAnalyses.length})
+                      Carregar Análise ({savedAnalyses?.length ?? 0})
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-xl">
@@ -1251,40 +1269,71 @@ const ExploreNiche = () => {
                         Análises Salvas
                       </DialogTitle>
                     </DialogHeader>
-                    <ScrollArea className="max-h-[400px] pr-4">
-                      <div className="space-y-3">
-                        {savedAnalyses.map((analysis: any) => (
-                          <div
-                            key={analysis.id}
-                            className="p-4 bg-secondary/50 rounded-xl border border-border/50 hover:border-blue-500/30 transition-colors cursor-pointer group"
-                            onClick={() => loadSavedAnalysis(analysis)}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-medium text-foreground truncate group-hover:text-blue-400 transition-colors">
-                                  {analysis.original_title || "Análise sem título"}
-                                </h4>
-                                <p className="text-sm text-muted-foreground truncate mt-1">
-                                  {analysis.video_url}
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                  {analysis.detected_niche && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {analysis.detected_niche}
-                                    </Badge>
-                                  )}
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(analysis.created_at).toLocaleDateString('pt-BR')}
-                                  </span>
+
+                    {/* Filtro por pasta */}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button
+                        type="button"
+                        variant={loadChannelFolderFilter === "all" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setLoadChannelFolderFilter("all")}
+                        className={loadChannelFolderFilter === "all" ? "bg-primary text-primary-foreground" : "border-border"}
+                      >
+                        Todas
+                      </Button>
+                      <FolderSelect
+                        value={loadChannelFolderFilter === "all" ? null : loadChannelFolderFilter}
+                        onChange={(v) => setLoadChannelFolderFilter(v)}
+                        placeholder="Filtrar por pasta"
+                        className="flex-1"
+                      />
+                    </div>
+
+                    <ScrollArea className="max-h-[400px] pr-4 mt-2">
+                      {loadingSavedAnalyses ? (
+                        <div className="flex items-center justify-center py-10 text-muted-foreground">
+                          <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                          Carregando...
+                        </div>
+                      ) : savedAnalyses && savedAnalyses.length > 0 ? (
+                        <div className="space-y-3">
+                          {savedAnalyses.map((analysis: any) => (
+                            <div
+                              key={analysis.id}
+                              className="p-4 bg-secondary/50 rounded-xl border border-border/50 hover:border-blue-500/30 transition-colors cursor-pointer group"
+                              onClick={() => loadSavedAnalysis(analysis)}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-foreground truncate group-hover:text-blue-400 transition-colors">
+                                    {analysis.original_title || "Análise sem título"}
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground truncate mt-1">
+                                    {analysis.video_url}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    {analysis.detected_niche && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {analysis.detected_niche}
+                                      </Badge>
+                                    )}
+                                    <span className="text-xs text-muted-foreground">
+                                      {new Date(analysis.created_at).toLocaleDateString("pt-BR")}
+                                    </span>
+                                  </div>
                                 </div>
+                                <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs self-start">
+                                  Concorrência
+                                </Badge>
                               </div>
-                              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Download className="w-4 h-4" />
-                              </Button>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-10 text-center text-muted-foreground">
+                          Nenhuma análise encontrada para esse filtro.
+                        </div>
+                      )}
                     </ScrollArea>
                   </DialogContent>
                 </Dialog>
