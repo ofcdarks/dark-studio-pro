@@ -680,8 +680,33 @@ const Analytics = () => {
   };
 
   // Export Weekly PDF Report - La Casa Core Branding
-  const exportWeeklyPDF = () => {
+  const exportWeeklyPDF = async () => {
     if (!analyticsData) return;
+
+    // Load logo as base64
+    const loadLogoAsBase64 = (): Promise<string | null> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL("image/png"));
+          } else {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        // Use the header logo
+        img.src = "/logo-official.svg";
+      });
+    };
+
+    const logoBase64 = await loadLogoAsBase64();
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -709,20 +734,30 @@ const Analytics = () => {
       doc.setFillColor(...brandColors.primary);
       doc.rect(0, 55, pageWidth, 3, "F");
 
-      // Brand name
+      // Add logo if available
+      if (logoBase64) {
+        try {
+          doc.addImage(logoBase64, "PNG", margin, 10, 35, 35);
+        } catch (e) {
+          console.log("Could not add logo to PDF");
+        }
+      }
+
+      // Brand name (positioned after logo)
+      const textStartX = logoBase64 ? margin + 42 : margin;
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(28);
+      doc.setFontSize(24);
       doc.setTextColor(...brandColors.primary);
-      doc.text("LA CASA", margin, 28);
+      doc.text("LA CASA", textStartX, 25);
       
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setTextColor(...brandColors.gold);
-      doc.text("CORE", margin + 58, 28);
+      doc.text("DARK CORE", textStartX, 35);
 
       // Report title
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.setTextColor(...brandColors.white);
-      doc.text("RELATÓRIO SEMANAL DE PERFORMANCE", margin, 42);
+      doc.text("RELATORIO SEMANAL DE PERFORMANCE", textStartX, 47);
 
       // Date on right side
       doc.setFontSize(9);
@@ -732,7 +767,7 @@ const Analytics = () => {
         month: "long", 
         year: "numeric" 
       });
-      doc.text(dateStr, pageWidth - margin, 42, { align: "right" });
+      doc.text(dateStr, pageWidth - margin, 47, { align: "right" });
       
       yPos = 70;
     };
