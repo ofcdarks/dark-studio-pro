@@ -3,9 +3,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, Loader2, User, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Bot, Send, Loader2, User, Trash2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+const AI_MODELS = [
+  { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", description: "Rápido e inteligente" },
+  { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI", description: "Econômico" },
+  { id: "claude-4-sonnet", name: "Claude 4 Sonnet", provider: "Anthropic", description: "Criativo e detalhado" },
+  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "Google", description: "Contexto extenso" },
+  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", provider: "Google", description: "Rápido e eficiente" },
+];
 
 interface Message {
   id: string;
@@ -35,6 +44,7 @@ export function AgentChatModal({ open, onOpenChange, agent }: AgentChatModalProp
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("gpt-4o");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -121,12 +131,13 @@ export function AgentChatModal({ open, onOpenChange, agent }: AgentChatModalProp
             systemPrompt: buildSystemPrompt(),
             conversationHistory
           },
-          model: "gpt-4o"
+          model: selectedModel
         }
       });
 
       if (error) throw error;
 
+      const modelInfo = AI_MODELS.find(m => m.id === selectedModel);
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -185,15 +196,33 @@ export function AgentChatModal({ open, onOpenChange, agent }: AgentChatModalProp
                 )}
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={clearChat}
-              className="text-muted-foreground hover:text-foreground"
-              title="Limpar conversa"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger className="w-[180px] h-8 text-xs bg-background/50 border-border/50">
+                  <Sparkles className="w-3 h-3 mr-1.5 text-primary" />
+                  <SelectValue placeholder="Modelo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AI_MODELS.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{model.name}</span>
+                        <span className="text-xs text-muted-foreground">{model.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={clearChat}
+                className="text-muted-foreground hover:text-foreground"
+                title="Limpar conversa"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
