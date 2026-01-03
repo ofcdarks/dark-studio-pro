@@ -688,11 +688,9 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
       <Dialog open={isGeneratingScript} onOpenChange={() => {}}>
         <DialogContent className="bg-card border-primary/50 rounded-2xl max-w-sm text-center p-8" onPointerDownOutside={(e) => e.preventDefault()}>
           <div className="flex flex-col items-center gap-6">
-            {/* Logo with Circle */}
-            <div className="relative">
-              <div className="w-20 h-20 rounded-full flex items-center justify-center border-2 border-primary overflow-hidden bg-background">
-                <img src={logoGif} alt="Logo" className="w-[85%] h-[85%] object-contain" />
-              </div>
+            {/* Logo - fills the entire circle */}
+            <div className="w-20 h-20 rounded-full overflow-hidden">
+              <img src={logoGif} alt="Logo" className="w-full h-full object-cover" />
             </div>
 
             {/* Title */}
