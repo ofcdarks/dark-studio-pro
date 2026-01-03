@@ -679,248 +679,421 @@ const Analytics = () => {
     });
   };
 
-  // Export Weekly PDF Report
+  // Export Weekly PDF Report - La Casa Core Branding
   const exportWeeklyPDF = () => {
     if (!analyticsData) return;
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
     let yPos = 20;
 
-    const addText = (text: string, fontSize: number = 10, isBold: boolean = false, color: [number, number, number] = [50, 50, 50]) => {
-      doc.setFontSize(fontSize);
-      doc.setFont("helvetica", isBold ? "bold" : "normal");
-      doc.setTextColor(...color);
-      doc.text(text, margin, yPos);
-      yPos += fontSize / 2 + 3;
+    // Brand Colors - La Casa Dark Core
+    const brandColors = {
+      primary: [245, 158, 11] as [number, number, number], // Amber #f59e0b
+      dark: [10, 10, 15] as [number, number, number], // #0a0a0f
+      gold: [217, 173, 77] as [number, number, number], // Gold accent
+      white: [255, 255, 255] as [number, number, number],
+      muted: [156, 163, 175] as [number, number, number],
+      success: [34, 197, 94] as [number, number, number],
+      cardBg: [20, 20, 28] as [number, number, number],
     };
 
-    const addLine = () => {
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, yPos, pageWidth - margin, yPos);
-      yPos += 5;
+    const addHeader = () => {
+      // Dark premium header with gradient effect
+      doc.setFillColor(...brandColors.dark);
+      doc.rect(0, 0, pageWidth, 55, "F");
+      
+      // Gold accent line
+      doc.setFillColor(...brandColors.primary);
+      doc.rect(0, 55, pageWidth, 3, "F");
+
+      // Brand name
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(28);
+      doc.setTextColor(...brandColors.primary);
+      doc.text("LA CASA", margin, 28);
+      
+      doc.setFontSize(12);
+      doc.setTextColor(...brandColors.gold);
+      doc.text("CORE", margin + 58, 28);
+
+      // Report title
+      doc.setFontSize(11);
+      doc.setTextColor(...brandColors.white);
+      doc.text("RELATÓRIO SEMANAL DE PERFORMANCE", margin, 42);
+
+      // Date on right side
+      doc.setFontSize(9);
+      doc.setTextColor(...brandColors.muted);
+      const dateStr = new Date().toLocaleDateString("pt-BR", { 
+        day: "2-digit", 
+        month: "long", 
+        year: "numeric" 
+      });
+      doc.text(dateStr, pageWidth - margin, 42, { align: "right" });
+      
+      yPos = 70;
     };
 
-    const checkNewPage = (neededSpace: number = 40) => {
-      if (yPos + neededSpace > doc.internal.pageSize.getHeight() - 20) {
-        doc.addPage();
-        yPos = 20;
+    const addFooter = (pageNum: number, totalPages: number) => {
+      // Footer bar
+      doc.setFillColor(...brandColors.dark);
+      doc.rect(0, pageHeight - 20, pageWidth, 20, "F");
+      doc.setFillColor(...brandColors.primary);
+      doc.rect(0, pageHeight - 20, pageWidth, 1, "F");
+
+      doc.setFontSize(8);
+      doc.setTextColor(...brandColors.muted);
+      doc.text("La Casa Core • Plataforma de Crescimento para YouTube", margin, pageHeight - 8);
+      doc.text(`${pageNum}/${totalPages}`, pageWidth - margin, pageHeight - 8, { align: "right" });
+    };
+
+    const addSectionTitle = (icon: string, title: string) => {
+      checkNewPage(30);
+      doc.setFillColor(...brandColors.cardBg);
+      doc.roundedRect(margin, yPos - 5, pageWidth - margin * 2, 14, 2, 2, "F");
+      doc.setFillColor(...brandColors.primary);
+      doc.roundedRect(margin, yPos - 5, 4, 14, 1, 1, "F");
+      
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...brandColors.primary);
+      doc.text(`${icon}  ${title}`, margin + 10, yPos + 4);
+      yPos += 18;
+    };
+
+    const addMetricCard = (x: number, y: number, width: number, label: string, value: string, subtitle?: string) => {
+      doc.setFillColor(...brandColors.cardBg);
+      doc.roundedRect(x, y, width, subtitle ? 32 : 26, 3, 3, "F");
+      
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...brandColors.muted);
+      doc.text(label, x + 8, y + 10);
+      
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...brandColors.white);
+      doc.text(value, x + 8, y + 22);
+      
+      if (subtitle) {
+        doc.setFontSize(7);
+        doc.setTextColor(...brandColors.muted);
+        doc.text(subtitle, x + 8, y + 29);
       }
     };
 
-    // Header
-    doc.setFillColor(79, 70, 229); // Primary color
-    doc.rect(0, 0, pageWidth, 40, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
+    const checkNewPage = (neededSpace: number = 40) => {
+      if (yPos + neededSpace > pageHeight - 30) {
+        doc.addPage();
+        yPos = 25;
+      }
+    };
+
+    // ========== PAGE 1 - OVERVIEW ==========
+    addHeader();
+
+    // Channel Info Card
+    doc.setFillColor(...brandColors.cardBg);
+    doc.roundedRect(margin, yPos, pageWidth - margin * 2, 35, 4, 4, "F");
+    
+    doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text("Relatório Semanal - YouTube Analytics", margin, 25);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`, margin, 35);
-    yPos = 55;
+    doc.setTextColor(...brandColors.white);
+    doc.text(analyticsData.channel.name, margin + 10, yPos + 15);
+    
+    doc.setFontSize(9);
+    doc.setTextColor(...brandColors.muted);
+    doc.text(analyticsData.channel.customUrl || `youtube.com/channel/${analyticsData.channel.id}`, margin + 10, yPos + 24);
+    
+    const channelAge = Math.round((new Date().getTime() - new Date(analyticsData.channel.publishedAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
+    doc.setTextColor(...brandColors.gold);
+    doc.text(`${channelAge} meses de canal`, pageWidth - margin - 10, yPos + 15, { align: "right" });
+    
+    yPos += 45;
 
-    // Channel Info
-    addText(analyticsData.channel.name, 16, true, [30, 30, 30]);
-    addText(`Canal criado em: ${new Date(analyticsData.channel.publishedAt).toLocaleDateString("pt-BR")}`, 10, false, [100, 100, 100]);
-    yPos += 5;
-    addLine();
-    yPos += 5;
-
-    // Main Stats Section
-    addText("📊 MÉTRICAS DO CANAL", 14, true, [79, 70, 229]);
-    yPos += 3;
-
-    const statsData = [
-      ["Inscritos", formatNumber(analyticsData.statistics.subscribers)],
-      ["Views Totais", formatNumber(analyticsData.statistics.totalViews)],
-      ["Total de Vídeos", formatNumber(analyticsData.statistics.totalVideos)],
-      ["Engajamento Médio", `${analyticsData.recentMetrics.avgEngagementRate}%`],
-      ["Views Médias/Vídeo", formatNumber(analyticsData.recentMetrics.avgViewsPerVideo)],
-      ["Likes Médios/Vídeo", formatNumber(analyticsData.recentMetrics.avgLikesPerVideo)],
-    ];
-
-    statsData.forEach(([label, value], idx) => {
-      const xPos = idx % 2 === 0 ? margin : pageWidth / 2;
-      if (idx % 2 === 0 && idx > 0) yPos += 8;
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 100, 100);
-      doc.text(label, xPos, yPos);
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(30, 30, 30);
-      doc.text(value, xPos, yPos + 6);
-    });
-    yPos += 20;
-    addLine();
-    yPos += 5;
+    // Main Metrics Grid
+    addSectionTitle("📊", "MÉTRICAS PRINCIPAIS");
+    
+    const metricsStartY = yPos;
+    const cardWidth = (pageWidth - margin * 2 - 15) / 3;
+    
+    addMetricCard(margin, metricsStartY, cardWidth, "INSCRITOS", formatNumber(analyticsData.statistics.subscribers));
+    addMetricCard(margin + cardWidth + 5, metricsStartY, cardWidth, "VIEWS TOTAIS", formatNumber(analyticsData.statistics.totalViews));
+    addMetricCard(margin + (cardWidth + 5) * 2, metricsStartY, cardWidth, "VÍDEOS", formatNumber(analyticsData.statistics.totalVideos));
+    
+    yPos = metricsStartY + 35;
+    
+    addMetricCard(margin, yPos, cardWidth, "ENGAJAMENTO", `${analyticsData.recentMetrics.avgEngagementRate}%`, "Taxa média");
+    addMetricCard(margin + cardWidth + 5, yPos, cardWidth, "VIEWS/VÍDEO", formatNumber(analyticsData.recentMetrics.avgViewsPerVideo), "Média");
+    addMetricCard(margin + (cardWidth + 5) * 2, yPos, cardWidth, "LIKES/VÍDEO", formatNumber(analyticsData.recentMetrics.avgLikesPerVideo), "Média");
+    
+    yPos += 45;
 
     // Monetization Section
-    checkNewPage();
-    addText("💰 ESTIMATIVA DE MONETIZAÇÃO", 14, true, [79, 70, 229]);
-    yPos += 3;
+    addSectionTitle("💰", "ESTIMATIVAS DE MONETIZAÇÃO");
+    
+    const monetY = yPos;
+    const monetWidth = (pageWidth - margin * 2 - 10) / 3;
+    
+    // RPM Card
+    doc.setFillColor(...brandColors.cardBg);
+    doc.roundedRect(margin, monetY, monetWidth, 38, 3, 3, "F");
+    doc.setFontSize(8);
+    doc.setTextColor(...brandColors.muted);
+    doc.text("RPM ESTIMADO", margin + 8, monetY + 12);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...brandColors.success);
+    doc.text(`$${(analyticsData.monetization?.estimatedRPM || 2.5).toFixed(2)}`, margin + 8, monetY + 28);
+    
+    // Monthly Revenue
+    doc.setFillColor(...brandColors.cardBg);
+    doc.roundedRect(margin + monetWidth + 5, monetY, monetWidth, 38, 3, 3, "F");
+    doc.setFontSize(8);
+    doc.setTextColor(...brandColors.muted);
+    doc.text("RECEITA MENSAL EST.", margin + monetWidth + 13, monetY + 12);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...brandColors.success);
+    doc.text(`$${formatNumber(analyticsData.monetization?.estimatedMonthlyEarnings || 0)}`, margin + monetWidth + 13, monetY + 28);
+    
+    // Total Revenue
+    doc.setFillColor(...brandColors.cardBg);
+    doc.roundedRect(margin + (monetWidth + 5) * 2, monetY, monetWidth, 38, 3, 3, "F");
+    doc.setFontSize(8);
+    doc.setTextColor(...brandColors.muted);
+    doc.text("RECEITA TOTAL EST.", margin + (monetWidth + 5) * 2 + 8, monetY + 12);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...brandColors.success);
+    doc.text(`$${formatNumber(analyticsData.monetization?.estimatedTotalEarnings || 0)}`, margin + (monetWidth + 5) * 2 + 8, monetY + 28);
+    
+    yPos = monetY + 50;
 
-    const monetData = [
-      ["RPM Estimado", `$${(analyticsData.monetization?.estimatedRPM || 2.5).toFixed(2)}`],
-      ["Faturamento Mensal Est.", `$${formatNumber(analyticsData.monetization?.estimatedMonthlyEarnings || 0)}`],
-      ["Faturamento Total Est.", `$${formatNumber(analyticsData.monetization?.estimatedTotalEarnings || 0)}`],
-    ];
-
-    monetData.forEach(([label, value]) => {
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 100, 100);
-      doc.text(label, margin, yPos);
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(34, 197, 94); // Green
-      doc.text(value, margin + 70, yPos);
-      yPos += 10;
-    });
-    yPos += 5;
-    addLine();
-    yPos += 5;
-
-    // Goals Section
-    checkNewPage();
-    addText("🎯 METAS DE CRESCIMENTO", 14, true, [79, 70, 229]);
-    yPos += 3;
+    // ========== GOALS SECTION ==========
+    addSectionTitle("🎯", "METAS DE CRESCIMENTO");
 
     if (channelGoals && channelGoals.length > 0) {
       channelGoals.forEach((goal) => {
+        checkNewPage(22);
         const progress = goal.target_value > goal.start_value 
           ? Math.min(100, Math.round(((goal.current_value - goal.start_value) / (goal.target_value - goal.start_value)) * 100))
           : goal.current_value >= goal.target_value ? 100 : 0;
         
         const label = goalTypeLabels[goal.goal_type]?.label || goal.goal_type;
+        
+        doc.setFillColor(...brandColors.cardBg);
+        doc.roundedRect(margin, yPos, pageWidth - margin * 2, 18, 2, 2, "F");
+        
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(50, 50, 50);
-        doc.text(`${label}: ${formatNumber(goal.current_value)} / ${formatNumber(goal.target_value)} (${progress}%)`, margin, yPos);
+        doc.setTextColor(...brandColors.white);
+        doc.text(label, margin + 8, yPos + 8);
         
-        // Progress bar
-        doc.setFillColor(229, 231, 235);
-        doc.roundedRect(margin, yPos + 3, 100, 4, 1, 1, "F");
-        doc.setFillColor(progress >= 100 ? 34 : 79, progress >= 100 ? 197 : 70, progress >= 100 ? 94 : 229);
-        doc.roundedRect(margin, yPos + 3, Math.max(2, progress), 4, 1, 1, "F");
+        doc.setFontSize(9);
+        doc.setTextColor(...brandColors.muted);
+        doc.text(`${formatNumber(goal.current_value)} / ${formatNumber(goal.target_value)}`, margin + 70, yPos + 8);
         
-        yPos += 15;
-        checkNewPage(20);
+        // Progress bar background
+        doc.setFillColor(40, 40, 50);
+        doc.roundedRect(margin + 110, yPos + 4, 60, 6, 2, 2, "F");
+        
+        // Progress bar fill
+        const progressColor = progress >= 100 ? brandColors.success : brandColors.primary;
+        doc.setFillColor(progressColor[0], progressColor[1], progressColor[2]);
+        doc.roundedRect(margin + 110, yPos + 4, Math.max(2, (progress / 100) * 60), 6, 2, 2, "F");
+        
+        // Percentage
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        const textProgressColor = progress >= 100 ? brandColors.success : brandColors.primary;
+        doc.setTextColor(textProgressColor[0], textProgressColor[1], textProgressColor[2]);
+        doc.text(`${progress}%`, pageWidth - margin - 8, yPos + 10, { align: "right" });
+        
+        yPos += 22;
       });
     } else {
-      addText("Nenhuma meta ativa definida", 10, false, [150, 150, 150]);
+      doc.setFillColor(...brandColors.cardBg);
+      doc.roundedRect(margin, yPos, pageWidth - margin * 2, 20, 2, 2, "F");
+      doc.setFontSize(10);
+      doc.setTextColor(...brandColors.muted);
+      doc.text("Nenhuma meta ativa definida", margin + 10, yPos + 13);
+      yPos += 25;
     }
-    yPos += 5;
-    addLine();
-    yPos += 5;
 
     // Completed Goals
     if (completedGoals && completedGoals.length > 0) {
-      checkNewPage();
-      addText("🏆 METAS CONCLUÍDAS RECENTES", 14, true, [79, 70, 229]);
-      yPos += 3;
-
-      completedGoals.slice(0, 5).forEach((goal) => {
+      yPos += 5;
+      addSectionTitle("🏆", "CONQUISTAS RECENTES");
+      
+      completedGoals.slice(0, 3).forEach((goal) => {
+        checkNewPage(15);
         const label = goalTypeLabels[goal.goal_type]?.label || goal.goal_type;
         const completedDate = goal.completed_at ? new Date(goal.completed_at).toLocaleDateString("pt-BR") : "";
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(34, 197, 94);
-        doc.text(`✓ ${label}: ${formatNumber(goal.target_value)} - Concluída em ${completedDate}`, margin, yPos);
-        yPos += 8;
+        
+        doc.setFillColor(34, 60, 34); // Dark green
+        doc.roundedRect(margin, yPos, pageWidth - margin * 2, 14, 2, 2, "F");
+        
+        doc.setFontSize(9);
+        doc.setTextColor(...brandColors.success);
+        doc.text(`✓ ${label}: ${formatNumber(goal.target_value)} atingido em ${completedDate}`, margin + 8, yPos + 9);
+        
+        yPos += 18;
       });
-      yPos += 5;
-      addLine();
-      yPos += 5;
     }
 
-    // Checklist Progress Section
-    checkNewPage();
-    addText("✅ PROGRESSO DO CHECKLIST DE OTIMIZAÇÃO", 14, true, [79, 70, 229]);
-    yPos += 3;
+    // ========== CHECKLIST SECTION ==========
+    yPos += 5;
+    addSectionTitle("✅", "CHECKLIST DE OTIMIZAÇÃO");
 
     const totalChecklistItems = 17;
     const completedItems = Object.values(checklistItems).filter(Boolean).length;
     const checklistProgress = Math.round((completedItems / totalChecklistItems) * 100);
 
+    // Progress overview
+    doc.setFillColor(...brandColors.cardBg);
+    doc.roundedRect(margin, yPos, pageWidth - margin * 2, 30, 3, 3, "F");
+    
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(50, 50, 50);
-    doc.text(`${completedItems} de ${totalChecklistItems} tarefas concluídas (${checklistProgress}%)`, margin, yPos);
-    yPos += 5;
+    doc.setTextColor(...brandColors.white);
+    doc.text(`${completedItems} de ${totalChecklistItems} tarefas concluídas`, margin + 10, yPos + 12);
+    
+    // Large progress bar
+    doc.setFillColor(40, 40, 50);
+    doc.roundedRect(margin + 10, yPos + 18, pageWidth - margin * 2 - 50, 6, 2, 2, "F");
+    const checklistFillColor = checklistProgress >= 100 ? brandColors.success : brandColors.primary;
+    doc.setFillColor(checklistFillColor[0], checklistFillColor[1], checklistFillColor[2]);
+    doc.roundedRect(margin + 10, yPos + 18, Math.max(2, (checklistProgress / 100) * (pageWidth - margin * 2 - 50)), 6, 2, 2, "F");
+    
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    const checklistTextColor = checklistProgress >= 100 ? brandColors.success : brandColors.primary;
+    doc.setTextColor(checklistTextColor[0], checklistTextColor[1], checklistTextColor[2]);
+    doc.text(`${checklistProgress}%`, pageWidth - margin - 10, yPos + 23, { align: "right" });
+    
+    yPos += 38;
 
-    // Progress bar
-    doc.setFillColor(229, 231, 235);
-    doc.roundedRect(margin, yPos, 120, 6, 2, 2, "F");
-    doc.setFillColor(checklistProgress >= 100 ? 34 : 79, checklistProgress >= 100 ? 197 : 70, checklistProgress >= 100 ? 94 : 229);
-    doc.roundedRect(margin, yPos, Math.max(2, (checklistProgress / 100) * 120), 6, 2, 2, "F");
-    yPos += 15;
-
-    // Checklist categories
+    // Categories breakdown
     const categories = [
-      { name: "SEO & Descoberta", prefix: "seo_", total: 5 },
-      { name: "Engajamento", prefix: "eng_", total: 4 },
-      { name: "Conteúdo", prefix: "cnt_", total: 4 },
-      { name: "Crescimento", prefix: "grw_", total: 4 },
+      { name: "SEO & Descoberta", prefix: "seo_", total: 5, icon: "🔍" },
+      { name: "Engajamento", prefix: "eng_", total: 4, icon: "💬" },
+      { name: "Conteúdo", prefix: "cnt_", total: 4, icon: "🎬" },
+      { name: "Crescimento", prefix: "grw_", total: 4, icon: "📈" },
     ];
 
-    categories.forEach((cat) => {
+    const catWidth = (pageWidth - margin * 2 - 15) / 4;
+    categories.forEach((cat, idx) => {
       const catCompleted = Object.entries(checklistItems)
         .filter(([key, val]) => key.startsWith(cat.prefix) && val)
         .length;
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 100, 100);
-      doc.text(`${cat.name}: ${catCompleted}/${cat.total}`, margin, yPos);
-      yPos += 6;
+      const catX = margin + (catWidth + 5) * idx;
+      
+      doc.setFillColor(...brandColors.cardBg);
+      doc.roundedRect(catX, yPos, catWidth, 28, 2, 2, "F");
+      
+      doc.setFontSize(8);
+      doc.setTextColor(...brandColors.muted);
+      doc.text(`${cat.icon} ${cat.name}`, catX + 5, yPos + 10);
+      
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      const catTextColor = catCompleted === cat.total ? brandColors.success : brandColors.white;
+      doc.setTextColor(catTextColor[0], catTextColor[1], catTextColor[2]);
+      doc.text(`${catCompleted}/${cat.total}`, catX + 5, yPos + 22);
     });
-    yPos += 5;
-    addLine();
-    yPos += 5;
+    
+    yPos += 38;
 
-    // Top Videos Section
-    checkNewPage(60);
-    addText("🔥 TOP 5 VÍDEOS DO CANAL", 14, true, [79, 70, 229]);
-    yPos += 5;
+    // ========== TOP VIDEOS ==========
+    checkNewPage(80);
+    addSectionTitle("🔥", "TOP VÍDEOS DO CANAL");
 
     analyticsData.topVideos?.slice(0, 5).forEach((video, idx) => {
       checkNewPage(25);
+      
+      doc.setFillColor(...brandColors.cardBg);
+      doc.roundedRect(margin, yPos, pageWidth - margin * 2, 20, 2, 2, "F");
+      
+      // Rank badge
+      doc.setFillColor(...brandColors.primary);
+      doc.circle(margin + 12, yPos + 10, 6, "F");
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(50, 50, 50);
-      const truncatedTitle = video.title.length > 50 ? video.title.substring(0, 50) + "..." : video.title;
-      doc.text(`${idx + 1}. ${truncatedTitle}`, margin, yPos);
-      yPos += 5;
+      doc.setTextColor(...brandColors.dark);
+      doc.text(`${idx + 1}`, margin + 12, yPos + 13, { align: "center" });
+      
+      // Video title
       doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...brandColors.white);
+      const truncatedTitle = video.title.length > 45 ? video.title.substring(0, 45) + "..." : video.title;
+      doc.text(truncatedTitle, margin + 25, yPos + 9);
+      
+      // Stats
+      doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Views: ${formatNumber(video.views)} | Likes: ${formatNumber(video.likes)} | Engajamento: ${video.engagementRate}`, margin + 5, yPos);
-      yPos += 10;
+      doc.setTextColor(...brandColors.muted);
+      doc.text(`${formatNumber(video.views)} views • ${formatNumber(video.likes)} likes • ${video.engagementRate} eng.`, margin + 25, yPos + 16);
+      
+      yPos += 24;
     });
 
-    // Footer
+    // ========== INSIGHTS SECTION ==========
+    checkNewPage(60);
+    yPos += 5;
+    addSectionTitle("💡", "INSIGHTS E RECOMENDAÇÕES");
+
+    const insights: string[] = [];
+    
+    if (analyticsData.recentMetrics.avgEngagementRate < 3) {
+      insights.push("Taxa de engajamento abaixo da média. Considere adicionar mais CTAs e fazer perguntas nos vídeos.");
+    }
+    if (analyticsData.recentMetrics.avgViewsPerVideo < analyticsData.statistics.totalViews / analyticsData.statistics.totalVideos * 0.8) {
+      insights.push("Views recentes abaixo da média histórica. Revise seus títulos e thumbnails.");
+    }
+    if (analyticsData.statistics.subscribers < 1000) {
+      insights.push("Foco em crescimento de inscritos para atingir a monetização (1.000 mínimo).");
+    }
+    if (checklistProgress < 50) {
+      insights.push("Complete mais tarefas do checklist de otimização para melhorar seu desempenho.");
+    }
+    if (insights.length === 0) {
+      insights.push("Excelente performance! Continue mantendo a consistência e qualidade do conteúdo.");
+    }
+
+    insights.forEach((insight, idx) => {
+      checkNewPage(18);
+      doc.setFillColor(...brandColors.cardBg);
+      doc.roundedRect(margin, yPos, pageWidth - margin * 2, 14, 2, 2, "F");
+      
+      doc.setFillColor(...brandColors.gold);
+      doc.circle(margin + 10, yPos + 7, 3, "F");
+      
+      doc.setFontSize(9);
+      doc.setTextColor(...brandColors.white);
+      doc.text(insight, margin + 20, yPos + 9);
+      
+      yPos += 18;
+    });
+
+    // ========== ADD FOOTERS TO ALL PAGES ==========
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(150, 150, 150);
-      doc.text(
-        `Página ${i} de ${pageCount} | Relatório gerado automaticamente`,
-        pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 10,
-        { align: "center" }
-      );
+      addFooter(i, pageCount);
     }
 
     // Download
-    doc.save(`relatorio_semanal_${analyticsData.channel.name.replace(/[^a-z0-9]/gi, "_")}_${new Date().toISOString().split("T")[0]}.pdf`);
+    const fileName = `LaCasa_Relatorio_${analyticsData.channel.name.replace(/[^a-z0-9]/gi, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
 
     toast({
-      title: "Relatório gerado!",
-      description: "O PDF foi baixado com sucesso",
+      title: "Relatório La Casa Core gerado!",
+      description: "PDF profissional baixado com sucesso",
     });
   };
 
