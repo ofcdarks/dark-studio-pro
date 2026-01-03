@@ -355,22 +355,6 @@ export function Sidebar() {
         {/* Credits - Now using real-time hook */}
         <CreditsDisplay collapsed={collapsed} showRefresh={!collapsed} />
 
-        {/* Storage */}
-        {!collapsed && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <HardDrive className="w-5 h-5 text-muted-foreground" />
-              <div className="flex-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Armazenamento</span>
-                </div>
-                <p className="text-foreground font-semibold text-lg">{storageUsed.toFixed(2)} GB</p>
-                <p className="text-xs text-muted-foreground">de {storageLimit.toFixed(1)} GB</p>
-                <Progress value={usagePercent} className="h-1.5 mt-1" />
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Plan */}
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
