@@ -902,7 +902,7 @@ const ExploreNiche = () => {
                           {strategicPlan.strengths.map((item, i) => (
                             <li key={i} className="text-sm text-foreground flex items-start gap-2">
                               <span className="text-success mt-0.5">•</span>
-                              {item}
+                              {typeof item === 'string' ? item : (item as any)?.description || (item as any)?.type || JSON.stringify(item)}
                             </li>
                           ))}
                         </ul>
@@ -918,7 +918,7 @@ const ExploreNiche = () => {
                           {strategicPlan.weaknesses.map((item, i) => (
                             <li key={i} className="text-sm text-foreground flex items-start gap-2">
                               <span className="text-destructive mt-0.5">•</span>
-                              {item}
+                              {typeof item === 'string' ? item : (item as any)?.description || (item as any)?.type || JSON.stringify(item)}
                             </li>
                           ))}
                         </ul>
@@ -934,7 +934,7 @@ const ExploreNiche = () => {
                           {strategicPlan.opportunities.map((item, i) => (
                             <li key={i} className="text-sm text-foreground flex items-start gap-2">
                               <span className="text-primary mt-0.5">•</span>
-                              {item}
+                              {typeof item === 'string' ? item : (item as any)?.description || (item as any)?.type || JSON.stringify(item)}
                             </li>
                           ))}
                         </ul>
@@ -950,7 +950,7 @@ const ExploreNiche = () => {
                           {strategicPlan.threats.map((item, i) => (
                             <li key={i} className="text-sm text-foreground flex items-start gap-2">
                               <span className="text-orange-500 mt-0.5">•</span>
-                              {item}
+                              {typeof item === 'string' ? item : (item as any)?.description || (item as any)?.type || JSON.stringify(item)}
                             </li>
                           ))}
                         </ul>
@@ -970,7 +970,7 @@ const ExploreNiche = () => {
                       {strategicPlan.quickWins.map((win, i) => (
                         <div key={i} className="flex items-center gap-2 text-sm text-foreground bg-success/5 rounded-lg px-3 py-2">
                           <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
-                          {win}
+                          {typeof win === 'string' ? win : (win as any)?.description || (win as any)?.type || JSON.stringify(win)}
                         </div>
                       ))}
                     </div>
