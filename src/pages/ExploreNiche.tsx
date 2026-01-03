@@ -25,7 +25,10 @@ import {
   Star,
   Hash,
   Copy,
-  Check
+  Check,
+  Globe,
+  FileText,
+  Layers
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,6 +52,9 @@ interface SubnicheResult {
   audienceSize?: string;
   avgViews?: string;
   topChannels?: string[];
+  microNiche?: string;
+  exampleTitles?: string[];
+  targetCountries?: string[];
 }
 
 interface StrategicPlan {
@@ -171,7 +177,14 @@ const ExploreNiche = () => {
           monetizationPotential: "Alto",
           growthTrend: "📈 Em alta",
           audienceSize: "500K-1M",
-          avgViews: "50K-100K"
+          avgViews: "50K-100K",
+          microNiche: "Segredos e Mistérios Históricos",
+          exampleTitles: [
+            `O Segredo de ${mainNiche} Que NINGUÉM Te Contou`,
+            `A Verdade CHOCANTE Por Trás de ${mainNiche}`,
+            `5 Histórias PROIBIDAS de ${mainNiche} Reveladas`
+          ],
+          targetCountries: ["🇧🇷 Brasil", "🇵🇹 Portugal", "🇺🇸 EUA (Espanhol)"]
         },
         {
           name: `${mainNiche} - Para Iniciantes`,
@@ -186,7 +199,14 @@ const ExploreNiche = () => {
           monetizationPotential: "Muito Alto",
           growthTrend: "📈 Em alta",
           audienceSize: "1M-5M",
-          avgViews: "100K-500K"
+          avgViews: "100K-500K",
+          microNiche: "Tutoriais e Guias Simplificados",
+          exampleTitles: [
+            `${mainNiche} Para INICIANTES: Guia Completo 2025`,
+            `Como Começar em ${mainNiche} do ZERO (Passo a Passo)`,
+            `7 Erros de INICIANTE em ${mainNiche} Que Você PRECISA Evitar`
+          ],
+          targetCountries: ["🇧🇷 Brasil", "🇲🇽 México", "🇦🇷 Argentina", "🇨🇴 Colômbia"]
         },
         {
           name: `${mainNiche} - Análises Profundas`,
@@ -201,7 +221,14 @@ const ExploreNiche = () => {
           monetizationPotential: "Médio",
           growthTrend: "📊 Estável",
           audienceSize: "100K-500K",
-          avgViews: "20K-50K"
+          avgViews: "20K-50K",
+          microNiche: "Investigações e Deep Dives",
+          exampleTitles: [
+            `A VERDADE Sobre ${mainNiche} Que Ninguém Fala`,
+            `Eu Investiguei ${mainNiche} Por 30 Dias e Descobri ISSO`,
+            `Por Que ${mainNiche} Vai MUDAR em 2025? Análise Completa`
+          ],
+          targetCountries: ["🇧🇷 Brasil", "🇵🇹 Portugal"]
         },
         {
           name: `${mainNiche} - Comparativos`,
@@ -216,7 +243,14 @@ const ExploreNiche = () => {
           monetizationPotential: "Alto",
           growthTrend: "📈 Em alta",
           audienceSize: "500K-1M",
-          avgViews: "80K-150K"
+          avgViews: "80K-150K",
+          microNiche: "Reviews e Batalhas",
+          exampleTitles: [
+            `${mainNiche} A vs B: Qual é o MELHOR? Teste Definitivo`,
+            `TOP 5 Melhores de ${mainNiche} em 2025 (Ranking Atualizado)`,
+            `A Diferença Entre ${mainNiche} Barato e Caro (Vale a Pena?)`
+          ],
+          targetCountries: ["🇧🇷 Brasil", "🇺🇸 EUA", "🇬🇧 Reino Unido", "🇮🇳 Índia"]
         },
         {
           name: `${mainNiche} - Curiosidades`,
@@ -231,7 +265,14 @@ const ExploreNiche = () => {
           monetizationPotential: "Alto",
           growthTrend: "🚀 Viral",
           audienceSize: "1M-10M",
-          avgViews: "200K-1M"
+          avgViews: "200K-1M",
+          microNiche: "Fatos Virais e Trivia",
+          exampleTitles: [
+            `10 Fatos INSANOS Sobre ${mainNiche} Que Vão Te CHOCAR`,
+            `Por Que ${mainNiche} Existe? A Resposta Vai Te Surpreender`,
+            `Você NUNCA Vai Olhar ${mainNiche} Da Mesma Forma Depois Disso`
+          ],
+          targetCountries: ["🇧🇷 Brasil", "🇲🇽 México", "🇪🇸 Espanha", "🇺🇸 EUA (Latino)"]
         }
       ]);
     } finally {
@@ -599,6 +640,17 @@ const ExploreNiche = () => {
                         
                         <CollapsibleContent>
                           <div className="px-5 pb-5 pt-2 border-t border-border/30">
+                            {/* Micro-Nicho */}
+                            {sub.microNiche && (
+                              <div className="mb-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Layers className="w-4 h-4 text-primary" />
+                                  <span className="text-xs font-semibold text-primary">Micro-Nicho Específico</span>
+                                </div>
+                                <p className="text-sm font-medium text-foreground">{sub.microNiche}</p>
+                              </div>
+                            )}
+                            
                             {/* Stats Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                               {sub.monetizationPotential && (
@@ -630,6 +682,41 @@ const ExploreNiche = () => {
                                 </div>
                               )}
                             </div>
+                            
+                            {/* Target Countries */}
+                            {sub.targetCountries && sub.targetCountries.length > 0 && (
+                              <div className="mb-4">
+                                <h5 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                                  <Globe className="w-4 h-4 text-primary" />
+                                  Países Recomendados para Iniciar
+                                </h5>
+                                <div className="flex flex-wrap gap-2">
+                                  {sub.targetCountries.map((country, i) => (
+                                    <Badge key={i} className="bg-secondary/50 text-foreground border-border/50 text-sm px-3 py-1">
+                                      {country}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Example Titles */}
+                            {sub.exampleTitles && sub.exampleTitles.length > 0 && (
+                              <div className="mb-4">
+                                <h5 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                                  <FileText className="w-4 h-4 text-primary" />
+                                  Exemplos de Títulos Virais
+                                </h5>
+                                <div className="space-y-2">
+                                  {sub.exampleTitles.map((title, i) => (
+                                    <div key={i} className="flex items-start gap-2 text-sm bg-success/10 border border-success/20 rounded-lg px-3 py-2">
+                                      <span className="text-success font-bold flex-shrink-0">#{i + 1}</span>
+                                      <span className="text-foreground">{title}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                             
                             {/* Content Ideas */}
                             {sub.contentIdeas && sub.contentIdeas.length > 0 && (
