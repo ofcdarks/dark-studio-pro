@@ -339,11 +339,19 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
 
       setGenerationStatus("Concluído!");
 
-      // Add script to chat as assistant message
+      // Calculate actual word count and estimated reading time
+      const wordCount = scriptContent.split(/\s+/).filter((w: string) => w.length > 0).length;
+      const actualMinutes = Math.round((wordCount / 150) * 10) / 10; // 150 words per minute
+      const actualSeconds = Math.round((wordCount / 150) * 60);
+      const formattedTime = actualMinutes >= 1 
+        ? `${Math.floor(actualMinutes)}:${String(Math.round((actualMinutes % 1) * 60)).padStart(2, '0')} min`
+        : `${actualSeconds} seg`;
+
+      // Add script to chat as assistant message with stats
       const scriptMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
-        content: `🎙️ **ROTEIRO DE NARRAÇÃO: ${scriptTitle}**\n⏱️ Duração: ${duration} min | 🌐 ${getLanguageName(scriptLanguage)}\n\n${scriptContent}`,
+        content: `🎙️ **ROTEIRO DE NARRAÇÃO: ${scriptTitle}**\n\n📊 **Estatísticas:**\n• Palavras: ${wordCount.toLocaleString()}\n• Tempo estimado: ${formattedTime}\n• Idioma: ${getLanguageName(scriptLanguage)}\n\n---\n\n${scriptContent}`,
         timestamp: new Date(),
         isScript: true
       };
@@ -351,7 +359,7 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
       
       setShowScriptForm(false);
       setScriptTitle("");
-      toast.success(`Roteiro de narração gerado! (${data?.creditsUsed || estimatedCredits} créditos)`);
+      toast.success(`Roteiro gerado: ${wordCount} palavras (~${formattedTime})`);
       
     } catch (error) {
       console.error("[GenerateScript] Error:", error);
