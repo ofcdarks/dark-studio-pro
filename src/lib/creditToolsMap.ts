@@ -179,6 +179,13 @@ export const CREDIT_TOOLS_MAP: Record<string, { name: string; icon: string; desc
     description: 'Análise de potencial viral' 
   },
   
+  // Análise de Múltiplos Canais
+  'analyze_multiple_channels': { 
+    name: 'Análise de Canais', 
+    icon: '📊', 
+    description: 'Análise comparativa de múltiplos canais' 
+  },
+  
   // Transações administrativas
   'add': { 
     name: 'Adição de Créditos', 
@@ -298,6 +305,9 @@ export const CREDIT_COSTS: Record<string, number> = {
   
   // Análise Viral - 3 créditos
   'viral_analysis': 3,
+  
+  // Análise de Múltiplos Canais - 15 créditos
+  'analyze_multiple_channels': 15,
 };
 
 export function getToolInfo(operationType: string): { name: string; icon: string; description: string } {

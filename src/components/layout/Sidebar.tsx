@@ -66,6 +66,7 @@ const defaultNavItems: NavItem[] = [
   // Pesquisa e Análise
   { id: "explore", icon: Compass, label: "Explorar Nicho", href: "/explore", category: "pesquisa" },
   { id: "viral-analysis", icon: TrendingUp, label: "Análise Virais", href: "/viral-analysis", category: "pesquisa" },
+  { id: "channel-analyzer", icon: BarChart3, label: "Análise de Canais", href: "/channel-analyzer", category: "pesquisa" },
   // Planejamento
   { id: "library", icon: Library, label: "Biblioteca Virais", href: "/library", category: "planejamento" },
   { id: "channels", icon: Eye, label: "Canais Monitorados", href: "/channels", category: "planejamento" },
