@@ -57,6 +57,7 @@ interface ScriptAgent {
   based_on_title: string | null;
   mental_triggers: string[] | null;
   times_used: number | null;
+  preferred_model: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -1180,6 +1181,12 @@ const ViralAgents = () => {
           open={showChatModal}
           onOpenChange={setShowChatModal}
           agent={selectedAgent}
+          onModelChange={(model) => {
+            setSelectedAgent({ ...selectedAgent, preferred_model: model });
+            setAgents(prev => prev.map(a => 
+              a.id === selectedAgent.id ? { ...a, preferred_model: model } : a
+            ));
+          }}
         />
       )}
     </MainLayout>

@@ -917,6 +917,7 @@ export type Database = {
           mental_triggers: string[] | null
           name: string
           niche: string | null
+          preferred_model: string | null
           sub_niche: string | null
           times_used: number | null
           updated_at: string
@@ -931,6 +932,7 @@ export type Database = {
           mental_triggers?: string[] | null
           name: string
           niche?: string | null
+          preferred_model?: string | null
           sub_niche?: string | null
           times_used?: number | null
           updated_at?: string
@@ -945,6 +947,7 @@ export type Database = {
           mental_triggers?: string[] | null
           name?: string
           niche?: string | null
+          preferred_model?: string | null
           sub_niche?: string | null
           times_used?: number | null
           updated_at?: string

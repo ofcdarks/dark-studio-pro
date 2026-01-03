@@ -32,23 +32,27 @@ interface ScriptAgent {
   formula_structure: any;
   mental_triggers: string[] | null;
   times_used: number | null;
+  preferred_model: string | null;
 }
 
 interface AgentChatModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   agent: ScriptAgent;
+  onModelChange?: (model: string) => void;
 }
 
-export function AgentChatModal({ open, onOpenChange, agent }: AgentChatModalProps) {
+export function AgentChatModal({ open, onOpenChange, agent, onModelChange }: AgentChatModalProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("gpt-4o");
+  const [selectedModel, setSelectedModel] = useState(agent.preferred_model || "gpt-4o");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
+      // Set preferred model when opening
+      setSelectedModel(agent.preferred_model || "gpt-4o");
       // Add welcome message
       setMessages([{
         id: "welcome",
@@ -64,6 +68,22 @@ export function AgentChatModal({ open, onOpenChange, agent }: AgentChatModalProp
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Save model preference when changed
+  const handleModelChange = async (newModel: string) => {
+    setSelectedModel(newModel);
+    
+    try {
+      await supabase
+        .from('script_agents')
+        .update({ preferred_model: newModel })
+        .eq('id', agent.id);
+      
+      onModelChange?.(newModel);
+    } catch (error) {
+      console.error("Error saving model preference:", error);
+    }
+  };
 
   const buildSystemPrompt = () => {
     let systemPrompt = `Você é "${agent.name}", um agente de IA especializado em criar conteúdo viral para YouTube.`;
@@ -197,7 +217,7 @@ export function AgentChatModal({ open, onOpenChange, agent }: AgentChatModalProp
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Select value={selectedModel} onValueChange={setSelectedModel}>
+              <Select value={selectedModel} onValueChange={handleModelChange}>
                 <SelectTrigger className="w-[180px] h-8 text-xs bg-background/50 border-border/50">
                   <Sparkles className="w-3 h-3 mr-1.5 text-primary" />
                   <SelectValue placeholder="Modelo" />
