@@ -73,7 +73,8 @@ const MonitoredChannels = () => {
   const [adding, setAdding] = useState(false);
   const [loadingChannelName, setLoadingChannelName] = useState(false);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
-  const [channelVideos, setChannelVideos] = useState<ChannelVideo[]>([]);
+  const [recentVideos, setRecentVideos] = useState<ChannelVideo[]>([]);
+  const [popularVideos, setPopularVideos] = useState<ChannelVideo[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [showVideosDialog, setShowVideosDialog] = useState(false);
   const [pinnedFilter, setPinnedFilter] = useState<string>("all");
@@ -265,79 +266,70 @@ const MonitoredChannels = () => {
     }
   };
 
-  // Fetch channel videos (mock - in production would use YouTube API)
-  const fetchChannelVideos = async (channelId: string, channelUrl: string) => {
+  // Fetch user's YouTube API key
+  const { data: apiSettings } = useQuery({
+    queryKey: ["api-settings", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from("user_api_settings")
+        .select("youtube_api_key, youtube_validated")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Fetch channel videos using YouTube API
+  const fetchChannelVideos = async (channelId: string, channelUrlToFetch: string) => {
     setLoadingVideos(true);
     setSelectedChannelId(channelId);
     setShowVideosDialog(true);
 
     try {
-      // Simular busca de vídeos - em produção usaria a API do YouTube
-      // Por enquanto, criar dados de exemplo
-      const mockVideos: ChannelVideo[] = [
-        {
-          videoId: "recent1",
-          title: "Vídeo Recente 1 - Como Começar no YouTube",
-          thumbnail: `https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg`,
-          views: "125.430",
-          likes: "8.234",
-          publishedAt: new Date().toISOString(),
-          url: channelUrl + "/video1",
+      const { data, error } = await supabase.functions.invoke('fetch-channel-videos', {
+        body: {
+          channelUrl: channelUrlToFetch,
+          youtubeApiKey: apiSettings?.youtube_api_key,
         },
-        {
-          videoId: "recent2",
-          title: "Vídeo Recente 2 - Estratégias de Crescimento",
-          thumbnail: `https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg`,
-          views: "89.120",
-          likes: "5.678",
-          publishedAt: new Date().toISOString(),
-          url: channelUrl + "/video2",
-        },
-        {
-          videoId: "recent3",
-          title: "Vídeo Recente 3 - Monetização Rápida",
-          thumbnail: `https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg`,
-          views: "67.890",
-          likes: "4.321",
-          publishedAt: new Date().toISOString(),
-          url: channelUrl + "/video3",
-        },
-        {
-          videoId: "popular1",
-          title: "Vídeo Popular 1 - O Segredo dos Milhões",
-          thumbnail: `https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg`,
-          views: "2.450.000",
-          likes: "156.789",
-          publishedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          url: channelUrl + "/video4",
-        },
-        {
-          videoId: "popular2",
-          title: "Vídeo Popular 2 - Viralizei em 24h",
-          thumbnail: `https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg`,
-          views: "1.890.000",
-          likes: "123.456",
-          publishedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-          url: channelUrl + "/video5",
-        },
-        {
-          videoId: "popular3",
-          title: "Vídeo Popular 3 - Faturei 100k",
-          thumbnail: `https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg`,
-          views: "1.234.567",
-          likes: "98.765",
-          publishedAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-          url: channelUrl + "/video6",
-        },
-      ];
-
-      setChannelVideos(mockVideos);
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível buscar os vídeos do canal",
-        variant: "destructive",
       });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      // Set recent and popular videos separately
+      setRecentVideos(data.recentVideos || []);
+      setPopularVideos(data.popularVideos || []);
+
+      // Update channel name if we got a better one
+      if (data.channelName) {
+        await supabase
+          .from("monitored_channels")
+          .update({ channel_name: data.channelName })
+          .eq("id", channelId);
+        queryClient.invalidateQueries({ queryKey: ["monitored-channels"] });
+      }
+
+    } catch (error: unknown) {
+      console.error("Error fetching videos:", error);
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível buscar os vídeos do canal";
+      
+      // Check if it's an API key issue
+      if (errorMessage.includes("API") || errorMessage.includes("key")) {
+        toast({
+          title: "Chave de API necessária",
+          description: "Configure sua chave de API do YouTube nas configurações para buscar vídeos reais.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoadingVideos(false);
     }
@@ -611,23 +603,27 @@ const MonitoredChannels = () => {
                 <h3 className="text-lg font-semibold text-foreground mb-3">
                   🕐 Vídeos Recentes
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {channelVideos.slice(0, 3).map((video) => (
-                    <VideoCard
-                      key={video.videoId}
-                      video={video}
-                      channelId={selectedChannelId!}
-                      isPinned={isVideoPinned(video.videoId)}
-                      onPin={() =>
-                        pinVideoMutation.mutate({
-                          ...video,
-                          channelId: selectedChannelId!,
-                        })
-                      }
-                      onAnalyze={() => handleAnalyzeVideo(video.url)}
-                    />
-                  ))}
-                </div>
+                {recentVideos.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {recentVideos.map((video) => (
+                      <VideoCard
+                        key={video.videoId}
+                        video={video}
+                        channelId={selectedChannelId!}
+                        isPinned={isVideoPinned(video.videoId)}
+                        onPin={() =>
+                          pinVideoMutation.mutate({
+                            ...video,
+                            channelId: selectedChannelId!,
+                          })
+                        }
+                        onAnalyze={() => handleAnalyzeVideo(video.url)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">Nenhum vídeo recente encontrado</p>
+                )}
               </div>
 
               {/* Popular Videos */}
@@ -635,23 +631,27 @@ const MonitoredChannels = () => {
                 <h3 className="text-lg font-semibold text-foreground mb-3">
                   🔥 Vídeos Mais Vistos
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {channelVideos.slice(3, 6).map((video) => (
-                    <VideoCard
-                      key={video.videoId}
-                      video={video}
-                      channelId={selectedChannelId!}
-                      isPinned={isVideoPinned(video.videoId)}
-                      onPin={() =>
-                        pinVideoMutation.mutate({
-                          ...video,
-                          channelId: selectedChannelId!,
-                        })
-                      }
-                      onAnalyze={() => handleAnalyzeVideo(video.url)}
-                    />
-                  ))}
-                </div>
+                {popularVideos.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {popularVideos.map((video) => (
+                      <VideoCard
+                        key={video.videoId}
+                        video={video}
+                        channelId={selectedChannelId!}
+                        isPinned={isVideoPinned(video.videoId)}
+                        onPin={() =>
+                          pinVideoMutation.mutate({
+                            ...video,
+                            channelId: selectedChannelId!,
+                          })
+                        }
+                        onAnalyze={() => handleAnalyzeVideo(video.url)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">Nenhum vídeo popular encontrado</p>
+                )}
               </div>
             </div>
           )}
