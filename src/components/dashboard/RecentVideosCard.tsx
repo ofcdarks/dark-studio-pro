@@ -2,7 +2,6 @@ import { Clock, Eye, MessageCircle, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 interface RecentVideo {
@@ -17,11 +16,10 @@ interface RecentVideo {
 
 interface RecentVideosCardProps {
   videos?: RecentVideo[];
+  onRefresh?: () => void;
 }
 
-export function RecentVideosCard({ videos = [] }: RecentVideosCardProps) {
-  const queryClient = useQueryClient();
-  
+export function RecentVideosCard({ videos = [], onRefresh }: RecentVideosCardProps) {
   // Limitar a apenas 2 vídeos
   const displayedVideos = videos.slice(0, 2);
 
@@ -43,7 +41,7 @@ export function RecentVideosCard({ videos = [] }: RecentVideosCardProps) {
       if (error) throw error;
 
       toast.success('Vídeo removido com sucesso');
-      queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
+      onRefresh?.();
     } catch (error) {
       console.error('Error deleting video:', error);
       toast.error('Erro ao remover vídeo');

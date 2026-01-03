@@ -18,7 +18,7 @@ export function Dashboard() {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { balance: credits, loading: creditsLoading } = useCredits();
-  const { stats, recentVideos, activityLogs, loading } = useDashboardData();
+  const { stats, recentVideos, activityLogs, loading, refetch } = useDashboardData();
   const navigate = useNavigate();
 
   const isLowCredits = credits < 100;
@@ -108,7 +108,7 @@ export function Dashboard() {
               <motion.div variants={itemVariants}><NextStepsCard stats={stats} /></motion.div>
             </div>
             <motion.div variants={itemVariants}><DailyQuoteCard /></motion.div>
-            <motion.div variants={itemVariants}><RecentVideosCard videos={recentVideos} /></motion.div>
+            <motion.div variants={itemVariants}><RecentVideosCard videos={recentVideos} onRefresh={refetch} /></motion.div>
           </div>
           <div className="space-y-6">
             <motion.div variants={itemVariants}><OperationalLogsCard logs={activityLogs} /></motion.div>
