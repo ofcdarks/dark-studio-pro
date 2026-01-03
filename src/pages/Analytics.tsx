@@ -1303,6 +1303,139 @@ const Analytics = () => {
                       </div>
                     )}
 
+                    {/* Personalized Growth Tips */}
+                    {!isMonetized && (
+                      <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-amber-500/5 to-amber-500/10 border border-amber-500/20">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                            <Lightbulb className="w-5 h-5 text-amber-500" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">Dicas Personalizadas de Crescimento</p>
+                            <p className="text-xs text-muted-foreground">Baseado nas métricas do seu canal</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {(() => {
+                            const tips: { icon: React.ElementType; title: string; description: string; priority: "high" | "medium" | "low" }[] = [];
+                            const engagementRate = analyticsData.recentMetrics.avgEngagementRate;
+                            const avgViews = analyticsData.recentMetrics.avgViewsPerVideo;
+                            const totalVideos = analyticsData.statistics.totalVideos;
+                            const videosPerMonth = totalVideos / Math.max(1, channelAgeMonths);
+                            const subsToViewRatio = subs > 0 ? (analyticsData.statistics.totalViews / subs) : 0;
+
+                            // Tip 1: Low engagement
+                            if (engagementRate < 3) {
+                              tips.push({
+                                icon: ThumbsUp,
+                                title: "Aumente o engajamento",
+                                description: `Seu engajamento está em ${engagementRate.toFixed(1)}%. Peça curtidas e comentários nos primeiros 30 segundos do vídeo. Use perguntas para gerar discussão.`,
+                                priority: "high"
+                              });
+                            }
+
+                            // Tip 2: Low video frequency
+                            if (videosPerMonth < 2) {
+                              tips.push({
+                                icon: Video,
+                                title: "Publique com mais frequência",
+                                description: `Você publica ${videosPerMonth.toFixed(1)} vídeos/mês. O algoritmo favorece canais consistentes. Tente publicar pelo menos 1 vídeo por semana.`,
+                                priority: "high"
+                              });
+                            }
+
+                            // Tip 3: Low views per video
+                            if (avgViews < 500) {
+                              tips.push({
+                                icon: Eye,
+                                title: "Melhore a descoberta",
+                                description: `Média de ${formatNumber(avgViews)} views/vídeo. Otimize títulos com palavras-chave, crie thumbnails chamativas e use hashtags relevantes.`,
+                                priority: "medium"
+                              });
+                            }
+
+                            // Tip 4: Low subscriber conversion
+                            if (subsToViewRatio > 100 && subs < 1000) {
+                              tips.push({
+                                icon: Users,
+                                title: "Converta mais inscritos",
+                                description: `Você tem muitas views mas poucos inscritos. Adicione CTAs claros pedindo inscrição e crie conteúdo em série para fidelizar.`,
+                                priority: "medium"
+                              });
+                            }
+
+                            // Tip 5: Shorts opportunity
+                            if (avgViews < 1000 && subs < 500) {
+                              tips.push({
+                                icon: Flame,
+                                title: "Experimente Shorts",
+                                description: "Shorts podem viralizar rapidamente e trazer muitos inscritos novos. São ótimos para canais em crescimento inicial.",
+                                priority: "medium"
+                              });
+                            }
+
+                            // Tip 6: Channel age vs growth
+                            if (channelAgeMonths > 6 && avgSubsPerMonth < 50) {
+                              tips.push({
+                                icon: TrendingUp,
+                                title: "Analise o que funciona",
+                                description: "Revise seus top vídeos e identifique padrões. Crie mais conteúdo similar ao que já performou bem.",
+                                priority: "low"
+                              });
+                            }
+
+                            // Tip 7: Collaboration
+                            if (subs < 500) {
+                              tips.push({
+                                icon: Users,
+                                title: "Colabore com outros canais",
+                                description: "Parcerias com canais do seu nicho podem expor seu conteúdo a novas audiências interessadas.",
+                                priority: "low"
+                              });
+                            }
+
+                            // Default tip if no issues found
+                            if (tips.length === 0) {
+                              tips.push({
+                                icon: CheckCircle2,
+                                title: "Continue assim!",
+                                description: "Suas métricas estão saudáveis. Mantenha a consistência e foque em qualidade.",
+                                priority: "low"
+                              });
+                            }
+
+                            // Sort by priority and take top 4
+                            const priorityOrder = { high: 0, medium: 1, low: 2 };
+                            const sortedTips = tips.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]).slice(0, 4);
+
+                            return sortedTips.map((tip, index) => (
+                              <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-background/50 border border-border/50">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                  tip.priority === "high" ? "bg-red-500/10" : 
+                                  tip.priority === "medium" ? "bg-amber-500/10" : "bg-green-500/10"
+                                }`}>
+                                  <tip.icon className={`w-4 h-4 ${
+                                    tip.priority === "high" ? "text-red-500" : 
+                                    tip.priority === "medium" ? "text-amber-500" : "text-green-500"
+                                  }`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="font-medium text-sm text-foreground">{tip.title}</p>
+                                    {tip.priority === "high" && (
+                                      <Badge className="text-[10px] py-0 px-1 bg-red-500/20 text-red-500 border-red-500/30">Prioritário</Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">{tip.description}</p>
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Info disclaimer */}
                     <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border">
                       <p className="text-xs text-muted-foreground flex items-start gap-2">
