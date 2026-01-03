@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -30,47 +30,129 @@ import {
   ChevronRight,
   LogOut,
   History,
+  GripVertical,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CreditsDisplay } from "./CreditsDisplay";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface NavItem {
   icon: React.ElementType;
   label: string;
   href: string;
+  id: string;
 }
 
-const mainNavItems: NavItem[] = [
-  { icon: Home, label: "Início", href: "/" },
-  { icon: Video, label: "Analisador de Vídeos", href: "/analyzer" },
-  { icon: History, label: "Histórico de Análises", href: "/history" },
-  { icon: Compass, label: "Explorar Nicho", href: "/explore" },
-  { icon: FolderOpen, label: "Pastas e Histórico", href: "/folders" },
-  { icon: Eye, label: "Canais Monitorados", href: "/channels" },
-  { icon: BarChart3, label: "Analytics", href: "/analytics" },
-  { icon: Library, label: "Biblioteca Virais", href: "/library" },
-  { icon: Bot, label: "Agentes Virais", href: "/agents" },
-  { icon: Image, label: "Prompts e Imagens", href: "/prompts" },
-  { icon: Image, label: "Gerador de Thumbnails", href: "/thumbnails" },
-  { icon: Film, label: "Gerador de Cenas", href: "/scenes" },
-  { icon: Mic, label: "Gerador de Voz", href: "/voice" },
-  { icon: Images, label: "Imagens em Lote", href: "/batch-images" },
-  { icon: Film, label: "Gerador de Vídeo", href: "/video-gen" },
-  { icon: Youtube, label: "Integração YouTube", href: "/youtube" },
-  { icon: Search, label: "Buscar Canais Semelhantes", href: "/search-channels" },
-  { icon: TrendingUp, label: "Análise de Canais Virais", href: "/viral-analysis" },
-  { icon: FileText, label: "Conversor SRT", href: "/srt" },
-  { icon: Settings, label: "Configurações", href: "/settings" },
+// Ordem cronológica de produção de vídeo:
+// 1. Dashboard/Início
+// 2. Pesquisa e Análise (explorar nicho, buscar canais, análise de virais)
+// 3. Planejamento (biblioteca virais, canais monitorados)
+// 4. Análise de conteúdo (analisador de vídeos, histórico)
+// 5. Criação (agentes, thumbnails, cenas, prompts, imagens)
+// 6. Produção (voz, vídeo, conversor SRT)
+// 7. Publicação (YouTube)
+// 8. Métricas (Analytics)
+// 9. Organização e Configurações
+const defaultNavItems: NavItem[] = [
+  { id: "home", icon: Home, label: "Início", href: "/" },
+  // Pesquisa e Análise
+  { id: "explore", icon: Compass, label: "Explorar Nicho", href: "/explore" },
+  { id: "search-channels", icon: Search, label: "Buscar Canais", href: "/search-channels" },
+  { id: "viral-analysis", icon: TrendingUp, label: "Análise Virais", href: "/viral-analysis" },
+  // Planejamento
+  { id: "library", icon: Library, label: "Biblioteca Virais", href: "/library" },
+  { id: "channels", icon: Eye, label: "Canais Monitorados", href: "/channels" },
+  // Análise de conteúdo
+  { id: "analyzer", icon: Video, label: "Analisador de Vídeos", href: "/analyzer" },
+  { id: "history", icon: History, label: "Histórico de Análises", href: "/history" },
+  // Criação
+  { id: "agents", icon: Bot, label: "Agentes Virais", href: "/agents" },
+  { id: "thumbnails", icon: Image, label: "Gerador de Thumbnails", href: "/thumbnails" },
+  { id: "scenes", icon: Film, label: "Gerador de Cenas", href: "/scenes" },
+  { id: "prompts", icon: Image, label: "Prompts e Imagens", href: "/prompts" },
+  { id: "batch-images", icon: Images, label: "Imagens em Lote", href: "/batch-images" },
+  // Produção
+  { id: "voice", icon: Mic, label: "Gerador de Voz", href: "/voice" },
+  { id: "video-gen", icon: Film, label: "Gerador de Vídeo", href: "/video-gen" },
+  { id: "srt", icon: FileText, label: "Conversor SRT", href: "/srt" },
+  // Publicação
+  { id: "youtube", icon: Youtube, label: "Integração YouTube", href: "/youtube" },
+  // Métricas
+  { id: "analytics", icon: BarChart3, label: "Analytics", href: "/analytics" },
+  // Organização
+  { id: "folders", icon: FolderOpen, label: "Pastas e Histórico", href: "/folders" },
+  { id: "settings", icon: Settings, label: "Configurações", href: "/settings" },
 ];
+
+const SIDEBAR_ORDER_KEY = "sidebar-nav-order";
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [navItems, setNavItems] = useState<NavItem[]>(defaultNavItems);
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const { signOut } = useAuth();
   const { profile, role } = useProfile();
   const { storageUsed, storageLimit, usagePercent } = useStorage();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Load saved order from localStorage
+  useEffect(() => {
+    const savedOrder = localStorage.getItem(SIDEBAR_ORDER_KEY);
+    if (savedOrder) {
+      try {
+        const orderIds: string[] = JSON.parse(savedOrder);
+        const reorderedItems = orderIds
+          .map(id => defaultNavItems.find(item => item.id === id))
+          .filter((item): item is NavItem => item !== undefined);
+        
+        // Add any new items that weren't in saved order
+        defaultNavItems.forEach(item => {
+          if (!reorderedItems.find(i => i.id === item.id)) {
+            reorderedItems.push(item);
+          }
+        });
+        
+        setNavItems(reorderedItems);
+      } catch {
+        setNavItems(defaultNavItems);
+      }
+    }
+  }, []);
+
+  const handleDragStart = (itemId: string) => {
+    setDraggedItem(itemId);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (targetId: string) => {
+    if (!draggedItem || draggedItem === targetId) return;
+
+    const draggedIndex = navItems.findIndex(item => item.id === draggedItem);
+    const targetIndex = navItems.findIndex(item => item.id === targetId);
+
+    const newItems = [...navItems];
+    const [removed] = newItems.splice(draggedIndex, 1);
+    newItems.splice(targetIndex, 0, removed);
+
+    setNavItems(newItems);
+    localStorage.setItem(SIDEBAR_ORDER_KEY, JSON.stringify(newItems.map(i => i.id)));
+    setDraggedItem(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+  };
+
+  const resetOrder = () => {
+    setNavItems(defaultNavItems);
+    localStorage.removeItem(SIDEBAR_ORDER_KEY);
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -121,21 +203,54 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-2">
+        {!collapsed && (
+          <div className="flex items-center justify-between px-3 mb-2">
+            <span className="text-xs text-muted-foreground">Arraste para reordenar</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  onClick={resetOrder}
+                >
+                  <RotateCcw className="w-3 h-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Restaurar ordem padrão</TooltipContent>
+            </Tooltip>
+          </div>
+        )}
         <div className="space-y-1">
-          {mainNavItems.map((item) => (
-            <button
-              key={item.href}
-              onClick={() => navigate(item.href)}
+          {navItems.map((item) => (
+            <div
+              key={item.id}
+              draggable
+              onDragStart={() => handleDragStart(item.id)}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop(item.id)}
+              onDragEnd={handleDragEnd}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-                location.pathname === item.href
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                "group cursor-grab active:cursor-grabbing",
+                draggedItem === item.id && "opacity-50"
               )}
             >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span className="text-sm font-medium text-left">{item.label}</span>}
-            </button>
+              <button
+                onClick={() => navigate(item.href)}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200",
+                  location.pathname === item.href
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                )}
+              >
+                {!collapsed && (
+                  <GripVertical className="w-4 h-4 flex-shrink-0 opacity-0 group-hover:opacity-50 transition-opacity" />
+                )}
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && <span className="text-sm font-medium text-left flex-1">{item.label}</span>}
+              </button>
+            </div>
           ))}
         </div>
       </nav>
