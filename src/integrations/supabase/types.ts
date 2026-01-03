@@ -484,6 +484,8 @@ export type Database = {
           growth_rate: string | null
           id: string
           last_checked: string | null
+          last_video_id: string | null
+          notify_new_videos: boolean | null
           subscribers: string | null
           user_id: string
           videos_count: number | null
@@ -495,6 +497,8 @@ export type Database = {
           growth_rate?: string | null
           id?: string
           last_checked?: string | null
+          last_video_id?: string | null
+          notify_new_videos?: boolean | null
           subscribers?: string | null
           user_id: string
           videos_count?: number | null
@@ -506,6 +510,8 @@ export type Database = {
           growth_rate?: string | null
           id?: string
           last_checked?: string | null
+          last_video_id?: string | null
+          notify_new_videos?: boolean | null
           subscribers?: string | null
           user_id?: string
           videos_count?: number | null
