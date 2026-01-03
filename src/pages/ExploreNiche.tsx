@@ -586,13 +586,13 @@ const ExploreNiche = () => {
                         onOpenChange={() => setExpandedSubniche(expandedSubniche === index ? null : index)}
                       >
                         <div className={`bg-secondary/30 rounded-xl border overflow-hidden transition-colors ${isWinner ? 'border-success/50 ring-2 ring-success/20' : 'border-border/50 hover:border-primary/30'}`}>
-                        <CollapsibleTrigger className="w-full">
-                          <div className="p-5">
+                        <CollapsibleTrigger className="w-full cursor-pointer group/trigger">
+                          <div className="p-6">
                             {/* Header */}
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs text-muted-foreground font-medium">#{index + 1}</span>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-sm text-muted-foreground font-medium">#{index + 1}</span>
                                   {isWinner && (
                                     <Badge className="bg-success/20 text-success border-success/30 text-xs px-2 py-0.5">
                                       <Award className="w-3 h-3 mr-1" />
@@ -605,33 +605,33 @@ const ExploreNiche = () => {
                                     </Badge>
                                   )}
                                 </div>
-                                <h4 className="font-bold text-foreground text-lg text-left">{sub.name}</h4>
+                                <h4 className="font-bold text-foreground text-xl text-left">{sub.name}</h4>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Badge className={`${getPotentialBadge(sub.potential)} text-xs px-3 py-1`}>
-                                  <TrendingUp className="w-3 h-3 mr-1" />
+                              <div className="flex items-center gap-3">
+                                <Badge className={`${getPotentialBadge(sub.potential)} text-sm px-3 py-1.5`}>
+                                  <TrendingUp className="w-3.5 h-3.5 mr-1" />
                                   {sub.potential}
                                 </Badge>
-                                <Badge className={`${getCompetitionBadge(sub.competition)} text-xs px-3 py-1`}>
-                                  <Users className="w-3 h-3 mr-1" />
+                                <Badge className={`${getCompetitionBadge(sub.competition)} text-sm px-3 py-1.5`}>
+                                  <Users className="w-3.5 h-3.5 mr-1" />
                                   {sub.competition}
                                 </Badge>
-                                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${expandedSubniche === index ? 'rotate-180' : ''}`} />
+                                <ChevronDown className={`w-6 h-6 text-muted-foreground transition-transform duration-200 group-hover/trigger:text-primary ${expandedSubniche === index ? 'rotate-180' : ''}`} />
                               </div>
                             </div>
                             
-                            <p className="text-sm text-muted-foreground text-left mb-4">{sub.description}</p>
+                            <p className="text-base text-muted-foreground text-left mb-5 leading-relaxed">{sub.description}</p>
                             
                             {/* Scores Row */}
                             {(sub.demandScore || sub.opportunityScore || sub.competitionScore) && (
-                              <div className="grid grid-cols-3 gap-4">
+                              <div className="grid grid-cols-3 gap-6 mb-4">
                                 {sub.demandScore && (
                                   <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-xs text-muted-foreground">Demanda</span>
-                                      <span className={`text-sm font-bold ${getScoreColor(sub.demandScore)}`}>{sub.demandScore}/10</span>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <span className="text-sm text-muted-foreground">Demanda</span>
+                                      <span className={`text-base font-bold ${getScoreColor(sub.demandScore)}`}>{sub.demandScore}/10</span>
                                     </div>
-                                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
                                       <div 
                                         className={`h-full ${getScoreBarColor(sub.demandScore)} transition-all`}
                                         style={{ width: `${sub.demandScore * 10}%` }}
@@ -641,11 +641,11 @@ const ExploreNiche = () => {
                                 )}
                                 {sub.opportunityScore && (
                                   <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-xs text-muted-foreground">Oportunidade</span>
-                                      <span className={`text-sm font-bold ${getScoreColor(sub.opportunityScore)}`}>{sub.opportunityScore}/10</span>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <span className="text-sm text-muted-foreground">Oportunidade</span>
+                                      <span className={`text-base font-bold ${getScoreColor(sub.opportunityScore)}`}>{sub.opportunityScore}/10</span>
                                     </div>
-                                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
                                       <div 
                                         className={`h-full ${getScoreBarColor(sub.opportunityScore)} transition-all`}
                                         style={{ width: `${sub.opportunityScore * 10}%` }}
@@ -655,11 +655,11 @@ const ExploreNiche = () => {
                                 )}
                                 {sub.competitionScore && (
                                   <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-xs text-muted-foreground">Dificuldade</span>
-                                      <span className={`text-sm font-bold ${getScoreColor(10 - sub.competitionScore)}`}>{sub.competitionScore}/10</span>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <span className="text-sm text-muted-foreground">Dificuldade</span>
+                                      <span className={`text-base font-bold ${getScoreColor(10 - sub.competitionScore)}`}>{sub.competitionScore}/10</span>
                                     </div>
-                                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
                                       <div 
                                         className={`h-full ${getScoreBarColor(10 - sub.competitionScore)} transition-all`}
                                         style={{ width: `${sub.competitionScore * 10}%` }}
@@ -669,6 +669,11 @@ const ExploreNiche = () => {
                                 )}
                               </div>
                             )}
+                            
+                            {/* Expand indicator */}
+                            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground group-hover/trigger:text-primary transition-colors">
+                              <span>{expandedSubniche === index ? 'Clique para recolher' : 'Clique para ver detalhes'}</span>
+                            </div>
                           </div>
                         </CollapsibleTrigger>
                         
