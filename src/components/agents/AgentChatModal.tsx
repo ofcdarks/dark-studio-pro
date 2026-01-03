@@ -604,13 +604,8 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
       <Dialog open={isGeneratingScript} onOpenChange={() => {}}>
         <DialogContent className="bg-card border-primary/50 rounded-2xl max-w-sm text-center p-8" onPointerDownOutside={(e) => e.preventDefault()}>
           <div className="flex flex-col items-center gap-6">
-            {/* Animated Logo */}
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-amber-500/10 flex items-center justify-center border-2 border-primary/40 overflow-hidden">
-                <img src={logoGif} alt="Logo" className="w-full h-full object-cover rounded-full" />
-              </div>
-              <div className="absolute -inset-1 rounded-full border border-primary/20 animate-ping opacity-40" />
-            </div>
+            {/* Logo */}
+            <img src={logoGif} alt="Logo" className="w-24 h-24 object-contain" />
 
             {/* Title */}
             <div className="space-y-1">
