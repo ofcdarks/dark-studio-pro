@@ -211,40 +211,8 @@ const ExploreNiche = () => {
     return country;
   };
 
-  const getCountryBadgeClass = (country: string) => {
-    const name = normalizeCountryName(country);
-
-    const toneMap: Record<string, "success" | "primary" | "destructive" | "secondary"> = {
-      brasil: "success",
-      mexico: "success",
-      italia: "success",
-      colombia: "success",
-      chile: "success",
-      peru: "success",
-
-      alemanha: "primary",
-      india: "primary",
-      espanha: "primary",
-      argentina: "primary",
-      "coreia do sul": "primary",
-      franca: "primary",
-
-      turquia: "destructive",
-      canada: "destructive",
-      japao: "destructive",
-      portugal: "destructive",
-      "reino unido": "destructive",
-      eua: "destructive",
-      usa: "destructive",
-      "estados unidos": "destructive",
-    };
-
-    const tone = toneMap[name] ?? "secondary";
-
-    if (tone === "success") return "!bg-success/20 !text-success !border-success/30";
-    if (tone === "primary") return "!bg-primary/20 !text-primary !border-primary/30";
-    if (tone === "destructive") return "!bg-destructive/20 !text-destructive !border-destructive/30";
-    return "!bg-secondary/50 !text-foreground !border-border/50";
+  const getCountryBadgeClass = () => {
+    return "bg-secondary/50 text-foreground border-border/50";
   };
 
   const getPotentialBadge = (potential: string) => {
@@ -894,7 +862,7 @@ const ExploreNiche = () => {
                                     <Badge
                                       key={i}
                                       variant="outline"
-                                      className={`${getCountryBadgeClass(country)} text-sm px-3 py-1.5 font-medium`}
+                                      className={`${getCountryBadgeClass()} text-sm px-3 py-1.5 font-medium`}
                                     >
                                       {formatCountryWithFlag(country)}
                                     </Badge>
