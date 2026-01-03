@@ -370,7 +370,10 @@ Retorne APENAS os 8 gatilhos, um por linha, sem numeração, hífens ou explica�
       if (ctaMeio) ctaPositions.push("meio (metade do vídeo)");
       if (ctaFinal) ctaPositions.push("final (últimos 30 segundos)");
 
-      const duration = parseInt(scriptDuration || "1");
+      const userDuration = parseInt(scriptDuration || "1");
+      const duration = userDuration + 1; // Sempre gera 1 minuto a mais para garantir conteúdo completo
+      const actualWords = duration * 150;
+      const actualParts = Math.max(1, Math.ceil(duration / 3));
       
       setGenerationStatus("Aplicando fórmula viral e gatilhos mentais...");
 
@@ -382,15 +385,15 @@ TÍTULO DO VÍDEO: "${scriptTitle}"
 
 ⚠️ REGRAS CRÍTICAS DE FORMATO:
 1. SOMENTE TEXTO DE NARRAÇÃO - Nenhuma indicação de cena, corte, música ou efeito sonoro
-2. DURAÇÃO EXATA: ${duration} minuto(s) = aproximadamente ${estimatedWords} palavras (150 palavras/minuto)
+2. DURAÇÃO EXATA: ${duration} minuto(s) = aproximadamente ${actualWords} palavras (150 palavras/minuto)
 3. O texto deve ser LIDO EM VOZ ALTA naturalmente
 4. Sem colchetes, parênteses ou instruções técnicas
 5. Apenas o que o narrador deve FALAR
 
 IDIOMA: ${getLanguageName(scriptLanguage)}
 
-ESTRUTURA OBRIGATÓRIA (${estimatedParts} partes):
-${Array.from({ length: estimatedParts }, (_, i) => `- Parte ${i + 1}: ~${Math.ceil(estimatedWords / estimatedParts)} palavras`).join('\n')}
+ESTRUTURA OBRIGATÓRIA (${actualParts} partes):
+${Array.from({ length: actualParts }, (_, i) => `- Parte ${i + 1}: ~${Math.ceil(actualWords / actualParts)} palavras`).join('\n')}
 
 ${ctaPositions.length > 0 ? `INCLUIR CALL-TO-ACTION NATURAL EM: ${ctaPositions.join(", ")}` : "INCLUIR CTA NATURAL NO FINAL"}
 
