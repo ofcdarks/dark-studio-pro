@@ -531,16 +531,16 @@ const Analytics = () => {
                 />
                 <StatCard
                   icon={DollarSign}
-                  label="Faturamento Total Est."
+                  label="Faturamento Mensal Est."
                   value={`$${formatNumber(analyticsData.monetization?.estimatedTotalEarnings || 0)}`}
-                  subvalue="Lifetime estimado"
-                  tooltip="Estimativa baseada no total de views × RPM médio. Dados reais de monetização só estão disponíveis no YouTube Studio."
+                  subvalue="Baseado em views mensais"
+                  tooltip="Estimativa baseada nos views mensais recentes × RPM médio. Dados reais de monetização só estão disponíveis no YouTube Studio."
                   badge={
-                    (analyticsData.monetization?.estimatedTotalEarnings || 0) >= 50000 
-                      ? "Receita sólida acumulada!" 
+                    (analyticsData.monetization?.estimatedTotalEarnings || 0) >= 1000 
+                      ? "Receita mensal sólida!" 
                       : "Dica: Diversifique com produtos/afiliados"
                   }
-                  badgeType={(analyticsData.monetization?.estimatedTotalEarnings || 0) >= 50000 ? "good" : "tip"}
+                  badgeType={(analyticsData.monetization?.estimatedTotalEarnings || 0) >= 1000 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={DollarSign}

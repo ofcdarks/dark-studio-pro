@@ -158,10 +158,13 @@ serve(async (req) => {
     // Average RPM varies: $1-3 for general content, $3-8 for finance/tech, $0.5-2 for entertainment
     // Using a conservative estimate of $2.50 per 1000 views
     const estimatedRPM = 2.50;
-    const estimatedTotalEarnings = (parseInt(stats.viewCount || "0", 10) / 1000) * estimatedRPM;
-    const estimatedMonthlyEarnings = videoStats.length > 0 
-      ? (totalViews / 1000) * estimatedRPM 
-      : 0;
+    
+    // Calculate monthly average views (based on recent analyzed videos)
+    const monthlyViewsEstimate = videoStats.length > 0 ? totalViews : 0;
+    const estimatedMonthlyEarnings = (monthlyViewsEstimate / 1000) * estimatedRPM;
+    
+    // Total earnings based on monthly estimate (NOT total lifetime views)
+    const estimatedTotalEarnings = estimatedMonthlyEarnings;
 
     // Group videos by month for trends
     const monthlyData: Record<string, { views: number; videos: number; likes: number }> = {};
