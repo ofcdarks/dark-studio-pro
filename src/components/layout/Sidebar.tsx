@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useStorage } from "@/hooks/useStorage";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
 import logo from "@/assets/logo.gif";
 import {
@@ -97,35 +98,102 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [navItems, setNavItems] = useState<NavItem[]>(defaultNavItems);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
-  const { signOut } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const { signOut, user } = useAuth();
   const { profile, role } = useProfile();
   const { storageUsed, storageLimit, usagePercent } = useStorage();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Load saved order from localStorage
-  useEffect(() => {
-    const savedOrder = localStorage.getItem(SIDEBAR_ORDER_KEY);
-    if (savedOrder) {
-      try {
-        const orderIds: string[] = JSON.parse(savedOrder);
-        const reorderedItems = orderIds
-          .map(id => defaultNavItems.find(item => item.id === id))
-          .filter((item): item is NavItem => item !== undefined);
-        
-        // Add any new items that weren't in saved order
-        defaultNavItems.forEach(item => {
-          if (!reorderedItems.find(i => i.id === item.id)) {
-            reorderedItems.push(item);
-          }
-        });
-        
-        setNavItems(reorderedItems);
-      } catch {
-        setNavItems(defaultNavItems);
+  // Reorder items based on saved order
+  const reorderItems = useCallback((orderIds: string[]) => {
+    const reorderedItems = orderIds
+      .map(id => defaultNavItems.find(item => item.id === id))
+      .filter((item): item is NavItem => item !== undefined);
+    
+    // Add any new items that weren't in saved order
+    defaultNavItems.forEach(item => {
+      if (!reorderedItems.find(i => i.id === item.id)) {
+        reorderedItems.push(item);
       }
-    }
+    });
+    
+    return reorderedItems;
   }, []);
+
+  // Load saved order from database or localStorage fallback
+  useEffect(() => {
+    const loadOrder = async () => {
+      if (!user?.id) {
+        // Fallback to localStorage for non-authenticated users
+        const savedOrder = localStorage.getItem(SIDEBAR_ORDER_KEY);
+        if (savedOrder) {
+          try {
+            const orderIds: string[] = JSON.parse(savedOrder);
+            setNavItems(reorderItems(orderIds));
+          } catch {
+            setNavItems(defaultNavItems);
+          }
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('user_preferences')
+          .select('sidebar_order')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data?.sidebar_order && data.sidebar_order.length > 0) {
+          setNavItems(reorderItems(data.sidebar_order));
+        } else {
+          // Check localStorage and migrate to database
+          const savedOrder = localStorage.getItem(SIDEBAR_ORDER_KEY);
+          if (savedOrder) {
+            const orderIds: string[] = JSON.parse(savedOrder);
+            setNavItems(reorderItems(orderIds));
+            // Migrate to database
+            await supabase
+              .from('user_preferences')
+              .upsert({ user_id: user.id, sidebar_order: orderIds });
+            localStorage.removeItem(SIDEBAR_ORDER_KEY);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading sidebar order:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadOrder();
+  }, [user?.id, reorderItems]);
+
+  // Save order to database
+  const saveOrder = useCallback(async (orderIds: string[]) => {
+    if (!user?.id) {
+      localStorage.setItem(SIDEBAR_ORDER_KEY, JSON.stringify(orderIds));
+      return;
+    }
+
+    try {
+      await supabase
+        .from('user_preferences')
+        .upsert({ 
+          user_id: user.id, 
+          sidebar_order: orderIds,
+          updated_at: new Date().toISOString()
+        });
+    } catch (err) {
+      console.error('Error saving sidebar order:', err);
+      // Fallback to localStorage
+      localStorage.setItem(SIDEBAR_ORDER_KEY, JSON.stringify(orderIds));
+    }
+  }, [user?.id]);
 
   const handleDragStart = (itemId: string) => {
     setDraggedItem(itemId);
@@ -146,7 +214,7 @@ export function Sidebar() {
     newItems.splice(targetIndex, 0, removed);
 
     setNavItems(newItems);
-    localStorage.setItem(SIDEBAR_ORDER_KEY, JSON.stringify(newItems.map(i => i.id)));
+    saveOrder(newItems.map(i => i.id));
     setDraggedItem(null);
   };
 
@@ -154,8 +222,17 @@ export function Sidebar() {
     setDraggedItem(null);
   };
 
-  const resetOrder = () => {
+  const resetOrder = async () => {
     setNavItems(defaultNavItems);
+    if (user?.id) {
+      await supabase
+        .from('user_preferences')
+        .upsert({ 
+          user_id: user.id, 
+          sidebar_order: null,
+          updated_at: new Date().toISOString()
+        });
+    }
     localStorage.removeItem(SIDEBAR_ORDER_KEY);
   };
 
