@@ -25,6 +25,7 @@ import {
   Download
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { AgentChatModal } from "@/components/agents/AgentChatModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -106,6 +107,9 @@ const ViralAgents = () => {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Chat modal
+  const [showChatModal, setShowChatModal] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -596,29 +600,27 @@ const ViralAgents = () => {
                       </div>
                     </Card>
 
-                    {/* Conversations Section */}
+                    {/* Chat Section */}
                     <Card className="p-6 bg-card/50 backdrop-blur-xl border-border/50 rounded-2xl">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-foreground">Conversas</h3>
-                        <span className="text-sm text-muted-foreground">Chat desativado nesta área.</span>
+                        <h3 className="font-semibold text-foreground">Chat com o Agente</h3>
                       </div>
                       
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-medium text-foreground">Conversas Anteriores</h4>
-                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Nova Conversa
-                        </Button>
-                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Converse com seu agente usando IA. O agente utilizará suas instruções, memória e gatilhos mentais para gerar respostas personalizadas.
+                      </p>
 
-                      <div className="space-y-2">
-                        <div className="p-4 rounded-xl bg-background/50 border border-border/50">
-                          <p className="font-medium text-foreground">Nova Conversa</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date().toLocaleDateString('pt-BR')}
-                          </p>
-                        </div>
-                      </div>
+                      <Button 
+                        onClick={() => setShowChatModal(true)}
+                        className="w-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground hover:opacity-90"
+                      >
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Iniciar Conversa
+                      </Button>
+
+                      <p className="text-xs text-muted-foreground mt-3 text-center">
+                        {selectedAgent.times_used || 0} conversas realizadas
+                      </p>
                     </Card>
                   </div>
 
@@ -1171,6 +1173,15 @@ const ViralAgents = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Agent Chat Modal */}
+      {selectedAgent && (
+        <AgentChatModal
+          open={showChatModal}
+          onOpenChange={setShowChatModal}
+          agent={selectedAgent}
+        />
+      )}
     </MainLayout>
   );
 };
