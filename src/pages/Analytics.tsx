@@ -42,7 +42,8 @@ import {
   Award,
   Pin,
   PinOff,
-  Star
+  Star,
+  GripVertical
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -217,12 +218,14 @@ const Analytics = () => {
         .from("saved_analytics_channels")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("display_order", { ascending: true });
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
+
+  const [draggedChannel, setDraggedChannel] = useState<string | null>(null);
 
   const isChannelSaved = savedChannels?.some((c) => c.channel_url === channelUrl) || false;
   const canSaveMore = (savedChannels?.length || 0) < 5;
@@ -292,6 +295,51 @@ const Analytics = () => {
     if (channel.cached_data) {
       setAnalyticsData(channel.cached_data);
     }
+  };
+
+  // Drag and drop handlers for reordering channels
+  const handleDragStart = (channelId: string) => {
+    setDraggedChannel(channelId);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (targetChannelId: string) => {
+    if (!draggedChannel || draggedChannel === targetChannelId || !savedChannels || !user) {
+      setDraggedChannel(null);
+      return;
+    }
+
+    const draggedIndex = savedChannels.findIndex(c => c.id === draggedChannel);
+    const targetIndex = savedChannels.findIndex(c => c.id === targetChannelId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedChannel(null);
+      return;
+    }
+
+    // Reorder the array
+    const newOrder = [...savedChannels];
+    const [removed] = newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, removed);
+
+    // Update display_order for all affected channels
+    const updates = newOrder.map((channel, index) => 
+      supabase
+        .from("saved_analytics_channels")
+        .update({ display_order: index })
+        .eq("id", channel.id)
+    );
+
+    await Promise.all(updates);
+    refetchSavedChannels();
+    setDraggedChannel(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedChannel(null);
   };
 
   // Fetch active channel goals
@@ -1251,20 +1299,26 @@ const Analytics = () => {
                   <Star className="w-5 h-5 text-amber-500" />
                   Canais Fixados ({savedChannels.length}/5)
                 </h2>
+                <span className="text-xs text-muted-foreground">Arraste para reordenar</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 {savedChannels.map((channel) => (
                   <div
                     key={channel.id}
-                    className={`relative p-3 rounded-lg border cursor-pointer transition-all hover:border-primary ${
+                    draggable
+                    onDragStart={() => handleDragStart(channel.id)}
+                    onDragOver={handleDragOver}
+                    onDrop={() => handleDrop(channel.id)}
+                    onDragEnd={handleDragEnd}
+                    className={`relative p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all hover:border-primary ${
                       channelUrl === channel.channel_url ? 'border-primary bg-primary/5' : 'border-border bg-secondary/30'
-                    }`}
+                    } ${draggedChannel === channel.id ? 'opacity-50 scale-95' : ''}`}
                     onClick={() => loadSavedChannel(channel)}
                   >
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive z-10"
                       onClick={(e) => {
                         e.stopPropagation();
                         unsaveChannel(channel.channel_url);
@@ -1272,7 +1326,10 @@ const Analytics = () => {
                     >
                       <PinOff className="w-3 h-3" />
                     </Button>
-                    <div className="flex items-center gap-2">
+                    <div className="absolute top-1 left-1 opacity-40 hover:opacity-100 transition-opacity">
+                      <GripVertical className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                    <div className="flex items-center gap-2 pl-3">
                       {channel.channel_thumbnail && (
                         <img
                           src={channel.channel_thumbnail}
