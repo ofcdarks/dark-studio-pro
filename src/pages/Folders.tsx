@@ -552,7 +552,7 @@ const Folders = () => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1">
-                                {isChannelAnalysis(video) ? (
+                                {isChannelAnalysis(video) && (
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -562,24 +562,15 @@ const Folders = () => {
                                   >
                                     <Rocket className="w-4 h-4" />
                                   </Button>
-                                ) : (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleUseVideo(video)}
-                                    title="Recarregar títulos"
-                                    className="text-primary hover:bg-primary/10"
-                                  >
-                                    <RefreshCw className="w-4 h-4" />
-                                  </Button>
                                 )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => window.open(video.video_url, "_blank")}
-                                  title="Abrir no YouTube"
+                                  onClick={() => handleUseVideo(video)}
+                                  title="Recarregar títulos"
+                                  className="text-primary hover:bg-primary/10"
                                 >
-                                  <ExternalLink className="w-4 h-4" />
+                                  <RefreshCw className="w-4 h-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
