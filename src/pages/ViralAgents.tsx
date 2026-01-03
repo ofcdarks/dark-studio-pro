@@ -19,9 +19,12 @@ import {
   X,
   Clock,
   Zap,
-  Target
+  Target,
+  Upload,
+  File,
+  Download
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -57,6 +60,16 @@ interface ScriptAgent {
   updated_at: string;
 }
 
+interface AgentFile {
+  id: string;
+  agent_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string | null;
+  created_at: string;
+}
+
 const ViralAgents = () => {
   const { user } = useAuth();
   const [agents, setAgents] = useState<ScriptAgent[]>([]);
@@ -83,11 +96,26 @@ const ViralAgents = () => {
   const [savingMemory, setSavingMemory] = useState(false);
   const [savingInstructions, setSavingInstructions] = useState(false);
 
+  // Files
+  const [agentFiles, setAgentFiles] = useState<AgentFile[]>([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (user?.id) {
       loadAgents();
     }
   }, [user?.id]);
+
+  useEffect(() => {
+    if (selectedAgent?.id) {
+      loadAgentFiles(selectedAgent.id);
+    } else {
+      setAgentFiles([]);
+    }
+  }, [selectedAgent?.id]);
 
   const loadAgents = async () => {
     if (!user?.id) return;
@@ -108,6 +136,123 @@ const ViralAgents = () => {
       setLoading(false);
     }
   };
+
+  const loadAgentFiles = async (agentId: string) => {
+    if (!user?.id) return;
+    setLoadingFiles(true);
+    try {
+      const { data, error } = await supabase
+        .from('agent_files')
+        .select('*')
+        .eq('agent_id', agentId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAgentFiles(data || []);
+    } catch (error) {
+      console.error('Error loading agent files:', error);
+    } finally {
+      setLoadingFiles(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user?.id || !selectedAgent) return;
+
+    // Max 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo muito grande. Máximo 10MB.");
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      const filePath = `${user.id}/${selectedAgent.id}/${Date.now()}_${file.name}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('agent-files')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data, error: dbError } = await supabase
+        .from('agent_files')
+        .insert({
+          agent_id: selectedAgent.id,
+          user_id: user.id,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          file_type: file.type || null
+        })
+        .select()
+        .single();
+
+      if (dbError) throw dbError;
+
+      setAgentFiles(prev => [data, ...prev]);
+      toast.success("Arquivo enviado!");
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('Erro ao enviar arquivo');
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string, filePath: string) => {
+    setDeletingFileId(fileId);
+    try {
+      await supabase.storage.from('agent-files').remove([filePath]);
+
+      const { error } = await supabase
+        .from('agent_files')
+        .delete()
+        .eq('id', fileId);
+
+      if (error) throw error;
+
+      setAgentFiles(prev => prev.filter(f => f.id !== fileId));
+      toast.success("Arquivo excluído!");
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast.error('Erro ao excluir arquivo');
+    } finally {
+      setDeletingFileId(null);
+    }
+  };
+
+  const handleDownloadFile = async (filePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('agent-files')
+        .download(filePath);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast.error('Erro ao baixar arquivo');
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const totalFilesSize = agentFiles.reduce((acc, f) => acc + f.file_size, 0);
 
   const handleDeleteAgent = async () => {
     if (!deletingId) return;
@@ -499,16 +644,90 @@ const ViralAgents = () => {
                     <Card className="p-4 bg-card/50 backdrop-blur-xl border-border/50 rounded-xl">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-primary font-medium">Arquivos</span>
-                        <Button variant="ghost" size="icon" className="w-6 h-6">
-                          <Plus className="w-3 h-3" />
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="w-6 h-6"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingFile}
+                        >
+                          {uploadingFile ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Upload className="w-3 h-3" />
+                          )}
                         </Button>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          className="hidden"
+                          onChange={handleFileUpload}
+                          accept=".pdf,.doc,.docx,.txt,.md,.json,.csv"
+                        />
                       </div>
-                      <p className="text-sm text-muted-foreground">Nenhum arquivo</p>
+
+                      {loadingFiles ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : agentFiles.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Nenhum arquivo</p>
+                      ) : (
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {agentFiles.map((file) => (
+                            <div 
+                              key={file.id}
+                              className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/30 group"
+                            >
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <File className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-foreground truncate">
+                                    {file.file_name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {formatFileSize(file.file_size)}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="w-6 h-6"
+                                  onClick={() => handleDownloadFile(file.file_path, file.file_name)}
+                                >
+                                  <Download className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="w-6 h-6 text-destructive"
+                                  onClick={() => handleDeleteFile(file.id, file.file_path)}
+                                  disabled={deletingFileId === file.id}
+                                >
+                                  {deletingFileId === file.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3 h-3" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="mt-3">
                         <div className="h-1 bg-border rounded-full overflow-hidden">
-                          <div className="h-full w-[1%] bg-primary" />
+                          <div 
+                            className="h-full bg-primary transition-all" 
+                            style={{ width: `${Math.min((totalFilesSize / (10 * 1024 * 1024)) * 100, 100)}%` }}
+                          />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">1% da capacidade do projeto utilizada</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatFileSize(totalFilesSize)} de 10 MB utilizados
+                        </p>
                       </div>
                     </Card>
                   </div>
