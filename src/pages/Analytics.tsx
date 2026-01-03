@@ -2,221 +2,186 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, TrendingUp, Eye, Video, ThumbsUp, Calendar, Loader2, Image, Mic, FolderOpen } from "lucide-react";
+import { 
+  BarChart3, 
+  TrendingUp, 
+  Eye, 
+  Video, 
+  ThumbsUp, 
+  Users, 
+  Loader2, 
+  RefreshCw,
+  ExternalLink,
+  Play,
+  MessageSquare,
+  Youtube,
+  Settings,
+  AlertCircle
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AreaChart,
   Area,
   BarChart,
   Bar,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
 } from "recharts";
-import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Link } from "react-router-dom";
+import { usePersistedState } from "@/hooks/usePersistedState";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-interface AnalyticsData {
-  totalVideos: number;
-  totalImages: number;
-  totalAudios: number;
-  totalFolders: number;
-  avgEngagement: number;
-  avgCtr: number;
-  totalViews: number;
-  totalLikes: number;
-  videosPerDay: { date: string; count: number }[];
-  imagesPerDay: { date: string; count: number }[];
-  engagementTrend: { date: string; engagement: number; ctr: number }[];
-  topVideos: { title: string; views: number; engagement: number }[];
-  activityByType: { name: string; value: number }[];
+interface YouTubeAnalytics {
+  channel: {
+    id: string;
+    name: string;
+    description: string;
+    customUrl: string;
+    thumbnail: string;
+    banner?: string;
+    country?: string;
+    publishedAt: string;
+  };
+  statistics: {
+    subscribers: number;
+    totalViews: number;
+    totalVideos: number;
+    hiddenSubscriberCount: boolean;
+  };
+  recentMetrics: {
+    analyzedVideos: number;
+    totalViewsRecent: number;
+    avgViewsPerVideo: number;
+    avgLikesPerVideo: number;
+    avgCommentsPerVideo: number;
+    avgEngagementRate: number;
+  };
+  topVideos: Array<{
+    videoId: string;
+    title: string;
+    thumbnail: string;
+    publishedAt: string;
+    views: number;
+    likes: number;
+    comments: number;
+    engagementRate: string;
+  }>;
+  trendsData: Array<{
+    month: string;
+    views: number;
+    videos: number;
+    likes: number;
+    avgViews: number;
+  }>;
 }
 
-const COLORS = ["hsl(var(--primary))", "hsl(var(--success))", "hsl(var(--warning))", "hsl(var(--destructive))", "hsl(var(--accent))"];
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + "M";
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + "K";
+  }
+  return num.toLocaleString("pt-BR");
+};
 
 const Analytics = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState("30");
-  const [data, setData] = useState<AnalyticsData>({
-    totalVideos: 0,
-    totalImages: 0,
-    totalAudios: 0,
-    totalFolders: 0,
-    avgEngagement: 0,
-    avgCtr: 0,
-    totalViews: 0,
-    totalLikes: 0,
-    videosPerDay: [],
-    imagesPerDay: [],
-    engagementTrend: [],
-    topVideos: [],
-    activityByType: [],
+  const queryClient = useQueryClient();
+  const [channelUrl, setChannelUrl] = usePersistedState("analytics_channel_url", "");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyticsData, setAnalyticsData] = usePersistedState<YouTubeAnalytics | null>("analytics_data", null);
+
+  // Fetch user's API settings
+  const { data: apiSettings } = useQuery({
+    queryKey: ["api-settings", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from("user_api_settings")
+        .select("youtube_api_key, youtube_validated")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
   });
 
-  useEffect(() => {
-    if (user) {
-      fetchAnalytics();
-    }
-  }, [user, period]);
+  // Fetch monitored channels for quick selection
+  const { data: monitoredChannels } = useQuery({
+    queryKey: ["monitored-channels", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("monitored_channels")
+        .select("id, channel_url, channel_name")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const fetchAnalytics = async () => {
-    if (!user) return;
-    setLoading(true);
+    if (!channelUrl.trim()) {
+      toast({
+        title: "URL necessária",
+        description: "Por favor, insira a URL do canal do YouTube",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!apiSettings?.youtube_api_key) {
+      toast({
+        title: "Chave de API necessária",
+        description: "Configure sua chave de API do YouTube nas configurações",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
 
     try {
-      const days = parseInt(period);
-      const startDate = subDays(new Date(), days);
-
-      // Fetch all data in parallel
-      const [videosRes, imagesRes, audiosRes, foldersRes, activityRes] = await Promise.all([
-        supabase
-          .from("video_analyses")
-          .select("*")
-          .eq("user_id", user.id)
-          .gte("created_at", startDate.toISOString()),
-        supabase
-          .from("generated_images")
-          .select("*")
-          .eq("user_id", user.id)
-          .gte("created_at", startDate.toISOString()),
-        supabase
-          .from("generated_audios")
-          .select("*")
-          .eq("user_id", user.id)
-          .gte("created_at", startDate.toISOString()),
-        supabase.from("folders").select("*").eq("user_id", user.id),
-        supabase
-          .from("activity_logs")
-          .select("*")
-          .eq("user_id", user.id)
-          .gte("created_at", startDate.toISOString())
-          .order("created_at", { ascending: true }),
-      ]);
-
-      const videos = videosRes.data || [];
-      const images = imagesRes.data || [];
-      const audios = audiosRes.data || [];
-      const folders = foldersRes.data || [];
-      const activities = activityRes.data || [];
-
-      // Calculate totals
-      const totalViews = videos.reduce((sum, v) => sum + (v.views || 0), 0);
-      const totalLikes = videos.reduce((sum, v) => sum + (v.likes || 0), 0);
-      const avgEngagement = videos.length > 0 
-        ? videos.reduce((sum, v) => sum + (v.engagement_rate || 0), 0) / videos.length 
-        : 0;
-      const avgCtr = videos.length > 0 
-        ? videos.reduce((sum, v) => sum + (v.ctr || 0), 0) / videos.length 
-        : 0;
-
-      // Generate date range
-      const dateRange = eachDayOfInterval({
-        start: startDate,
-        end: new Date(),
+      const { data, error } = await supabase.functions.invoke("fetch-youtube-analytics", {
+        body: {
+          channelUrl,
+          youtubeApiKey: apiSettings.youtube_api_key,
+        },
       });
 
-      // Videos per day
-      const videosPerDay = dateRange.map((date) => {
-        const dayStr = format(date, "yyyy-MM-dd");
-        const count = videos.filter(
-          (v) => format(new Date(v.created_at), "yyyy-MM-dd") === dayStr
-        ).length;
-        return { date: format(date, "dd/MM", { locale: ptBR }), count };
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      setAnalyticsData(data);
+      toast({
+        title: "Analytics carregado!",
+        description: `Dados do canal ${data.channel.name} obtidos com sucesso`,
       });
-
-      // Images per day
-      const imagesPerDay = dateRange.map((date) => {
-        const dayStr = format(date, "yyyy-MM-dd");
-        const count = images.filter(
-          (i) => format(new Date(i.created_at), "yyyy-MM-dd") === dayStr
-        ).length;
-        return { date: format(date, "dd/MM", { locale: ptBR }), count };
-      });
-
-      // Engagement trend
-      const engagementTrend = dateRange.map((date) => {
-        const dayStr = format(date, "yyyy-MM-dd");
-        const dayVideos = videos.filter(
-          (v) => format(new Date(v.created_at), "yyyy-MM-dd") === dayStr
-        );
-        const engagement = dayVideos.length > 0
-          ? dayVideos.reduce((sum, v) => sum + (v.engagement_rate || 0), 0) / dayVideos.length
-          : 0;
-        const ctr = dayVideos.length > 0
-          ? dayVideos.reduce((sum, v) => sum + (v.ctr || 0), 0) / dayVideos.length
-          : 0;
-        return { 
-          date: format(date, "dd/MM", { locale: ptBR }), 
-          engagement: parseFloat(engagement.toFixed(2)), 
-          ctr: parseFloat(ctr.toFixed(2)) 
-        };
-      });
-
-      // Top videos
-      const topVideos = [...videos]
-        .sort((a, b) => (b.views || 0) - (a.views || 0))
-        .slice(0, 5)
-        .map((v) => ({
-          title: v.video_title || "Sem título",
-          views: v.views || 0,
-          engagement: v.engagement_rate || 0,
-        }));
-
-      // Activity by type
-      const activityCounts: Record<string, number> = {};
-      activities.forEach((a) => {
-        activityCounts[a.action] = (activityCounts[a.action] || 0) + 1;
-      });
-      const activityByType = Object.entries(activityCounts).map(([name, value]) => ({
-        name: name.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
-        value,
-      }));
-
-      // If no activities, show content distribution
-      const contentDistribution = activityByType.length > 0 ? activityByType : [
-        { name: "Vídeos Analisados", value: videos.length },
-        { name: "Imagens Geradas", value: images.length },
-        { name: "Áudios Criados", value: audios.length },
-        { name: "Pastas", value: folders.length },
-      ];
-
-      setData({
-        totalVideos: videos.length,
-        totalImages: images.length,
-        totalAudios: audios.length,
-        totalFolders: folders.length,
-        avgEngagement,
-        avgCtr,
-        totalViews,
-        totalLikes,
-        videosPerDay,
-        imagesPerDay,
-        engagementTrend,
-        topVideos,
-        activityByType: contentDistribution,
-      });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching analytics:", error);
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível carregar os analytics";
       toast({
         title: "Erro",
-        description: "Não foi possível carregar os dados de analytics.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsAnalyzing(false);
     }
   };
 
@@ -224,26 +189,24 @@ const Analytics = () => {
     icon: Icon,
     label,
     value,
-    change,
+    subvalue,
+    color = "primary",
   }: {
     icon: React.ElementType;
     label: string;
     value: string | number;
-    change?: string;
+    subvalue?: string;
+    color?: string;
   }) => (
     <Card className="p-5">
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-          <Icon className="w-5 h-5 text-primary" />
+        <div className={`w-10 h-10 rounded-lg bg-${color}/10 flex items-center justify-center`}>
+          <Icon className={`w-5 h-5 text-${color}`} />
         </div>
         <span className="text-muted-foreground text-sm">{label}</span>
       </div>
       <p className="text-3xl font-bold text-foreground">{value}</p>
-      {change && (
-        <p className={`text-sm mt-1 ${change.startsWith("+") ? "text-success" : "text-destructive"}`}>
-          {change}
-        </p>
-      )}
+      {subvalue && <p className="text-sm text-muted-foreground mt-1">{subvalue}</p>}
     </Card>
   );
 
@@ -254,7 +217,7 @@ const Analytics = () => {
           <p className="text-sm font-medium text-foreground">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {entry.value}
+              {entry.name}: {formatNumber(entry.value)}
             </p>
           ))}
         </div>
@@ -263,296 +226,328 @@ const Analytics = () => {
     return null;
   };
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </MainLayout>
-    );
-  }
+  const hasApiKey = !!apiSettings?.youtube_api_key;
 
   return (
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Analytics</h1>
-              <p className="text-muted-foreground">
-                Acompanhe o desempenho dos seus vídeos e conteúdos
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">Últimos 7 dias</SelectItem>
-                  <SelectItem value="14">Últimos 14 dias</SelectItem>
-                  <SelectItem value="30">Últimos 30 dias</SelectItem>
-                  <SelectItem value="90">Últimos 90 dias</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={fetchAnalytics} variant="outline">
-                <Calendar className="w-4 h-4 mr-2" />
-                Atualizar
-              </Button>
-            </div>
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">Analytics do YouTube</h1>
+            <p className="text-muted-foreground">
+              Estatísticas e métricas do seu canal do YouTube
+            </p>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatCard icon={Video} label="Vídeos Analisados" value={data.totalVideos} />
-            <StatCard icon={Image} label="Imagens Geradas" value={data.totalImages} />
-            <StatCard icon={Mic} label="Áudios Criados" value={data.totalAudios} />
-            <StatCard icon={FolderOpen} label="Pastas" value={data.totalFolders} />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatCard
-              icon={Eye}
-              label="Views Totais"
-              value={data.totalViews.toLocaleString("pt-BR")}
-            />
-            <StatCard
-              icon={ThumbsUp}
-              label="Likes Totais"
-              value={data.totalLikes.toLocaleString("pt-BR")}
-            />
-            <StatCard
-              icon={TrendingUp}
-              label="Engajamento Médio"
-              value={`${data.avgEngagement.toFixed(1)}%`}
-            />
-            <StatCard
-              icon={BarChart3}
-              label="CTR Médio"
-              value={`${data.avgCtr.toFixed(1)}%`}
-            />
-          </div>
-
-          {/* Charts Row 1 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Video className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold text-foreground">Vídeos Analisados por Dia</h3>
-                </div>
-              </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={data.videosPerDay}>
-                    <defs>
-                      <linearGradient id="colorVideos" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis
-                      dataKey="date"
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickLine={false}
-                      allowDecimals={false}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area
-                      type="monotone"
-                      dataKey="count"
-                      name="Vídeos"
-                      stroke="hsl(var(--primary))"
-                      fill="url(#colorVideos)"
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Image className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold text-foreground">Imagens Geradas por Dia</h3>
-                </div>
-              </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.imagesPerDay}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis
-                      dataKey="date"
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickLine={false}
-                      allowDecimals={false}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar
-                      dataKey="count"
-                      name="Imagens"
-                      fill="hsl(var(--primary))"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          </div>
-
-          {/* Charts Row 2 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold text-foreground">Tendência de Engajamento</h3>
-                </div>
-              </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data.engagementTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis
-                      dataKey="date"
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickLine={false}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="engagement"
-                      name="Engajamento %"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="ctr"
-                      name="CTR %"
-                      stroke="hsl(var(--success))"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold text-foreground">Distribuição de Conteúdo</h3>
-                </div>
-              </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={data.activityByType}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {data.activityByType.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          </div>
-
-          {/* Top Videos Table */}
-          {data.topVideos.length > 0 && (
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <Video className="w-5 h-5 text-primary" />
-                <h3 className="font-semibold text-foreground">Top Vídeos Analisados</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 text-muted-foreground font-medium">
-                        Título
-                      </th>
-                      <th className="text-right py-3 px-4 text-muted-foreground font-medium">
-                        Views
-                      </th>
-                      <th className="text-right py-3 px-4 text-muted-foreground font-medium">
-                        Engajamento
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.topVideos.map((video, index) => (
-                      <tr
-                        key={index}
-                        className="border-b border-border/50 hover:bg-secondary/30"
-                      >
-                        <td className="py-3 px-4 text-foreground">
-                          {video.title.length > 50
-                            ? video.title.substring(0, 50) + "..."
-                            : video.title}
-                        </td>
-                        <td className="py-3 px-4 text-right text-foreground">
-                          {video.views.toLocaleString("pt-BR")}
-                        </td>
-                        <td className="py-3 px-4 text-right text-foreground">
-                          {video.engagement.toFixed(1)}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
+          {/* API Key Warning */}
+          {!hasApiKey && (
+            <Alert className="mb-6 border-warning bg-warning/10">
+              <AlertCircle className="h-4 w-4 text-warning" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>Configure sua chave de API do YouTube para acessar as estatísticas.</span>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/settings">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Configurações
+                  </Link>
+                </Button>
+              </AlertDescription>
+            </Alert>
           )}
 
-          {/* Empty State */}
-          {data.totalVideos === 0 && data.totalImages === 0 && data.totalAudios === 0 && (
+          {/* Channel Input */}
+          <Card className="p-6 mb-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Youtube className="w-5 h-5 text-red-500" />
+              Selecione o Canal
+            </h2>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <Input
+                  placeholder="https://www.youtube.com/@seucanal"
+                  value={channelUrl}
+                  onChange={(e) => setChannelUrl(e.target.value)}
+                  className="bg-secondary border-border"
+                />
+              </div>
+              {monitoredChannels && monitoredChannels.length > 0 && (
+                <Select onValueChange={(value) => setChannelUrl(value)}>
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Canais monitorados" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monitoredChannels.map((channel) => (
+                      <SelectItem key={channel.id} value={channel.channel_url}>
+                        {channel.channel_name || "Canal"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Button
+                onClick={fetchAnalytics}
+                disabled={isAnalyzing || !hasApiKey}
+                className="flex items-center gap-2"
+              >
+                {isAnalyzing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+                Buscar Analytics
+              </Button>
+            </div>
+          </Card>
+
+          {/* Analytics Content */}
+          {analyticsData ? (
+            <>
+              {/* Channel Header */}
+              <Card className="p-6 mb-8">
+                <div className="flex items-start gap-4">
+                  {analyticsData.channel.thumbnail && (
+                    <img
+                      src={analyticsData.channel.thumbnail}
+                      alt={analyticsData.channel.name}
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h2 className="text-2xl font-bold text-foreground">
+                        {analyticsData.channel.name}
+                      </h2>
+                      <a
+                        href={`https://www.youtube.com/${analyticsData.channel.customUrl || `channel/${analyticsData.channel.id}`}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+                    {analyticsData.channel.customUrl && (
+                      <p className="text-muted-foreground text-sm mb-2">
+                        {analyticsData.channel.customUrl}
+                      </p>
+                    )}
+                    <p className="text-muted-foreground text-sm line-clamp-2">
+                      {analyticsData.channel.description || "Sem descrição"}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Main Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <StatCard
+                  icon={Users}
+                  label="Inscritos"
+                  value={
+                    analyticsData.statistics.hiddenSubscriberCount
+                      ? "Oculto"
+                      : formatNumber(analyticsData.statistics.subscribers)
+                  }
+                />
+                <StatCard
+                  icon={Eye}
+                  label="Views Totais"
+                  value={formatNumber(analyticsData.statistics.totalViews)}
+                />
+                <StatCard
+                  icon={Video}
+                  label="Total de Vídeos"
+                  value={formatNumber(analyticsData.statistics.totalVideos)}
+                />
+                <StatCard
+                  icon={TrendingUp}
+                  label="Engajamento Médio"
+                  value={`${analyticsData.recentMetrics.avgEngagementRate}%`}
+                  subvalue="Últimos 50 vídeos"
+                />
+              </div>
+
+              {/* Recent Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <StatCard
+                  icon={Eye}
+                  label="Média de Views"
+                  value={formatNumber(analyticsData.recentMetrics.avgViewsPerVideo)}
+                  subvalue="Por vídeo"
+                />
+                <StatCard
+                  icon={ThumbsUp}
+                  label="Média de Likes"
+                  value={formatNumber(analyticsData.recentMetrics.avgLikesPerVideo)}
+                  subvalue="Por vídeo"
+                />
+                <StatCard
+                  icon={MessageSquare}
+                  label="Média de Comentários"
+                  value={formatNumber(analyticsData.recentMetrics.avgCommentsPerVideo)}
+                  subvalue="Por vídeo"
+                />
+                <StatCard
+                  icon={BarChart3}
+                  label="Views Recentes"
+                  value={formatNumber(analyticsData.recentMetrics.totalViewsRecent)}
+                  subvalue={`${analyticsData.recentMetrics.analyzedVideos} vídeos`}
+                />
+              </div>
+
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Views Trend */}
+                <Card className="p-6">
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    Tendência de Views por Mês
+                  </h3>
+                  <div className="h-64">
+                    {analyticsData.trendsData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={analyticsData.trendsData}>
+                          <defs>
+                            <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis
+                            dataKey="month"
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={12}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={12}
+                            tickLine={false}
+                            tickFormatter={(v) => formatNumber(v)}
+                          />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Area
+                            type="monotone"
+                            dataKey="views"
+                            name="Views"
+                            stroke="hsl(var(--primary))"
+                            fill="url(#colorViews)"
+                            strokeWidth={2}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        Sem dados suficientes
+                      </div>
+                    )}
+                  </div>
+                </Card>
+
+                {/* Videos per Month */}
+                <Card className="p-6">
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Video className="w-5 h-5 text-primary" />
+                    Vídeos Publicados por Mês
+                  </h3>
+                  <div className="h-64">
+                    {analyticsData.trendsData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={analyticsData.trendsData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis
+                            dataKey="month"
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={12}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={12}
+                            tickLine={false}
+                            allowDecimals={false}
+                          />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Bar
+                            dataKey="videos"
+                            name="Vídeos"
+                            fill="hsl(var(--primary))"
+                            radius={[4, 4, 0, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        Sem dados suficientes
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
+
+              {/* Top Videos */}
+              <Card className="p-6">
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Play className="w-5 h-5 text-primary" />
+                  Top 10 Vídeos (Mais Visualizados)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {analyticsData.topVideos.slice(0, 10).map((video, index) => (
+                    <div
+                      key={video.videoId}
+                      className="flex gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                    >
+                      <div className="relative flex-shrink-0">
+                        <span className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                          {index + 1}
+                        </span>
+                        {video.thumbnail && (
+                          <img
+                            src={video.thumbnail}
+                            alt={video.title}
+                            className="w-24 h-14 object-cover rounded"
+                          />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <a
+                          href={`https://www.youtube.com/watch?v=${video.videoId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-foreground hover:text-primary line-clamp-2"
+                        >
+                          {video.title}
+                        </a>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-3 h-3" />
+                            {formatNumber(video.views)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <ThumbsUp className="w-3 h-3" />
+                            {formatNumber(video.likes)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            {video.engagementRate}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </>
+          ) : (
             <Card className="p-12 text-center">
-              <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                Nenhum dado disponível
+              <Youtube className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                Nenhum canal selecionado
               </h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Comece a analisar vídeos, gerar imagens e criar conteúdo para ver suas
-                estatísticas aqui.
+              <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                Insira a URL do seu canal do YouTube ou selecione um dos canais monitorados para visualizar as estatísticas.
               </p>
             </Card>
           )}
