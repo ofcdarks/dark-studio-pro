@@ -91,10 +91,14 @@ const ViralAgents = () => {
   // Edit modals
   const [showMemoryModal, setShowMemoryModal] = useState(false);
   const [showInstructionsModal, setShowInstructionsModal] = useState(false);
+  const [showTriggersModal, setShowTriggersModal] = useState(false);
   const [editMemory, setEditMemory] = useState("");
   const [editInstructions, setEditInstructions] = useState("");
+  const [editTriggers, setEditTriggers] = useState<string[]>([]);
+  const [newTrigger, setNewTrigger] = useState("");
   const [savingMemory, setSavingMemory] = useState(false);
   const [savingInstructions, setSavingInstructions] = useState(false);
+  const [savingTriggers, setSavingTriggers] = useState(false);
 
   // Files
   const [agentFiles, setAgentFiles] = useState<AgentFile[]>([]);
@@ -408,6 +412,52 @@ const ViralAgents = () => {
     }
   };
 
+  const openTriggersModal = () => {
+    if (!selectedAgent) return;
+    setEditTriggers(selectedAgent.mental_triggers || []);
+    setNewTrigger("");
+    setShowTriggersModal(true);
+  };
+
+  const addTrigger = () => {
+    const trigger = newTrigger.trim();
+    if (trigger && !editTriggers.includes(trigger)) {
+      setEditTriggers(prev => [...prev, trigger]);
+      setNewTrigger("");
+    }
+  };
+
+  const removeTrigger = (index: number) => {
+    setEditTriggers(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveTriggers = async () => {
+    if (!selectedAgent) return;
+    
+    setSavingTriggers(true);
+    try {
+      const triggers = editTriggers.length > 0 ? editTriggers : null;
+      
+      const { error } = await supabase
+        .from('script_agents')
+        .update({ mental_triggers: triggers })
+        .eq('id', selectedAgent.id);
+
+      if (error) throw error;
+
+      const updated = { ...selectedAgent, mental_triggers: triggers };
+      setAgents(prev => prev.map(a => a.id === selectedAgent.id ? updated : a));
+      setSelectedAgent(updated);
+      setShowTriggersModal(false);
+      toast.success("Gatilhos atualizados!");
+    } catch (error) {
+      console.error('Error updating triggers:', error);
+      toast.error('Erro ao atualizar gatilhos');
+    } finally {
+      setSavingTriggers(false);
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -625,11 +675,19 @@ const ViralAgents = () => {
                     </Card>
 
                     {/* Triggers Card */}
-                    {selectedAgent.mental_triggers && selectedAgent.mental_triggers.length > 0 && (
-                      <Card className="p-4 bg-card/50 backdrop-blur-xl border-border/50 rounded-xl">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-primary font-medium">Gatilhos Mentais</span>
-                        </div>
+                    <Card className="p-4 bg-card/50 backdrop-blur-xl border-border/50 rounded-xl">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-primary font-medium">Gatilhos Mentais</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="w-6 h-6"
+                          onClick={openTriggersModal}
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      {selectedAgent.mental_triggers && selectedAgent.mental_triggers.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {selectedAgent.mental_triggers.map((trigger, idx) => (
                             <Badge key={idx} variant="secondary" className="bg-primary/10 text-primary">
@@ -637,8 +695,10 @@ const ViralAgents = () => {
                             </Badge>
                           ))}
                         </div>
-                      </Card>
-                    )}
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Nenhum gatilho definido</p>
+                      )}
+                    </Card>
 
                     {/* Files Card */}
                     <Card className="p-4 bg-card/50 backdrop-blur-xl border-border/50 rounded-xl">
@@ -1012,6 +1072,100 @@ const ViralAgents = () => {
                   <Check className="w-4 h-4 mr-2" />
                 )}
                 Salvar Instruções
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Triggers Edit Modal */}
+      <Dialog open={showTriggersModal} onOpenChange={setShowTriggersModal}>
+        <DialogContent className="bg-card border-primary/30 rounded-2xl max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-primary" />
+              Editar Gatilhos Mentais
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">
+                Adicionar novo gatilho
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Ex: Escassez, Curiosidade, Urgência..."
+                  value={newTrigger}
+                  onChange={(e) => setNewTrigger(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addTrigger();
+                    }
+                  }}
+                  className="bg-background/50 border-border/50"
+                />
+                <Button
+                  onClick={addTrigger}
+                  disabled={!newTrigger.trim()}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">
+                Gatilhos ativos ({editTriggers.length})
+              </label>
+              {editTriggers.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center border border-dashed border-border/50 rounded-lg">
+                  Nenhum gatilho adicionado
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2 p-3 border border-border/50 rounded-lg bg-background/30 max-h-40 overflow-y-auto">
+                  {editTriggers.map((trigger, idx) => (
+                    <Badge 
+                      key={idx} 
+                      variant="secondary" 
+                      className="bg-primary/10 text-primary pr-1 flex items-center gap-1"
+                    >
+                      {trigger}
+                      <button
+                        onClick={() => removeTrigger(idx)}
+                        className="ml-1 p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-2">
+                Gatilhos mentais ajudam a guiar o tom persuasivo dos roteiros gerados.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowTriggersModal(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSaveTriggers}
+                disabled={savingTriggers}
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {savingTriggers ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 mr-2" />
+                )}
+                Salvar Gatilhos
               </Button>
             </div>
           </div>
