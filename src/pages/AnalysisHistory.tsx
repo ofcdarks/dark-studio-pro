@@ -129,7 +129,7 @@ export default function AnalysisHistory() {
     enabled: !!user,
   });
 
-  // Fetch analyzed videos
+  // Fetch analyzed videos (excluding channel analyses)
   const { data: analyzedVideos, isLoading: loadingVideos } = useQuery({
     queryKey: ["analyzed-videos", user?.id, selectedFolderId],
     queryFn: async () => {
@@ -149,7 +149,11 @@ export default function AnalysisHistory() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as AnalyzedVideo[];
+      
+      // Filtrar para excluir análises de canal (são exibidas no Explorar Nichos)
+      return (data || []).filter((item: any) => 
+        !item.analysis_data_json?.type || item.analysis_data_json?.type !== "channel_analysis"
+      ) as AnalyzedVideo[];
     },
     enabled: !!user,
   });
