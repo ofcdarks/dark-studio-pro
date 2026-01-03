@@ -1108,6 +1108,35 @@ serve(async (req) => {
         userPrompt = `Analise estes ${channelsData.length} canais e gere uma estratégia completa baseada nas lacunas e oportunidades identificadas.`;
         break;
 
+      case "agent_chat":
+        // Chat with a custom agent
+        if (agentData?.systemPrompt) {
+          systemPrompt = agentData.systemPrompt;
+        } else {
+          systemPrompt = `Você é "${agentData?.name || 'um assistente'}", um agente de IA especializado em criar conteúdo viral para YouTube.`;
+          if (agentData?.niche) {
+            systemPrompt += ` Seu nicho é: ${agentData.niche}`;
+          }
+          if (agentData?.formula) {
+            systemPrompt += ` Instruções: ${agentData.formula}`;
+          }
+          if (agentData?.memory) {
+            systemPrompt += ` Memória: ${agentData.memory}`;
+          }
+          if (agentData?.mentalTriggers?.length) {
+            systemPrompt += ` Gatilhos mentais: ${agentData.mentalTriggers.join(", ")}`;
+          }
+        }
+        
+        // Build the conversation context
+        if (agentData?.conversationHistory?.length) {
+          // The messages will be appended in the API call
+          userPrompt = prompt;
+        } else {
+          userPrompt = prompt;
+        }
+        break;
+
       default:
         systemPrompt = "Você é um assistente especializado em criação de conteúdo para YouTube. Responda em português brasileiro de forma clara e útil.";
     }
@@ -1268,6 +1297,20 @@ serve(async (req) => {
         // If JSON parsing fails, return as string
         result = content;
       }
+    }
+
+    // For agent_chat, return simple response format
+    if (type === "agent_chat") {
+      return new Response(
+        JSON.stringify({ 
+          response: content,
+          text: content,
+          creditsUsed: useUserApiKey ? 0 : creditsNeeded,
+          model: selectedModel,
+          provider: apiProvider
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(
