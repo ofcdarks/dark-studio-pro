@@ -30,9 +30,23 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
-  TrendingDown
+  TrendingDown,
+  Target,
+  Plus,
+  Trash2,
+  Calendar
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -130,9 +144,16 @@ const formatNumber = (num: number): string => {
 const Analytics = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [channelUrl, setChannelUrl] = usePersistedState("analytics_channel_url", "");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyticsData, setAnalyticsData] = usePersistedState<YouTubeAnalytics | null>("analytics_data", null);
+  const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
+  const [newGoal, setNewGoal] = useState({
+    goal_type: "subscribers",
+    target_value: 10000,
+    deadline: "",
+  });
 
   // Fetch user's API settings
   const { data: apiSettings } = useQuery({
@@ -165,6 +186,116 @@ const Analytics = () => {
     },
     enabled: !!user,
   });
+
+  // Fetch channel goals
+  const { data: channelGoals, refetch: refetchGoals } = useQuery({
+    queryKey: ["channel-goals", user?.id, channelUrl],
+    queryFn: async () => {
+      if (!user || !channelUrl) return [];
+      const { data, error } = await supabase
+        .from("channel_goals")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("channel_url", channelUrl)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && !!channelUrl,
+  });
+
+  const createGoal = async () => {
+    if (!user || !channelUrl) return;
+    
+    // Get current value based on goal type
+    let startValue = 0;
+    if (analyticsData) {
+      switch (newGoal.goal_type) {
+        case "subscribers":
+          startValue = analyticsData.statistics.subscribers;
+          break;
+        case "views":
+          startValue = analyticsData.statistics.totalViews;
+          break;
+        case "videos":
+          startValue = analyticsData.statistics.totalVideos;
+          break;
+        case "engagement":
+          startValue = Math.round(analyticsData.recentMetrics.avgEngagementRate * 100);
+          break;
+      }
+    }
+
+    const { error } = await supabase.from("channel_goals").insert({
+      user_id: user.id,
+      channel_url: channelUrl,
+      goal_type: newGoal.goal_type,
+      target_value: newGoal.target_value,
+      start_value: startValue,
+      current_value: startValue,
+      deadline: newGoal.deadline || null,
+    });
+
+    if (error) {
+      toast({ title: "Erro ao criar meta", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Meta criada!", description: "Sua meta foi adicionada com sucesso" });
+    setIsGoalDialogOpen(false);
+    setNewGoal({ goal_type: "subscribers", target_value: 10000, deadline: "" });
+    refetchGoals();
+  };
+
+  const updateGoalProgress = async () => {
+    if (!channelGoals || !analyticsData) return;
+
+    for (const goal of channelGoals) {
+      let currentValue = 0;
+      switch (goal.goal_type) {
+        case "subscribers":
+          currentValue = analyticsData.statistics.subscribers;
+          break;
+        case "views":
+          currentValue = analyticsData.statistics.totalViews;
+          break;
+        case "videos":
+          currentValue = analyticsData.statistics.totalVideos;
+          break;
+        case "engagement":
+          currentValue = Math.round(analyticsData.recentMetrics.avgEngagementRate * 100);
+          break;
+      }
+
+      const isCompleted = currentValue >= goal.target_value;
+      await supabase
+        .from("channel_goals")
+        .update({
+          current_value: currentValue,
+          completed_at: isCompleted && !goal.completed_at ? new Date().toISOString() : goal.completed_at,
+        })
+        .eq("id", goal.id);
+    }
+    refetchGoals();
+  };
+
+  const deleteGoal = async (goalId: string) => {
+    const { error } = await supabase.from("channel_goals").delete().eq("id", goalId);
+    if (error) {
+      toast({ title: "Erro ao deletar meta", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Meta removida" });
+    refetchGoals();
+  };
+
+  const goalTypeLabels: Record<string, { label: string; icon: React.ElementType }> = {
+    subscribers: { label: "Inscritos", icon: Users },
+    views: { label: "Views", icon: Eye },
+    videos: { label: "Vídeos", icon: Video },
+    engagement: { label: "Engajamento %", icon: TrendingUp },
+  };
 
   const fetchAnalytics = async () => {
     if (!channelUrl.trim()) {
@@ -203,6 +334,9 @@ const Analytics = () => {
         title: "Analytics carregado!",
         description: `Dados do canal ${data.channel.name} obtidos com sucesso`,
       });
+      
+      // Update goals with current data
+      setTimeout(() => updateGoalProgress(), 500);
     } catch (error: unknown) {
       console.error("Error fetching analytics:", error);
       const errorMessage = error instanceof Error ? error.message : "Não foi possível carregar os analytics";
@@ -460,6 +594,159 @@ const Analytics = () => {
                     Exportar CSV
                   </Button>
                 </div>
+              </Card>
+
+              {/* Goals Section */}
+              <Card className="p-6 mb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Target className="w-5 h-5 text-primary" />
+                    Metas de Crescimento
+                  </h3>
+                  <Dialog open={isGoalDialogOpen} onOpenChange={setIsGoalDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Nova Meta
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Criar Nova Meta</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label>Tipo de Meta</Label>
+                          <Select
+                            value={newGoal.goal_type}
+                            onValueChange={(v) => setNewGoal((prev) => ({ ...prev, goal_type: v }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="subscribers">Inscritos</SelectItem>
+                              <SelectItem value="views">Views Totais</SelectItem>
+                              <SelectItem value="videos">Total de Vídeos</SelectItem>
+                              <SelectItem value="engagement">Engajamento (%)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Valor Alvo</Label>
+                          <Input
+                            type="number"
+                            value={newGoal.target_value}
+                            onChange={(e) => setNewGoal((prev) => ({ ...prev, target_value: parseInt(e.target.value) || 0 }))}
+                            placeholder="Ex: 10000"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Prazo (opcional)</Label>
+                          <Input
+                            type="date"
+                            value={newGoal.deadline}
+                            onChange={(e) => setNewGoal((prev) => ({ ...prev, deadline: e.target.value }))}
+                          />
+                        </div>
+                        <Button onClick={createGoal} className="w-full">
+                          Criar Meta
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                {channelGoals && channelGoals.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {channelGoals.map((goal) => {
+                      const GoalIcon = goalTypeLabels[goal.goal_type]?.icon || Target;
+                      const progress = goal.target_value > goal.start_value 
+                        ? Math.min(100, Math.round(((goal.current_value - goal.start_value) / (goal.target_value - goal.start_value)) * 100))
+                        : goal.current_value >= goal.target_value ? 100 : 0;
+                      const isCompleted = goal.completed_at !== null;
+                      const remaining = goal.target_value - goal.current_value;
+                      
+                      return (
+                        <div
+                          key={goal.id}
+                          className={`p-4 rounded-lg border ${isCompleted ? 'bg-green-500/5 border-green-500/20' : 'bg-secondary/50 border-border'}`}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-10 h-10 rounded-lg ${isCompleted ? 'bg-green-500/20' : 'bg-primary/10'} flex items-center justify-center`}>
+                                <GoalIcon className={`w-5 h-5 ${isCompleted ? 'text-green-500' : 'text-primary'}`} />
+                              </div>
+                              <div>
+                                <p className="font-medium text-foreground">
+                                  {goalTypeLabels[goal.goal_type]?.label || goal.goal_type}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Meta: {formatNumber(goal.target_value)}
+                                  {goal.goal_type === "engagement" ? "%" : ""}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {isCompleted && (
+                                <Badge className="bg-green-500/20 text-green-500 border-green-500/30">
+                                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                                  Concluída
+                                </Badge>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                onClick={() => deleteGoal(goal.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="mb-2">
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-muted-foreground">Progresso</span>
+                              <span className="font-medium text-foreground">{progress}%</span>
+                            </div>
+                            <Progress value={progress} className="h-2" />
+                          </div>
+                          
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>
+                              Atual: {formatNumber(goal.current_value)}
+                              {goal.goal_type === "engagement" ? "%" : ""}
+                            </span>
+                            {!isCompleted && remaining > 0 && (
+                              <span className="text-primary">
+                                Faltam: {formatNumber(remaining)}
+                                {goal.goal_type === "engagement" ? "%" : ""}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {goal.deadline && (
+                            <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                              <Calendar className="w-3 h-3" />
+                              Prazo: {new Date(goal.deadline).toLocaleDateString("pt-BR")}
+                              {new Date(goal.deadline) < new Date() && !isCompleted && (
+                                <Badge variant="destructive" className="ml-2 text-[10px] py-0">Atrasada</Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Target className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                    <p className="text-muted-foreground text-sm">
+                      Nenhuma meta definida. Crie sua primeira meta de crescimento!
+                    </p>
+                  </div>
+                )}
               </Card>
 
               {/* Main Stats */}

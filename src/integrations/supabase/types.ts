@@ -187,6 +187,51 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_goals: {
+        Row: {
+          channel_url: string
+          completed_at: string | null
+          created_at: string
+          current_value: number | null
+          deadline: string | null
+          goal_type: string
+          id: string
+          is_active: boolean | null
+          start_value: number | null
+          target_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_url: string
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number | null
+          deadline?: string | null
+          goal_type: string
+          id?: string
+          is_active?: boolean | null
+          start_value?: number | null
+          target_value: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_url?: string
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number | null
+          deadline?: string | null
+          goal_type?: string
+          id?: string
+          is_active?: boolean | null
+          start_value?: number | null
+          target_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       credit_transactions: {
         Row: {
           amount: number
