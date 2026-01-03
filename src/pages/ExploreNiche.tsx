@@ -934,28 +934,73 @@ const ExploreNiche = () => {
                                     )}
                                   </Button>
                                 </div>
-                                <div className="space-y-2">
-                                  {sub.exampleTitles.map((title, i) => (
-                                    <div key={i} className="flex items-center justify-between gap-2 text-sm bg-success/10 border border-success/20 rounded-lg px-3 py-2 group">
-                                      <div className="flex items-start gap-2">
-                                        <span className="text-success font-bold flex-shrink-0">#{i + 1}</span>
-                                        <span className="text-foreground">{title}</span>
+                                <div className="space-y-3">
+                                  {sub.exampleTitles.map((title, i) => {
+                                    // Formatar título com estrutura visual
+                                    const formatTitle = (t: string) => {
+                                      // Detectar padrões comuns e formatar
+                                      let formatted = t;
+                                      
+                                      // Destacar nomes próprios (palavras que começam com maiúscula no meio)
+                                      formatted = formatted.replace(/([A-Z][a-záéíóúàèìòùâêîôûãõ]+(?:\s+[A-Z][a-záéíóúàèìòùâêîôûãõ]+)*)/g, '<strong class="text-primary">$1</strong>');
+                                      
+                                      // Destacar números
+                                      formatted = formatted.replace(/(\d+(?:\.\d+)?(?:\s*(?:mil|milhões?|bilhões?|anos?|dias?|horas?|minutos?|vidas?|pessoas?|crianças?|%))?)/gi, '<span class="text-success font-semibold">$1</span>');
+                                      
+                                      // Destacar datas (anos entre 1800-2030)
+                                      formatted = formatted.replace(/\b(1[89]\d{2}|20[0-3]\d)\b/g, '<span class="bg-primary/20 text-primary px-1 rounded">$1</span>');
+                                      
+                                      // Destacar pontuação interrogativa
+                                      formatted = formatted.replace(/(\?)/g, '<span class="text-primary font-bold">$1</span>');
+                                      
+                                      // Destacar dois pontos (estrutura NOME: descrição)
+                                      formatted = formatted.replace(/:/g, '<span class="text-muted-foreground">:</span>');
+                                      
+                                      return formatted;
+                                    };
+                                    
+                                    const formulas = [
+                                      { label: "NOME + FEITO", color: "text-blue-400" },
+                                      { label: "NÚMERO + IMPACTO", color: "text-emerald-400" },
+                                      { label: "PERGUNTA + REVELAÇÃO", color: "text-amber-400" },
+                                    ];
+                                    
+                                    return (
+                                      <div key={i} className="bg-card/50 border border-border/50 rounded-xl overflow-hidden group hover:border-primary/30 transition-colors">
+                                        {/* Formula badge */}
+                                        <div className="flex items-center justify-between px-4 py-2 bg-secondary/30 border-b border-border/30">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-primary bg-primary/20 px-2 py-0.5 rounded">
+                                              #{i + 1}
+                                            </span>
+                                            <span className={`text-xs font-medium ${formulas[i % 3].color}`}>
+                                              {formulas[i % 3].label}
+                                            </span>
+                                          </div>
+                                          <button 
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              copyKeyword(title);
+                                            }}
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-primary/20 rounded-lg"
+                                          >
+                                            {copiedKeyword === title ? (
+                                              <Check className="w-4 h-4 text-success" />
+                                            ) : (
+                                              <Copy className="w-4 h-4 text-muted-foreground" />
+                                            )}
+                                          </button>
+                                        </div>
+                                        {/* Title content */}
+                                        <div className="px-4 py-3">
+                                          <p 
+                                            className="text-base text-foreground leading-relaxed"
+                                            dangerouslySetInnerHTML={{ __html: formatTitle(title) }}
+                                          />
+                                        </div>
                                       </div>
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          copyKeyword(title);
-                                        }}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-success/20 rounded"
-                                      >
-                                        {copiedKeyword === title ? (
-                                          <Check className="w-4 h-4 text-success" />
-                                        ) : (
-                                          <Copy className="w-4 h-4 text-muted-foreground" />
-                                        )}
-                                      </button>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               </div>
                             )}
