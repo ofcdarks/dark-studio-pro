@@ -512,6 +512,56 @@ export type Database = {
         }
         Relationships: []
       }
+      pinned_videos: {
+        Row: {
+          channel_id: string | null
+          created_at: string
+          id: string
+          likes: string | null
+          published_at: string | null
+          thumbnail_url: string | null
+          title: string | null
+          user_id: string
+          video_id: string
+          video_url: string
+          views: string | null
+        }
+        Insert: {
+          channel_id?: string | null
+          created_at?: string
+          id?: string
+          likes?: string | null
+          published_at?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          user_id: string
+          video_id: string
+          video_url: string
+          views?: string | null
+        }
+        Update: {
+          channel_id?: string | null
+          created_at?: string
+          id?: string
+          likes?: string | null
+          published_at?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          user_id?: string
+          video_id?: string
+          video_url?: string
+          views?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinned_videos_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "monitored_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_permissions: {
         Row: {
           created_at: string | null
