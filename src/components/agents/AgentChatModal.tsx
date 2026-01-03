@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pencil, Check, Brain, RefreshCw, Save, Rocket } from "lucide-react";
+import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pencil, Check, Brain, RefreshCw, Save } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import logoGif from "@/assets/logo.gif";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -597,10 +598,10 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
       <Dialog open={isGeneratingScript} onOpenChange={() => {}}>
         <DialogContent className="bg-card border-primary/50 rounded-2xl max-w-sm text-center p-8" onPointerDownOutside={(e) => e.preventDefault()}>
           <div className="flex flex-col items-center gap-6">
-            {/* Animated Icon */}
+            {/* Animated Logo */}
             <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-amber-500/10 flex items-center justify-center border border-primary/30">
-                <Rocket className="w-10 h-10 text-primary animate-pulse" />
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-amber-500/10 flex items-center justify-center border-2 border-primary/40">
+                <img src={logoGif} alt="Logo" className="w-16 h-16 object-contain" />
               </div>
               <div className="absolute -inset-1 rounded-full border border-primary/20 animate-ping opacity-40" />
             </div>
