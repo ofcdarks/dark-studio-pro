@@ -856,6 +856,7 @@ export type Database = {
           updated_at: string
           use_platform_credits: boolean | null
           user_id: string
+          video_check_frequency: string | null
           youtube_api_key: string | null
           youtube_validated: boolean | null
         }
@@ -875,6 +876,7 @@ export type Database = {
           updated_at?: string
           use_platform_credits?: boolean | null
           user_id: string
+          video_check_frequency?: string | null
           youtube_api_key?: string | null
           youtube_validated?: boolean | null
         }
@@ -894,6 +896,7 @@ export type Database = {
           updated_at?: string
           use_platform_credits?: boolean | null
           user_id?: string
+          video_check_frequency?: string | null
           youtube_api_key?: string | null
           youtube_validated?: boolean | null
         }

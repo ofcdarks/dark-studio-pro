@@ -16,6 +16,8 @@ import {
   Folder,
   Bell,
   RefreshCw,
+  Clock,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -324,14 +326,14 @@ const MonitoredChannels = () => {
     }
   };
 
-  // Fetch user's YouTube API key
+  // Fetch user's API settings including check frequency
   const { data: apiSettings } = useQuery({
     queryKey: ["api-settings", user?.id],
     queryFn: async () => {
       if (!user) return null;
       const { data, error } = await supabase
         .from("user_api_settings")
-        .select("youtube_api_key, youtube_validated")
+        .select("youtube_api_key, youtube_validated, video_check_frequency")
         .eq("user_id", user.id)
         .maybeSingle();
       if (error) throw error;
@@ -340,7 +342,52 @@ const MonitoredChannels = () => {
     enabled: !!user,
   });
 
-  // Fetch channel videos using YouTube API
+  // Update check frequency mutation
+  const updateFrequencyMutation = useMutation({
+    mutationFn: async (frequency: string) => {
+      if (!user) throw new Error("User not authenticated");
+      
+      // Check if settings exist
+      const { data: existing } = await supabase
+        .from("user_api_settings")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("user_api_settings")
+          .update({ video_check_frequency: frequency })
+          .eq("user_id", user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("user_api_settings")
+          .insert({ user_id: user.id, video_check_frequency: frequency });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["api-settings"] });
+      toast({
+        title: "Frequência atualizada",
+        description: "A frequência de verificação foi alterada",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar a frequência",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const frequencyOptions = [
+    { value: "30", label: "A cada 30 minutos" },
+    { value: "60", label: "A cada 1 hora" },
+    { value: "360", label: "A cada 6 horas" },
+  ];
   const fetchChannelVideos = async (channelId: string, channelUrlToFetch: string) => {
     if (!apiSettings?.youtube_api_key) {
       toast({
@@ -445,15 +492,36 @@ const MonitoredChannels = () => {
                 Adicione canais do YouTube para monitorar novos vídeos.
               </p>
             </div>
-            <Button
-              onClick={() => checkNewVideosMutation.mutate()}
-              disabled={checkingVideos}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${checkingVideos ? "animate-spin" : ""}`} />
-              Verificar Novos Vídeos
-            </Button>
+            <div className="flex items-center gap-3">
+              {/* Frequency selector */}
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-muted-foreground" />
+                <Select
+                  value={apiSettings?.video_check_frequency || "60"}
+                  onValueChange={(value) => updateFrequencyMutation.mutate(value)}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Frequência" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {frequencyOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                onClick={() => checkNewVideosMutation.mutate()}
+                disabled={checkingVideos}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${checkingVideos ? "animate-spin" : ""}`} />
+                Verificar Agora
+              </Button>
+            </div>
           </div>
 
           {/* Two column layout */}
