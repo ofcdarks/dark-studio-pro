@@ -928,22 +928,44 @@ const ExploreNiche = () => {
                                     };
                                     
                                     const formulas = [
-                                      { label: "NOME + FEITO", color: "text-blue-400" },
-                                      { label: "NÚMERO + IMPACTO", color: "text-emerald-400" },
-                                      { label: "PERGUNTA + REVELAÇÃO", color: "text-amber-400" },
+                                      { 
+                                        parts: ["NOME", "FEITO"], 
+                                        colors: ["text-blue-400", "text-blue-300"],
+                                        bgColor: "bg-blue-500/10"
+                                      },
+                                      { 
+                                        parts: ["NÚMERO", "IMPACTO"], 
+                                        colors: ["text-emerald-400", "text-emerald-300"],
+                                        bgColor: "bg-emerald-500/10"
+                                      },
+                                      { 
+                                        parts: ["PERGUNTA", "REVELAÇÃO"], 
+                                        colors: ["text-amber-400", "text-amber-300"],
+                                        bgColor: "bg-amber-500/10"
+                                      },
                                     ];
+                                    
+                                    const formula = formulas[i % 3];
                                     
                                     return (
                                       <div key={i} className="bg-card/50 border border-border/50 rounded-xl overflow-hidden group hover:border-primary/30 transition-colors">
                                         {/* Formula badge */}
                                         <div className="flex items-center justify-between px-4 py-2 bg-secondary/30 border-b border-border/30">
-                                          <div className="flex items-center gap-2">
+                                          <div className="flex items-center gap-3">
                                             <span className="text-xs font-bold text-primary bg-primary/20 px-2 py-0.5 rounded">
                                               #{i + 1}
                                             </span>
-                                            <span className={`text-xs font-medium ${formulas[i % 3].color}`}>
-                                              {formulas[i % 3].label}
-                                            </span>
+                                            <div className={`flex items-center gap-1 ${formula.bgColor} px-3 py-1 rounded-full`}>
+                                              <span className={`text-xs font-black tracking-wider ${formula.colors[0]}`}>
+                                                {formula.parts[0]}
+                                              </span>
+                                              <span className="text-muted-foreground/50 text-xs font-light mx-0.5">|</span>
+                                              <span className="text-muted-foreground text-xs font-bold">+</span>
+                                              <span className="text-muted-foreground/50 text-xs font-light mx-0.5">|</span>
+                                              <span className={`text-xs font-black tracking-wider ${formula.colors[1]}`}>
+                                                {formula.parts[1]}
+                                              </span>
+                                            </div>
                                           </div>
                                           <button 
                                             onClick={(e) => {
