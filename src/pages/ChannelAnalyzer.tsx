@@ -22,7 +22,8 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  Clock
+  Clock,
+  Pencil
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,6 +90,8 @@ const ChannelAnalyzer = () => {
   const [savedAnalyses, setSavedAnalyses] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
 
   // Load saved analyses
   useEffect(() => {
@@ -141,6 +144,42 @@ const ChannelAnalyzer = () => {
     setAnalysisResult(analysis.analysis_result);
     setShowHistory(false);
     toast.success("Análise carregada!");
+  };
+
+  const handleStartEdit = (analysis: any) => {
+    setEditingId(analysis.id);
+    setEditName(analysis.name || '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditName("");
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    if (!editName.trim()) {
+      toast.error("Digite um nome para a análise");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('channel_analyses' as any)
+        .update({ name: editName.trim() })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setSavedAnalyses(prev => 
+        prev.map(a => a.id === id ? { ...a, name: editName.trim() } : a)
+      );
+      setEditingId(null);
+      setEditName("");
+      toast.success("Nome atualizado!");
+    } catch (error) {
+      console.error('Error updating name:', error);
+      toast.error('Erro ao atualizar nome');
+    }
   };
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -450,43 +489,87 @@ const ChannelAnalyzer = () => {
                           animate={{ opacity: 1, x: 0 }}
                           className="flex items-center justify-between p-4 rounded-xl bg-background/30 border border-border/50 hover:border-primary/30 transition-all group"
                         >
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">{analysis.name || 'Análise sem nome'}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                              <Clock className="w-3 h-3" />
-                              {new Date(analysis.created_at).toLocaleDateString('pt-BR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                              <span className="text-muted-foreground/50">•</span>
-                              <span>{analysis.channels?.length || 0} canais</span>
+                          <div className="flex-1 min-w-0">
+                            {editingId === analysis.id ? (
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  value={editName}
+                                  onChange={(e) => setEditName(e.target.value)}
+                                  placeholder="Nome da análise"
+                                  className="h-8 bg-background/50 border-primary/30"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveEdit(analysis.id);
+                                    if (e.key === 'Escape') handleCancelEdit();
+                                  }}
+                                />
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleSaveEdit(analysis.id)}
+                                  className="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={handleCancelEdit}
+                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <>
+                                <p className="font-medium text-foreground truncate">{analysis.name || 'Análise sem nome'}</p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                  <Clock className="w-3 h-3" />
+                                  {new Date(analysis.created_at).toLocaleDateString('pt-BR', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                  <span className="text-muted-foreground/50">•</span>
+                                  <span>{analysis.channels?.length || 0} canais</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          {editingId !== analysis.id && (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleStartEdit(analysis)}
+                                className="text-muted-foreground hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleLoadAnalysis(analysis)}
+                                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                              >
+                                Carregar
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleDeleteAnalysis(analysis.id)}
+                                disabled={deletingId === analysis.id}
+                                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              >
+                                {deletingId === analysis.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </Button>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => handleLoadAnalysis(analysis)}
-                              className="bg-primary text-primary-foreground hover:bg-primary/90"
-                            >
-                              Carregar
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => handleDeleteAnalysis(analysis.id)}
-                              disabled={deletingId === analysis.id}
-                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                            >
-                              {deletingId === analysis.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </div>
+                          )}
                         </motion.div>
                       ))}
                     </div>
