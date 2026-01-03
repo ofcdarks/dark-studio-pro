@@ -24,6 +24,7 @@ import {
   Info,
   CheckCircle2,
   AlertTriangle,
+  FileText,
   Lightbulb,
   Clock,
   Flame,
@@ -73,6 +74,7 @@ import {
 import { Link } from "react-router-dom";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import jsPDF from "jspdf";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -677,6 +679,251 @@ const Analytics = () => {
     });
   };
 
+  // Export Weekly PDF Report
+  const exportWeeklyPDF = () => {
+    if (!analyticsData) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    let yPos = 20;
+
+    const addText = (text: string, fontSize: number = 10, isBold: boolean = false, color: [number, number, number] = [50, 50, 50]) => {
+      doc.setFontSize(fontSize);
+      doc.setFont("helvetica", isBold ? "bold" : "normal");
+      doc.setTextColor(...color);
+      doc.text(text, margin, yPos);
+      yPos += fontSize / 2 + 3;
+    };
+
+    const addLine = () => {
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 5;
+    };
+
+    const checkNewPage = (neededSpace: number = 40) => {
+      if (yPos + neededSpace > doc.internal.pageSize.getHeight() - 20) {
+        doc.addPage();
+        yPos = 20;
+      }
+    };
+
+    // Header
+    doc.setFillColor(79, 70, 229); // Primary color
+    doc.rect(0, 0, pageWidth, 40, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("Relatório Semanal - YouTube Analytics", margin, 25);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`, margin, 35);
+    yPos = 55;
+
+    // Channel Info
+    addText(analyticsData.channel.name, 16, true, [30, 30, 30]);
+    addText(`Canal criado em: ${new Date(analyticsData.channel.publishedAt).toLocaleDateString("pt-BR")}`, 10, false, [100, 100, 100]);
+    yPos += 5;
+    addLine();
+    yPos += 5;
+
+    // Main Stats Section
+    addText("📊 MÉTRICAS DO CANAL", 14, true, [79, 70, 229]);
+    yPos += 3;
+
+    const statsData = [
+      ["Inscritos", formatNumber(analyticsData.statistics.subscribers)],
+      ["Views Totais", formatNumber(analyticsData.statistics.totalViews)],
+      ["Total de Vídeos", formatNumber(analyticsData.statistics.totalVideos)],
+      ["Engajamento Médio", `${analyticsData.recentMetrics.avgEngagementRate}%`],
+      ["Views Médias/Vídeo", formatNumber(analyticsData.recentMetrics.avgViewsPerVideo)],
+      ["Likes Médios/Vídeo", formatNumber(analyticsData.recentMetrics.avgLikesPerVideo)],
+    ];
+
+    statsData.forEach(([label, value], idx) => {
+      const xPos = idx % 2 === 0 ? margin : pageWidth / 2;
+      if (idx % 2 === 0 && idx > 0) yPos += 8;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text(label, xPos, yPos);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 30, 30);
+      doc.text(value, xPos, yPos + 6);
+    });
+    yPos += 20;
+    addLine();
+    yPos += 5;
+
+    // Monetization Section
+    checkNewPage();
+    addText("💰 ESTIMATIVA DE MONETIZAÇÃO", 14, true, [79, 70, 229]);
+    yPos += 3;
+
+    const monetData = [
+      ["RPM Estimado", `$${(analyticsData.monetization?.estimatedRPM || 2.5).toFixed(2)}`],
+      ["Faturamento Mensal Est.", `$${formatNumber(analyticsData.monetization?.estimatedMonthlyEarnings || 0)}`],
+      ["Faturamento Total Est.", `$${formatNumber(analyticsData.monetization?.estimatedTotalEarnings || 0)}`],
+    ];
+
+    monetData.forEach(([label, value]) => {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text(label, margin, yPos);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(34, 197, 94); // Green
+      doc.text(value, margin + 70, yPos);
+      yPos += 10;
+    });
+    yPos += 5;
+    addLine();
+    yPos += 5;
+
+    // Goals Section
+    checkNewPage();
+    addText("🎯 METAS DE CRESCIMENTO", 14, true, [79, 70, 229]);
+    yPos += 3;
+
+    if (channelGoals && channelGoals.length > 0) {
+      channelGoals.forEach((goal) => {
+        const progress = goal.target_value > goal.start_value 
+          ? Math.min(100, Math.round(((goal.current_value - goal.start_value) / (goal.target_value - goal.start_value)) * 100))
+          : goal.current_value >= goal.target_value ? 100 : 0;
+        
+        const label = goalTypeLabels[goal.goal_type]?.label || goal.goal_type;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(50, 50, 50);
+        doc.text(`${label}: ${formatNumber(goal.current_value)} / ${formatNumber(goal.target_value)} (${progress}%)`, margin, yPos);
+        
+        // Progress bar
+        doc.setFillColor(229, 231, 235);
+        doc.roundedRect(margin, yPos + 3, 100, 4, 1, 1, "F");
+        doc.setFillColor(progress >= 100 ? 34 : 79, progress >= 100 ? 197 : 70, progress >= 100 ? 94 : 229);
+        doc.roundedRect(margin, yPos + 3, Math.max(2, progress), 4, 1, 1, "F");
+        
+        yPos += 15;
+        checkNewPage(20);
+      });
+    } else {
+      addText("Nenhuma meta ativa definida", 10, false, [150, 150, 150]);
+    }
+    yPos += 5;
+    addLine();
+    yPos += 5;
+
+    // Completed Goals
+    if (completedGoals && completedGoals.length > 0) {
+      checkNewPage();
+      addText("🏆 METAS CONCLUÍDAS RECENTES", 14, true, [79, 70, 229]);
+      yPos += 3;
+
+      completedGoals.slice(0, 5).forEach((goal) => {
+        const label = goalTypeLabels[goal.goal_type]?.label || goal.goal_type;
+        const completedDate = goal.completed_at ? new Date(goal.completed_at).toLocaleDateString("pt-BR") : "";
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(34, 197, 94);
+        doc.text(`✓ ${label}: ${formatNumber(goal.target_value)} - Concluída em ${completedDate}`, margin, yPos);
+        yPos += 8;
+      });
+      yPos += 5;
+      addLine();
+      yPos += 5;
+    }
+
+    // Checklist Progress Section
+    checkNewPage();
+    addText("✅ PROGRESSO DO CHECKLIST DE OTIMIZAÇÃO", 14, true, [79, 70, 229]);
+    yPos += 3;
+
+    const totalChecklistItems = 17;
+    const completedItems = Object.values(checklistItems).filter(Boolean).length;
+    const checklistProgress = Math.round((completedItems / totalChecklistItems) * 100);
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(50, 50, 50);
+    doc.text(`${completedItems} de ${totalChecklistItems} tarefas concluídas (${checklistProgress}%)`, margin, yPos);
+    yPos += 5;
+
+    // Progress bar
+    doc.setFillColor(229, 231, 235);
+    doc.roundedRect(margin, yPos, 120, 6, 2, 2, "F");
+    doc.setFillColor(checklistProgress >= 100 ? 34 : 79, checklistProgress >= 100 ? 197 : 70, checklistProgress >= 100 ? 94 : 229);
+    doc.roundedRect(margin, yPos, Math.max(2, (checklistProgress / 100) * 120), 6, 2, 2, "F");
+    yPos += 15;
+
+    // Checklist categories
+    const categories = [
+      { name: "SEO & Descoberta", prefix: "seo_", total: 5 },
+      { name: "Engajamento", prefix: "eng_", total: 4 },
+      { name: "Conteúdo", prefix: "cnt_", total: 4 },
+      { name: "Crescimento", prefix: "grw_", total: 4 },
+    ];
+
+    categories.forEach((cat) => {
+      const catCompleted = Object.entries(checklistItems)
+        .filter(([key, val]) => key.startsWith(cat.prefix) && val)
+        .length;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text(`${cat.name}: ${catCompleted}/${cat.total}`, margin, yPos);
+      yPos += 6;
+    });
+    yPos += 5;
+    addLine();
+    yPos += 5;
+
+    // Top Videos Section
+    checkNewPage(60);
+    addText("🔥 TOP 5 VÍDEOS DO CANAL", 14, true, [79, 70, 229]);
+    yPos += 5;
+
+    analyticsData.topVideos?.slice(0, 5).forEach((video, idx) => {
+      checkNewPage(25);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(50, 50, 50);
+      const truncatedTitle = video.title.length > 50 ? video.title.substring(0, 50) + "..." : video.title;
+      doc.text(`${idx + 1}. ${truncatedTitle}`, margin, yPos);
+      yPos += 5;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Views: ${formatNumber(video.views)} | Likes: ${formatNumber(video.likes)} | Engajamento: ${video.engagementRate}`, margin + 5, yPos);
+      yPos += 10;
+    });
+
+    // Footer
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(150, 150, 150);
+      doc.text(
+        `Página ${i} de ${pageCount} | Relatório gerado automaticamente`,
+        pageWidth / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: "center" }
+      );
+    }
+
+    // Download
+    doc.save(`relatorio_semanal_${analyticsData.channel.name.replace(/[^a-z0-9]/gi, "_")}_${new Date().toISOString().split("T")[0]}.pdf`);
+
+    toast({
+      title: "Relatório gerado!",
+      description: "O PDF foi baixado com sucesso",
+    });
+  };
+
   type BadgeType = "good" | "warning" | "tip";
   
   const StatCard = ({
@@ -1012,7 +1259,16 @@ const Analytics = () => {
                       className="flex items-center gap-2"
                     >
                       <Download className="w-4 h-4" />
-                      Exportar
+                      CSV
+                    </Button>
+                    <Button
+                      onClick={exportWeeklyPDF}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Relatório PDF
                     </Button>
                   </div>
                 </div>
