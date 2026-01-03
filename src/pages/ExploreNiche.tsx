@@ -103,6 +103,21 @@ const ExploreNiche = () => {
   const [channelModel, setChannelModel] = usePersistedState("explore_channelModel", "gpt-4o");
   const [strategicPlan, setStrategicPlan] = usePersistedState<StrategicPlan | null>("explore_strategicPlan", null);
   const [loadingPlan, setLoadingPlan] = useState(false);
+  const [planProcessingStep, setPlanProcessingStep] = useState<string>("");
+
+  // Etapas de processamento para feedback visual
+  const planProcessingSteps = [
+    "Extraindo ID do canal...",
+    "Buscando dados do YouTube...",
+    "Analisando inscritos e vídeos...",
+    "Identificando nicho e subnicho...",
+    "Detectando padrões de sucesso...",
+    "Analisando pontos fortes e fracos...",
+    "Identificando oportunidades...",
+    "Gerando plano estratégico...",
+    "Criando recomendações...",
+    "Finalizando análise..."
+  ];
 
   const copyKeyword = (keyword: string) => {
     navigator.clipboard.writeText(keyword);
@@ -407,6 +422,15 @@ const ExploreNiche = () => {
     }
 
     setLoadingPlan(true);
+    setPlanProcessingStep(planProcessingSteps[0]);
+
+    // Simular progressão das etapas enquanto aguarda a resposta
+    let stepIndex = 0;
+    const stepInterval = setInterval(() => {
+      stepIndex = (stepIndex + 1) % planProcessingSteps.length;
+      setPlanProcessingStep(planProcessingSteps[stepIndex]);
+    }, 2500);
+
     try {
       // Usar a Edge Function analyze-channel que busca dados REAIS do YouTube
       const { data, error } = await supabase.functions.invoke('analyze-channel', {
@@ -416,6 +440,8 @@ const ExploreNiche = () => {
           model: channelModel
         }
       });
+
+      clearInterval(stepInterval);
 
       if (error) throw error;
 
@@ -428,6 +454,8 @@ const ExploreNiche = () => {
       if (!analysis) {
         throw new Error("Formato de resposta inválido");
       }
+
+      setPlanProcessingStep("Análise concluída!");
 
       setStrategicPlan({
         channelName: analysis.channelInfo?.name || "Canal Analisado",
@@ -456,6 +484,7 @@ const ExploreNiche = () => {
         toast.warning("Plano gerado sem dados reais. Configure sua YouTube API Key nas configurações para análises mais precisas.");
       }
     } catch (error: any) {
+      clearInterval(stepInterval);
       console.error('Error generating plan:', error);
       if (error.message?.includes('Créditos insuficientes')) {
         toast.error(error.message);
@@ -464,6 +493,7 @@ const ExploreNiche = () => {
       }
     } finally {
       setLoadingPlan(false);
+      setPlanProcessingStep("");
     }
   };
 
@@ -1111,7 +1141,31 @@ const ExploreNiche = () => {
               </div>
             </div>
 
-            {/* Strategic Plan Results */}
+            {/* Processing Feedback */}
+            {loadingPlan && planProcessingStep && (
+              <div className="mt-6 p-5 bg-gradient-to-r from-blue-500/10 to-primary/10 rounded-xl border border-blue-500/20 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+                    <div className="absolute inset-0 w-6 h-6 rounded-full bg-blue-500/20 animate-ping" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-blue-400">Analisando canal...</p>
+                    <p className="text-base text-foreground font-semibold">{planProcessingStep}</p>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CheckCircle className="w-3 h-3 text-success" />
+                    <span>Conectando à API do YouTube</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+                    <span>{planProcessingStep}</span>
+                  </div>
+                </div>
+              </div>
+            )}
             {strategicPlan && (
               <div className="mt-8 space-y-6">
                 <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
