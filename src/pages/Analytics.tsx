@@ -137,6 +137,12 @@ interface YouTubeAnalytics {
     publishedAt: string;
     engagementRate: string;
   }>;
+  currentMonth?: {
+    key: string;
+    videosCount: number;
+    views: number;
+    likes: number;
+  };
 }
 
 const formatNumber = (num: number): string => {
@@ -161,6 +167,7 @@ const Analytics = () => {
     goal_type: "subscribers",
     target_value: 10000,
     deadline: "",
+    period_type: "all_time" as "all_time" | "monthly",
   });
 
   // Fetch user's API settings
@@ -354,22 +361,43 @@ const Analytics = () => {
   const createGoal = async () => {
     if (!user || !channelUrl) return;
     
-    // Get current value based on goal type
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    
+    // Get current value based on goal type and period
     let startValue = 0;
     if (analyticsData) {
-      switch (newGoal.goal_type) {
-        case "subscribers":
-          startValue = analyticsData.statistics.subscribers;
-          break;
-        case "views":
-          startValue = analyticsData.statistics.totalViews;
-          break;
-        case "videos":
-          startValue = analyticsData.statistics.totalVideos;
-          break;
-        case "engagement":
-          startValue = Math.round(analyticsData.recentMetrics.avgEngagementRate * 100);
-          break;
+      if (newGoal.period_type === "monthly") {
+        // For monthly goals, use current month data
+        switch (newGoal.goal_type) {
+          case "videos":
+            startValue = analyticsData.currentMonth?.videosCount || 0;
+            break;
+          case "views":
+            startValue = analyticsData.currentMonth?.views || 0;
+            break;
+          case "likes":
+            startValue = analyticsData.currentMonth?.likes || 0;
+            break;
+          default:
+            startValue = 0;
+        }
+      } else {
+        // For all-time goals, use total data
+        switch (newGoal.goal_type) {
+          case "subscribers":
+            startValue = analyticsData.statistics.subscribers;
+            break;
+          case "views":
+            startValue = analyticsData.statistics.totalViews;
+            break;
+          case "videos":
+            startValue = analyticsData.statistics.totalVideos;
+            break;
+          case "engagement":
+            startValue = Math.round(analyticsData.recentMetrics.avgEngagementRate * 100);
+            break;
+        }
       }
     }
 
@@ -381,6 +409,8 @@ const Analytics = () => {
       start_value: startValue,
       current_value: startValue,
       deadline: newGoal.deadline || null,
+      period_type: newGoal.period_type,
+      period_key: newGoal.period_type === "monthly" ? currentMonthKey : null,
     });
 
     if (error) {
@@ -390,7 +420,7 @@ const Analytics = () => {
 
     toast({ title: "Meta criada!", description: "Sua meta foi adicionada com sucesso" });
     setIsGoalDialogOpen(false);
-    setNewGoal({ goal_type: "subscribers", target_value: 10000, deadline: "" });
+    setNewGoal({ goal_type: "subscribers", target_value: 10000, deadline: "", period_type: "all_time" });
     refetchGoals();
   };
 
@@ -404,19 +434,39 @@ const Analytics = () => {
 
     for (const goal of channelGoals) {
       let currentValue = 0;
-      switch (goal.goal_type) {
-        case "subscribers":
-          currentValue = analyticsData.statistics.subscribers;
-          break;
-        case "views":
-          currentValue = analyticsData.statistics.totalViews;
-          break;
-        case "videos":
-          currentValue = analyticsData.statistics.totalVideos;
-          break;
-        case "engagement":
-          currentValue = Math.round(analyticsData.recentMetrics.avgEngagementRate * 100);
-          break;
+      
+      // Check if it's a monthly goal
+      const isMonthlyGoal = goal.period_type === "monthly";
+      
+      if (isMonthlyGoal && analyticsData.currentMonth) {
+        // For monthly goals, use current month data
+        switch (goal.goal_type) {
+          case "videos":
+            currentValue = analyticsData.currentMonth.videosCount;
+            break;
+          case "views":
+            currentValue = analyticsData.currentMonth.views;
+            break;
+          case "likes":
+            currentValue = analyticsData.currentMonth.likes;
+            break;
+        }
+      } else {
+        // For all-time goals
+        switch (goal.goal_type) {
+          case "subscribers":
+            currentValue = analyticsData.statistics.subscribers;
+            break;
+          case "views":
+            currentValue = analyticsData.statistics.totalViews;
+            break;
+          case "videos":
+            currentValue = analyticsData.statistics.totalVideos;
+            break;
+          case "engagement":
+            currentValue = Math.round(analyticsData.recentMetrics.avgEngagementRate * 100);
+            break;
+        }
       }
 
       const wasNotCompleted = !goal.completed_at;
@@ -931,6 +981,21 @@ const Analytics = () => {
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
+                          <Label>Período</Label>
+                          <Select
+                            value={newGoal.period_type}
+                            onValueChange={(v: "all_time" | "monthly") => setNewGoal((prev) => ({ ...prev, period_type: v }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all_time">Total do Canal</SelectItem>
+                              <SelectItem value="monthly">Este Mês</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
                           <Label>Tipo de Meta</Label>
                           <Select
                             value={newGoal.goal_type}
@@ -940,10 +1005,19 @@ const Analytics = () => {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="subscribers">Inscritos</SelectItem>
-                              <SelectItem value="views">Views Totais</SelectItem>
-                              <SelectItem value="videos">Total de Vídeos</SelectItem>
-                              <SelectItem value="engagement">Engajamento (%)</SelectItem>
+                              {newGoal.period_type === "monthly" ? (
+                                <>
+                                  <SelectItem value="videos">Vídeos Postados</SelectItem>
+                                  <SelectItem value="views">Views do Mês</SelectItem>
+                                </>
+                              ) : (
+                                <>
+                                  <SelectItem value="subscribers">Inscritos</SelectItem>
+                                  <SelectItem value="views">Views Totais</SelectItem>
+                                  <SelectItem value="videos">Total de Vídeos</SelectItem>
+                                  <SelectItem value="engagement">Engajamento (%)</SelectItem>
+                                </>
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
@@ -953,8 +1027,13 @@ const Analytics = () => {
                             type="number"
                             value={newGoal.target_value}
                             onChange={(e) => setNewGoal((prev) => ({ ...prev, target_value: parseInt(e.target.value) || 0 }))}
-                            placeholder="Ex: 10000"
+                            placeholder={newGoal.period_type === "monthly" ? "Ex: 25" : "Ex: 10000"}
                           />
+                          {newGoal.period_type === "monthly" && analyticsData?.currentMonth && (
+                            <p className="text-xs text-muted-foreground">
+                              Este mês: {analyticsData.currentMonth.videosCount} vídeos, {formatNumber(analyticsData.currentMonth.views)} views
+                            </p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label>Prazo (opcional)</Label>
@@ -1005,12 +1084,22 @@ const Analytics = () => {
                                     <GoalIcon className="w-5 h-5 text-primary" />
                                   </div>
                                   <div>
-                                    <p className="font-medium text-foreground">
-                                      {goalTypeLabels[goal.goal_type]?.label || goal.goal_type}
-                                    </p>
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium text-foreground">
+                                        {goalTypeLabels[goal.goal_type]?.label || goal.goal_type}
+                                      </p>
+                                      {goal.period_type === "monthly" && (
+                                        <Badge variant="outline" className="text-[10px] py-0 px-1 bg-blue-500/10 text-blue-500 border-blue-500/30">
+                                          Mensal
+                                        </Badge>
+                                      )}
+                                    </div>
                                     <p className="text-xs text-muted-foreground">
                                       Meta: {formatNumber(goal.target_value)}
                                       {goal.goal_type === "engagement" ? "%" : ""}
+                                      {goal.period_type === "monthly" && goal.period_key && (
+                                        <span className="ml-1">({goal.period_key})</span>
+                                      )}
                                     </p>
                                   </div>
                                 </div>

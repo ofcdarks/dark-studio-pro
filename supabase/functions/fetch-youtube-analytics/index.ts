@@ -98,36 +98,51 @@ serve(async (req) => {
     // Get channel's uploads playlist
     const uploadsPlaylistId = `UU${channelId.substring(2)}`; // Convert channel ID to uploads playlist ID
 
-    // Fetch recent videos for engagement analysis
-    const playlistUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=50&key=${youtubeApiKey}`;
-    const playlistResponse = await fetch(playlistUrl);
-    const playlistData = await playlistResponse.json();
+    // Fetch ALL videos from the channel (paginated)
+    let allVideoIds: string[] = [];
+    let nextPageToken: string | undefined = undefined;
+    let pageCount = 0;
+    const maxPages = 10; // Up to 500 videos total
+
+    while (pageCount < maxPages) {
+      const paginatedUrl: string = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=50${nextPageToken ? `&pageToken=${nextPageToken}` : ''}&key=${youtubeApiKey}`;
+      const paginatedResponse: Response = await fetch(paginatedUrl);
+      const paginatedData: any = await paginatedResponse.json();
+
+      if (paginatedData.items && paginatedData.items.length > 0) {
+        const videoIds = paginatedData.items.map((item: any) => item.snippet.resourceId.videoId);
+        allVideoIds = [...allVideoIds, ...videoIds];
+      }
+
+      nextPageToken = paginatedData.nextPageToken;
+      pageCount++;
+      
+      if (!nextPageToken) break;
+    }
+
+    console.log(`Fetched ${allVideoIds.length} video IDs from channel`);
 
     let recentVideos: any[] = [];
     let totalViews = 0;
     let totalLikes = 0;
     let totalComments = 0;
     let videoStats: any[] = [];
+    let allVideoStats: any[] = [];
 
-    if (playlistData.items && playlistData.items.length > 0) {
-      const videoIds = playlistData.items
-        .map((item: any) => item.snippet.resourceId.videoId)
-        .join(",");
-
-      // Fetch video statistics
-      const videosStatsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet,contentDetails&id=${videoIds}&key=${youtubeApiKey}`;
+    // Process videos in batches of 50 (API limit)
+    const batchSize = 50;
+    for (let i = 0; i < allVideoIds.length; i += batchSize) {
+      const batchIds = allVideoIds.slice(i, i + batchSize).join(",");
+      
+      const videosStatsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet,contentDetails&id=${batchIds}&key=${youtubeApiKey}`;
       const videosStatsResponse = await fetch(videosStatsUrl);
       const videosStatsData = await videosStatsResponse.json();
 
       if (videosStatsData.items) {
-        videoStats = videosStatsData.items.map((video: any) => {
+        const batchStats = videosStatsData.items.map((video: any) => {
           const views = parseInt(video.statistics.viewCount || "0", 10);
           const likes = parseInt(video.statistics.likeCount || "0", 10);
           const comments = parseInt(video.statistics.commentCount || "0", 10);
-
-          totalViews += views;
-          totalLikes += likes;
-          totalComments += comments;
 
           return {
             videoId: video.id,
@@ -141,11 +156,33 @@ serve(async (req) => {
             engagementRate: views > 0 ? ((likes + comments) / views * 100).toFixed(2) : "0",
           };
         });
-
-        // Sort by views for top videos (descending)
-        recentVideos = [...videoStats].sort((a, b) => b.views - a.views);
+        allVideoStats = [...allVideoStats, ...batchStats];
       }
     }
+
+    // Calculate totals from first 50 videos (recent) for recent metrics
+    const recentVideoStats = allVideoStats.slice(0, 50);
+    recentVideoStats.forEach((video: any) => {
+      totalViews += video.views;
+      totalLikes += video.likes;
+      totalComments += video.comments;
+    });
+    videoStats = recentVideoStats;
+
+    // Sort ALL videos by views for top videos (descending) - this gets the true most viewed
+    recentVideos = [...allVideoStats].sort((a, b) => b.views - a.views);
+    
+    console.log(`Total videos analyzed: ${allVideoStats.length}`);
+    console.log(`Top 5 most viewed: ${recentVideos.slice(0, 5).map((v: any) => `${v.title} (${v.views})`).join(', ')}`);
+
+    // Get current month videos count
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const currentMonthVideos = allVideoStats.filter((video: any) => {
+      const publishedDate = new Date(video.publishedAt);
+      const videoMonthKey = `${publishedDate.getFullYear()}-${String(publishedDate.getMonth() + 1).padStart(2, "0")}`;
+      return videoMonthKey === currentMonthKey;
+    });
 
     // Calculate averages
     const videoCount = videoStats.length || 1;
@@ -166,9 +203,9 @@ serve(async (req) => {
     // Total earnings based on monthly estimate (NOT total lifetime views)
     const estimatedTotalEarnings = estimatedMonthlyEarnings;
 
-    // Group videos by month for trends
+    // Group ALL videos by month for trends
     const monthlyData: Record<string, { views: number; videos: number; likes: number }> = {};
-    videoStats.forEach((video) => {
+    allVideoStats.forEach((video: any) => {
       const date = new Date(video.publishedAt);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
       
@@ -230,7 +267,13 @@ serve(async (req) => {
       },
       topVideos: recentVideos.slice(0, 10),
       trendsData,
-      allVideos: videoStats,
+      allVideos: allVideoStats,
+      currentMonth: {
+        key: currentMonthKey,
+        videosCount: currentMonthVideos.length,
+        views: currentMonthVideos.reduce((sum: number, v: any) => sum + v.views, 0),
+        likes: currentMonthVideos.reduce((sum: number, v: any) => sum + v.likes, 0),
+      },
     };
 
     console.log("Analytics fetched successfully");

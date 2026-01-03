@@ -197,6 +197,8 @@ export type Database = {
           goal_type: string
           id: string
           is_active: boolean | null
+          period_key: string | null
+          period_type: string
           start_value: number | null
           target_value: number
           updated_at: string
@@ -211,6 +213,8 @@ export type Database = {
           goal_type: string
           id?: string
           is_active?: boolean | null
+          period_key?: string | null
+          period_type?: string
           start_value?: number | null
           target_value: number
           updated_at?: string
@@ -225,6 +229,8 @@ export type Database = {
           goal_type?: string
           id?: string
           is_active?: boolean | null
+          period_key?: string | null
+          period_type?: string
           start_value?: number | null
           target_value?: number
           updated_at?: string
