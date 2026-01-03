@@ -102,15 +102,48 @@ serve(async (req) => {
         try {
           // Extrair channel ID da URL se necessário
           let targetChannelId = channelId;
+          let targetHandle: string | null = null;
+          
           if (!targetChannelId && channelUrl) {
-            const match = channelUrl.match(/(?:channel\/|c\/|@)([^\/\?]+)/);
-            if (match) targetChannelId = match[1];
+            // Tentar extrair ID do canal do formato /channel/UCxxxxxx
+            const channelIdMatch = channelUrl.match(/\/channel\/([A-Za-z0-9_-]+)/);
+            if (channelIdMatch) {
+              targetChannelId = channelIdMatch[1];
+            } else {
+              // Tentar extrair handle do formato /@handle ou /c/nome
+              const handleMatch = channelUrl.match(/@([^\/\?]+)/);
+              if (handleMatch) {
+                targetHandle = handleMatch[1];
+              } else {
+                const cMatch = channelUrl.match(/\/c\/([^\/\?]+)/);
+                if (cMatch) {
+                  targetHandle = cMatch[1];
+                }
+              }
+            }
+          }
+
+          console.log(`[Analyze Channel] Extracted ID: ${targetChannelId}, Handle: ${targetHandle}`);
+
+          // Se temos um handle, precisamos buscar o channel ID primeiro
+          if (targetHandle && !targetChannelId) {
+            const searchResponse = await fetch(
+              `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(targetHandle)}&type=channel&maxResults=1&key=${apiSettings.youtube_api_key}`
+            );
+            
+            if (searchResponse.ok) {
+              const searchData = await searchResponse.json();
+              if (searchData.items && searchData.items.length > 0) {
+                targetChannelId = searchData.items[0].snippet.channelId;
+                console.log(`[Analyze Channel] Found channel ID from handle: ${targetChannelId}`);
+              }
+            }
           }
 
           if (targetChannelId) {
             // Buscar dados do canal
             const channelResponse = await fetch(
-              `https://www.googleapis.com/youtube/v3/channels?id=${targetChannelId}&part=snippet,statistics&key=${apiSettings.youtube_api_key}`
+              `https://www.googleapis.com/youtube/v3/channels?id=${targetChannelId}&part=snippet,statistics,brandingSettings,contentDetails&key=${apiSettings.youtube_api_key}`
             );
             
             if (channelResponse.ok) {
@@ -120,85 +153,144 @@ serve(async (req) => {
                 channelData = {
                   name: channel.snippet.title,
                   description: channel.snippet.description,
+                  customUrl: channel.snippet.customUrl,
+                  country: channel.snippet.country,
                   subscriberCount: parseInt(channel.statistics.subscriberCount || "0"),
                   videoCount: parseInt(channel.statistics.videoCount || "0"),
                   viewCount: parseInt(channel.statistics.viewCount || "0"),
-                  thumbnailUrl: channel.snippet.thumbnails?.high?.url
+                  thumbnailUrl: channel.snippet.thumbnails?.high?.url,
+                  keywords: channel.brandingSettings?.channel?.keywords,
+                  channelId: targetChannelId
                 };
+
+                // Buscar vídeos recentes do canal para análise mais profunda
+                const videosResponse = await fetch(
+                  `https://www.googleapis.com/youtube/v3/search?channelId=${targetChannelId}&part=snippet&type=video&order=date&maxResults=${maxVideos}&key=${apiSettings.youtube_api_key}`
+                );
+                
+                if (videosResponse.ok) {
+                  const videosData = await videosResponse.json();
+                  if (videosData.items && videosData.items.length > 0) {
+                    channelData.recentVideos = videosData.items.map((v: any) => ({
+                      title: v.snippet.title,
+                      description: v.snippet.description?.substring(0, 200),
+                      publishedAt: v.snippet.publishedAt
+                    }));
+                  }
+                }
+
+                console.log(`[Analyze Channel] Found channel: ${channelData.name} with ${channelData.subscriberCount} subs`);
               }
+            } else {
+              console.log(`[Analyze Channel] Channel API response not OK: ${channelResponse.status}`);
             }
           }
         } catch (err) {
           console.log("[Analyze Channel] YouTube API error:", err);
         }
+      } else {
+        console.log("[Analyze Channel] No YouTube API key configured for user");
       }
     }
 
-    // Construir prompt de análise
-    const analysisPrompt = `Analise este canal do YouTube e forneça insights estratégicos:
-
-CANAL: ${channelUrl || channelId}
-${channelData ? `
-DADOS DO CANAL:
+    // Construir prompt de análise com dados reais
+    let channelContext = "";
+    if (channelData) {
+      channelContext = `
+DADOS REAIS DO CANAL (API YouTube):
 - Nome: ${channelData.name}
 - Inscritos: ${channelData.subscriberCount?.toLocaleString()}
-- Vídeos: ${channelData.videoCount?.toLocaleString()}
-- Views totais: ${channelData.viewCount?.toLocaleString()}
-- Descrição: ${channelData.description?.substring(0, 300)}
-` : ""}
+- Total de Vídeos: ${channelData.videoCount?.toLocaleString()}
+- Views Totais: ${channelData.viewCount?.toLocaleString()}
+- País: ${channelData.country || "Não informado"}
+- Palavras-chave: ${channelData.keywords || "Não disponível"}
+- Descrição: ${channelData.description?.substring(0, 500) || "Sem descrição"}
 
-Analise e forneça:
+${channelData.recentVideos ? `
+ÚLTIMOS ${channelData.recentVideos.length} VÍDEOS:
+${channelData.recentVideos.map((v: any, i: number) => `${i + 1}. "${v.title}" (${v.publishedAt?.split('T')[0]})`).join('\n')}
+` : ""}`;
+    } else {
+      channelContext = `
+⚠️ ATENÇÃO: Não foi possível obter dados reais do canal.
+Motivo provável: Chave YouTube API não configurada ou URL inválida.
+A análise abaixo é baseada apenas na URL/nome fornecido.`;
+    }
 
-1. ANÁLISE GERAL:
-   - Qual o posicionamento do canal?
-   - Qual o nicho principal?
-   - Qual a proposta de valor?
+    const analysisPrompt = `Analise este canal do YouTube e forneça insights estratégicos DETALHADOS:
 
-2. ESTRATÉGIAS IDENTIFICADAS:
-   - Quais estratégias de conteúdo são usadas?
-   - Qual a frequência de postagem ideal para este nicho?
-   - Quais formatos funcionam melhor?
+CANAL: ${channelUrl || channelId}
+${channelContext}
 
-3. PADRÕES DE SUCESSO:
-   - Quais tipos de vídeos têm mais views?
-   - Quais títulos funcionam melhor?
-   - Quais thumbnails são mais efetivas?
+Forneça uma análise PROFUNDA e ACIONÁVEL:
 
-4. OPORTUNIDADES:
-   - Gaps de conteúdo identificados
+1. ANÁLISE DO CANAL:
+   - Nicho e subnicho exatos
+   - Proposta de valor
+   - Público-alvo provável
+   - Estilo de conteúdo
+
+2. PONTOS FORTES E FRACOS:
+   - O que o canal faz bem
+   - Onde pode melhorar
+   - Gaps identificados
+
+3. ESTRATÉGIAS DE SUCESSO:
+   - Padrões nos títulos que funcionam
+   - Frequência de postagem
+   - Formatos populares
+
+4. OPORTUNIDADES DE MERCADO:
    - Tendências não exploradas
-   - Potencial de crescimento
-
-5. RECOMENDAÇÕES:
-   - Estratégias para competir/colaborar
-   - Conteúdos a criar
+   - Conteúdos que faltam
    - Como se diferenciar
 
-Retorne em JSON:
+5. PLANO ESTRATÉGICO PARA COMPETIR:
+   - Posicionamento recomendado
+   - Ideias de conteúdo específicas
+   - Ações imediatas (Quick Wins)
+
+Retorne APENAS um JSON válido:
 {
   "channelInfo": {
-    "name": "nome do canal",
+    "name": "${channelData?.name || 'Nome estimado'}",
     "niche": "nicho principal",
-    "subniche": "subnicho",
-    "positioning": "descrição do posicionamento"
+    "subniche": "subnicho específico",
+    "positioning": "como o canal se posiciona",
+    "targetAudience": "público-alvo"
   },
   "metrics": {
-    "subscribers": número,
-    "videos": número,
-    "totalViews": número,
+    "subscribers": ${channelData?.subscriberCount || 0},
+    "videos": ${channelData?.videoCount || 0},
+    "totalViews": ${channelData?.viewCount || 0},
     "avgViewsPerVideo": número estimado,
-    "engagementRate": "alto/médio/baixo"
+    "postingFrequency": "frequência estimada (ex: 3x por semana)",
+    "engagementLevel": "alto/médio/baixo"
   },
-  "strategies": ["estratégia 1", "estratégia 2", "estratégia 3"],
+  "strengths": ["ponto forte 1", "ponto forte 2", "ponto forte 3"],
+  "weaknesses": ["fraqueza 1", "fraqueza 2", "fraqueza 3"],
   "successPatterns": {
-    "videoTypes": ["tipo 1", "tipo 2"],
-    "titlePatterns": ["padrão 1", "padrão 2"],
-    "thumbnailStyle": "descrição do estilo de thumbnail"
+    "titlePatterns": ["padrão de título 1", "padrão 2"],
+    "videoFormats": ["formato 1", "formato 2"],
+    "thumbnailStyle": "descrição do estilo"
   },
-  "opportunities": ["oportunidade 1", "oportunidade 2", "oportunidade 3"],
-  "recommendations": ["recomendação 1", "recomendação 2", "recomendação 3"],
-  "competitorScore": 85,
-  "growthPotential": "alto/médio/baixo"
+  "opportunities": [
+    {"type": "Gap de conteúdo", "description": "descrição", "priority": "Alta"},
+    {"type": "Tendência", "description": "descrição", "priority": "Média"}
+  ],
+  "strategicPlan": {
+    "positioning": "como se posicionar para competir",
+    "uniqueValue": "proposta de valor única recomendada",
+    "contentStrategy": "estratégia de conteúdo detalhada",
+    "contentIdeas": ["ideia específica 1", "ideia 2", "ideia 3", "ideia 4", "ideia 5"],
+    "differentials": ["diferencial 1", "diferencial 2", "diferencial 3"],
+    "recommendations": ["recomendação acionável 1", "recomendação 2", "recomendação 3"],
+    "postingSchedule": "ex: 3 vídeos por semana - Segunda, Quarta, Sexta",
+    "growthTimeline": "3 meses: X inscritos | 6 meses: Y inscritos | 12 meses: Z inscritos"
+  },
+  "quickWins": ["ação imediata 1", "ação 2", "ação 3"],
+  "summary": "Resumo executivo em 2-3 frases",
+  "dataSource": "${channelData ? 'API YouTube (dados reais)' : 'Análise baseada na URL (sem dados reais)'}"
 }`;
 
     // Chamar API de IA
