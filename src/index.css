@@ -34,6 +34,12 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
+    /* Semantic status colors (used by Tailwind tokens like bg-success) */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 98%;
+    --warning: 45 100% 60%;
+    --warning-foreground: 220 15% 4%;
+
     --border: 220 12% 15%;
     --input: 220 12% 12%;
     --ring: 38 92% 50%;
