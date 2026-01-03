@@ -112,23 +112,29 @@ const ExploreNiche = () => {
   };
 
   const getPotentialBadge = (potential: string) => {
-    if (potential === "Muito Alto" || potential === "Alto") {
-      return "bg-success/20 text-success border-success/30";
+    if (potential === "Muito Alto") {
+      return "bg-success text-success-foreground border-0";
+    }
+    if (potential === "Alto") {
+      return "bg-success/80 text-success-foreground border-0";
     }
     if (potential === "Médio") {
-      return "bg-primary/20 text-primary border-primary/30";
+      return "bg-primary text-primary-foreground border-0";
     }
-    return "bg-muted text-muted-foreground";
+    return "bg-muted text-muted-foreground border-0";
   };
 
   const getCompetitionBadge = (competition: string) => {
-    if (competition === "Muito Baixa" || competition === "Baixa") {
-      return "bg-success/20 text-success border-success/30";
+    if (competition === "Muito Baixa") {
+      return "bg-success text-success-foreground border-0";
+    }
+    if (competition === "Baixa") {
+      return "bg-success/80 text-success-foreground border-0";
     }
     if (competition === "Média") {
-      return "bg-primary/20 text-primary border-primary/30";
+      return "bg-primary text-primary-foreground border-0";
     }
-    return "bg-destructive/20 text-destructive border-destructive/30";
+    return "bg-destructive text-destructive-foreground border-0";
   };
 
   const handleFindSubniches = async () => {
@@ -480,7 +486,7 @@ const ExploreNiche = () => {
                     {loadingSubniches ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Buscando...
+                        Analisando com IA...
                       </>
                     ) : (
                       <>
@@ -491,6 +497,34 @@ const ExploreNiche = () => {
                   </Button>
                 </div>
               </div>
+              
+              {/* Loading Progress Indicator */}
+              {loadingSubniches && (
+                <div className="mt-6 p-4 bg-secondary/30 rounded-xl border border-border/30">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                    <span className="text-sm font-medium text-foreground">Processando análise...</span>
+                  </div>
+                  <div className="space-y-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-3 h-3 text-success" />
+                      <span>Analisando demanda de mercado</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-3 h-3 text-primary animate-spin" />
+                      <span>Avaliando concorrência e oportunidades</span>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-50">
+                      <Clock className="w-3 h-3" />
+                      <span>Gerando títulos virais e micro-nichos</span>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-50">
+                      <Globe className="w-3 h-3" />
+                      <span>Identificando países recomendados</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Subnicho Results */}
