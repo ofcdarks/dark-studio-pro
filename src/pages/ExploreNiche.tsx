@@ -743,9 +743,24 @@ const ExploreNiche = () => {
                                 </h5>
                                 <div className="space-y-2">
                                   {sub.exampleTitles.map((title, i) => (
-                                    <div key={i} className="flex items-start gap-2 text-sm bg-success/10 border border-success/20 rounded-lg px-3 py-2">
-                                      <span className="text-success font-bold flex-shrink-0">#{i + 1}</span>
-                                      <span className="text-foreground">{title}</span>
+                                    <div key={i} className="flex items-center justify-between gap-2 text-sm bg-success/10 border border-success/20 rounded-lg px-3 py-2 group">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-success font-bold flex-shrink-0">#{i + 1}</span>
+                                        <span className="text-foreground">{title}</span>
+                                      </div>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          copyKeyword(title);
+                                        }}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-success/20 rounded"
+                                      >
+                                        {copiedKeyword === title ? (
+                                          <Check className="w-4 h-4 text-success" />
+                                        ) : (
+                                          <Copy className="w-4 h-4 text-muted-foreground" />
+                                        )}
+                                      </button>
                                     </div>
                                   ))}
                                 </div>
