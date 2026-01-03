@@ -750,17 +750,17 @@ const Analytics = () => {
       doc.text(`${pageNum}/${totalPages}`, pageWidth - margin, pageHeight - 8, { align: "right" });
     };
 
-    const addSectionTitle = (icon: string, title: string) => {
+    const addSectionTitle = (title: string) => {
       checkNewPage(30);
       doc.setFillColor(...brandColors.cardBg);
       doc.roundedRect(margin, yPos - 5, pageWidth - margin * 2, 14, 2, 2, "F");
       doc.setFillColor(...brandColors.primary);
       doc.roundedRect(margin, yPos - 5, 4, 14, 1, 1, "F");
       
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...brandColors.primary);
-      doc.text(`${icon}  ${title}`, margin + 10, yPos + 4);
+      doc.text(title.toUpperCase(), margin + 10, yPos + 4);
       yPos += 18;
     };
 
@@ -815,7 +815,7 @@ const Analytics = () => {
     yPos += 45;
 
     // Main Metrics Grid
-    addSectionTitle("📊", "MÉTRICAS PRINCIPAIS");
+    addSectionTitle("METRICAS PRINCIPAIS");
     
     const metricsStartY = yPos;
     const cardWidth = (pageWidth - margin * 2 - 15) / 3;
@@ -833,7 +833,7 @@ const Analytics = () => {
     yPos += 45;
 
     // Monetization Section
-    addSectionTitle("💰", "ESTIMATIVAS DE MONETIZAÇÃO");
+    addSectionTitle("ESTIMATIVAS DE MONETIZACAO");
     
     const monetY = yPos;
     const monetWidth = (pageWidth - margin * 2 - 10) / 3;
@@ -874,7 +874,7 @@ const Analytics = () => {
     yPos = monetY + 50;
 
     // ========== GOALS SECTION ==========
-    addSectionTitle("🎯", "METAS DE CRESCIMENTO");
+    addSectionTitle("METAS DE CRESCIMENTO");
 
     if (channelGoals && channelGoals.length > 0) {
       channelGoals.forEach((goal) => {
@@ -927,7 +927,7 @@ const Analytics = () => {
     // Completed Goals
     if (completedGoals && completedGoals.length > 0) {
       yPos += 5;
-      addSectionTitle("🏆", "CONQUISTAS RECENTES");
+      addSectionTitle("CONQUISTAS RECENTES");
       
       completedGoals.slice(0, 3).forEach((goal) => {
         checkNewPage(15);
@@ -939,7 +939,7 @@ const Analytics = () => {
         
         doc.setFontSize(9);
         doc.setTextColor(...brandColors.success);
-        doc.text(`✓ ${label}: ${formatNumber(goal.target_value)} atingido em ${completedDate}`, margin + 8, yPos + 9);
+        doc.text(`[OK] ${label}: ${formatNumber(goal.target_value)} atingido em ${completedDate}`, margin + 8, yPos + 9);
         
         yPos += 18;
       });
@@ -947,7 +947,7 @@ const Analytics = () => {
 
     // ========== CHECKLIST SECTION ==========
     yPos += 5;
-    addSectionTitle("✅", "CHECKLIST DE OTIMIZAÇÃO");
+    addSectionTitle("CHECKLIST DE OTIMIZACAO");
 
     const totalChecklistItems = 17;
     const completedItems = Object.values(checklistItems).filter(Boolean).length;
@@ -960,7 +960,7 @@ const Analytics = () => {
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...brandColors.white);
-    doc.text(`${completedItems} de ${totalChecklistItems} tarefas concluídas`, margin + 10, yPos + 12);
+    doc.text(`${completedItems} de ${totalChecklistItems} tarefas concluidas`, margin + 10, yPos + 12);
     
     // Large progress bar
     doc.setFillColor(40, 40, 50);
@@ -979,10 +979,10 @@ const Analytics = () => {
 
     // Categories breakdown
     const categories = [
-      { name: "SEO & Descoberta", prefix: "seo_", total: 5, icon: "🔍" },
-      { name: "Engajamento", prefix: "eng_", total: 4, icon: "💬" },
-      { name: "Conteúdo", prefix: "cnt_", total: 4, icon: "🎬" },
-      { name: "Crescimento", prefix: "grw_", total: 4, icon: "📈" },
+      { name: "SEO", prefix: "seo_", total: 5 },
+      { name: "Engajamento", prefix: "eng_", total: 4 },
+      { name: "Conteudo", prefix: "cnt_", total: 4 },
+      { name: "Crescimento", prefix: "grw_", total: 4 },
     ];
 
     const catWidth = (pageWidth - margin * 2 - 15) / 4;
@@ -997,7 +997,7 @@ const Analytics = () => {
       
       doc.setFontSize(8);
       doc.setTextColor(...brandColors.muted);
-      doc.text(`${cat.icon} ${cat.name}`, catX + 5, yPos + 10);
+      doc.text(cat.name, catX + 5, yPos + 10);
       
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
@@ -1010,7 +1010,7 @@ const Analytics = () => {
 
     // ========== TOP VIDEOS ==========
     checkNewPage(80);
-    addSectionTitle("🔥", "TOP VÍDEOS DO CANAL");
+    addSectionTitle("TOP VIDEOS DO CANAL");
 
     analyticsData.topVideos?.slice(0, 5).forEach((video, idx) => {
       checkNewPage(25);
@@ -1045,7 +1045,7 @@ const Analytics = () => {
     // ========== INSIGHTS SECTION ==========
     checkNewPage(60);
     yPos += 5;
-    addSectionTitle("💡", "INSIGHTS E RECOMENDAÇÕES");
+    addSectionTitle("INSIGHTS E RECOMENDACOES");
 
     const insights: string[] = [];
     
