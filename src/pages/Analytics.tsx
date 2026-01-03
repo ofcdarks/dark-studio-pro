@@ -166,6 +166,7 @@ const Analytics = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyticsData, setAnalyticsData] = usePersistedState<YouTubeAnalytics | null>("analytics_data", null);
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
+  const [checklistItems, setChecklistItems] = usePersistedState<Record<string, boolean>>("analytics_checklist", {});
   const [newGoal, setNewGoal] = useState({
     goal_type: "subscribers",
     target_value: 10000,
@@ -1450,6 +1451,200 @@ const Analytics = () => {
                   </Card>
                 );
               })()}
+
+              {/* Optimization Checklist */}
+              <Card className="p-6 mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-primary" />
+                    Checklist de Otimização
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {Object.values(checklistItems).filter(Boolean).length} de {
+                        (() => {
+                          const categories = [
+                            { id: "seo", tasks: 5 },
+                            { id: "engagement", tasks: 4 },
+                            { id: "content", tasks: 4 },
+                            { id: "growth", tasks: 4 },
+                          ];
+                          return categories.reduce((sum, c) => sum + c.tasks, 0);
+                        })()
+                      } concluídas
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setChecklistItems({})}
+                      className="text-xs h-7"
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      Resetar
+                    </Button>
+                  </div>
+                </div>
+
+                <Tabs defaultValue="seo" className="w-full">
+                  <TabsList className="mb-4 flex-wrap h-auto gap-1">
+                    <TabsTrigger value="seo" className="text-xs">
+                      🔍 SEO & Descoberta
+                    </TabsTrigger>
+                    <TabsTrigger value="engagement" className="text-xs">
+                      💬 Engajamento
+                    </TabsTrigger>
+                    <TabsTrigger value="content" className="text-xs">
+                      🎬 Conteúdo
+                    </TabsTrigger>
+                    <TabsTrigger value="growth" className="text-xs">
+                      📈 Crescimento
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* SEO & Discovery */}
+                  <TabsContent value="seo" className="space-y-2">
+                    {[
+                      { id: "seo_1", label: "Usar palavras-chave no título", desc: "Inclua termos que seu público pesquisa" },
+                      { id: "seo_2", label: "Otimizar descrição dos vídeos", desc: "Primeiras 2 linhas são as mais importantes" },
+                      { id: "seo_3", label: "Adicionar tags relevantes", desc: "Use 5-10 tags específicas do seu nicho" },
+                      { id: "seo_4", label: "Criar thumbnails chamativas", desc: "Rostos, cores contrastantes, texto legível" },
+                      { id: "seo_5", label: "Usar hashtags estrategicamente", desc: "3-5 hashtags na descrição" },
+                    ].map((item) => (
+                      <label
+                        key={item.id}
+                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          checklistItems[item.id] 
+                            ? "bg-green-500/10 border-green-500/30" 
+                            : "bg-secondary/50 border-border hover:bg-secondary"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checklistItems[item.id] || false}
+                          onChange={(e) => setChecklistItems(prev => ({ ...prev, [item.id]: e.target.checked }))}
+                          className="mt-1 w-4 h-4 rounded border-border accent-green-500"
+                        />
+                        <div className="flex-1">
+                          <p className={`text-sm font-medium ${checklistItems[item.id] ? "text-green-500 line-through" : "text-foreground"}`}>
+                            {item.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{item.desc}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </TabsContent>
+
+                  {/* Engagement */}
+                  <TabsContent value="engagement" className="space-y-2">
+                    {[
+                      { id: "eng_1", label: "Pedir curtidas nos primeiros 30s", desc: "CTAs no início aumentam a taxa de like" },
+                      { id: "eng_2", label: "Fazer perguntas para gerar comentários", desc: "Perguntas abertas incentivam discussão" },
+                      { id: "eng_3", label: "Responder comentários frequentemente", desc: "Cria comunidade e aumenta engajamento" },
+                      { id: "eng_4", label: "Usar cards e telas finais", desc: "Promova outros vídeos e inscrição" },
+                    ].map((item) => (
+                      <label
+                        key={item.id}
+                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          checklistItems[item.id] 
+                            ? "bg-green-500/10 border-green-500/30" 
+                            : "bg-secondary/50 border-border hover:bg-secondary"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checklistItems[item.id] || false}
+                          onChange={(e) => setChecklistItems(prev => ({ ...prev, [item.id]: e.target.checked }))}
+                          className="mt-1 w-4 h-4 rounded border-border accent-green-500"
+                        />
+                        <div className="flex-1">
+                          <p className={`text-sm font-medium ${checklistItems[item.id] ? "text-green-500 line-through" : "text-foreground"}`}>
+                            {item.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{item.desc}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </TabsContent>
+
+                  {/* Content */}
+                  <TabsContent value="content" className="space-y-2">
+                    {[
+                      { id: "cnt_1", label: "Gancho forte nos primeiros 5s", desc: "Capte atenção imediatamente" },
+                      { id: "cnt_2", label: "Manter vídeos concisos", desc: "Elimine partes sem valor ao espectador" },
+                      { id: "cnt_3", label: "Criar séries de conteúdo", desc: "Vídeos em série aumentam tempo de sessão" },
+                      { id: "cnt_4", label: "Publicar Shorts regularmente", desc: "Shorts podem viralizar e trazer inscritos" },
+                    ].map((item) => (
+                      <label
+                        key={item.id}
+                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          checklistItems[item.id] 
+                            ? "bg-green-500/10 border-green-500/30" 
+                            : "bg-secondary/50 border-border hover:bg-secondary"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checklistItems[item.id] || false}
+                          onChange={(e) => setChecklistItems(prev => ({ ...prev, [item.id]: e.target.checked }))}
+                          className="mt-1 w-4 h-4 rounded border-border accent-green-500"
+                        />
+                        <div className="flex-1">
+                          <p className={`text-sm font-medium ${checklistItems[item.id] ? "text-green-500 line-through" : "text-foreground"}`}>
+                            {item.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{item.desc}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </TabsContent>
+
+                  {/* Growth */}
+                  <TabsContent value="growth" className="space-y-2">
+                    {[
+                      { id: "grw_1", label: "Publicar consistentemente", desc: "Defina um cronograma e siga-o" },
+                      { id: "grw_2", label: "Analisar Analytics semanalmente", desc: "Identifique o que funciona e replique" },
+                      { id: "grw_3", label: "Colaborar com outros criadores", desc: "Parcerias expõem a novas audiências" },
+                      { id: "grw_4", label: "Promover em outras redes sociais", desc: "Cross-posting aumenta alcance" },
+                    ].map((item) => (
+                      <label
+                        key={item.id}
+                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          checklistItems[item.id] 
+                            ? "bg-green-500/10 border-green-500/30" 
+                            : "bg-secondary/50 border-border hover:bg-secondary"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checklistItems[item.id] || false}
+                          onChange={(e) => setChecklistItems(prev => ({ ...prev, [item.id]: e.target.checked }))}
+                          className="mt-1 w-4 h-4 rounded border-border accent-green-500"
+                        />
+                        <div className="flex-1">
+                          <p className={`text-sm font-medium ${checklistItems[item.id] ? "text-green-500 line-through" : "text-foreground"}`}>
+                            {item.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{item.desc}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </TabsContent>
+                </Tabs>
+
+                {/* Progress bar */}
+                <div className="mt-4 pt-4 border-t border-border">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                    <span>Progresso geral</span>
+                    <span className="font-medium text-foreground">
+                      {Math.round((Object.values(checklistItems).filter(Boolean).length / 17) * 100)}%
+                    </span>
+                  </div>
+                  <Progress 
+                    value={(Object.values(checklistItems).filter(Boolean).length / 17) * 100} 
+                    className="h-2" 
+                  />
+                </div>
+              </Card>
 
               {/* Goals Section */}
               <Card className="p-6 mb-8">
