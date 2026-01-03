@@ -328,7 +328,17 @@ Retorne APENAS um JSON válido:
       "Título viral 5 com gancho de curiosidade"
     ],
     "thumbnailTips": ["dica específica 1", "dica 2", "dica 3"],
-    "audienceInsights": "Descrição do perfil da audiência e comportamentos"
+    "audienceInsights": "Descrição do perfil da audiência e comportamentos",
+    "strategicKeywords": [
+      "palavra-chave principal do nicho",
+      "termo de busca com alto volume",
+      "keyword long-tail específica",
+      "termo trending no nicho",
+      "palavra-chave de intenção comercial",
+      "termo para SEO de títulos",
+      "hashtag relevante",
+      "termo para descrição"
+    ]
   },
   "quickWins": ["ação imediata 1", "ação 2", "ação 3"],
   "summary": "Resumo executivo em 2-3 frases",
