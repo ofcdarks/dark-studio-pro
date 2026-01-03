@@ -75,6 +75,14 @@ const ViralAgents = () => {
   const [newAgentSubniche, setNewAgentSubniche] = useState("");
   const [creatingAgent, setCreatingAgent] = useState(false);
 
+  // Edit modals
+  const [showMemoryModal, setShowMemoryModal] = useState(false);
+  const [showInstructionsModal, setShowInstructionsModal] = useState(false);
+  const [editMemory, setEditMemory] = useState("");
+  const [editInstructions, setEditInstructions] = useState("");
+  const [savingMemory, setSavingMemory] = useState(false);
+  const [savingInstructions, setSavingInstructions] = useState(false);
+
   useEffect(() => {
     if (user?.id) {
       loadAgents();
@@ -184,6 +192,74 @@ const ViralAgents = () => {
       toast.error('Erro ao criar agente');
     } finally {
       setCreatingAgent(false);
+    }
+  };
+
+  const openMemoryModal = () => {
+    if (!selectedAgent) return;
+    const currentMemory = selectedAgent.formula_structure?.memory || "";
+    setEditMemory(currentMemory);
+    setShowMemoryModal(true);
+  };
+
+  const openInstructionsModal = () => {
+    if (!selectedAgent) return;
+    setEditInstructions(selectedAgent.formula || "");
+    setShowInstructionsModal(true);
+  };
+
+  const handleSaveMemory = async () => {
+    if (!selectedAgent) return;
+    
+    setSavingMemory(true);
+    try {
+      const updatedStructure = {
+        ...(selectedAgent.formula_structure || {}),
+        memory: editMemory.trim()
+      };
+
+      const { error } = await supabase
+        .from('script_agents')
+        .update({ formula_structure: updatedStructure })
+        .eq('id', selectedAgent.id);
+
+      if (error) throw error;
+
+      const updated = { ...selectedAgent, formula_structure: updatedStructure };
+      setAgents(prev => prev.map(a => a.id === selectedAgent.id ? updated : a));
+      setSelectedAgent(updated);
+      setShowMemoryModal(false);
+      toast.success("Memória atualizada!");
+    } catch (error) {
+      console.error('Error updating memory:', error);
+      toast.error('Erro ao atualizar memória');
+    } finally {
+      setSavingMemory(false);
+    }
+  };
+
+  const handleSaveInstructions = async () => {
+    if (!selectedAgent) return;
+    
+    setSavingInstructions(true);
+    try {
+      const { error } = await supabase
+        .from('script_agents')
+        .update({ formula: editInstructions.trim() || null })
+        .eq('id', selectedAgent.id);
+
+      if (error) throw error;
+
+      const updated = { ...selectedAgent, formula: editInstructions.trim() || null };
+      setAgents(prev => prev.map(a => a.id === selectedAgent.id ? updated : a));
+      setSelectedAgent(updated);
+      setShowInstructionsModal(false);
+      toast.success("Instruções atualizadas!");
+    } catch (error) {
+      console.error('Error updating instructions:', error);
+      toast.error('Erro ao atualizar instruções');
+    } finally {
+      setSavingInstructions(false);
     }
   };
 
@@ -359,20 +435,38 @@ const ViralAgents = () => {
                         <span className="text-primary font-medium">Memória</span>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <span>🔒 Apenas você</span>
-                          <Button variant="ghost" size="icon" className="w-6 h-6">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="w-6 h-6"
+                            onClick={openMemoryModal}
+                          >
                             <Pencil className="w-3 h-3" />
                           </Button>
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">Nenhuma memória definida</p>
-                      <p className="text-xs text-muted-foreground mt-2">Última atualização hoje</p>
+                      {selectedAgent.formula_structure?.memory ? (
+                        <p className="text-sm text-muted-foreground line-clamp-4">
+                          {selectedAgent.formula_structure.memory}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Nenhuma memória definida</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Última atualização {new Date(selectedAgent.updated_at).toLocaleDateString('pt-BR')}
+                      </p>
                     </Card>
 
                     {/* Instructions Card */}
                     <Card className="p-4 bg-card/50 backdrop-blur-xl border-border/50 rounded-xl">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-primary font-medium">Instruções</span>
-                        <Button variant="ghost" size="icon" className="w-6 h-6">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="w-6 h-6"
+                          onClick={openInstructionsModal}
+                        >
                           <Pencil className="w-3 h-3" />
                         </Button>
                       </div>
@@ -606,6 +700,104 @@ const ViralAgents = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Memory Edit Modal */}
+      <Dialog open={showMemoryModal} onOpenChange={setShowMemoryModal}>
+        <DialogContent className="bg-card border-primary/30 rounded-2xl max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="w-5 h-5 text-primary" />
+              Editar Memória do Agente
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">
+                Memória (informações que o agente deve lembrar permanentemente)
+              </label>
+              <Textarea
+                placeholder="Ex: O usuário prefere roteiros de 8-10 minutos. Sempre usar tom informal e bem-humorado. Evitar jargões técnicos..."
+                value={editMemory}
+                onChange={(e) => setEditMemory(e.target.value)}
+                className="bg-background/50 border-border/50 min-h-[200px]"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                A memória ajuda o agente a personalizar as respostas de acordo com suas preferências.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowMemoryModal(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSaveMemory}
+                disabled={savingMemory}
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {savingMemory ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 mr-2" />
+                )}
+                Salvar Memória
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Instructions Edit Modal */}
+      <Dialog open={showInstructionsModal} onOpenChange={setShowInstructionsModal}>
+        <DialogContent className="bg-card border-primary/30 rounded-2xl max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-primary" />
+              Editar Instruções do Agente
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">
+                Instruções (como o agente deve se comportar e gerar conteúdo)
+              </label>
+              <Textarea
+                placeholder="Ex: Você é um especialista em criar roteiros virais para YouTube. Use ganchos fortes no início. Estruture o roteiro com introdução, desenvolvimento e conclusão..."
+                value={editInstructions}
+                onChange={(e) => setEditInstructions(e.target.value)}
+                className="bg-background/50 border-border/50 min-h-[250px]"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                As instruções definem a personalidade, tom de voz e metodologia do agente.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowInstructionsModal(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSaveInstructions}
+                disabled={savingInstructions}
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {savingInstructions ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 mr-2" />
+                )}
+                Salvar Instruções
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
