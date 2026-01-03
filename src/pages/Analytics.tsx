@@ -21,7 +21,12 @@ import {
   AlertCircle,
   DollarSign,
   Download,
-  Info
+  Info,
+  CheckCircle2,
+  AlertTriangle,
+  Lightbulb,
+  Clock,
+  Flame
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -251,6 +256,8 @@ const Analytics = () => {
     });
   };
 
+  type BadgeType = "good" | "warning" | "tip";
+  
   const StatCard = ({
     icon: Icon,
     label,
@@ -258,6 +265,8 @@ const Analytics = () => {
     subvalue,
     color = "primary",
     tooltip,
+    badge,
+    badgeType = "tip",
   }: {
     icon: React.ElementType;
     label: string;
@@ -265,32 +274,51 @@ const Analytics = () => {
     subvalue?: string;
     color?: string;
     tooltip?: string;
-  }) => (
-    <Card className="p-5">
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`w-10 h-10 rounded-lg bg-${color}/10 flex items-center justify-center`}>
-          <Icon className={`w-5 h-5 text-${color}`} />
+    badge?: string;
+    badgeType?: BadgeType;
+  }) => {
+    const badgeConfig = {
+      good: { icon: CheckCircle2, color: "text-green-500", bg: "bg-green-500/10", border: "border-green-500/20" },
+      warning: { icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+      tip: { icon: Lightbulb, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+    };
+    const config = badgeConfig[badgeType];
+    const BadgeIcon = config.icon;
+
+    return (
+      <Card className="p-5 relative overflow-hidden">
+        <div className="flex items-center gap-3 mb-3">
+          <div className={`w-10 h-10 rounded-lg bg-${color}/10 flex items-center justify-center`}>
+            <Icon className={`w-5 h-5 text-${color}`} />
+          </div>
+          <span className="text-muted-foreground text-sm flex items-center gap-1">
+            {label}
+            {tooltip && (
+              <TooltipProvider>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs text-xs">{tooltip}</p>
+                  </TooltipContent>
+                </UITooltip>
+              </TooltipProvider>
+            )}
+          </span>
         </div>
-        <span className="text-muted-foreground text-sm flex items-center gap-1">
-          {label}
-          {tooltip && (
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <Info className="w-3 h-3 text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="max-w-xs text-xs">{tooltip}</p>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-          )}
-        </span>
-      </div>
-      <p className="text-3xl font-bold text-foreground">{value}</p>
-      {subvalue && <p className="text-sm text-muted-foreground mt-1">{subvalue}</p>}
-    </Card>
-  );
+        <p className="text-3xl font-bold text-foreground">{value}</p>
+        {subvalue && <p className="text-sm text-muted-foreground mt-1">{subvalue}</p>}
+        
+        {badge && (
+          <div className={`mt-3 flex items-center gap-2 p-2 rounded-lg ${config.bg} border ${config.border}`}>
+            <BadgeIcon className={`w-4 h-4 ${config.color} flex-shrink-0`} />
+            <span className="text-xs text-muted-foreground">{badge}</span>
+          </div>
+        )}
+      </Card>
+    );
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -439,22 +467,50 @@ const Analytics = () => {
                       ? "Oculto"
                       : formatNumber(analyticsData.statistics.subscribers)
                   }
+                  badge={
+                    analyticsData.statistics.subscribers >= 100000 
+                      ? "Excelente base! Continue engajando" 
+                      : analyticsData.statistics.subscribers >= 10000 
+                        ? "Bom crescimento! Foque em SEO" 
+                        : "Dica: Peça inscrições no início dos vídeos"
+                  }
+                  badgeType={analyticsData.statistics.subscribers >= 100000 ? "good" : analyticsData.statistics.subscribers >= 10000 ? "tip" : "warning"}
                 />
                 <StatCard
                   icon={Eye}
                   label="Views Totais"
                   value={formatNumber(analyticsData.statistics.totalViews)}
+                  badge={
+                    analyticsData.statistics.totalViews >= 10000000 
+                      ? "Canal com alto alcance!" 
+                      : "Dica: Otimize títulos e thumbnails"
+                  }
+                  badgeType={analyticsData.statistics.totalViews >= 10000000 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={Video}
                   label="Total de Vídeos"
                   value={formatNumber(analyticsData.statistics.totalVideos)}
+                  badge={
+                    analyticsData.statistics.totalVideos >= 100 
+                      ? "Boa consistência de uploads!" 
+                      : "Dica: Poste pelo menos 2x por semana"
+                  }
+                  badgeType={analyticsData.statistics.totalVideos >= 100 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={TrendingUp}
                   label="Engajamento Médio"
                   value={`${analyticsData.recentMetrics.avgEngagementRate}%`}
                   subvalue="Últimos 50 vídeos"
+                  badge={
+                    analyticsData.recentMetrics.avgEngagementRate >= 5 
+                      ? "Engajamento excelente!" 
+                      : analyticsData.recentMetrics.avgEngagementRate >= 2 
+                        ? "Bom! Incentive comentários" 
+                        : "Melhorar: CTAs e interação"
+                  }
+                  badgeType={analyticsData.recentMetrics.avgEngagementRate >= 5 ? "good" : analyticsData.recentMetrics.avgEngagementRate >= 2 ? "tip" : "warning"}
                 />
               </div>
 
@@ -466,6 +522,12 @@ const Analytics = () => {
                   value={`$${analyticsData.monetization?.estimatedRPM?.toFixed(2) || "2.50"}`}
                   subvalue="Por 1000 views"
                   tooltip="RPM médio estimado baseado em dados de mercado. Valores reais variam conforme nicho, região e tipo de conteúdo."
+                  badge={
+                    (analyticsData.monetization?.estimatedRPM || 2.5) >= 4 
+                      ? "RPM acima da média!" 
+                      : "Dica: Nichos de finanças e tech pagam mais"
+                  }
+                  badgeType={(analyticsData.monetization?.estimatedRPM || 2.5) >= 4 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={DollarSign}
@@ -473,6 +535,12 @@ const Analytics = () => {
                   value={`$${formatNumber(analyticsData.monetization?.estimatedTotalEarnings || 0)}`}
                   subvalue="Lifetime estimado"
                   tooltip="Estimativa baseada no total de views × RPM médio. Dados reais de monetização só estão disponíveis no YouTube Studio."
+                  badge={
+                    (analyticsData.monetization?.estimatedTotalEarnings || 0) >= 50000 
+                      ? "Receita sólida acumulada!" 
+                      : "Dica: Diversifique com produtos/afiliados"
+                  }
+                  badgeType={(analyticsData.monetization?.estimatedTotalEarnings || 0) >= 50000 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={DollarSign}
@@ -480,12 +548,23 @@ const Analytics = () => {
                   value={`$${formatNumber(analyticsData.monetization?.estimatedMonthlyEarnings || 0)}`}
                   subvalue={`Últimos ${analyticsData.recentMetrics.analyzedVideos} vídeos`}
                   tooltip="Estimativa baseada nos views dos últimos vídeos analisados."
+                  badge="Aumente views = mais receita"
+                  badgeType="tip"
                 />
                 <StatCard
                   icon={BarChart3}
                   label="Views Recentes"
                   value={formatNumber(analyticsData.recentMetrics.totalViewsRecent)}
                   subvalue={`${analyticsData.recentMetrics.analyzedVideos} vídeos`}
+                  badge={
+                    analyticsData.recentMetrics.avgViewsPerVideo >= analyticsData.statistics.totalViews / analyticsData.statistics.totalVideos 
+                      ? "Performance acima da média!" 
+                      : "Dica: Analise títulos dos top vídeos"
+                  }
+                  badgeType={
+                    analyticsData.recentMetrics.avgViewsPerVideo >= analyticsData.statistics.totalViews / analyticsData.statistics.totalVideos 
+                      ? "good" : "warning"
+                  }
                 />
               </div>
 
@@ -496,24 +575,52 @@ const Analytics = () => {
                   label="Média de Views"
                   value={formatNumber(analyticsData.recentMetrics.avgViewsPerVideo)}
                   subvalue="Por vídeo"
+                  badge={
+                    analyticsData.recentMetrics.avgViewsPerVideo >= 50000 
+                      ? "Excelente alcance!" 
+                      : analyticsData.recentMetrics.avgViewsPerVideo >= 10000 
+                        ? "Bom! Foque em retenção" 
+                        : "Dica: Melhore CTR com thumbs"
+                  }
+                  badgeType={analyticsData.recentMetrics.avgViewsPerVideo >= 50000 ? "good" : analyticsData.recentMetrics.avgViewsPerVideo >= 10000 ? "tip" : "warning"}
                 />
                 <StatCard
                   icon={ThumbsUp}
                   label="Média de Likes"
                   value={formatNumber(analyticsData.recentMetrics.avgLikesPerVideo)}
                   subvalue="Por vídeo"
+                  badge={
+                    (analyticsData.recentMetrics.avgLikesPerVideo / analyticsData.recentMetrics.avgViewsPerVideo * 100) >= 4 
+                      ? "Ótima taxa de likes!" 
+                      : "Dica: Peça likes no meio do vídeo"
+                  }
+                  badgeType={(analyticsData.recentMetrics.avgLikesPerVideo / analyticsData.recentMetrics.avgViewsPerVideo * 100) >= 4 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={MessageSquare}
                   label="Média de Comentários"
                   value={formatNumber(analyticsData.recentMetrics.avgCommentsPerVideo)}
                   subvalue="Por vídeo"
+                  badge={
+                    analyticsData.recentMetrics.avgCommentsPerVideo >= 100 
+                      ? "Comunidade engajada!" 
+                      : "Dica: Faça perguntas nos vídeos"
+                  }
+                  badgeType={analyticsData.recentMetrics.avgCommentsPerVideo >= 100 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={TrendingUp}
                   label="Taxa de Engajamento"
                   value={`${analyticsData.recentMetrics.avgEngagementRate}%`}
                   subvalue="(Likes + Comments) / Views"
+                  badge={
+                    analyticsData.recentMetrics.avgEngagementRate >= 6 
+                      ? "Top 10% em engajamento!" 
+                      : analyticsData.recentMetrics.avgEngagementRate >= 3 
+                        ? "Acima da média do YouTube" 
+                        : "Melhore CTAs e storytelling"
+                  }
+                  badgeType={analyticsData.recentMetrics.avgEngagementRate >= 6 ? "good" : analyticsData.recentMetrics.avgEngagementRate >= 3 ? "tip" : "warning"}
                 />
               </div>
 
@@ -609,58 +716,119 @@ const Analytics = () => {
                 </Card>
               </div>
 
-              {/* Top Videos */}
-              <Card className="p-6">
-                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Play className="w-5 h-5 text-primary" />
-                  Top 10 Vídeos (Mais Visualizados)
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {analyticsData.topVideos.slice(0, 10).map((video, index) => (
-                    <div
-                      key={video.videoId}
-                      className="flex gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
-                    >
-                      <div className="relative flex-shrink-0">
-                        <span className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
-                          {index + 1}
-                        </span>
-                        {video.thumbnail && (
-                          <img
-                            src={video.thumbnail}
-                            alt={video.title}
-                            className="w-24 h-14 object-cover rounded"
-                          />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <a
-                          href={`https://www.youtube.com/watch?v=${video.videoId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-foreground hover:text-primary line-clamp-2"
+              {/* Top Videos - Split into Most Viewed and Most Recent */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Most Viewed */}
+                <Card className="p-6">
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Flame className="w-5 h-5 text-orange-500" />
+                    Top 5 Mais Vistos
+                  </h3>
+                  <div className="space-y-3">
+                    {analyticsData.topVideos
+                      .sort((a, b) => b.views - a.views)
+                      .slice(0, 5)
+                      .map((video, index) => (
+                        <div
+                          key={video.videoId}
+                          className="flex gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
                         >
-                          {video.title}
-                        </a>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Eye className="w-3 h-3" />
-                            {formatNumber(video.views)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <ThumbsUp className="w-3 h-3" />
-                            {formatNumber(video.likes)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3" />
-                            {video.engagementRate}%
-                          </span>
+                          <div className="relative flex-shrink-0">
+                            <span className={`absolute -top-2 -left-2 w-6 h-6 rounded-full ${index === 0 ? 'bg-amber-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-700' : 'bg-primary'} text-primary-foreground text-xs font-bold flex items-center justify-center`}>
+                              {index + 1}
+                            </span>
+                            {video.thumbnail && (
+                              <img
+                                src={video.thumbnail}
+                                alt={video.title}
+                                className="w-24 h-14 object-cover rounded"
+                              />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <a
+                              href={`https://www.youtube.com/watch?v=${video.videoId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm font-medium text-foreground hover:text-primary line-clamp-2"
+                            >
+                              {video.title}
+                            </a>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Eye className="w-3 h-3" />
+                                {formatNumber(video.views)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <ThumbsUp className="w-3 h-3" />
+                                {formatNumber(video.likes)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3" />
+                                {video.engagementRate}%
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
+                      ))}
+                  </div>
+                </Card>
+
+                {/* Most Recent */}
+                <Card className="p-6">
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-blue-500" />
+                    5 Vídeos Mais Recentes
+                  </h3>
+                  <div className="space-y-3">
+                    {[...analyticsData.topVideos]
+                      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+                      .slice(0, 5)
+                      .map((video, index) => (
+                        <div
+                          key={video.videoId}
+                          className="flex gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                        >
+                          <div className="relative flex-shrink-0">
+                            <span className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">
+                              {index + 1}
+                            </span>
+                            {video.thumbnail && (
+                              <img
+                                src={video.thumbnail}
+                                alt={video.title}
+                                className="w-24 h-14 object-cover rounded"
+                              />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <a
+                              href={`https://www.youtube.com/watch?v=${video.videoId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm font-medium text-foreground hover:text-primary line-clamp-2"
+                            >
+                              {video.title}
+                            </a>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Eye className="w-3 h-3" />
+                                {formatNumber(video.views)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <ThumbsUp className="w-3 h-3" />
+                                {formatNumber(video.likes)}
+                              </span>
+                              <span className="text-blue-400">
+                                {new Date(video.publishedAt).toLocaleDateString("pt-BR")}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </Card>
+              </div>
             </>
           ) : (
             <Card className="p-12 text-center">
