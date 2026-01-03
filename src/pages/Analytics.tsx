@@ -896,7 +896,7 @@ const Analytics = () => {
                     />
                   )}
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <h2 className="text-2xl font-bold text-foreground">
                         {analyticsData.channel.name}
                       </h2>
@@ -908,6 +908,59 @@ const Analytics = () => {
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
+                      {/* Monetization Status Badge */}
+                      {(() => {
+                        const subs = analyticsData.statistics.subscribers;
+                        const totalVideos = analyticsData.statistics.totalVideos;
+                        // YouTube Partner Program: 1000 subs + 4000 watch hours (we estimate based on views)
+                        // Estimate: avg view = 4 min watch = 0.067 hours. 4000h = ~60k views minimum
+                        const estimatedWatchHours = Math.round((analyticsData.statistics.totalViews * 4) / 60);
+                        const subsOk = subs >= 1000;
+                        const hoursOk = estimatedWatchHours >= 4000;
+                        const isMonetized = subsOk && hoursOk;
+
+                        if (isMonetized) {
+                          return (
+                            <Badge className="bg-green-500/20 text-green-500 border-green-500/30 flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              Monetizado
+                            </Badge>
+                          );
+                        }
+
+                        const missing: string[] = [];
+                        if (!subsOk) missing.push(`${formatNumber(1000 - subs)} inscritos`);
+                        if (!hoursOk) missing.push(`~${formatNumber(4000 - estimatedWatchHours)}h de exibição`);
+
+                        return (
+                          <TooltipProvider>
+                            <UITooltip>
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 flex items-center gap-1 cursor-help">
+                                  <AlertCircle className="w-3 h-3" />
+                                  Não Monetizado
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="max-w-xs">
+                                <p className="font-medium mb-1">Falta para monetizar:</p>
+                                <ul className="text-xs space-y-1">
+                                  {!subsOk && (
+                                    <li className="flex items-center gap-1">
+                                      <Users className="w-3 h-3" /> {formatNumber(1000 - subs)} inscritos (atual: {formatNumber(subs)}/1.000)
+                                    </li>
+                                  )}
+                                  {!hoursOk && (
+                                    <li className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3" /> ~{formatNumber(4000 - estimatedWatchHours)}h de exibição (estimado: {formatNumber(estimatedWatchHours)}/4.000h)
+                                    </li>
+                                  )}
+                                </ul>
+                                <p className="text-[10px] text-muted-foreground mt-2">*Horas estimadas com base em views × 4min média</p>
+                              </TooltipContent>
+                            </UITooltip>
+                          </TooltipProvider>
+                        );
+                      })()}
                     </div>
                     {analyticsData.channel.customUrl && (
                       <p className="text-muted-foreground text-sm mb-2">
