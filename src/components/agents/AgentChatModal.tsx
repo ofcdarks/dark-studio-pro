@@ -552,12 +552,12 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
 
   // Loading modal steps for script generation
   const loadingSteps = [
-    { text: "Analisando título e nicho...", icon: "🎯" },
-    { text: "Aplicando fórmula viral...", icon: "🧬" },
-    { text: "Ativando gatilhos mentais...", icon: "🧠" },
-    { text: "Gerando roteiro 10/10...", icon: "✨" },
-    { text: "Otimizando para retenção...", icon: "📈" },
-    { text: "Finalizando roteiro viral...", icon: "🚀" },
+    "Analisando título e nicho",
+    "Aplicando fórmula viral",
+    "Ativando gatilhos mentais",
+    "Gerando roteiro 10/10",
+    "Otimizando para retenção",
+    "Finalizando roteiro viral",
   ];
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -595,60 +595,47 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
     <>
       {/* Loading Modal durante geração */}
       <Dialog open={isGeneratingScript} onOpenChange={() => {}}>
-        <DialogContent className="bg-card border-primary/50 rounded-2xl max-w-md text-center p-8" onPointerDownOutside={(e) => e.preventDefault()}>
+        <DialogContent className="bg-card border-primary/50 rounded-2xl max-w-sm text-center p-8" onPointerDownOutside={(e) => e.preventDefault()}>
           <div className="flex flex-col items-center gap-6">
             {/* Animated Icon */}
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-amber-500/20 flex items-center justify-center border border-primary/30 animate-pulse">
-                <Rocket className="w-12 h-12 text-primary animate-bounce" />
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-amber-500/10 flex items-center justify-center border border-primary/30">
+                <Rocket className="w-10 h-10 text-primary animate-pulse" />
               </div>
-              <div className="absolute -inset-2 rounded-full border-2 border-primary/30 animate-ping opacity-30" />
+              <div className="absolute -inset-1 rounded-full border border-primary/20 animate-ping opacity-40" />
             </div>
 
             {/* Title */}
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-foreground">
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold text-foreground">
                 Gerando Roteiro Viral
               </h3>
-              <p className="text-muted-foreground text-sm">
-                Aguarde enquanto a IA cria seu roteiro perfeito
+              <p className="text-sm text-muted-foreground">
+                {loadingSteps[currentStep]}...
               </p>
-            </div>
-
-            {/* Current Step */}
-            <div className="flex items-center gap-3 bg-background/50 rounded-xl px-4 py-3 border border-border/50 w-full">
-              <span className="text-2xl">{loadingSteps[currentStep]?.icon}</span>
-              <span className="text-foreground font-medium text-sm">
-                {loadingSteps[currentStep]?.text}
-              </span>
             </div>
 
             {/* Progress Bar */}
             <div className="w-full space-y-2">
-              <Progress value={progress} className="h-2" />
+              <Progress value={progress} className="h-1.5" />
               <p className="text-xs text-muted-foreground">
-                {Math.round(progress)}% concluído
+                {Math.round(progress)}%
               </p>
             </div>
 
             {/* Steps indicator */}
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               {loadingSteps.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
                     idx <= currentStep 
                       ? "bg-primary" 
-                      : "bg-muted-foreground/30"
+                      : "bg-muted-foreground/20"
                   }`}
                 />
               ))}
             </div>
-
-            {/* Tip */}
-            <p className="text-xs text-muted-foreground italic">
-              💡 Dica: Roteiros com gatilhos mentais têm 3x mais retenção
-            </p>
           </div>
         </DialogContent>
       </Dialog>
