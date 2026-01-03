@@ -744,6 +744,54 @@ export type Database = {
           },
         ]
       }
+      saved_analytics_channels: {
+        Row: {
+          cached_data: Json | null
+          channel_id: string
+          channel_name: string
+          channel_thumbnail: string | null
+          channel_url: string
+          created_at: string
+          id: string
+          last_fetched_at: string | null
+          subscribers: number | null
+          total_videos: number | null
+          total_views: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cached_data?: Json | null
+          channel_id: string
+          channel_name: string
+          channel_thumbnail?: string | null
+          channel_url: string
+          created_at?: string
+          id?: string
+          last_fetched_at?: string | null
+          subscribers?: number | null
+          total_videos?: number | null
+          total_views?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cached_data?: Json | null
+          channel_id?: string
+          channel_name?: string
+          channel_thumbnail?: string | null
+          channel_url?: string
+          created_at?: string
+          id?: string
+          last_fetched_at?: string | null
+          subscribers?: number | null
+          total_videos?: number | null
+          total_views?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       saved_prompts: {
         Row: {
           created_at: string | null
