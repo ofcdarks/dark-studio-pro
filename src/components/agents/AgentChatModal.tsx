@@ -2,12 +2,13 @@ import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy } from "lucide-react";
+import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pencil, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -370,10 +371,52 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
     }
   };
 
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editedContent, setEditedContent] = useState("");
+
   const copyToClipboard = (content: string) => {
-    const cleanContent = content.replace(/^🎙️ \*\*ROTEIRO DE NARRAÇÃO:.*?\n.*?\n\n/, '');
+    const cleanContent = content.replace(/^🎙️ \*\*ROTEIRO DE NARRAÇÃO:.*?---\n\n/s, '');
     navigator.clipboard.writeText(cleanContent);
     toast.success("Roteiro copiado!");
+  };
+
+  const startEditing = (messageId: string, content: string) => {
+    // Extract only the script content (after the stats section)
+    const cleanContent = content.replace(/^🎙️ \*\*ROTEIRO DE NARRAÇÃO:.*?---\n\n/s, '');
+    setEditingMessageId(messageId);
+    setEditedContent(cleanContent);
+  };
+
+  const saveEdit = (messageId: string) => {
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        // Recalculate stats for edited content
+        const wordCount = editedContent.split(/\s+/).filter(w => w.length > 0).length;
+        const actualMinutes = Math.round((wordCount / 150) * 10) / 10;
+        const actualSeconds = Math.round((wordCount / 150) * 60);
+        const formattedTime = actualMinutes >= 1 
+          ? `${Math.floor(actualMinutes)}:${String(Math.round((actualMinutes % 1) * 60)).padStart(2, '0')} min`
+          : `${actualSeconds} seg`;
+        
+        // Extract original title from content
+        const titleMatch = msg.content.match(/🎙️ \*\*ROTEIRO DE NARRAÇÃO: (.*?)\*\*/);
+        const title = titleMatch ? titleMatch[1] : "Roteiro";
+        
+        return {
+          ...msg,
+          content: `🎙️ **ROTEIRO DE NARRAÇÃO: ${title}**\n\n📊 **Estatísticas (atualizado):**\n• Palavras: ${wordCount.toLocaleString()}\n• Tempo estimado: ${formattedTime}\n\n---\n\n${editedContent}`
+        };
+      }
+      return msg;
+    }));
+    setEditingMessageId(null);
+    setEditedContent("");
+    toast.success("Roteiro atualizado!");
+  };
+
+  const cancelEdit = () => {
+    setEditingMessageId(null);
+    setEditedContent("");
   };
 
   return (
@@ -449,25 +492,73 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
                     message.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : "bg-background/50 border border-border/50 text-foreground"
-                  }`}
+                  } ${message.isScript ? 'max-w-[95%]' : ''}`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-[10px] opacity-60">
-                      {message.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                    {message.isScript && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(message.content)}
-                        className="h-6 px-2 text-xs"
-                      >
-                        <Copy className="w-3 h-3 mr-1" />
-                        Copiar
-                      </Button>
-                    )}
-                  </div>
+                  {editingMessageId === message.id ? (
+                    <div className="space-y-3">
+                      <Textarea
+                        value={editedContent}
+                        onChange={(e) => setEditedContent(e.target.value)}
+                        className="min-h-[300px] text-sm bg-background/80 border-primary/30 resize-y"
+                        placeholder="Edite o roteiro..."
+                      />
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-muted-foreground">
+                          {editedContent.split(/\s+/).filter(w => w.length > 0).length} palavras
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={cancelEdit}
+                            className="h-7 px-2 text-xs"
+                          >
+                            <X className="w-3 h-3 mr-1" />
+                            Cancelar
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => saveEdit(message.id)}
+                            className="h-7 px-3 text-xs bg-primary text-primary-foreground"
+                          >
+                            <Check className="w-3 h-3 mr-1" />
+                            Salvar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
+                        <p className="text-[10px] opacity-60">
+                          {message.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        {message.isScript && (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => startEditing(message.id, message.content)}
+                              className="h-6 px-2 text-xs"
+                            >
+                              <Pencil className="w-3 h-3 mr-1" />
+                              Editar
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(message.content)}
+                              className="h-6 px-2 text-xs"
+                            >
+                              <Copy className="w-3 h-3 mr-1" />
+                              Copiar
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
