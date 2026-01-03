@@ -26,8 +26,13 @@ import {
   AlertTriangle,
   Lightbulb,
   Clock,
-  Flame
+  Flame,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  TrendingDown
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -624,6 +629,132 @@ const Analytics = () => {
                 />
               </div>
 
+              {/* Growth Analysis Section */}
+              {analyticsData.trendsData.length >= 2 && (() => {
+                const sortedTrends = [...analyticsData.trendsData].sort((a, b) => b.month.localeCompare(a.month));
+                const currentMonth = sortedTrends[0];
+                const previousMonth = sortedTrends[1];
+                
+                const calcGrowth = (current: number, previous: number) => {
+                  if (previous === 0) return current > 0 ? 100 : 0;
+                  return ((current - previous) / previous * 100);
+                };
+                
+                const viewsGrowth = calcGrowth(currentMonth.views, previousMonth.views);
+                const videosGrowth = calcGrowth(currentMonth.videos, previousMonth.videos);
+                const likesGrowth = calcGrowth(currentMonth.likes, previousMonth.likes);
+                const avgViewsGrowth = calcGrowth(currentMonth.avgViews, previousMonth.avgViews);
+                
+                const GrowthIndicator = ({ value, label, current, previous }: { value: number; label: string; current: number; previous: number }) => {
+                  const isPositive = value > 0;
+                  const isNeutral = value === 0;
+                  
+                  return (
+                    <div className="flex flex-col p-4 rounded-lg bg-secondary/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-muted-foreground">{label}</span>
+                        <div className={`flex items-center gap-1 ${isPositive ? 'text-green-500' : isNeutral ? 'text-muted-foreground' : 'text-red-500'}`}>
+                          {isPositive ? <ArrowUpRight className="w-4 h-4" /> : isNeutral ? <Minus className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                          <span className="font-semibold">{Math.abs(value).toFixed(1)}%</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <p className="text-lg font-bold text-foreground">{formatNumber(current)}</p>
+                          <p className="text-xs text-muted-foreground">Mês atual</p>
+                        </div>
+                        <TrendingDown className="w-4 h-4 text-muted-foreground rotate-90" />
+                        <div className="flex-1 text-right">
+                          <p className="text-lg font-medium text-muted-foreground">{formatNumber(previous)}</p>
+                          <p className="text-xs text-muted-foreground">Mês anterior</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                };
+                
+                const overallGrowth = (viewsGrowth + likesGrowth + avgViewsGrowth) / 3;
+                
+                return (
+                  <Card className="p-6 mb-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="font-semibold text-foreground flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-primary" />
+                        Análise de Crescimento
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-muted-foreground">
+                          {currentMonth.month} vs {previousMonth.month}
+                        </Badge>
+                        <Badge 
+                          variant={overallGrowth >= 10 ? "default" : overallGrowth >= 0 ? "secondary" : "destructive"}
+                          className={overallGrowth >= 10 ? "bg-green-500/20 text-green-500 border-green-500/30" : ""}
+                        >
+                          {overallGrowth >= 0 ? "+" : ""}{overallGrowth.toFixed(1)}% geral
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                      <GrowthIndicator 
+                        value={viewsGrowth} 
+                        label="Views" 
+                        current={currentMonth.views} 
+                        previous={previousMonth.views} 
+                      />
+                      <GrowthIndicator 
+                        value={videosGrowth} 
+                        label="Vídeos Postados" 
+                        current={currentMonth.videos} 
+                        previous={previousMonth.videos} 
+                      />
+                      <GrowthIndicator 
+                        value={likesGrowth} 
+                        label="Likes" 
+                        current={currentMonth.likes} 
+                        previous={previousMonth.likes} 
+                      />
+                      <GrowthIndicator 
+                        value={avgViewsGrowth} 
+                        label="Média Views/Vídeo" 
+                        current={currentMonth.avgViews} 
+                        previous={previousMonth.avgViews} 
+                      />
+                    </div>
+                    
+                    {/* Growth Tips */}
+                    <div className={`p-4 rounded-lg border ${overallGrowth >= 10 ? 'bg-green-500/5 border-green-500/20' : overallGrowth >= 0 ? 'bg-blue-500/5 border-blue-500/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
+                      <div className="flex items-start gap-3">
+                        {overallGrowth >= 10 ? (
+                          <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        ) : overallGrowth >= 0 ? (
+                          <Lightbulb className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                        ) : (
+                          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                        )}
+                        <div>
+                          <p className="font-medium text-foreground mb-1">
+                            {overallGrowth >= 10 
+                              ? "🎉 Excelente crescimento!" 
+                              : overallGrowth >= 0 
+                                ? "📈 Canal em crescimento estável" 
+                                : "⚠️ Oportunidade de melhoria"}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {overallGrowth >= 10 
+                              ? "Seu canal está crescendo acima da média. Continue com a estratégia atual e considere aumentar a frequência de uploads."
+                              : overallGrowth >= 0 
+                                ? "Crescimento positivo! Para acelerar, foque em títulos chamativos, thumbnails atrativas e SEO nos primeiros 48h do vídeo."
+                                : viewsGrowth < 0 
+                                  ? "Views em queda. Recomendações: 1) Analise os títulos dos vídeos que performaram bem; 2) Melhore suas thumbnails; 3) Poste em horários de maior audiência."
+                                  : "Foque em engajamento: responda comentários, faça perguntas nos vídeos e incentive inscrições."}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })()}
 
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
