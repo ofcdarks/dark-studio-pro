@@ -16,6 +16,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Variáveis usadas também no catch (para permitir reembolso e resposta amigável)
+  let supabaseAdmin: any = null;
+  let debited = false;
+  let debitedAmount = 0;
+  let debitedUserId: string | null = null;
+
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -25,7 +31,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     // Extrair userId
     let userId: string | null = null;
@@ -58,19 +64,25 @@ serve(async (req) => {
     const creditsNeeded = CREDIT_PRICING.CHANNEL_ANALYSIS[modelKey];
 
     // Verificar e debitar créditos
+
     if (userId) {
-      const { data: creditData } = await supabaseAdmin
+      const { data: creditData, error: creditError } = await supabaseAdmin
         .from("user_credits")
         .select("balance")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
+
+      if (creditError) {
+        console.error("[Analyze Channel] Error fetching credits:", creditError);
+        throw new Error("Erro ao verificar créditos");
+      }
 
       const currentBalance = creditData?.balance ?? 50;
-      
+
       if (currentBalance < creditsNeeded) {
         return new Response(
-          JSON.stringify({ error: `Créditos insuficientes. Necessário: ${creditsNeeded}, Disponível: ${currentBalance}` }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ success: false, error: `Créditos insuficientes. Necessário: ${creditsNeeded}, Disponível: ${currentBalance}` }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
@@ -84,20 +96,28 @@ serve(async (req) => {
         operation_type: "channel_analysis",
         credits_used: creditsNeeded,
         model_used: model,
-        details: { channel_url: channelUrl, max_videos: maxVideos }
+        details: { channel_url: channelUrl, max_videos: maxVideos },
       });
+
+      debited = true;
+      debitedAmount = creditsNeeded;
+      debitedUserId = userId;
     }
 
     // Buscar YouTube API Key do usuário se disponível
     let channelData: any = null;
     
     if (userId) {
-      const { data: apiSettings } = await supabaseAdmin
+      const { data: apiSettings, error: apiSettingsError } = await supabaseAdmin
         .from("user_api_settings")
         .select("youtube_api_key")
         .eq("user_id", userId)
-        .single();
-      
+        .maybeSingle();
+
+      if (apiSettingsError) {
+        console.log("[Analyze Channel] Could not load user_api_settings:", apiSettingsError);
+      }
+
       if (apiSettings?.youtube_api_key) {
         try {
           // Extrair channel ID da URL se necessário
@@ -300,38 +320,55 @@ Retorne APENAS um JSON válido:
       .eq("key", "api_keys")
       .maybeSingle();
 
-    const adminKeys = adminSettings?.value as { laozhang_api_key?: string; openai_api_key?: string } || {};
-    
+    const adminKeys = (adminSettings?.value as Record<string, unknown>) || {};
+    const adminLaozhangKey = typeof adminKeys.laozhang === "string" ? (adminKeys.laozhang as string) : "";
+    const adminLaozhangValidated = !!adminKeys.laozhang_validated;
+
+    const requestedModel = String(model || "").toLowerCase();
+    const laozhangModel = requestedModel.includes("gpt")
+      ? "gpt-4o"
+      : requestedModel.includes("claude")
+        ? "claude-3-5-sonnet-20241022"
+        : "gemini-2.0-flash-001";
     // Função para chamar a API de IA com fallback
     async function callAI(prompt: string): Promise<string> {
-      // Tentar Laozhang primeiro (se disponível)
-      if (adminKeys.laozhang_api_key) {
+      // 1) Tentar Laozhang (admin) primeiro (se disponível e validado)
+      if (adminLaozhangKey && adminLaozhangValidated) {
         try {
           console.log("[Analyze Channel] Trying Laozhang AI...");
           const response = await fetch("https://api.laozhang.ai/v1/chat/completions", {
             method: "POST",
             headers: {
-              Authorization: `Bearer ${adminKeys.laozhang_api_key}`,
+              Authorization: `Bearer ${adminLaozhangKey}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "gemini-2.5-flash",
+              model: laozhangModel,
               messages: [{ role: "user", content: prompt }],
             }),
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             console.log("[Analyze Channel] Laozhang AI success");
             return data.choices?.[0]?.message?.content || "";
           }
-          console.log("[Analyze Channel] Laozhang failed:", response.status);
+
+          // Rate limit: cair para o fallback
+          if (response.status === 429) {
+            console.log("[Analyze Channel] Laozhang rate limited (429), falling back...");
+          } else {
+            const t = await response.text();
+            console.log("[Analyze Channel] Laozhang failed:", response.status, t);
+          }
         } catch (err) {
           console.log("[Analyze Channel] Laozhang error:", err);
         }
+      } else {
+        console.log("[Analyze Channel] Admin Laozhang key not available/validated, using fallback...");
       }
 
-      // Fallback para Lovable AI
+      // 2) Fallback para Lovable AI
       console.log("[Analyze Channel] Trying Lovable AI...");
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -347,7 +384,15 @@ Retorne APENAS um JSON válido:
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("[Analyze Channel] AI API error:", errorText);
+        console.error("[Analyze Channel] Lovable AI error:", response.status, errorText);
+
+        if (response.status === 402) {
+          throw { code: "AI_CREDITS", status: 402, message: "Sem créditos de IA disponíveis no workspace no momento." };
+        }
+        if (response.status === 429) {
+          throw { code: "AI_RATE_LIMIT", status: 429, message: "Limite de requisições de IA atingido. Aguarde e tente novamente." };
+        }
+
         throw new Error(`AI API error: ${response.status}`);
       }
 
@@ -386,10 +431,55 @@ Retorne APENAS um JSON válido:
 
   } catch (error: unknown) {
     console.error("[Analyze Channel] Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+    // Reembolsar créditos do usuário se a operação falhar após o débito
+    if (debited && debitedUserId && debitedAmount > 0) {
+      try {
+        const { data: creditRow } = await supabaseAdmin
+          .from("user_credits")
+          .select("balance")
+          .eq("user_id", debitedUserId)
+          .maybeSingle();
+
+        const current = creditRow?.balance ?? 0;
+        await supabaseAdmin
+          .from("user_credits")
+          .update({ balance: current + debitedAmount })
+          .eq("user_id", debitedUserId);
+
+        await supabaseAdmin.from("credit_transactions").insert({
+          user_id: debitedUserId,
+          amount: debitedAmount,
+          transaction_type: "refund",
+          description: "Reembolso - falha na análise de concorrência",
+        });
+
+        console.log(`[Analyze Channel] Refunded ${debitedAmount} credits to user ${debitedUserId}`);
+      } catch (refundErr) {
+        console.error("[Analyze Channel] Refund failed:", refundErr);
+      }
+    }
+
+    const errAny = error as any;
+    const code = typeof errAny?.code === "string" ? errAny.code : undefined;
+    const message = typeof errAny?.message === "string"
+      ? errAny.message
+      : error instanceof Error
+        ? error.message
+        : "Unknown error";
+
+    // Para evitar tela branca/erro no client: devolver 200 com payload de erro "controlado"
+    if (code === "AI_CREDITS" || code === "AI_RATE_LIMIT") {
+      return new Response(
+        JSON.stringify({ success: false, error: message, code }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const status = typeof errAny?.status === "number" ? errAny.status : 500;
     return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: false, error: message }),
+      { status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
