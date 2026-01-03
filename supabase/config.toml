@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.fetch-channel-videos]
 verify_jwt = false
+
+[functions.check-new-videos]
+verify_jwt = false
