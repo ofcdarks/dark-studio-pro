@@ -772,6 +772,25 @@ const Analytics = () => {
       yPos = 70;
     };
 
+    const addWatermark = () => {
+      // Subtle diagonal watermark using low opacity
+      doc.setFontSize(55);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(245, 158, 11); // Amber color
+      
+      // Create very subtle watermark by using light gray that blends with white background
+      doc.setTextColor(240, 240, 240); // Very light gray - almost invisible
+      
+      // Place watermark text diagonally in center
+      const centerX = pageWidth / 2;
+      const centerY = pageHeight / 2;
+      
+      doc.text("LA CASA CORE", centerX, centerY, { 
+        align: "center",
+        angle: 45
+      });
+    };
+
     const addFooter = (pageNum: number, totalPages: number) => {
       // Footer bar
       doc.setFillColor(...brandColors.dark);
@@ -1115,10 +1134,11 @@ const Analytics = () => {
       yPos += 18;
     });
 
-    // ========== ADD FOOTERS TO ALL PAGES ==========
+    // ========== ADD WATERMARKS AND FOOTERS TO ALL PAGES ==========
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
+      addWatermark(); // Add subtle watermark first (behind content)
       addFooter(i, pageCount);
     }
 
