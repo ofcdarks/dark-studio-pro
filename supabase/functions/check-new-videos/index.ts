@@ -22,7 +22,7 @@ serve(async (req) => {
     // Fetch all channels with notifications enabled
     const { data: channels, error: channelsError } = await supabase
       .from("monitored_channels")
-      .select("id, user_id, channel_url, channel_name, last_video_id")
+      .select("id, user_id, channel_url, channel_name, last_video_id, last_checked")
       .eq("notify_new_videos", true);
 
     if (channelsError) {
@@ -51,10 +51,10 @@ serve(async (req) => {
 
     // Process each user's channels
     for (const [userId, userChannels] of Object.entries(channelsByUser)) {
-      // Get user's YouTube API key
+      // Get user's YouTube API key and check frequency preference
       const { data: apiSettings, error: apiError } = await supabase
         .from("user_api_settings")
-        .select("youtube_api_key")
+        .select("youtube_api_key, video_check_frequency")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -64,10 +64,23 @@ serve(async (req) => {
       }
 
       const apiKey = apiSettings.youtube_api_key;
+      const checkFrequencyMinutes = parseInt(apiSettings.video_check_frequency || "60", 10);
 
       // Process each channel for this user
       for (const channel of userChannels) {
         try {
+          // Check if enough time has passed since last check based on user's frequency preference
+          if (channel.last_checked) {
+            const lastChecked = new Date(channel.last_checked);
+            const now = new Date();
+            const minutesSinceLastCheck = (now.getTime() - lastChecked.getTime()) / (1000 * 60);
+            
+            if (minutesSinceLastCheck < checkFrequencyMinutes) {
+              console.log(`Skipping ${channel.channel_name}: checked ${Math.round(minutesSinceLastCheck)} min ago (frequency: ${checkFrequencyMinutes} min)`);
+              continue;
+            }
+          }
+
           console.log(`Checking channel: ${channel.channel_name} (${channel.id})`);
 
           // Extract channel ID from URL
