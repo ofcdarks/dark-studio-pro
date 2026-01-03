@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Bell, X, ExternalLink, Check } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Bell, X, ExternalLink, Check, BellRing, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -13,6 +13,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface VideoNotification {
   id: string;
@@ -33,6 +40,8 @@ export const NotificationsBell = () => {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { permission, isSupported, requestPermission, showVideoNotification } = usePushNotifications();
+  const previousNotificationsRef = useRef<string[]>([]);
 
   // Fetch notifications
   const { data: notifications, isLoading } = useQuery({
@@ -54,8 +63,84 @@ export const NotificationsBell = () => {
       return data as VideoNotification[];
     },
     enabled: !!user,
-    refetchInterval: 60000, // Refetch every minute
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
+
+  // Listen for new notifications in realtime
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel("video-notifications-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "video_notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          console.log("New notification received:", payload);
+          
+          // Fetch the full notification with channel name
+          const { data: fullNotification } = await supabase
+            .from("video_notifications")
+            .select(`
+              *,
+              monitored_channels (
+                channel_name
+              )
+            `)
+            .eq("id", payload.new.id)
+            .single();
+
+          if (fullNotification && permission === "granted") {
+            showVideoNotification(
+              fullNotification.video_title || "Novo vídeo",
+              fullNotification.monitored_channels?.channel_name || "Canal",
+              fullNotification.video_url,
+              fullNotification.thumbnail_url
+            );
+          }
+
+          // Refresh notifications list
+          queryClient.invalidateQueries({ queryKey: ["video-notifications"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, permission, showVideoNotification, queryClient]);
+
+  // Show push notification for new notifications (when not using realtime)
+  useEffect(() => {
+    if (!notifications || permission !== "granted") return;
+
+    const currentIds = notifications.map((n) => n.id);
+    const previousIds = previousNotificationsRef.current;
+
+    // Find new notifications
+    const newNotifications = notifications.filter(
+      (n) => !previousIds.includes(n.id) && !n.is_read
+    );
+
+    // Show push notification for each new notification
+    if (previousIds.length > 0) {
+      newNotifications.forEach((notification) => {
+        showVideoNotification(
+          notification.video_title || "Novo vídeo",
+          notification.monitored_channels?.channel_name || "Canal",
+          notification.video_url,
+          notification.thumbnail_url
+        );
+      });
+    }
+
+    previousNotificationsRef.current = currentIds;
+  }, [notifications, permission, showVideoNotification]);
 
   // Mark as read mutation
   const markAsReadMutation = useMutation({
@@ -128,17 +213,51 @@ export const NotificationsBell = () => {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between p-3 border-b border-border">
           <h3 className="font-semibold text-foreground">Notificações</h3>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => markAllAsReadMutation.mutate()}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              <Check className="w-3 h-3 mr-1" />
-              Marcar todas como lidas
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {/* Push notification toggle */}
+            {isSupported && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => {
+                        if (permission !== "granted") {
+                          requestPermission();
+                        }
+                      }}
+                    >
+                      {permission === "granted" ? (
+                        <BellRing className="h-4 w-4 text-primary" />
+                      ) : (
+                        <BellOff className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {permission === "granted"
+                      ? "Notificações push ativadas"
+                      : permission === "denied"
+                      ? "Notificações bloqueadas pelo navegador"
+                      : "Ativar notificações push"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => markAllAsReadMutation.mutate()}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                <Check className="w-3 h-3 mr-1" />
+                Marcar lidas
+              </Button>
+            )}
+          </div>
         </div>
         <ScrollArea className="h-80">
           {isLoading ? (
