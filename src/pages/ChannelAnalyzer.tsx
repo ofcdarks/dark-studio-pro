@@ -17,9 +17,14 @@ import {
   Target,
   Zap,
   Save,
-  Check
+  Check,
+  History,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Clock
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -80,6 +85,63 @@ const ChannelAnalyzer = () => {
   const [activeTab, setActiveTab] = useState("gaps");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [savedAnalyses, setSavedAnalyses] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Load saved analyses
+  useEffect(() => {
+    if (user?.id && showHistory) {
+      loadSavedAnalyses();
+    }
+  }, [user?.id, showHistory]);
+
+  const loadSavedAnalyses = async () => {
+    if (!user?.id) return;
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('channel_analyses' as any)
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSavedAnalyses(data || []);
+    } catch (error) {
+      console.error('Error loading analyses:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleDeleteAnalysis = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const { error } = await supabase
+        .from('channel_analyses' as any)
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setSavedAnalyses(prev => prev.filter(a => a.id !== id));
+      toast.success("Análise excluída!");
+    } catch (error) {
+      console.error('Error deleting analysis:', error);
+      toast.error('Erro ao excluir análise');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleLoadAnalysis = (analysis: any) => {
+    setChannels(analysis.channels || []);
+    setAnalysisResult(analysis.analysis_result);
+    setShowHistory(false);
+    toast.success("Análise carregada!");
+  };
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -321,20 +383,118 @@ const ChannelAnalyzer = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-amber-500/20 flex items-center justify-center border border-primary/30">
-                <BarChart3 className="w-6 h-6 text-primary" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-amber-500/20 flex items-center justify-center border border-primary/30">
+                  <BarChart3 className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text">
+                    Análise de Canais Virais
+                  </h1>
+                  <p className="text-muted-foreground text-sm">
+                    Analise até 5 canais, identifique padrões virais e crie títulos baseados no que funcionou
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text">
-                  Análise de Canais Virais
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  Analise até 5 canais, identifique padrões virais e crie títulos baseados no que funcionou
-                </p>
-              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowHistory(!showHistory)}
+                className="border-primary/30 hover:bg-primary/10"
+              >
+                <History className="w-4 h-4 mr-2" />
+                Histórico
+                {showHistory ? (
+                  <ChevronUp className="w-4 h-4 ml-2" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                )}
+              </Button>
             </div>
           </motion.div>
+
+          {/* History Section */}
+          <AnimatePresence>
+            {showHistory && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <Card className="p-6 mb-6 bg-card/50 backdrop-blur-xl border-border/50 rounded-2xl">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Clock className="w-5 h-5 text-primary" />
+                    <h2 className="text-lg font-semibold text-foreground">Análises Salvas</h2>
+                    <Badge variant="outline" className="ml-auto">
+                      {savedAnalyses.length} análises
+                    </Badge>
+                  </div>
+
+                  {loadingHistory ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    </div>
+                  ) : savedAnalyses.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <History className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                      <p>Nenhuma análise salva ainda</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                      {savedAnalyses.map((analysis) => (
+                        <motion.div
+                          key={analysis.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="flex items-center justify-between p-4 rounded-xl bg-background/30 border border-border/50 hover:border-primary/30 transition-all group"
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium text-foreground">{analysis.name || 'Análise sem nome'}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(analysis.created_at).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                              <span className="text-muted-foreground/50">•</span>
+                              <span>{analysis.channels?.length || 0} canais</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleLoadAnalysis(analysis)}
+                              className="bg-primary text-primary-foreground hover:bg-primary/90"
+                            >
+                              Carregar
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDeleteAnalysis(analysis.id)}
+                              disabled={deletingId === analysis.id}
+                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            >
+                              {deletingId === analysis.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Add Channel Form - Premium Glass Card */}
           <motion.div
