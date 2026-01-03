@@ -38,7 +38,10 @@ import {
   Trophy,
   History,
   Timer,
-  Award
+  Award,
+  Pin,
+  PinOff,
+  Star
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -191,6 +194,92 @@ const Analytics = () => {
     },
     enabled: !!user,
   });
+
+  // Fetch saved analytics channels (max 5)
+  const { data: savedChannels, refetch: refetchSavedChannels } = useQuery({
+    queryKey: ["saved-analytics-channels", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("saved_analytics_channels")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const isChannelSaved = savedChannels?.some((c) => c.channel_url === channelUrl) || false;
+  const canSaveMore = (savedChannels?.length || 0) < 5;
+
+  const saveChannel = async () => {
+    if (!user || !analyticsData || !channelUrl) return;
+    
+    if (!canSaveMore) {
+      toast({
+        title: "Limite atingido",
+        description: "Você pode salvar no máximo 5 canais. Remova um para adicionar outro.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase.from("saved_analytics_channels").upsert(
+      {
+        user_id: user.id,
+        channel_url: channelUrl,
+        channel_id: analyticsData.channel.id,
+        channel_name: analyticsData.channel.name,
+        channel_thumbnail: analyticsData.channel.thumbnail,
+        subscribers: analyticsData.statistics.subscribers,
+        total_views: analyticsData.statistics.totalViews,
+        total_videos: analyticsData.statistics.totalVideos,
+        last_fetched_at: new Date().toISOString(),
+        cached_data: analyticsData as any,
+      },
+      { onConflict: "user_id,channel_url" }
+    );
+
+    if (error) {
+      toast({ title: "Erro ao salvar canal", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Canal salvo!", description: "Os dados do canal foram fixados" });
+    refetchSavedChannels();
+  };
+
+  const unsaveChannel = async (channelUrlToRemove: string) => {
+    if (!user) return;
+    
+    const { error } = await supabase
+      .from("saved_analytics_channels")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("channel_url", channelUrlToRemove);
+
+    if (error) {
+      toast({ title: "Erro ao remover canal", variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Canal removido" });
+    refetchSavedChannels();
+    
+    // Clear data if removing current channel
+    if (channelUrlToRemove === channelUrl) {
+      setAnalyticsData(null);
+    }
+  };
+
+  const loadSavedChannel = (channel: any) => {
+    setChannelUrl(channel.channel_url);
+    if (channel.cached_data) {
+      setAnalyticsData(channel.cached_data);
+    }
+  };
 
   // Fetch active channel goals
   const { data: channelGoals, refetch: refetchGoals } = useQuery({
@@ -462,6 +551,18 @@ const Analytics = () => {
         description: `Dados do canal ${data.channel.name} obtidos com sucesso`,
       });
       
+      // Update saved channel cache if pinned
+      if (isChannelSaved && user) {
+        await supabase.from("saved_analytics_channels").update({
+          subscribers: data.statistics.subscribers,
+          total_views: data.statistics.totalViews,
+          total_videos: data.statistics.totalVideos,
+          last_fetched_at: new Date().toISOString(),
+          cached_data: data as any,
+        }).eq("user_id", user.id).eq("channel_url", channelUrl);
+        refetchSavedChannels();
+      }
+      
       // Update goals with current data
       setTimeout(() => updateGoalProgress(), 500);
     } catch (error: unknown) {
@@ -632,6 +733,58 @@ const Analytics = () => {
             </Alert>
           )}
 
+          {/* Saved Channels */}
+          {savedChannels && savedChannels.length > 0 && (
+            <Card className="p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Star className="w-5 h-5 text-amber-500" />
+                  Canais Fixados ({savedChannels.length}/5)
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {savedChannels.map((channel) => (
+                  <div
+                    key={channel.id}
+                    className={`relative p-3 rounded-lg border cursor-pointer transition-all hover:border-primary ${
+                      channelUrl === channel.channel_url ? 'border-primary bg-primary/5' : 'border-border bg-secondary/30'
+                    }`}
+                    onClick={() => loadSavedChannel(channel)}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        unsaveChannel(channel.channel_url);
+                      }}
+                    >
+                      <PinOff className="w-3 h-3" />
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      {channel.channel_thumbnail && (
+                        <img
+                          src={channel.channel_thumbnail}
+                          alt={channel.channel_name}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground text-sm truncate">
+                          {channel.channel_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatNumber(channel.subscribers || 0)} inscritos
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
           {/* Channel Input */}
           <Card className="p-6 mb-8">
             <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -712,14 +865,49 @@ const Analytics = () => {
                       {analyticsData.channel.description || "Sem descrição"}
                     </p>
                   </div>
-                  <Button
-                    onClick={exportToCSV}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    Exportar CSV
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button
+                      onClick={fetchAnalytics}
+                      variant="outline"
+                      size="sm"
+                      disabled={isAnalyzing}
+                      className="flex items-center gap-2"
+                    >
+                      {isAnalyzing ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
+                      Recarregar
+                    </Button>
+                    <Button
+                      onClick={isChannelSaved ? () => unsaveChannel(channelUrl) : saveChannel}
+                      variant={isChannelSaved ? "secondary" : "default"}
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {isChannelSaved ? (
+                        <>
+                          <PinOff className="w-4 h-4" />
+                          Desfixar
+                        </>
+                      ) : (
+                        <>
+                          <Pin className="w-4 h-4" />
+                          Fixar ({savedChannels?.length || 0}/5)
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={exportToCSV}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Exportar
+                    </Button>
+                  </div>
                 </div>
               </Card>
 
