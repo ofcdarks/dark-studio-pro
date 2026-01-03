@@ -758,6 +758,7 @@ export type Database = {
           channel_thumbnail: string | null
           channel_url: string
           created_at: string
+          display_order: number | null
           id: string
           last_fetched_at: string | null
           subscribers: number | null
@@ -773,6 +774,7 @@ export type Database = {
           channel_thumbnail?: string | null
           channel_url: string
           created_at?: string
+          display_order?: number | null
           id?: string
           last_fetched_at?: string | null
           subscribers?: number | null
@@ -788,6 +790,7 @@ export type Database = {
           channel_thumbnail?: string | null
           channel_url?: string
           created_at?: string
+          display_order?: number | null
           id?: string
           last_fetched_at?: string | null
           subscribers?: number | null
