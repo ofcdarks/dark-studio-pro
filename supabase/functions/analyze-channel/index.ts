@@ -293,27 +293,70 @@ Retorne APENAS um JSON válido:
   "dataSource": "${channelData ? 'API YouTube (dados reais)' : 'Análise baseada na URL (sem dados reais)'}"
 }`;
 
-    // Chamar API de IA
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: analysisPrompt }],
-      }),
-    });
+    // Buscar chaves de API do admin (Laozhang como fallback)
+    const { data: adminSettings } = await supabaseAdmin
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "api_keys")
+      .maybeSingle();
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error("[Analyze Channel] AI API error:", errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
+    const adminKeys = adminSettings?.value as { laozhang_api_key?: string; openai_api_key?: string } || {};
+    
+    // Função para chamar a API de IA com fallback
+    async function callAI(prompt: string): Promise<string> {
+      // Tentar Laozhang primeiro (se disponível)
+      if (adminKeys.laozhang_api_key) {
+        try {
+          console.log("[Analyze Channel] Trying Laozhang AI...");
+          const response = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${adminKeys.laozhang_api_key}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "gemini-2.5-flash",
+              messages: [{ role: "user", content: prompt }],
+            }),
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log("[Analyze Channel] Laozhang AI success");
+            return data.choices?.[0]?.message?.content || "";
+          }
+          console.log("[Analyze Channel] Laozhang failed:", response.status);
+        } catch (err) {
+          console.log("[Analyze Channel] Laozhang error:", err);
+        }
+      }
+
+      // Fallback para Lovable AI
+      console.log("[Analyze Channel] Trying Lovable AI...");
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Analyze Channel] AI API error:", errorText);
+        throw new Error(`AI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || "";
     }
 
-    const aiData = await aiResponse.json();
-    const aiContent = aiData.choices?.[0]?.message?.content || "";
+    // Chamar API de IA com fallback
+    const aiContent = await callAI(analysisPrompt);
 
     // Parsear resposta JSON
     let analysis;
