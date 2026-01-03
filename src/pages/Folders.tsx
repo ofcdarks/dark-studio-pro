@@ -31,6 +31,7 @@ import {
   Folder,
   ChevronLeft,
   ChevronRight,
+  Rocket,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +52,7 @@ interface AnalyzedVideo {
   analyzed_at: string | null;
   created_at: string | null;
   folder_id: string | null;
+  analysis_data_json: any;
 }
 
 interface FolderData {
@@ -254,6 +256,51 @@ const Folders = () => {
   const handleUseVideo = (video: AnalyzedVideo) => {
     // Navigate to analyzer with video URL
     navigate(`/analyzer?url=${encodeURIComponent(video.video_url)}`);
+  };
+
+  const handleLoadStrategicPlan = (video: AnalyzedVideo) => {
+    // Salvar dados no localStorage para carregar no ExploreNiche
+    const data = video.analysis_data_json;
+    
+    // Salvar URL do canal
+    localStorage.setItem("explore_channelUrl", JSON.stringify(video.video_url));
+    
+    // Salvar o plano estratégico
+    const strategicPlan = {
+      channelName: data.channelName,
+      niche: data.niche,
+      strategy: data.strategy,
+      contentIdeas: data.contentIdeas || [],
+      differentials: data.differentials || [],
+      recommendations: data.recommendations || [],
+      positioning: data.positioning,
+      uniqueValue: data.uniqueValue,
+      postingSchedule: data.postingSchedule,
+      growthTimeline: data.growthTimeline,
+      quickWins: data.quickWins,
+      summary: data.summary,
+      strengths: data.strengths,
+      weaknesses: data.weaknesses,
+      opportunities: data.opportunities,
+      threats: data.threats,
+      metrics: data.metrics,
+      dataSource: data.dataSource,
+      idealVideoDuration: data.idealVideoDuration,
+      bestPostingTimes: data.bestPostingTimes || [],
+      bestPostingDays: data.bestPostingDays || [],
+      exampleTitles: data.exampleTitles || [],
+      thumbnailTips: data.thumbnailTips || [],
+      audienceInsights: data.audienceInsights,
+      strategicKeywords: data.strategicKeywords || [],
+    };
+    localStorage.setItem("explore_strategicPlan", JSON.stringify(strategicPlan));
+    
+    toast({ title: "Plano carregado! Redirecionando..." });
+    navigate("/explore");
+  };
+
+  const isChannelAnalysis = (video: AnalyzedVideo) => {
+    return video.analysis_data_json?.type === "channel_analysis";
   };
 
   const selectedFolder = folders?.find((f) => f.id === selectedFolderId);
@@ -505,15 +552,27 @@ const Folders = () => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleUseVideo(video)}
-                                  title="Recarregar títulos"
-                                  className="text-primary hover:bg-primary/10"
-                                >
-                                  <RefreshCw className="w-4 h-4" />
-                                </Button>
+                                {isChannelAnalysis(video) ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleLoadStrategicPlan(video)}
+                                    title="Carregar Plano Estratégico"
+                                    className="text-blue-500 hover:bg-blue-500/10"
+                                  >
+                                    <Rocket className="w-4 h-4" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleUseVideo(video)}
+                                    title="Recarregar títulos"
+                                    className="text-primary hover:bg-primary/10"
+                                  >
+                                    <RefreshCw className="w-4 h-4" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
