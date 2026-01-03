@@ -270,6 +270,14 @@ Forneça uma análise PROFUNDA e ACIONÁVEL:
    - Ideias de conteúdo específicas
    - Ações imediatas (Quick Wins)
 
+6. INSIGHTS VALIOSOS PARA O CRIADOR:
+   - Minutagem ideal dos vídeos (baseado no nicho e padrões de sucesso)
+   - Melhores horários para postar (horários específicos como "14:00", "19:00")
+   - Melhores dias para postar (ex: "Segunda", "Quarta", "Sexta")
+   - 5 títulos de exemplo virais que o usuário pode usar
+   - Dicas específicas de thumbnails para o nicho
+   - Insights sobre a audiência
+
 Retorne APENAS um JSON válido:
 {
   "channelInfo": {
@@ -307,6 +315,20 @@ Retorne APENAS um JSON válido:
     "recommendations": ["recomendação acionável 1", "recomendação 2", "recomendação 3"],
     "postingSchedule": "ex: 3 vídeos por semana - Segunda, Quarta, Sexta",
     "growthTimeline": "3 meses: X inscritos | 6 meses: Y inscritos | 12 meses: Z inscritos"
+  },
+  "insights": {
+    "idealVideoDuration": "8-12 minutos (ideal para retenção e monetização)",
+    "bestPostingTimes": ["14:00", "19:00", "21:00"],
+    "bestPostingDays": ["Segunda", "Quarta", "Sexta"],
+    "exampleTitles": [
+      "Título viral 1 usando fórmulas de sucesso do nicho",
+      "Título viral 2 com gatilho mental forte",
+      "Título viral 3 com número e promessa",
+      "Título viral 4 baseado em padrões do canal",
+      "Título viral 5 com gancho de curiosidade"
+    ],
+    "thumbnailTips": ["dica específica 1", "dica 2", "dica 3"],
+    "audienceInsights": "Descrição do perfil da audiência e comportamentos"
   },
   "quickWins": ["ação imediata 1", "ação 2", "ação 3"],
   "summary": "Resumo executivo em 2-3 frases",

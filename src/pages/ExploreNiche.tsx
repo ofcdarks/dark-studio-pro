@@ -30,13 +30,20 @@ import {
   FileText,
   Layers,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Save,
+  FolderOpen,
+  Video,
+  Timer,
+  Image
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
+import { FolderSelect } from "@/components/folders/FolderSelect";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SubnicheResult {
   name: string;
@@ -85,9 +92,17 @@ interface StrategicPlan {
     engagementLevel?: string;
   };
   dataSource?: string;
+  // Novos campos de insights
+  idealVideoDuration?: string;
+  bestPostingTimes?: string[];
+  bestPostingDays?: string[];
+  exampleTitles?: string[];
+  thumbnailTips?: string[];
+  audienceInsights?: string;
 }
 
 const ExploreNiche = () => {
+  const { user } = useAuth();
   // Etapa 1 states
   const [mainNiche, setMainNiche] = usePersistedState("explore_mainNiche", "");
   const [competitorSubniche, setCompetitorSubniche] = usePersistedState("explore_competitorSubniche", "");
@@ -104,6 +119,8 @@ const ExploreNiche = () => {
   const [strategicPlan, setStrategicPlan] = usePersistedState<StrategicPlan | null>("explore_strategicPlan", null);
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [planProcessingStep, setPlanProcessingStep] = useState<string>("");
+  const [selectedFolderForPlan, setSelectedFolderForPlan] = useState<string | null>(null);
+  const [savingPlan, setSavingPlan] = useState(false);
 
   // Etapas de processamento para feedback visual
   const planProcessingSteps = [
@@ -124,6 +141,61 @@ const ExploreNiche = () => {
     setCopiedKeyword(keyword);
     toast.success("Palavra-chave copiada!");
     setTimeout(() => setCopiedKeyword(null), 2000);
+  };
+
+  const handleSavePlanToFolder = async () => {
+    if (!user || !strategicPlan) {
+      toast.error("Você precisa estar logado e ter um plano gerado");
+      return;
+    }
+
+    setSavingPlan(true);
+    try {
+      // Salvar como análise de canal na tabela analyzed_videos
+      const { error } = await supabase.from("analyzed_videos").insert({
+        user_id: user.id,
+        video_url: channelUrl,
+        folder_id: selectedFolderForPlan,
+        original_title: `Análise: ${strategicPlan.channelName}`,
+        detected_niche: strategicPlan.niche,
+        analysis_data_json: {
+          type: "channel_analysis",
+          channelName: strategicPlan.channelName,
+          niche: strategicPlan.niche,
+          strategy: strategicPlan.strategy,
+          contentIdeas: strategicPlan.contentIdeas,
+          differentials: strategicPlan.differentials,
+          recommendations: strategicPlan.recommendations,
+          positioning: strategicPlan.positioning,
+          uniqueValue: strategicPlan.uniqueValue,
+          postingSchedule: strategicPlan.postingSchedule,
+          growthTimeline: strategicPlan.growthTimeline,
+          quickWins: strategicPlan.quickWins,
+          summary: strategicPlan.summary,
+          strengths: strategicPlan.strengths,
+          weaknesses: strategicPlan.weaknesses,
+          opportunities: strategicPlan.opportunities,
+          threats: strategicPlan.threats,
+          metrics: strategicPlan.metrics,
+          dataSource: strategicPlan.dataSource,
+          idealVideoDuration: strategicPlan.idealVideoDuration,
+          bestPostingTimes: strategicPlan.bestPostingTimes,
+          bestPostingDays: strategicPlan.bestPostingDays,
+          exampleTitles: strategicPlan.exampleTitles,
+          thumbnailTips: strategicPlan.thumbnailTips,
+          audienceInsights: strategicPlan.audienceInsights,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success("Análise salva com sucesso!");
+    } catch (error) {
+      console.error("Error saving plan:", error);
+      toast.error("Erro ao salvar análise");
+    } finally {
+      setSavingPlan(false);
+    }
   };
 
   const handleRegenerateTitles = async (subnicheIndex: number) => {
@@ -476,6 +548,13 @@ const ExploreNiche = () => {
         threats: analysis.threats,
         metrics: analysis.metrics,
         dataSource: analysis.dataSource,
+        // Novos campos de insights
+        idealVideoDuration: analysis.insights?.idealVideoDuration,
+        bestPostingTimes: analysis.insights?.bestPostingTimes || [],
+        bestPostingDays: analysis.insights?.bestPostingDays || [],
+        exampleTitles: analysis.insights?.exampleTitles || [],
+        thumbnailTips: analysis.insights?.thumbnailTips || [],
+        audienceInsights: analysis.insights?.audienceInsights,
       });
 
       if (analysis.dataSource?.includes('dados reais')) {
@@ -1168,10 +1247,37 @@ const ExploreNiche = () => {
             )}
             {strategicPlan && (
               <div className="mt-8 space-y-6">
-                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <Award className="w-5 h-5 text-blue-500" />
-                  Plano Estratégico
-                </h3>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                    <Award className="w-5 h-5 text-blue-500" />
+                    Plano Estratégico
+                  </h3>
+                  
+                  {/* Save to Folder */}
+                  <div className="flex items-center gap-2">
+                    <FolderSelect
+                      value={selectedFolderForPlan}
+                      onChange={setSelectedFolderForPlan}
+                      placeholder="Selecione pasta"
+                      className="w-48"
+                    />
+                    <Button
+                      onClick={handleSavePlanToFolder}
+                      disabled={savingPlan}
+                      size="sm"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      {savingPlan ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-1" />
+                          Salvar
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
                 
                 {/* Data Source Badge */}
                 {strategicPlan.dataSource && (
@@ -1413,6 +1519,122 @@ const ExploreNiche = () => {
                           Expectativa de Crescimento
                         </h4>
                         <p className="text-muted-foreground">{strategicPlan.growthTimeline}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* NEW INSIGHTS SECTION */}
+                {(strategicPlan.idealVideoDuration || strategicPlan.bestPostingTimes?.length > 0 || strategicPlan.exampleTitles?.length > 0) && (
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-bold text-foreground flex items-center gap-2">
+                      <Lightbulb className="w-5 h-5 text-primary" />
+                      Insights Valiosos
+                    </h4>
+
+                    {/* Video Duration & Posting Times */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Ideal Duration */}
+                      {strategicPlan.idealVideoDuration && (
+                        <div className="p-5 bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-xl border border-purple-500/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Timer className="w-5 h-5 text-purple-500" />
+                            <h5 className="font-semibold text-purple-400">Minutagem Ideal</h5>
+                          </div>
+                          <p className="text-xl font-bold text-foreground">{strategicPlan.idealVideoDuration}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Duração recomendada para o nicho</p>
+                        </div>
+                      )}
+
+                      {/* Best Posting Times */}
+                      {strategicPlan.bestPostingTimes && strategicPlan.bestPostingTimes.length > 0 && (
+                        <div className="p-5 bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 rounded-xl border border-cyan-500/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Clock className="w-5 h-5 text-cyan-500" />
+                            <h5 className="font-semibold text-cyan-400">Melhores Horários</h5>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {strategicPlan.bestPostingTimes.map((time, i) => (
+                              <Badge key={i} variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/30 text-lg px-3 py-1">
+                                {time}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Best Posting Days */}
+                      {strategicPlan.bestPostingDays && strategicPlan.bestPostingDays.length > 0 && (
+                        <div className="p-5 bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-xl border border-amber-500/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="w-5 h-5 text-amber-500" />
+                            <h5 className="font-semibold text-amber-400">Melhores Dias</h5>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {strategicPlan.bestPostingDays.map((day, i) => (
+                              <Badge key={i} variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/30 px-3 py-1">
+                                {day}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Example Titles */}
+                    {strategicPlan.exampleTitles && strategicPlan.exampleTitles.length > 0 && (
+                      <div className="p-5 bg-gradient-to-r from-primary/10 to-blue-500/10 rounded-xl border border-primary/20">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Video className="w-5 h-5 text-primary" />
+                          <h5 className="font-semibold text-primary">Títulos de Exemplo (prontos para usar)</h5>
+                        </div>
+                        <div className="space-y-3">
+                          {strategicPlan.exampleTitles.map((title, i) => (
+                            <div key={i} className="flex items-center justify-between gap-3 bg-background/50 rounded-lg px-4 py-3 group hover:bg-background/80 transition-colors">
+                              <span className="text-foreground font-medium">{title}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(title);
+                                  toast.success("Título copiado!");
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Thumbnail Tips */}
+                    {strategicPlan.thumbnailTips && strategicPlan.thumbnailTips.length > 0 && (
+                      <div className="p-5 bg-secondary/30 rounded-xl border border-border/50">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Image className="w-5 h-5 text-primary" />
+                          <h5 className="font-semibold text-foreground">Dicas de Thumbnails</h5>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                          {strategicPlan.thumbnailTips.map((tip, i) => (
+                            <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 rounded-lg px-3 py-2">
+                              <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
+                              {tip}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Audience Insights */}
+                    {strategicPlan.audienceInsights && (
+                      <div className="p-5 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-xl border border-indigo-500/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Users className="w-5 h-5 text-indigo-500" />
+                          <h5 className="font-semibold text-indigo-400">Perfil da Audiência</h5>
+                        </div>
+                        <p className="text-foreground">{strategicPlan.audienceInsights}</p>
                       </div>
                     )}
                   </div>
