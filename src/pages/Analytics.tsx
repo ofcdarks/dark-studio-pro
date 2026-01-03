@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,12 +18,15 @@ import {
   MessageSquare,
   Youtube,
   Settings,
-  AlertCircle
+  AlertCircle,
+  DollarSign,
+  Download,
+  Info
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   AreaChart,
   Area,
@@ -35,11 +38,15 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface YouTubeAnalytics {
   channel: {
@@ -66,6 +73,12 @@ interface YouTubeAnalytics {
     avgCommentsPerVideo: number;
     avgEngagementRate: number;
   };
+  monetization: {
+    estimatedRPM: number;
+    estimatedTotalEarnings: number;
+    estimatedMonthlyEarnings: number;
+    disclaimer: string;
+  };
   topVideos: Array<{
     videoId: string;
     title: string;
@@ -83,6 +96,15 @@ interface YouTubeAnalytics {
     likes: number;
     avgViews: number;
   }>;
+  allVideos: Array<{
+    videoId: string;
+    title: string;
+    views: number;
+    likes: number;
+    comments: number;
+    publishedAt: string;
+    engagementRate: string;
+  }>;
 }
 
 const formatNumber = (num: number): string => {
@@ -98,7 +120,6 @@ const formatNumber = (num: number): string => {
 const Analytics = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [channelUrl, setChannelUrl] = usePersistedState("analytics_channel_url", "");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyticsData, setAnalyticsData] = usePersistedState<YouTubeAnalytics | null>("analytics_data", null);
@@ -185,25 +206,86 @@ const Analytics = () => {
     }
   };
 
+  // Export to CSV function
+  const exportToCSV = () => {
+    if (!analyticsData) return;
+
+    // Create CSV content
+    const headers = ["Título", "Views", "Likes", "Comentários", "Engajamento %", "Data de Publicação", "URL"];
+    const rows = analyticsData.allVideos?.map((video) => [
+      `"${video.title.replace(/"/g, '""')}"`,
+      video.views,
+      video.likes,
+      video.comments,
+      video.engagementRate,
+      video.publishedAt,
+      `https://www.youtube.com/watch?v=${video.videoId}`,
+    ]) || [];
+
+    // Add channel summary at the top
+    const summaryRows = [
+      ["Canal:", analyticsData.channel.name],
+      ["Inscritos:", analyticsData.statistics.subscribers],
+      ["Views Totais:", analyticsData.statistics.totalViews],
+      ["Total de Vídeos:", analyticsData.statistics.totalVideos],
+      ["RPM Estimado:", `$${analyticsData.monetization?.estimatedRPM || 2.5}`],
+      ["Faturamento Estimado Total:", `$${analyticsData.monetization?.estimatedTotalEarnings || 0}`],
+      [""],
+      headers,
+      ...rows,
+    ];
+
+    const csvContent = summaryRows.map((row) => row.join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `analytics_${analyticsData.channel.name.replace(/[^a-z0-9]/gi, "_")}_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Exportação concluída",
+      description: "O arquivo CSV foi baixado com sucesso",
+    });
+  };
+
   const StatCard = ({
     icon: Icon,
     label,
     value,
     subvalue,
     color = "primary",
+    tooltip,
   }: {
     icon: React.ElementType;
     label: string;
     value: string | number;
     subvalue?: string;
     color?: string;
+    tooltip?: string;
   }) => (
     <Card className="p-5">
       <div className="flex items-center gap-3 mb-3">
         <div className={`w-10 h-10 rounded-lg bg-${color}/10 flex items-center justify-center`}>
           <Icon className={`w-5 h-5 text-${color}`} />
         </div>
-        <span className="text-muted-foreground text-sm">{label}</span>
+        <span className="text-muted-foreground text-sm flex items-center gap-1">
+          {label}
+          {tooltip && (
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs text-xs">{tooltip}</p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+          )}
+        </span>
       </div>
       <p className="text-3xl font-bold text-foreground">{value}</p>
       {subvalue && <p className="text-sm text-muted-foreground mt-1">{subvalue}</p>}
@@ -336,6 +418,14 @@ const Analytics = () => {
                       {analyticsData.channel.description || "Sem descrição"}
                     </p>
                   </div>
+                  <Button
+                    onClick={exportToCSV}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Exportar CSV
+                  </Button>
                 </div>
               </Card>
 
@@ -368,6 +458,37 @@ const Analytics = () => {
                 />
               </div>
 
+              {/* Monetization Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <StatCard
+                  icon={DollarSign}
+                  label="RPM Estimado"
+                  value={`$${analyticsData.monetization?.estimatedRPM?.toFixed(2) || "2.50"}`}
+                  subvalue="Por 1000 views"
+                  tooltip="RPM médio estimado baseado em dados de mercado. Valores reais variam conforme nicho, região e tipo de conteúdo."
+                />
+                <StatCard
+                  icon={DollarSign}
+                  label="Faturamento Total Est."
+                  value={`$${formatNumber(analyticsData.monetization?.estimatedTotalEarnings || 0)}`}
+                  subvalue="Lifetime estimado"
+                  tooltip="Estimativa baseada no total de views × RPM médio. Dados reais de monetização só estão disponíveis no YouTube Studio."
+                />
+                <StatCard
+                  icon={DollarSign}
+                  label="Faturamento Recente Est."
+                  value={`$${formatNumber(analyticsData.monetization?.estimatedMonthlyEarnings || 0)}`}
+                  subvalue={`Últimos ${analyticsData.recentMetrics.analyzedVideos} vídeos`}
+                  tooltip="Estimativa baseada nos views dos últimos vídeos analisados."
+                />
+                <StatCard
+                  icon={BarChart3}
+                  label="Views Recentes"
+                  value={formatNumber(analyticsData.recentMetrics.totalViewsRecent)}
+                  subvalue={`${analyticsData.recentMetrics.analyzedVideos} vídeos`}
+                />
+              </div>
+
               {/* Recent Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <StatCard
@@ -389,12 +510,13 @@ const Analytics = () => {
                   subvalue="Por vídeo"
                 />
                 <StatCard
-                  icon={BarChart3}
-                  label="Views Recentes"
-                  value={formatNumber(analyticsData.recentMetrics.totalViewsRecent)}
-                  subvalue={`${analyticsData.recentMetrics.analyzedVideos} vídeos`}
+                  icon={TrendingUp}
+                  label="Taxa de Engajamento"
+                  value={`${analyticsData.recentMetrics.avgEngagementRate}%`}
+                  subvalue="(Likes + Comments) / Views"
                 />
               </div>
+
 
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
