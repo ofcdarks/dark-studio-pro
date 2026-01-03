@@ -245,24 +245,44 @@ export function AgentChatModal({ open, onOpenChange, agent, onModelChange, onTri
       const { data, error } = await supabase.functions.invoke("ai-assistant", {
         body: {
           type: "generate_mental_triggers",
-          prompt: `Gere 8 gatilhos mentais PODEROSOS e específicos para criar um vídeo viral 10/10 no YouTube.
+          prompt: `Você é um ESPECIALISTA em YouTube com +10 anos de experiência em vídeos virais. Analise profundamente este título e nicho para gerar os MELHORES gatilhos mentais que farão o vídeo VIRALIZAR.
 
 TÍTULO DO VÍDEO: "${scriptTitle}"
 NICHO: ${agent.niche || "Geral"}
 SUBNICHO: ${agent.sub_niche || "Geral"}
 
-REQUISITOS:
-1. Os gatilhos devem ser ESPECÍFICOS para este nicho e título
-2. Foque em gatilhos que geram alta retenção e engajamento
-3. Inclua gatilhos emocionais, de curiosidade e de urgência
-4. Cada gatilho deve ser uma palavra ou frase curta (máx 3 palavras)
+🎯 SUA MISSÃO: Gerar 8 gatilhos mentais ULTRA-PODEROSOS baseados em:
 
-GATILHOS CLÁSSICOS PARA REFERÊNCIA:
-- Escassez, Urgência, Prova Social, Autoridade, Reciprocidade
-- Curiosidade, Medo de Perder (FOMO), Exclusividade, Novidade
-- Antecipação, História, Transformação, Contraste, Especificidade
+1. PSICOLOGIA DO ALGORITMO DO YOUTUBE:
+   - Gatilhos que aumentam RETENÇÃO (watch time)
+   - Gatilhos que geram CLIQUES (CTR alto)
+   - Gatilhos que provocam ENGAJAMENTO (comentários, likes)
 
-Retorne APENAS os 8 gatilhos, um por linha, sem numeração ou explicação.`,
+2. NEUROCIÊNCIA DA VIRALIZAÇÃO:
+   - Dopamina: Curiosidade, Surpresa, Recompensa
+   - Urgência: FOMO, Escassez, Tempo limitado
+   - Emoção: Medo, Esperança, Raiva, Alegria
+   - Social: Prova Social, Autoridade, Pertencimento
+
+3. FÓRMULAS COMPROVADAS DE VIRAIS:
+   - Contraste Dramático (Antes/Depois)
+   - Segredo Revelado
+   - Desafio Impossível
+   - História de Transformação
+   - Polêmica Controlada
+   - Especificidade Numérica
+
+4. GATILHOS ESPECÍFICOS PARA O NICHO "${agent.niche || 'Geral'}":
+   - Adapte os gatilhos para ressoar com a audiência deste nicho
+   - Use linguagem e referências que esta audiência conhece
+
+⚠️ REGRAS:
+- Cada gatilho deve ter NO MÁXIMO 3 palavras
+- Devem ser ACIONÁVEIS no roteiro
+- Foque nos gatilhos mais FORTES para este título específico
+- Pense: "O que faria QUALQUER PESSOA parar de scrollar e assistir?"
+
+Retorne APENAS os 8 gatilhos, um por linha, sem numeração, hífens ou explicação. Apenas as palavras/frases dos gatilhos.`,
           model: selectedModel,
         },
       });
