@@ -1029,6 +1029,44 @@ const Analytics = () => {
                 const hoursProgress = Math.min(100, Math.round((estimatedWatchHours / hoursTarget) * 100));
                 const isMonetized = subs >= subsTarget && estimatedWatchHours >= hoursTarget;
 
+                // Calculate growth rates based on channel age and trends
+                const channelCreatedAt = new Date(analyticsData.channel.publishedAt);
+                const now = new Date();
+                const channelAgeMonths = Math.max(1, Math.round((now.getTime() - channelCreatedAt.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+                
+                // Calculate monthly averages
+                const avgSubsPerMonth = Math.round(subs / channelAgeMonths);
+                const avgViewsPerMonth = Math.round(totalViews / channelAgeMonths);
+                const avgWatchHoursPerMonth = Math.round((avgViewsPerMonth * 4) / 60);
+
+                // Calculate months to reach targets
+                const subsRemaining = Math.max(0, subsTarget - subs);
+                const hoursRemaining = Math.max(0, hoursTarget - estimatedWatchHours);
+                
+                const monthsToSubsTarget = avgSubsPerMonth > 0 ? Math.ceil(subsRemaining / avgSubsPerMonth) : null;
+                const monthsToHoursTarget = avgWatchHoursPerMonth > 0 ? Math.ceil(hoursRemaining / avgWatchHoursPerMonth) : null;
+                
+                // Determine limiting factor
+                const monthsToMonetization = !isMonetized && monthsToSubsTarget !== null && monthsToHoursTarget !== null
+                  ? Math.max(monthsToSubsTarget, monthsToHoursTarget)
+                  : null;
+
+                // Generate projection data for chart (next 12 months)
+                const projectionData = [];
+                for (let i = 0; i <= 12; i++) {
+                  const projectedSubs = Math.min(subsTarget * 1.2, subs + (avgSubsPerMonth * i));
+                  const projectedHours = Math.min(hoursTarget * 1.2, estimatedWatchHours + (avgWatchHoursPerMonth * i));
+                  const monthDate = new Date(now);
+                  monthDate.setMonth(monthDate.getMonth() + i);
+                  projectionData.push({
+                    month: monthDate.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }),
+                    inscritos: Math.round(projectedSubs),
+                    horas: Math.round(projectedHours),
+                    metaSubs: subsTarget,
+                    metaHoras: hoursTarget,
+                  });
+                }
+
                 return (
                   <Card className="p-6 mb-8">
                     <div className="flex items-center justify-between mb-4">
@@ -1120,6 +1158,150 @@ const Analytics = () => {
                         )}
                       </div>
                     </div>
+
+                    {/* Projection Summary */}
+                    {!isMonetized && (
+                      <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <Calendar className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">Projeção de Monetização</p>
+                            <p className="text-xs text-muted-foreground">Baseado no crescimento médio do canal</p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                          <div className="text-center p-3 rounded-lg bg-background/50">
+                            <p className="text-2xl font-bold text-primary">
+                              {monthsToMonetization !== null ? (
+                                monthsToMonetization <= 0 ? "🎉" : `~${monthsToMonetization}`
+                              ) : "?"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {monthsToMonetization !== null && monthsToMonetization > 0 
+                                ? monthsToMonetization === 1 ? "mês restante" : "meses restantes"
+                                : "meses"}
+                            </p>
+                          </div>
+                          <div className="text-center p-3 rounded-lg bg-background/50">
+                            <p className="text-lg font-bold text-blue-500">+{formatNumber(avgSubsPerMonth)}</p>
+                            <p className="text-xs text-muted-foreground">inscritos/mês</p>
+                          </div>
+                          <div className="text-center p-3 rounded-lg bg-background/50">
+                            <p className="text-lg font-bold text-purple-500">+{formatNumber(avgWatchHoursPerMonth)}h</p>
+                            <p className="text-xs text-muted-foreground">horas/mês</p>
+                          </div>
+                          <div className="text-center p-3 rounded-lg bg-background/50">
+                            <p className="text-lg font-bold text-foreground">{channelAgeMonths}</p>
+                            <p className="text-xs text-muted-foreground">meses de canal</p>
+                          </div>
+                        </div>
+
+                        {/* Projection Chart */}
+                        <div className="mt-4">
+                          <p className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+                            <BarChart3 className="w-4 h-4" />
+                            Projeção dos Próximos 12 Meses
+                          </p>
+                          <Tabs defaultValue="inscritos" className="w-full">
+                            <TabsList className="mb-3">
+                              <TabsTrigger value="inscritos" className="text-xs">Inscritos</TabsTrigger>
+                              <TabsTrigger value="horas" className="text-xs">Horas de Exibição</TabsTrigger>
+                            </TabsList>
+                            
+                            <TabsContent value="inscritos">
+                              <div className="h-48">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <AreaChart data={projectionData}>
+                                    <defs>
+                                      <linearGradient id="colorSubs" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                      </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={10} tickLine={false} />
+                                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} tickLine={false} tickFormatter={(v) => formatNumber(v)} />
+                                    <Tooltip 
+                                      contentStyle={{ 
+                                        backgroundColor: "hsl(var(--background))", 
+                                        border: "1px solid hsl(var(--border))",
+                                        borderRadius: "8px",
+                                        fontSize: "12px"
+                                      }}
+                                      formatter={(value: number) => [formatNumber(value), "Inscritos"]}
+                                    />
+                                    <Area 
+                                      type="monotone" 
+                                      dataKey="metaSubs" 
+                                      stroke="hsl(142 76% 36%)" 
+                                      strokeDasharray="5 5"
+                                      fill="none"
+                                      strokeWidth={2}
+                                      name="Meta (1.000)"
+                                    />
+                                    <Area 
+                                      type="monotone" 
+                                      dataKey="inscritos" 
+                                      stroke="hsl(var(--primary))" 
+                                      fill="url(#colorSubs)"
+                                      strokeWidth={2}
+                                      name="Projeção"
+                                    />
+                                  </AreaChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </TabsContent>
+                            
+                            <TabsContent value="horas">
+                              <div className="h-48">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <AreaChart data={projectionData}>
+                                    <defs>
+                                      <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="hsl(270 60% 50%)" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="hsl(270 60% 50%)" stopOpacity={0} />
+                                      </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={10} tickLine={false} />
+                                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} tickLine={false} tickFormatter={(v) => formatNumber(v)} />
+                                    <Tooltip 
+                                      contentStyle={{ 
+                                        backgroundColor: "hsl(var(--background))", 
+                                        border: "1px solid hsl(var(--border))",
+                                        borderRadius: "8px",
+                                        fontSize: "12px"
+                                      }}
+                                      formatter={(value: number) => [`${formatNumber(value)}h`, "Horas"]}
+                                    />
+                                    <Area 
+                                      type="monotone" 
+                                      dataKey="metaHoras" 
+                                      stroke="hsl(142 76% 36%)" 
+                                      strokeDasharray="5 5"
+                                      fill="none"
+                                      strokeWidth={2}
+                                      name="Meta (4.000h)"
+                                    />
+                                    <Area 
+                                      type="monotone" 
+                                      dataKey="horas" 
+                                      stroke="hsl(270 60% 50%)" 
+                                      fill="url(#colorHours)"
+                                      strokeWidth={2}
+                                      name="Projeção"
+                                    />
+                                  </AreaChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </TabsContent>
+                          </Tabs>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Info disclaimer */}
                     <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border">
