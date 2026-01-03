@@ -14,10 +14,8 @@ import { toast } from "sonner";
 
 const AI_MODELS = [
   { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", description: "Rápido e inteligente" },
-  { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI", description: "Econômico" },
   { id: "claude-4-sonnet", name: "Claude 4 Sonnet", provider: "Anthropic", description: "Criativo e detalhado" },
   { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "Google", description: "Contexto extenso" },
-  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", provider: "Google", description: "Rápido e eficiente" },
 ];
 
 interface Message {
