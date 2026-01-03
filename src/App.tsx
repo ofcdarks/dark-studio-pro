@@ -24,7 +24,6 @@ import BatchImages from "./pages/BatchImages";
 import VideoGenerator from "./pages/VideoGenerator";
 import YouTubeIntegration from "./pages/YouTubeIntegration";
 import SearchChannels from "./pages/SearchChannels";
-import ViralAnalysis from "./pages/ViralAnalysis";
 import ChannelAnalyzer from "./pages/ChannelAnalyzer";
 import SRTConverter from "./pages/SRTConverter";
 import SettingsPage from "./pages/SettingsPage";
@@ -65,7 +64,6 @@ const App = () => (
             <Route path="/video-gen" element={<ProtectedRoute><VideoGenerator /></ProtectedRoute>} />
             <Route path="/youtube" element={<ProtectedRoute><YouTubeIntegration /></ProtectedRoute>} />
             <Route path="/search-channels" element={<ProtectedRoute><SearchChannels /></ProtectedRoute>} />
-            <Route path="/viral-analysis" element={<ProtectedRoute><ViralAnalysis /></ProtectedRoute>} />
             <Route path="/channel-analyzer" element={<ProtectedRoute><ChannelAnalyzer /></ProtectedRoute>} />
             <Route path="/srt" element={<ProtectedRoute><SRTConverter /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
