@@ -248,6 +248,7 @@ const ExploreNiche = () => {
           exampleTitles: strategicPlan.exampleTitles,
           thumbnailTips: strategicPlan.thumbnailTips,
           audienceInsights: strategicPlan.audienceInsights,
+          strategicKeywords: strategicPlan.strategicKeywords,
         },
       });
 
