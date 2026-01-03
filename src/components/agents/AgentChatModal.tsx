@@ -733,25 +733,25 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
       {/* Main Modal */}
       <Dialog open={open && !isGeneratingScript} onOpenChange={onOpenChange}>
         <DialogContent className="bg-card border-primary/30 rounded-2xl max-w-2xl h-[80vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-4 border-b border-border/50">
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-amber-500/20 flex items-center justify-center border border-primary/30">
+        <DialogHeader className="p-5 pb-4 border-b border-border/50">
+          <DialogTitle className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/30 to-amber-500/20 flex items-center justify-center border border-primary/40 shrink-0">
                 <Bot className="w-5 h-5 text-primary" />
               </div>
-              <div>
-                <p className="font-semibold text-foreground">{agent.name}</p>
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-lg text-foreground truncate">{agent.name}</p>
                 {agent.niche && (
-                  <p className="text-xs text-muted-foreground font-normal">
+                  <p className="text-xs text-muted-foreground font-normal truncate">
                     {agent.niche}{agent.sub_niche ? ` • ${agent.sub_niche}` : ''}
                   </p>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Select value={selectedModel} onValueChange={handleModelChange}>
-                <SelectTrigger className="w-[180px] h-8 text-xs bg-background/50 border-border/50">
-                  <Sparkles className="w-3 h-3 mr-1.5 text-primary" />
+                <SelectTrigger className="w-[140px] h-9 text-xs bg-background/50 border-border/50 rounded-lg">
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5 text-primary" />
                   <SelectValue placeholder="Modelo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -769,7 +769,7 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
                 variant="ghost"
                 size="icon"
                 onClick={clearChat}
-                className="text-muted-foreground hover:text-foreground"
+                className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 title="Limpar conversa"
               >
                 <Trash2 className="w-4 h-4" />
