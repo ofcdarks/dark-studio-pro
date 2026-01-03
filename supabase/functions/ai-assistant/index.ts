@@ -702,7 +702,7 @@ serve(async (req) => {
         // Busca de subnichos com análise de demanda e concorrência
         const mainNicheInput = niche || prompt;
         const competitorSubnicheInput = text || "";
-        systemPrompt = `Você é um analista estratégico especializado em descoberta de nichos no YouTube.
+        systemPrompt = `Você é um analista estratégico ESPECIALISTA em nichos virais do YouTube com milhões de visualizações.
         
         Analise o nicho principal "${mainNicheInput}" e encontre subnichos promissores com ALTA DEMANDA e BAIXA CONCORRÊNCIA.
         
@@ -714,8 +714,22 @@ serve(async (req) => {
         3. OPORTUNIDADE: Potencial de monetização, crescimento projetado, facilidade de entrada
         4. DIFERENCIAÇÃO: Como se destacar neste subnicho
         5. MICRO-NICHO: Um segmento ainda mais específico dentro do subnicho
-        6. TÍTULOS VIRAIS: 3 exemplos de títulos que funcionariam bem
+        6. TÍTULOS VIRAIS: 3 exemplos de títulos REAIS e ESPECÍFICOS que funcionariam bem
         7. PAÍSES ALVO: Países ideais para começar com menor concorrência
+        
+        ⚠️ REGRA CRÍTICA PARA TÍTULOS DE EXEMPLO:
+        Os títulos NÃO podem ser genéricos! Devem ser ULTRA-ESPECÍFICOS e parecer títulos de vídeos REAIS.
+        
+        ❌ ERRADO (genérico): "A história incrível que ninguém conhece"
+        ✅ CERTO (específico): "O piloto que salvou 155 vidas pousando no Rio Hudson"
+        
+        ❌ ERRADO (genérico): "O herói esquecido que mudou tudo"  
+        ✅ CERTO (específico): "Irena Sendler: a mulher que salvou 2.500 crianças dos nazistas"
+        
+        ❌ ERRADO (genérico): "A invenção proibida que mudaria o mundo"
+        ✅ CERTO (específico): "Nikola Tesla e o carro elétrico de 1931 que funcionava sem bateria"
+        
+        Os títulos devem mencionar NOMES, NÚMEROS, DATAS, LUGARES ESPECÍFICOS!
         
         Retorne EXATAMENTE 5 subnichos promissores em formato JSON:
         {
@@ -732,11 +746,11 @@ serve(async (req) => {
               "description": "Descrição detalhada do subnicho e por que é uma boa oportunidade",
               "microNiche": "Um segmento ultra-específico dentro deste subnicho para dominar mais rápido",
               "exampleTitles": [
-                "Título viral exemplo 1 usando gatilhos mentais",
-                "Título viral exemplo 2 com curiosidade",
-                "Título viral exemplo 3 com urgência"
+                "Título ESPECÍFICO com nome/número/data real - ex: 'John Harrison: o carpinteiro que resolveu o maior problema da navegação'",
+                "Título ESPECÍFICO com fato concreto - ex: 'A bomba de 1,4 megatons que os EUA perderam na costa da Espanha em 1966'",
+                "Título ESPECÍFICO com gancho emocional - ex: 'Por que a Kodak inventou a câmera digital em 1975 e escondeu por 20 anos?'"
               ],
-              "targetCountries": ["🇧🇷 Brasil", "🇵🇹 Portugal", "etc - países com melhor oportunidade"],
+              "targetCountries": ["BR Brasil", "PT Portugal", "etc - países com melhor oportunidade"],
               "contentIdeas": ["ideia 1", "ideia 2", "ideia 3"],
               "keywords": ["palavra-chave 1", "palavra-chave 2"],
               "monetizationPotential": "Alto" | "Médio" | "Baixo",
@@ -752,8 +766,8 @@ serve(async (req) => {
         - Priorize subnichos com ALTA demanda e BAIXA concorrência
         - Seja específico e prático nos subnichos sugeridos
         - O microNiche deve ser MUITO específico (ex: "Histórias de sobrevivência na Antártida" ao invés de apenas "Histórias de sobrevivência")
-        - Os 3 títulos de exemplo devem usar gatilhos mentais fortes (curiosidade, urgência, medo de perder)
-        - Os países alvo devem considerar concorrência menor e potencial de crescimento
+        - Os 3 títulos de exemplo DEVEM ser específicos com nomes, números e fatos reais - NUNCA genéricos!
+        - Os países alvo devem ter código de 2 letras antes do nome (ex: "BR Brasil", "PT Portugal", "AR Argentina")
         - Considere tendências atuais de 2025/2026
         - Foque em oportunidades reais e acionáveis
         - Os subnichos devem ser diferentes o suficiente para diversificar
