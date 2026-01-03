@@ -43,47 +43,52 @@ interface NavItem {
   label: string;
   href: string;
   id: string;
+  category?: string;
 }
 
-// Ordem cronológica de produção de vídeo:
-// 1. Dashboard/Início
-// 2. Pesquisa e Análise (explorar nicho, buscar canais, análise de virais)
-// 3. Planejamento (biblioteca virais, canais monitorados)
-// 4. Análise de conteúdo (analisador de vídeos, histórico)
-// 5. Criação (agentes, thumbnails, cenas, prompts, imagens)
-// 6. Produção (voz, vídeo, conversor SRT)
-// 7. Publicação (YouTube)
-// 8. Métricas (Analytics)
-// 9. Organização e Configurações
+// Categorias para separadores visuais
+const categories: Record<string, string> = {
+  home: "",
+  pesquisa: "Pesquisa",
+  planejamento: "Planejamento",
+  analise: "Análise",
+  criacao: "Criação",
+  producao: "Produção",
+  publicacao: "Publicação",
+  metricas: "Métricas",
+  organizacao: "Organização",
+};
+
+// Ordem cronológica de produção de vídeo
 const defaultNavItems: NavItem[] = [
-  { id: "home", icon: Home, label: "Início", href: "/" },
+  { id: "home", icon: Home, label: "Início", href: "/", category: "home" },
   // Pesquisa e Análise
-  { id: "explore", icon: Compass, label: "Explorar Nicho", href: "/explore" },
-  { id: "search-channels", icon: Search, label: "Buscar Canais", href: "/search-channels" },
-  { id: "viral-analysis", icon: TrendingUp, label: "Análise Virais", href: "/viral-analysis" },
+  { id: "explore", icon: Compass, label: "Explorar Nicho", href: "/explore", category: "pesquisa" },
+  { id: "search-channels", icon: Search, label: "Buscar Canais", href: "/search-channels", category: "pesquisa" },
+  { id: "viral-analysis", icon: TrendingUp, label: "Análise Virais", href: "/viral-analysis", category: "pesquisa" },
   // Planejamento
-  { id: "library", icon: Library, label: "Biblioteca Virais", href: "/library" },
-  { id: "channels", icon: Eye, label: "Canais Monitorados", href: "/channels" },
+  { id: "library", icon: Library, label: "Biblioteca Virais", href: "/library", category: "planejamento" },
+  { id: "channels", icon: Eye, label: "Canais Monitorados", href: "/channels", category: "planejamento" },
   // Análise de conteúdo
-  { id: "analyzer", icon: Video, label: "Analisador de Vídeos", href: "/analyzer" },
-  { id: "history", icon: History, label: "Histórico de Análises", href: "/history" },
+  { id: "analyzer", icon: Video, label: "Analisador de Vídeos", href: "/analyzer", category: "analise" },
+  { id: "history", icon: History, label: "Histórico de Análises", href: "/history", category: "analise" },
   // Criação
-  { id: "agents", icon: Bot, label: "Agentes Virais", href: "/agents" },
-  { id: "thumbnails", icon: Image, label: "Gerador de Thumbnails", href: "/thumbnails" },
-  { id: "scenes", icon: Film, label: "Gerador de Cenas", href: "/scenes" },
-  { id: "prompts", icon: Image, label: "Prompts e Imagens", href: "/prompts" },
-  { id: "batch-images", icon: Images, label: "Imagens em Lote", href: "/batch-images" },
+  { id: "agents", icon: Bot, label: "Agentes Virais", href: "/agents", category: "criacao" },
+  { id: "thumbnails", icon: Image, label: "Gerador de Thumbnails", href: "/thumbnails", category: "criacao" },
+  { id: "scenes", icon: Film, label: "Gerador de Cenas", href: "/scenes", category: "criacao" },
+  { id: "prompts", icon: Image, label: "Prompts e Imagens", href: "/prompts", category: "criacao" },
+  { id: "batch-images", icon: Images, label: "Imagens em Lote", href: "/batch-images", category: "criacao" },
   // Produção
-  { id: "voice", icon: Mic, label: "Gerador de Voz", href: "/voice" },
-  { id: "video-gen", icon: Film, label: "Gerador de Vídeo", href: "/video-gen" },
-  { id: "srt", icon: FileText, label: "Conversor SRT", href: "/srt" },
+  { id: "voice", icon: Mic, label: "Gerador de Voz", href: "/voice", category: "producao" },
+  { id: "video-gen", icon: Film, label: "Gerador de Vídeo", href: "/video-gen", category: "producao" },
+  { id: "srt", icon: FileText, label: "Conversor SRT", href: "/srt", category: "producao" },
   // Publicação
-  { id: "youtube", icon: Youtube, label: "Integração YouTube", href: "/youtube" },
+  { id: "youtube", icon: Youtube, label: "Integração YouTube", href: "/youtube", category: "publicacao" },
   // Métricas
-  { id: "analytics", icon: BarChart3, label: "Analytics", href: "/analytics" },
+  { id: "analytics", icon: BarChart3, label: "Analytics", href: "/analytics", category: "metricas" },
   // Organização
-  { id: "folders", icon: FolderOpen, label: "Pastas e Histórico", href: "/folders" },
-  { id: "settings", icon: Settings, label: "Configurações", href: "/settings" },
+  { id: "folders", icon: FolderOpen, label: "Pastas e Histórico", href: "/folders", category: "organizacao" },
+  { id: "settings", icon: Settings, label: "Configurações", href: "/settings", category: "organizacao" },
 ];
 
 const SIDEBAR_ORDER_KEY = "sidebar-nav-order";
@@ -221,37 +226,51 @@ export function Sidebar() {
             </Tooltip>
           </div>
         )}
-        <div className="space-y-1">
-          {navItems.map((item) => (
-            <div
-              key={item.id}
-              draggable
-              onDragStart={() => handleDragStart(item.id)}
-              onDragOver={handleDragOver}
-              onDrop={() => handleDrop(item.id)}
-              onDragEnd={handleDragEnd}
-              className={cn(
-                "group cursor-grab active:cursor-grabbing",
-                draggedItem === item.id && "opacity-50"
-              )}
-            >
-              <button
-                onClick={() => navigate(item.href)}
-                className={cn(
-                  "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200",
-                  location.pathname === item.href
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+        <div className="space-y-0.5">
+          {navItems.map((item, index) => {
+            const prevItem = index > 0 ? navItems[index - 1] : null;
+            const showSeparator = !collapsed && item.category && prevItem?.category !== item.category && categories[item.category];
+            
+            return (
+              <div key={item.id}>
+                {showSeparator && (
+                  <div className="flex items-center gap-2 px-3 pt-4 pb-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/70">
+                      {categories[item.category!]}
+                    </span>
+                    <div className="flex-1 h-px bg-border/50" />
+                  </div>
                 )}
-              >
-                {!collapsed && (
-                  <GripVertical className="w-4 h-4 flex-shrink-0 opacity-0 group-hover:opacity-50 transition-opacity" />
-                )}
-                <item.icon className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span className="text-sm font-medium text-left flex-1">{item.label}</span>}
-              </button>
-            </div>
-          ))}
+                <div
+                  draggable
+                  onDragStart={() => handleDragStart(item.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDrop(item.id)}
+                  onDragEnd={handleDragEnd}
+                  className={cn(
+                    "group cursor-grab active:cursor-grabbing",
+                    draggedItem === item.id && "opacity-50"
+                  )}
+                >
+                  <button
+                    onClick={() => navigate(item.href)}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200",
+                      location.pathname === item.href
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                    )}
+                  >
+                    {!collapsed && (
+                      <GripVertical className="w-4 h-4 flex-shrink-0 opacity-0 group-hover:opacity-50 transition-opacity" />
+                    )}
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    {!collapsed && <span className="text-sm font-medium text-left flex-1">{item.label}</span>}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </nav>
 
