@@ -56,6 +56,7 @@ export function AgentChatModal({ open, onOpenChange, agent, onModelChange }: Age
   // Script generation state
   const [showScriptForm, setShowScriptForm] = useState(false);
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState("");
   const [scriptTitle, setScriptTitle] = useState("");
   const [scriptDuration, setScriptDuration] = useState("5");
   const [scriptLanguage, setScriptLanguage] = useState("pt-BR");
@@ -190,9 +191,32 @@ export function AgentChatModal({ open, onOpenChange, agent, onModelChange }: Age
   };
 
   // Script generation logic
-  const wordsPerMinute = 130;
+  const wordsPerMinute = 150; // Velocidade média de narração
   const estimatedWords = parseInt(scriptDuration || "1") * wordsPerMinute;
   const estimatedParts = Math.max(1, Math.ceil(parseInt(scriptDuration || "1") / 3));
+  
+  const getLanguageName = (code: string) => {
+    const languages: Record<string, string> = {
+      "pt-BR": "Português (Brasil)",
+      "en-US": "English (US)",
+      "en-GB": "English (UK)",
+      "es": "Español",
+      "es-MX": "Español (México)",
+      "fr": "Français",
+      "de": "Deutsch",
+      "it": "Italiano",
+      "ja": "日本語",
+      "ko": "한국어",
+      "zh": "中文",
+      "ru": "Русский",
+      "ar": "العربية",
+      "hi": "हिन्दी",
+      "nl": "Nederlands",
+      "pl": "Polski",
+      "tr": "Türkçe",
+    };
+    return languages[code] || code;
+  };
   
   const getCreditsForModel = () => {
     const durationNum = parseInt(scriptDuration || "1");
@@ -213,6 +237,7 @@ export function AgentChatModal({ open, onOpenChange, agent, onModelChange }: Age
     }
 
     setIsGeneratingScript(true);
+    setGenerationStatus("Preparando dados do agente...");
     
     try {
       const ctaPositions = [];
@@ -220,27 +245,52 @@ export function AgentChatModal({ open, onOpenChange, agent, onModelChange }: Age
       if (ctaMeio) ctaPositions.push("meio (metade do vídeo)");
       if (ctaFinal) ctaPositions.push("final (últimos 30 segundos)");
 
-      const maxDuration = 8;
-      const adjustedDuration = parseInt(scriptDuration || "1") > maxDuration ? maxDuration : parseInt(scriptDuration || "1");
+      const duration = parseInt(scriptDuration || "1");
+      
+      setGenerationStatus("Aplicando fórmula viral e gatilhos mentais...");
 
+      // Build comprehensive prompt for voice-over only narration
       const prompt = `
-Gere um roteiro completo para um vídeo com o título: "${scriptTitle}"
+GERE UM ROTEIRO DE NARRAÇÃO PARA VOICE-OVER com EXATAMENTE ${duration} minuto(s) de duração.
 
-ESPECIFICAÇÕES DO VÍDEO:
-- Duração: ${adjustedDuration} minutos (~${estimatedWords} palavras)
-- Partes: ${estimatedParts} partes de ~${Math.ceil(adjustedDuration / estimatedParts)} minutos cada
-- Idioma: ${scriptLanguage === "pt-BR" ? "Português (Brasil)" : scriptLanguage === "en-US" ? "English (US)" : "Español"}
-- Incluir CTA em: ${ctaPositions.length > 0 ? ctaPositions.join(", ") : "final do vídeo"}
+TÍTULO DO VÍDEO: "${scriptTitle}"
 
-Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado para engajamento viral.
+⚠️ REGRAS CRÍTICAS DE FORMATO:
+1. SOMENTE TEXTO DE NARRAÇÃO - Nenhuma indicação de cena, corte, música ou efeito sonoro
+2. DURAÇÃO EXATA: ${duration} minuto(s) = aproximadamente ${estimatedWords} palavras (150 palavras/minuto)
+3. O texto deve ser LIDO EM VOZ ALTA naturalmente
+4. Sem colchetes, parênteses ou instruções técnicas
+5. Apenas o que o narrador deve FALAR
+
+IDIOMA: ${getLanguageName(scriptLanguage)}
+
+ESTRUTURA OBRIGATÓRIA (${estimatedParts} partes):
+${Array.from({ length: estimatedParts }, (_, i) => `- Parte ${i + 1}: ~${Math.ceil(estimatedWords / estimatedParts)} palavras`).join('\n')}
+
+${ctaPositions.length > 0 ? `INCLUIR CALL-TO-ACTION NATURAL EM: ${ctaPositions.join(", ")}` : "INCLUIR CTA NATURAL NO FINAL"}
+
+${agent.formula ? `\n🎯 FÓRMULA VIRAL A SEGUIR:\n${agent.formula}` : ''}
+
+${agent.formula_structure?.memory ? `\n📝 MEMÓRIA/CONTEXTO DO AGENTE:\n${agent.formula_structure.memory}` : ''}
+
+${agent.mental_triggers && agent.mental_triggers.length > 0 ? `\n🧠 GATILHOS MENTAIS OBRIGATÓRIOS:\n${agent.mental_triggers.map(t => `- ${t}`).join('\n')}` : ''}
+
+${agent.formula_structure?.instructions ? `\n📋 INSTRUÇÕES ESPECÍFICAS:\n${agent.formula_structure.instructions}` : ''}
+
+EXEMPLO DE FORMATO CORRETO:
+"Você já parou para pensar por que algumas pessoas conseguem resultados extraordinários enquanto outras lutam para sair do lugar? Hoje vou revelar o segredo que mudou completamente minha perspectiva..."
+
+GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
       `.trim();
+
+      setGenerationStatus("Gerando roteiro com IA...");
 
       const { data, error } = await supabase.functions.invoke("ai-assistant", {
         body: {
           type: "generate_script_with_formula",
           prompt,
           model: selectedModel,
-          duration: adjustedDuration,
+          duration,
           language: scriptLanguage,
           userId: user.id,
           agentData: {
@@ -260,6 +310,8 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
         return;
       }
 
+      setGenerationStatus("Salvando roteiro...");
+
       const scriptContent = typeof data?.result === 'string' ? data.result : JSON.stringify(data?.result, null, 2);
 
       // Save script
@@ -270,7 +322,7 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
           agent_id: agent.id,
           title: scriptTitle,
           content: scriptContent,
-          duration: adjustedDuration,
+          duration: duration,
           language: scriptLanguage,
           model_used: selectedModel,
           credits_used: data?.creditsUsed || estimatedCredits
@@ -285,11 +337,13 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
         })
         .eq("id", agent.id);
 
+      setGenerationStatus("Concluído!");
+
       // Add script to chat as assistant message
       const scriptMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
-        content: `📝 **ROTEIRO GERADO: ${scriptTitle}**\n\n${scriptContent}`,
+        content: `🎙️ **ROTEIRO DE NARRAÇÃO: ${scriptTitle}**\n⏱️ Duração: ${duration} min | 🌐 ${getLanguageName(scriptLanguage)}\n\n${scriptContent}`,
         timestamp: new Date(),
         isScript: true
       };
@@ -297,18 +351,19 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
       
       setShowScriptForm(false);
       setScriptTitle("");
-      toast.success(`Roteiro gerado! (${data?.creditsUsed || estimatedCredits} créditos)`);
+      toast.success(`Roteiro de narração gerado! (${data?.creditsUsed || estimatedCredits} créditos)`);
       
     } catch (error) {
       console.error("[GenerateScript] Error:", error);
       toast.error("Erro ao gerar roteiro. Tente novamente.");
     } finally {
       setIsGeneratingScript(false);
+      setGenerationStatus("");
     }
   };
 
   const copyToClipboard = (content: string) => {
-    const cleanContent = content.replace(/^📝 \*\*ROTEIRO GERADO:.*?\*\*\n\n/, '');
+    const cleanContent = content.replace(/^🎙️ \*\*ROTEIRO DE NARRAÇÃO:.*?\n.*?\n\n/, '');
     navigator.clipboard.writeText(cleanContent);
     toast.success("Roteiro copiado!");
   };
@@ -429,9 +484,14 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
                   <Bot className="w-4 h-4 text-primary" />
                 </div>
                 <div className="bg-background/50 border border-border/50 rounded-2xl px-4 py-3">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Gerando roteiro...</span>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 text-primary">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm font-medium">Gerando roteiro de narração...</span>
+                    </div>
+                    {generationStatus && (
+                      <span className="text-xs text-muted-foreground">{generationStatus}</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -496,10 +556,24 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
                   <SelectTrigger className="bg-background/50 border-border/50 h-9 text-sm">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pt-BR">Português</SelectItem>
-                    <SelectItem value="en-US">English</SelectItem>
-                    <SelectItem value="es">Español</SelectItem>
+                  <SelectContent className="max-h-60">
+                    <SelectItem value="pt-BR">🇧🇷 Português (BR)</SelectItem>
+                    <SelectItem value="en-US">🇺🇸 English (US)</SelectItem>
+                    <SelectItem value="en-GB">🇬🇧 English (UK)</SelectItem>
+                    <SelectItem value="es">🇪🇸 Español</SelectItem>
+                    <SelectItem value="es-MX">🇲🇽 Español (MX)</SelectItem>
+                    <SelectItem value="fr">🇫🇷 Français</SelectItem>
+                    <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
+                    <SelectItem value="it">🇮🇹 Italiano</SelectItem>
+                    <SelectItem value="ja">🇯🇵 日本語</SelectItem>
+                    <SelectItem value="ko">🇰🇷 한국어</SelectItem>
+                    <SelectItem value="zh">🇨🇳 中文</SelectItem>
+                    <SelectItem value="ru">🇷🇺 Русский</SelectItem>
+                    <SelectItem value="ar">🇸🇦 العربية</SelectItem>
+                    <SelectItem value="hi">🇮🇳 हिन्दी</SelectItem>
+                    <SelectItem value="nl">🇳🇱 Nederlands</SelectItem>
+                    <SelectItem value="pl">🇵🇱 Polski</SelectItem>
+                    <SelectItem value="tr">🇹🇷 Türkçe</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
