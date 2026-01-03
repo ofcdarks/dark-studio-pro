@@ -2,6 +2,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Eye,
   Plus,
@@ -13,6 +14,7 @@ import {
   ThumbsUp,
   Play,
   Folder,
+  Bell,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -244,6 +246,33 @@ const MonitoredChannels = () => {
     },
   });
 
+  // Toggle notification mutation
+  const toggleNotificationMutation = useMutation({
+    mutationFn: async ({ channelId, notify }: { channelId: string; notify: boolean }) => {
+      const { error } = await supabase
+        .from("monitored_channels")
+        .update({ notify_new_videos: notify })
+        .eq("id", channelId);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["monitored-channels"] });
+      toast({ 
+        title: variables.notify ? "Notificações ativadas" : "Notificações desativadas",
+        description: variables.notify 
+          ? "Você será notificado quando houver novos vídeos" 
+          : "Você não receberá mais notificações deste canal"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar as notificações",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAddChannel = async () => {
     if (!channelUrl.trim()) {
       toast({
@@ -453,6 +482,7 @@ const MonitoredChannels = () => {
                       <TableRow className="border-border">
                         <TableHead className="text-primary">NOME</TableHead>
                         <TableHead className="text-primary">URL</TableHead>
+                        <TableHead className="text-primary">NOTIFICAR</TableHead>
                         <TableHead className="text-primary text-right">
                           AÇÕES
                         </TableHead>
@@ -473,6 +503,26 @@ const MonitoredChannels = () => {
                             >
                               {channel.channel_url}
                             </a>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={channel.notify_new_videos || false}
+                                onCheckedChange={(checked) =>
+                                  toggleNotificationMutation.mutate({
+                                    channelId: channel.id,
+                                    notify: checked,
+                                  })
+                                }
+                              />
+                              <Bell
+                                className={`w-4 h-4 ${
+                                  channel.notify_new_videos
+                                    ? "text-primary"
+                                    : "text-muted-foreground"
+                                }`}
+                              />
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
