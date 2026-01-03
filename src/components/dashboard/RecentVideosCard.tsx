@@ -1,5 +1,9 @@
-import { Clock, Eye, MessageCircle, Play } from "lucide-react";
+import { Clock, Eye, MessageCircle, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface RecentVideo {
   id: string;
@@ -16,10 +20,34 @@ interface RecentVideosCardProps {
 }
 
 export function RecentVideosCard({ videos = [] }: RecentVideosCardProps) {
+  const queryClient = useQueryClient();
+  
+  // Limitar a apenas 2 vídeos
+  const displayedVideos = videos.slice(0, 2);
+
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num.toString();
+  };
+
+  const handleDelete = async (videoId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      const { error } = await supabase
+        .from('analyzed_videos')
+        .delete()
+        .eq('id', videoId);
+
+      if (error) throw error;
+
+      toast.success('Vídeo removido com sucesso');
+      queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      toast.error('Erro ao remover vídeo');
+    }
   };
 
   return (
@@ -31,21 +59,29 @@ export function RecentVideosCard({ videos = [] }: RecentVideosCardProps) {
           </div>
           <h3 className="font-semibold text-foreground text-sm">Vídeos Recentes</h3>
         </div>
-        <span className="text-[10px] text-muted-foreground">{videos.length} análises</span>
+        <span className="text-[10px] text-muted-foreground">{displayedVideos.length} de {videos.length}</span>
       </div>
       <div className="space-y-3">
-        {videos.length === 0 ? (
+        {displayedVideos.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground text-xs">
             Nenhum vídeo analisado ainda. Comece analisando vídeos virais!
           </div>
         ) : (
-          videos.map((video) => (
+          displayedVideos.map((video) => (
             <motion.div
               key={video.id}
-              className="relative bg-secondary/30 border border-border/30 rounded-lg p-4 transition-all duration-200 hover:bg-secondary/50 hover:border-primary/20 cursor-pointer overflow-hidden"
+              className="relative bg-secondary/30 border border-border/30 rounded-lg p-4 transition-all duration-200 hover:bg-secondary/50 hover:border-primary/20 cursor-pointer overflow-hidden group/item"
               whileHover={{ x: 4 }}
               transition={{ duration: 0.2 }}
             >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover/item:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                onClick={(e) => handleDelete(video.id, e)}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
               <h4 className="font-medium text-foreground text-sm mb-2 line-clamp-1 pr-10">
                 {video.title}
               </h4>
