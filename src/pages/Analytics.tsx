@@ -131,6 +131,7 @@ interface YouTubeAnalytics {
   allVideos: Array<{
     videoId: string;
     title: string;
+    thumbnail?: string;
     views: number;
     likes: number;
     comments: number;
@@ -142,6 +143,8 @@ interface YouTubeAnalytics {
     videosCount: number;
     views: number;
     likes: number;
+    comments?: number;
+    revenue?: number;
   };
 }
 
@@ -360,46 +363,13 @@ const Analytics = () => {
 
   const createGoal = async () => {
     if (!user || !channelUrl) return;
-    
+
     const now = new Date();
     const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    
-    // Get current value based on goal type and period
-    let startValue = 0;
-    if (analyticsData) {
-      if (newGoal.period_type === "monthly") {
-        // For monthly goals, use current month data
-        switch (newGoal.goal_type) {
-          case "videos":
-            startValue = analyticsData.currentMonth?.videosCount || 0;
-            break;
-          case "views":
-            startValue = analyticsData.currentMonth?.views || 0;
-            break;
-          case "likes":
-            startValue = analyticsData.currentMonth?.likes || 0;
-            break;
-          default:
-            startValue = 0;
-        }
-      } else {
-        // For all-time goals, use total data
-        switch (newGoal.goal_type) {
-          case "subscribers":
-            startValue = analyticsData.statistics.subscribers;
-            break;
-          case "views":
-            startValue = analyticsData.statistics.totalViews;
-            break;
-          case "videos":
-            startValue = analyticsData.statistics.totalVideos;
-            break;
-          case "engagement":
-            startValue = Math.round(analyticsData.recentMetrics.avgEngagementRate * 100);
-            break;
-        }
-      }
-    }
+
+    const startValue = analyticsData
+      ? getMetricFromData(analyticsData, newGoal.goal_type, newGoal.period_type)
+      : 0;
 
     const { error } = await supabase.from("channel_goals").insert({
       user_id: user.id,
@@ -433,41 +403,11 @@ const Analytics = () => {
     const threeDaysFromNow = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
 
     for (const goal of channelGoals) {
-      let currentValue = 0;
-      
-      // Check if it's a monthly goal
-      const isMonthlyGoal = goal.period_type === "monthly";
-      
-      if (isMonthlyGoal && analyticsData.currentMonth) {
-        // For monthly goals, use current month data
-        switch (goal.goal_type) {
-          case "videos":
-            currentValue = analyticsData.currentMonth.videosCount;
-            break;
-          case "views":
-            currentValue = analyticsData.currentMonth.views;
-            break;
-          case "likes":
-            currentValue = analyticsData.currentMonth.likes;
-            break;
-        }
-      } else {
-        // For all-time goals
-        switch (goal.goal_type) {
-          case "subscribers":
-            currentValue = analyticsData.statistics.subscribers;
-            break;
-          case "views":
-            currentValue = analyticsData.statistics.totalViews;
-            break;
-          case "videos":
-            currentValue = analyticsData.statistics.totalVideos;
-            break;
-          case "engagement":
-            currentValue = Math.round(analyticsData.recentMetrics.avgEngagementRate * 100);
-            break;
-        }
-      }
+      const currentValue = getMetricFromData(
+        analyticsData,
+        goal.goal_type,
+        goal.period_type === "monthly" ? "monthly" : "all_time"
+      );
 
       const wasNotCompleted = !goal.completed_at;
       const isCompleted = currentValue >= goal.target_value;
@@ -560,7 +500,70 @@ const Analytics = () => {
     subscribers: { label: "Inscritos", icon: Users },
     views: { label: "Views", icon: Eye },
     videos: { label: "Vídeos", icon: Video },
+    likes: { label: "Likes", icon: ThumbsUp },
+    comments: { label: "Comentários", icon: MessageSquare },
+    revenue: { label: "Faturamento", icon: DollarSign },
     engagement: { label: "Engajamento %", icon: TrendingUp },
+  };
+
+  const getMonthKey = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+  const sumBy = (
+    videos: Array<{ views: number; likes: number; comments: number }>,
+    key: "views" | "likes" | "comments"
+  ) => videos.reduce((sum, v) => sum + (typeof v[key] === "number" ? v[key] : 0), 0);
+
+  const getMetricFromData = (
+    data: YouTubeAnalytics,
+    goalType: string,
+    periodType: "all_time" | "monthly"
+  ) => {
+    if (periodType === "monthly") {
+      const currentMonthKey = getMonthKey(new Date());
+      const monthVideos = (data.allVideos ?? []).filter((video) =>
+        getMonthKey(new Date(video.publishedAt)) === currentMonthKey
+      );
+
+      switch (goalType) {
+        case "videos":
+          return monthVideos.length;
+        case "views":
+          return sumBy(monthVideos as any, "views");
+        case "likes":
+          return sumBy(monthVideos as any, "likes");
+        case "comments":
+          return sumBy(monthVideos as any, "comments");
+        case "revenue":
+          return Math.round(data.monetization?.estimatedMonthlyEarnings ?? 0);
+        default:
+          return 0;
+      }
+    }
+
+    switch (goalType) {
+      case "subscribers":
+        return data.statistics.subscribers;
+      case "views":
+        return data.statistics.totalViews;
+      case "videos":
+        return data.statistics.totalVideos;
+      case "likes":
+        return sumBy((data.allVideos ?? []) as any, "likes");
+      case "comments":
+        return sumBy((data.allVideos ?? []) as any, "comments");
+      case "revenue":
+        return Math.round(data.monetization?.estimatedTotalEarnings ?? 0);
+      case "engagement":
+        return Math.round(data.recentMetrics.avgEngagementRate * 100);
+      default:
+        return 0;
+    }
+  };
+
+  const formatGoalValue = (goalType: string, value: number) => {
+    if (goalType === "revenue") return `R$ ${formatNumber(value)}`;
+    return formatNumber(value);
   };
 
   const fetchAnalytics = async () => {
@@ -984,7 +987,19 @@ const Analytics = () => {
                           <Label>Período</Label>
                           <Select
                             value={newGoal.period_type}
-                            onValueChange={(v: "all_time" | "monthly") => setNewGoal((prev) => ({ ...prev, period_type: v }))}
+                            onValueChange={(v: "all_time" | "monthly") =>
+                              setNewGoal((prev) => {
+                                const monthlyTypes = ["videos", "views", "likes", "comments", "revenue"];
+                                const allTimeTypes = ["subscribers", "views", "videos", "engagement", "likes", "comments", "revenue"];
+                                const allowed = v === "monthly" ? monthlyTypes : allTimeTypes;
+                                const goal_type = allowed.includes(prev.goal_type)
+                                  ? prev.goal_type
+                                  : v === "monthly"
+                                    ? "videos"
+                                    : "subscribers";
+                                return { ...prev, period_type: v, goal_type };
+                              })
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -1009,12 +1024,18 @@ const Analytics = () => {
                                 <>
                                   <SelectItem value="videos">Vídeos Postados</SelectItem>
                                   <SelectItem value="views">Views do Mês</SelectItem>
+                                  <SelectItem value="likes">Likes do Mês</SelectItem>
+                                  <SelectItem value="comments">Comentários do Mês</SelectItem>
+                                  <SelectItem value="revenue">Faturamento do Mês</SelectItem>
                                 </>
                               ) : (
                                 <>
                                   <SelectItem value="subscribers">Inscritos</SelectItem>
                                   <SelectItem value="views">Views Totais</SelectItem>
                                   <SelectItem value="videos">Total de Vídeos</SelectItem>
+                                  <SelectItem value="likes">Likes Totais</SelectItem>
+                                  <SelectItem value="comments">Comentários Totais</SelectItem>
+                                  <SelectItem value="revenue">Faturamento</SelectItem>
                                   <SelectItem value="engagement">Engajamento (%)</SelectItem>
                                 </>
                               )}
@@ -1029,9 +1050,9 @@ const Analytics = () => {
                             onChange={(e) => setNewGoal((prev) => ({ ...prev, target_value: parseInt(e.target.value) || 0 }))}
                             placeholder={newGoal.period_type === "monthly" ? "Ex: 25" : "Ex: 10000"}
                           />
-                          {newGoal.period_type === "monthly" && analyticsData?.currentMonth && (
+                          {newGoal.period_type === "monthly" && analyticsData && (
                             <p className="text-xs text-muted-foreground">
-                              Este mês: {analyticsData.currentMonth.videosCount} vídeos, {formatNumber(analyticsData.currentMonth.views)} views
+                              Este mês: {getMetricFromData(analyticsData, "videos", "monthly")} vídeos, {formatNumber(getMetricFromData(analyticsData, "views", "monthly"))} views, {formatNumber(getMetricFromData(analyticsData, "likes", "monthly"))} likes, {formatNumber(getMetricFromData(analyticsData, "comments", "monthly"))} comentários
                             </p>
                           )}
                         </div>
@@ -1095,7 +1116,7 @@ const Analytics = () => {
                                       )}
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                      Meta: {formatNumber(goal.target_value)}
+                                      Meta: {formatGoalValue(goal.goal_type, goal.target_value)}
                                       {goal.goal_type === "engagement" ? "%" : ""}
                                       {goal.period_type === "monthly" && goal.period_key && (
                                         <span className="ml-1">({goal.period_key})</span>
@@ -1123,12 +1144,12 @@ const Analytics = () => {
                               
                               <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>
-                                  Atual: {formatNumber(goal.current_value)}
+                                  Atual: {formatGoalValue(goal.goal_type, goal.current_value)}
                                   {goal.goal_type === "engagement" ? "%" : ""}
                                 </span>
                                 {remaining > 0 && (
                                   <span className="text-primary">
-                                    Faltam: {formatNumber(remaining)}
+                                    Faltam: {formatGoalValue(goal.goal_type, remaining)}
                                     {goal.goal_type === "engagement" ? "%" : ""}
                                   </span>
                                 )}
@@ -1696,53 +1717,54 @@ const Analytics = () => {
                     <Clock className="w-5 h-5 text-blue-500" />
                     5 Vídeos Mais Recentes
                   </h3>
-                  <div className="space-y-3">
-                    {[...analyticsData.topVideos]
-                      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-                      .slice(0, 5)
-                      .map((video, index) => (
-                        <div
-                          key={video.videoId}
-                          className="flex gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
-                        >
-                          <div className="relative flex-shrink-0">
-                            <span className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">
-                              {index + 1}
-                            </span>
-                            {video.thumbnail && (
-                              <img
-                                src={video.thumbnail}
-                                alt={video.title}
-                                className="w-24 h-14 object-cover rounded"
-                              />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <a
-                              href={`https://www.youtube.com/watch?v=${video.videoId}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm font-medium text-foreground hover:text-primary line-clamp-2"
-                            >
-                              {video.title}
-                            </a>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Eye className="w-3 h-3" />
-                                {formatNumber(video.views)}
+                    <div className="space-y-3">
+                      {(analyticsData.allVideos?.length ? [...analyticsData.allVideos] : [...analyticsData.topVideos])
+                        .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+                        .slice(0, 5)
+                        .map((video, index) => (
+                          <div
+                            key={video.videoId}
+                            className="flex gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                          >
+                            <div className="relative flex-shrink-0">
+                              <span className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">
+                                {index + 1}
                               </span>
-                              <span className="flex items-center gap-1">
-                                <ThumbsUp className="w-3 h-3" />
-                                {formatNumber(video.likes)}
-                              </span>
-                              <span className="text-blue-400">
-                                {new Date(video.publishedAt).toLocaleDateString("pt-BR")}
-                              </span>
+                              {video.thumbnail && (
+                                <img
+                                  src={video.thumbnail}
+                                  alt={video.title}
+                                  className="w-24 h-14 object-cover rounded"
+                                  loading="lazy"
+                                />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <a
+                                href={`https://www.youtube.com/watch?v=${video.videoId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-medium text-foreground hover:text-primary line-clamp-2"
+                              >
+                                {video.title}
+                              </a>
+                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Eye className="w-3 h-3" />
+                                  {formatNumber(video.views)}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <ThumbsUp className="w-3 h-3" />
+                                  {formatNumber(video.likes)}
+                                </span>
+                                <span className="text-blue-400">
+                                  {new Date(video.publishedAt).toLocaleDateString("pt-BR")}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                  </div>
+                        ))}
+                    </div>
                 </Card>
               </div>
             </>
