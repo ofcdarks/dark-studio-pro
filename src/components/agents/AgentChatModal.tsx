@@ -690,8 +690,8 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
           <div className="flex flex-col items-center gap-6">
             {/* Logo with Circle */}
             <div className="relative">
-              <div className="w-28 h-28 rounded-full flex items-center justify-center border-[3px] border-primary overflow-hidden bg-background">
-                <img src={logoGif} alt="Logo" className="w-[90%] h-[90%] object-contain" />
+              <div className="w-20 h-20 rounded-full flex items-center justify-center border-2 border-primary overflow-hidden bg-background">
+                <img src={logoGif} alt="Logo" className="w-[85%] h-[85%] object-contain" />
               </div>
             </div>
 
