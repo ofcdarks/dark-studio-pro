@@ -419,36 +419,41 @@ const ExploreNiche = () => {
 
       if (error) throw error;
 
-      const analysis = data.analysis;
-      if (analysis) {
-        setStrategicPlan({
-          channelName: analysis.channelInfo?.name || "Canal Analisado",
-          niche: analysis.channelInfo?.niche || "Nicho detectado",
-          strategy: analysis.strategicPlan?.contentStrategy || analysis.channelInfo?.positioning || "",
-          contentIdeas: analysis.strategicPlan?.contentIdeas || [],
-          differentials: analysis.strategicPlan?.differentials || [],
-          recommendations: analysis.strategicPlan?.recommendations || [],
-          positioning: analysis.strategicPlan?.positioning,
-          uniqueValue: analysis.strategicPlan?.uniqueValue,
-          postingSchedule: analysis.strategicPlan?.postingSchedule || analysis.metrics?.postingFrequency,
-          growthTimeline: analysis.strategicPlan?.growthTimeline,
-          quickWins: analysis.quickWins,
-          summary: analysis.summary,
-          strengths: analysis.strengths,
-          weaknesses: analysis.weaknesses,
-          opportunities: analysis.opportunities,
-          threats: analysis.threats,
-          metrics: analysis.metrics,
-          dataSource: analysis.dataSource
-        });
-        
-        if (analysis.dataSource?.includes('dados reais')) {
-          toast.success(`Plano estratégico gerado com dados reais do canal ${analysis.channelInfo?.name}!`);
-        } else {
-          toast.warning("Plano gerado sem dados reais. Configure sua YouTube API Key nas configurações para análises mais precisas.");
-        }
-      } else {
+      if (data?.success === false) {
+        toast.error(data.error || "Não foi possível gerar o plano agora. Tente novamente.");
+        return;
+      }
+
+      const analysis = data?.analysis;
+      if (!analysis) {
         throw new Error("Formato de resposta inválido");
+      }
+
+      setStrategicPlan({
+        channelName: analysis.channelInfo?.name || "Canal Analisado",
+        niche: analysis.channelInfo?.niche || "Nicho detectado",
+        strategy: analysis.strategicPlan?.contentStrategy || analysis.channelInfo?.positioning || "",
+        contentIdeas: analysis.strategicPlan?.contentIdeas || [],
+        differentials: analysis.strategicPlan?.differentials || [],
+        recommendations: analysis.strategicPlan?.recommendations || [],
+        positioning: analysis.strategicPlan?.positioning,
+        uniqueValue: analysis.strategicPlan?.uniqueValue,
+        postingSchedule: analysis.strategicPlan?.postingSchedule || analysis.metrics?.postingFrequency,
+        growthTimeline: analysis.strategicPlan?.growthTimeline,
+        quickWins: analysis.quickWins,
+        summary: analysis.summary,
+        strengths: analysis.strengths,
+        weaknesses: analysis.weaknesses,
+        opportunities: analysis.opportunities,
+        threats: analysis.threats,
+        metrics: analysis.metrics,
+        dataSource: analysis.dataSource,
+      });
+
+      if (analysis.dataSource?.includes('dados reais')) {
+        toast.success(`Plano estratégico gerado com dados reais do canal ${analysis.channelInfo?.name}!`);
+      } else {
+        toast.warning("Plano gerado sem dados reais. Configure sua YouTube API Key nas configurações para análises mais precisas.");
       }
     } catch (error: any) {
       console.error('Error generating plan:', error);
