@@ -20,7 +20,12 @@ import {
   ScrollText,
   Heart,
   Copy,
-  Check
+  Check,
+  Clock,
+  Calendar,
+  Sparkles,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -590,58 +595,145 @@ const ViralLibrary = () => {
                   </p>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {scripts.map((script) => (
-                    <Card key={script.id} className="p-6 border-border/50 hover:border-primary/50 transition-colors">
-                      <h3 className="font-bold text-xl text-foreground mb-3 line-clamp-2">{script.title}</h3>
-                      
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        <Badge variant="outline">{script.duration} min</Badge>
-                        <Badge variant="outline">{script.language}</Badge>
-                        <Badge className="bg-primary/20 text-primary border-0">
-                          {script.credits_used} créditos
-                        </Badge>
-                      </div>
-
-                      <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-                        {script.content.substring(0, 200)}...
-                      </p>
-
-                      <div className="flex gap-3">
-                        <Button 
-                          className="flex-1"
-                          onClick={() => {
-                            navigator.clipboard.writeText(script.content);
-                            setCopiedId(script.id);
-                            setTimeout(() => setCopiedId(null), 2000);
-                            toast.success("Roteiro copiado!");
-                          }}
-                        >
-                          {copiedId === script.id ? (
-                            <><Check className="w-4 h-4 mr-2" /> Copiado!</>
-                          ) : (
-                            <><Copy className="w-4 h-4 mr-2" /> Copiar</>
-                          )}
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="icon"
-                          onClick={async () => {
-                            const { error } = await supabase
-                              .from('generated_scripts')
-                              .delete()
-                              .eq('id', script.id);
-                            if (!error) {
-                              setScripts(scripts.filter(s => s.id !== script.id));
-                              toast.success("Roteiro removido!");
-                            }
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                <div className="space-y-4">
+                  {/* Stats Summary */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <Card className="p-4 border-border/50">
+                      <p className="text-sm text-muted-foreground">Total de Roteiros</p>
+                      <p className="text-2xl font-bold text-foreground">{scripts.length}</p>
                     </Card>
-                  ))}
+                    <Card className="p-4 border-border/50">
+                      <p className="text-sm text-muted-foreground">Minutos Totais</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {scripts.reduce((acc, s) => acc + s.duration, 0)} min
+                      </p>
+                    </Card>
+                    <Card className="p-4 border-border/50">
+                      <p className="text-sm text-muted-foreground">Palavras Geradas</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {scripts.reduce((acc, s) => acc + s.content.split(/\s+/).length, 0).toLocaleString()}
+                      </p>
+                    </Card>
+                    <Card className="p-4 border-border/50">
+                      <p className="text-sm text-muted-foreground">Créditos Usados</p>
+                      <p className="text-2xl font-bold text-amber-500">
+                        {scripts.reduce((acc, s) => acc + s.credits_used, 0).toFixed(1)}
+                      </p>
+                    </Card>
+                  </div>
+
+                  {/* Scripts List */}
+                  <div className="space-y-4">
+                    {scripts
+                      .filter(s => 
+                        s.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        s.content.toLowerCase().includes(searchTerm.toLowerCase())
+                      )
+                      .map((script) => {
+                        const wordCount = script.content.split(/\s+/).filter(w => w.length > 0).length;
+                        const readTime = Math.ceil(wordCount / 150);
+                        const isExpanded = copiedId === `expanded-${script.id}`;
+                        
+                        return (
+                          <Card key={script.id} className="border-border/50 hover:border-primary/50 transition-colors overflow-hidden">
+                            <div className="p-6">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <h3 className="font-bold text-xl text-foreground mb-2">{script.title}</h3>
+                                  
+                                  <div className="flex flex-wrap gap-2 mb-3">
+                                    <Badge variant="outline" className="gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {script.duration} min
+                                    </Badge>
+                                    <Badge variant="outline">{script.language}</Badge>
+                                    {script.model_used && (
+                                      <Badge className="bg-primary/20 text-primary border-0 gap-1">
+                                        <Sparkles className="w-3 h-3" />
+                                        {script.model_used}
+                                      </Badge>
+                                    )}
+                                    <Badge variant="secondary" className="gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      {new Date(script.created_at).toLocaleDateString('pt-BR')}
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="flex gap-4 text-sm text-muted-foreground mb-3">
+                                    <span>{wordCount.toLocaleString()} palavras</span>
+                                    <span>~{readTime} min leitura</span>
+                                    <span>{script.credits_used} créditos</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Preview or Full Content */}
+                              <div className={`bg-background/50 rounded-lg p-4 mb-4 ${!isExpanded ? 'max-h-32 overflow-hidden relative' : ''}`}>
+                                <p className="text-sm text-foreground whitespace-pre-wrap">
+                                  {isExpanded ? script.content : script.content.substring(0, 400)}
+                                  {!isExpanded && script.content.length > 400 && '...'}
+                                </p>
+                                {!isExpanded && script.content.length > 400 && (
+                                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background/80 to-transparent" />
+                                )}
+                              </div>
+
+                              <div className="flex gap-3">
+                                <Button 
+                                  variant="outline"
+                                  className="flex-1"
+                                  onClick={() => {
+                                    if (isExpanded) {
+                                      setCopiedId(null);
+                                    } else {
+                                      setCopiedId(`expanded-${script.id}`);
+                                    }
+                                  }}
+                                >
+                                  {isExpanded ? (
+                                    <><ChevronUp className="w-4 h-4 mr-2" /> Recolher</>
+                                  ) : (
+                                    <><ChevronDown className="w-4 h-4 mr-2" /> Expandir</>
+                                  )}
+                                </Button>
+                                <Button 
+                                  className="flex-1 bg-primary text-primary-foreground"
+                                  onClick={() => {
+                                    // Remove part markings when copying
+                                    const cleanContent = script.content
+                                      .replace(/^(Parte\s*\d+\s*[:\.]\s*)/gim, '')
+                                      .replace(/^\*\*Parte\s*\d+\s*[:\.]\s*\*\*/gim, '')
+                                      .replace(/^#+ .+$/gm, '')
+                                      .replace(/\n{3,}/g, '\n\n')
+                                      .trim();
+                                    navigator.clipboard.writeText(cleanContent);
+                                    toast.success("Roteiro copiado!");
+                                  }}
+                                >
+                                  <Copy className="w-4 h-4 mr-2" /> Copiar
+                                </Button>
+                                <Button 
+                                  variant="destructive" 
+                                  size="icon"
+                                  onClick={async () => {
+                                    const { error } = await supabase
+                                      .from('generated_scripts')
+                                      .delete()
+                                      .eq('id', script.id);
+                                    if (!error) {
+                                      setScripts(scripts.filter(s => s.id !== script.id));
+                                      toast.success("Roteiro removido!");
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
             </TabsContent>
