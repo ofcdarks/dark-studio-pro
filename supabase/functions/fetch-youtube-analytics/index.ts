@@ -142,7 +142,7 @@ serve(async (req) => {
           };
         });
 
-        // Sort by views for top videos
+        // Sort by views for top videos (descending)
         recentVideos = [...videoStats].sort((a, b) => b.views - a.views);
       }
     }
@@ -153,6 +153,15 @@ serve(async (req) => {
     const avgLikesPerVideo = Math.round(totalLikes / videoCount);
     const avgCommentsPerVideo = Math.round(totalComments / videoCount);
     const avgEngagementRate = totalViews > 0 ? ((totalLikes + totalComments) / totalViews * 100).toFixed(2) : "0";
+
+    // Estimate RPM and earnings (YouTube API doesn't provide real monetization data)
+    // Average RPM varies: $1-3 for general content, $3-8 for finance/tech, $0.5-2 for entertainment
+    // Using a conservative estimate of $2.50 per 1000 views
+    const estimatedRPM = 2.50;
+    const estimatedTotalEarnings = (parseInt(stats.viewCount || "0", 10) / 1000) * estimatedRPM;
+    const estimatedMonthlyEarnings = videoStats.length > 0 
+      ? (totalViews / 1000) * estimatedRPM 
+      : 0;
 
     // Group videos by month for trends
     const monthlyData: Record<string, { views: number; videos: number; likes: number }> = {};
@@ -179,6 +188,12 @@ serve(async (req) => {
       }))
       .sort((a, b) => a.month.localeCompare(b.month));
 
+    // Log top videos for debugging
+    console.log("Top videos count:", recentVideos.length);
+    if (recentVideos.length > 0) {
+      console.log("Top video:", recentVideos[0].title, "with", recentVideos[0].views, "views");
+    }
+
     const result = {
       channel: {
         id: channelId,
@@ -203,6 +218,12 @@ serve(async (req) => {
         avgLikesPerVideo,
         avgCommentsPerVideo,
         avgEngagementRate: parseFloat(avgEngagementRate),
+      },
+      monetization: {
+        estimatedRPM,
+        estimatedTotalEarnings: Math.round(estimatedTotalEarnings),
+        estimatedMonthlyEarnings: Math.round(estimatedMonthlyEarnings),
+        disclaimer: "Valores estimados baseados em RPM médio de mercado. Dados reais de monetização requerem acesso ao YouTube Studio.",
       },
       topVideos: recentVideos.slice(0, 10),
       trendsData,
