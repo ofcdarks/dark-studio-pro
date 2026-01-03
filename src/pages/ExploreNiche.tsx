@@ -904,25 +904,17 @@ const ExploreNiche = () => {
                                 </div>
                                 <div className="space-y-3">
                                   {sub.exampleTitles.map((title, i) => {
-                                    // Formatar título com estrutura visual
+                                    // Formatar título destacando palavras de impacto em CAIXA ALTA
                                     const formatTitle = (t: string) => {
-                                      // Detectar padrões comuns e formatar
                                       let formatted = t;
                                       
-                                      // Destacar nomes próprios (palavras que começam com maiúscula no meio)
-                                      formatted = formatted.replace(/([A-Z][a-záéíóúàèìòùâêîôûãõ]+(?:\s+[A-Z][a-záéíóúàèìòùâêîôûãõ]+)*)/g, '<strong class="text-primary">$1</strong>');
+                                      // Colocar nomes próprios em CAIXA ALTA (2+ palavras capitalizadas seguidas)
+                                      formatted = formatted.replace(/([A-Z][a-záéíóúàèìòùâêîôûãõ]+(?:\s+[A-Z][a-záéíóúàèìòùâêîôûãõ]+)+)/g, (match) => {
+                                        return `<strong class="font-bold">${match.toUpperCase()}</strong>`;
+                                      });
                                       
-                                      // Destacar números
-                                      formatted = formatted.replace(/(\d+(?:\.\d+)?(?:\s*(?:mil|milhões?|bilhões?|anos?|dias?|horas?|minutos?|vidas?|pessoas?|crianças?|%))?)/gi, '<span class="text-success font-semibold">$1</span>');
-                                      
-                                      // Destacar datas (anos entre 1800-2030)
-                                      formatted = formatted.replace(/\b(1[89]\d{2}|20[0-3]\d)\b/g, '<span class="bg-primary/20 text-primary px-1 rounded">$1</span>');
-                                      
-                                      // Destacar pontuação interrogativa
-                                      formatted = formatted.replace(/(\?)/g, '<span class="text-primary font-bold">$1</span>');
-                                      
-                                      // Destacar dois pontos (estrutura NOME: descrição)
-                                      formatted = formatted.replace(/:/g, '<span class="text-muted-foreground">:</span>');
+                                      // Colocar números + contexto em destaque (negrito)
+                                      formatted = formatted.replace(/(\d+(?:\.\d+)?(?:\s*(?:mil|milhões?|bilhões?|anos?|dias?|horas?|minutos?|vidas?|pessoas?|crianças?|%))?)/gi, '<strong class="font-bold">$1</strong>');
                                       
                                       return formatted;
                                     };
