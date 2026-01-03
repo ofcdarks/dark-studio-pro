@@ -284,15 +284,24 @@ const MonitoredChannels = () => {
 
   // Fetch channel videos using YouTube API
   const fetchChannelVideos = async (channelId: string, channelUrlToFetch: string) => {
+    if (!apiSettings?.youtube_api_key) {
+      toast({
+        title: "Chave de API necessária",
+        description: "Configure sua chave de API do YouTube nas configurações para buscar vídeos reais.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoadingVideos(true);
     setSelectedChannelId(channelId);
     setShowVideosDialog(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-channel-videos', {
+      const { data, error } = await supabase.functions.invoke("fetch-channel-videos", {
         body: {
           channelUrl: channelUrlToFetch,
-          youtubeApiKey: apiSettings?.youtube_api_key,
+          youtubeApiKey: apiSettings.youtube_api_key,
         },
       });
 
