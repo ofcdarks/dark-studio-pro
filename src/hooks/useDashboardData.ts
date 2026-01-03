@@ -18,8 +18,8 @@ interface DashboardStats {
 interface RecentVideo {
   id: string;
   title: string;
-  views: number;
-  comments: number;
+  views: number | null;
+  comments: number | null;
   channel: string;
   thumbnail_url: string;
   created_at: string;
@@ -85,8 +85,8 @@ export function useDashboardData() {
         .map(v => ({
           id: v.id,
           title: v.original_title || v.translated_title || "Sem título",
-          views: v.original_views || 0,
-          comments: v.original_comments || 0,
+          views: v.original_views ?? null,
+          comments: v.original_comments ?? null,
           channel: v.detected_niche || "Canal",
           thumbnail_url: v.original_thumbnail_url || "",
           created_at: v.created_at || "",

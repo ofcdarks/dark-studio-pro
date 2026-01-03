@@ -7,8 +7,8 @@ import { toast } from "sonner";
 interface RecentVideo {
   id: string;
   title: string;
-  views: number;
-  comments: number;
+  views: number | null;
+  comments: number | null;
   channel: string;
   thumbnail_url: string;
   created_at: string;
@@ -28,6 +28,8 @@ export function RecentVideosCard({ videos = [], onRefresh }: RecentVideosCardPro
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num.toString();
   };
+
+  const displayStat = (num: number | null) => (num === null ? "—" : formatNumber(num));
 
   const handleDelete = async (videoId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -86,11 +88,11 @@ export function RecentVideosCard({ videos = [], onRefresh }: RecentVideosCardPro
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Eye className="w-3 h-3" />
-                  {formatNumber(video.views)}
+                  {displayStat(video.views)}
                 </span>
                 <span className="flex items-center gap-1">
                   <MessageCircle className="w-3 h-3" />
-                  {formatNumber(video.comments)}
+                  {displayStat(video.comments)}
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground/70 mt-2">{video.channel}</p>
