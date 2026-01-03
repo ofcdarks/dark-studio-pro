@@ -15,8 +15,7 @@ import {
   Rocket,
   Youtube,
   Target,
-  Zap,
-  Sparkles
+  Zap
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -344,7 +343,7 @@ const ChannelAnalyzer = () => {
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  <Sparkles className="w-3 h-3 inline mr-1 text-primary" />
+                  <Rocket className="w-3 h-3 inline mr-1 text-primary" />
                   O nicho e subnicho serão detectados automaticamente após a análise do canal
                 </p>
               </div>
@@ -438,7 +437,7 @@ const ChannelAnalyzer = () => {
                           <div className="flex items-center gap-2">
                             {channel.isAnalyzed ? (
                               <Badge className="bg-green-500/20 text-green-500 border-green-500/30 px-3 py-1">
-                                <Sparkles className="w-3 h-3 mr-1" />
+                                <Rocket className="w-3 h-3 mr-1" />
                                 Analisado
                               </Badge>
                             ) : (
@@ -621,7 +620,7 @@ const ChannelAnalyzer = () => {
                           >
                             <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
                               <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                                <Sparkles className="w-4 h-4 text-green-500" />
+                                <Rocket className="w-4 h-4 text-green-500" />
                               </div>
                               Oportunidades
                             </h3>
