@@ -120,6 +120,49 @@ const ExploreNiche = () => {
       .toLowerCase();
   };
 
+  const codeToFlag = (code: string) => {
+    const upper = code.toUpperCase();
+    return String.fromCodePoint(
+      ...upper.split("").map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)
+    );
+  };
+
+  const formatCountryWithFlag = (country: string) => {
+    const match = country.trim().match(/^([a-z]{2})\s+(.+)$/i);
+    if (match) {
+      const code = match[1];
+      const name = match[2];
+      return `${codeToFlag(code)} ${name}`;
+    }
+    // fallback: try to find code from known country names
+    const nameToCode: Record<string, string> = {
+      brasil: "BR", brazil: "BR",
+      argentina: "AR",
+      "índia": "IN", india: "IN",
+      portugal: "PT",
+      espanha: "ES", spain: "ES",
+      alemanha: "DE", germany: "DE",
+      "méxico": "MX", mexico: "MX",
+      eua: "US", usa: "US", "estados unidos": "US",
+      frança: "FR", france: "FR", franca: "FR",
+      itália: "IT", italia: "IT", italy: "IT",
+      japão: "JP", japao: "JP", japan: "JP",
+      "reino unido": "GB", uk: "GB",
+      canadá: "CA", canada: "CA",
+      turquia: "TR", turkey: "TR",
+      "coreia do sul": "KR", "south korea": "KR",
+      colômbia: "CO", colombia: "CO",
+      chile: "CL",
+      peru: "PE",
+    };
+    const normalized = country.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
+    const code = nameToCode[normalized];
+    if (code) {
+      return `${codeToFlag(code)} ${country}`;
+    }
+    return country;
+  };
+
   const getCountryBadgeClass = (country: string) => {
     const name = normalizeCountryName(country);
 
@@ -127,10 +170,16 @@ const ExploreNiche = () => {
       brasil: "success",
       mexico: "success",
       italia: "success",
+      colombia: "success",
+      chile: "success",
+      peru: "success",
 
       alemanha: "primary",
       india: "primary",
       espanha: "primary",
+      argentina: "primary",
+      "coreia do sul": "primary",
+      franca: "primary",
 
       turquia: "destructive",
       canada: "destructive",
@@ -140,10 +189,6 @@ const ExploreNiche = () => {
       eua: "destructive",
       usa: "destructive",
       "estados unidos": "destructive",
-
-      argentina: "primary",
-      "coreia do sul": "primary",
-      franca: "primary",
     };
 
     const tone = toneMap[name] ?? "secondary";
@@ -803,7 +848,7 @@ const ExploreNiche = () => {
                                       variant="outline"
                                       className={`${getCountryBadgeClass(country)} text-sm px-3 py-1.5 font-medium`}
                                     >
-                                      {country}
+                                      {formatCountryWithFlag(country)}
                                     </Badge>
                                   ))}
                                 </div>
