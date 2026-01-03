@@ -483,11 +483,11 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
         ? `${Math.floor(actualMinutes)}:${String(Math.round((actualMinutes % 1) * 60)).padStart(2, '0')} min`
         : `${actualSeconds} seg`;
 
-      // Add script to chat as assistant message with stats
+      // Add script to chat as assistant message (only the content)
       const scriptMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
-        content: `🎙️ **ROTEIRO DE NARRAÇÃO: ${scriptTitle}**\n\n📊 **Estatísticas:**\n• Palavras: ${wordCount.toLocaleString()}\n• Tempo estimado: ${formattedTime}\n• Idioma: ${getLanguageName(scriptLanguage)}\n\n---\n\n${scriptContent}`,
+        content: scriptContent,
         timestamp: new Date(),
         isScript: true
       };
@@ -510,36 +510,21 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
   const [editedContent, setEditedContent] = useState("");
 
   const copyToClipboard = (content: string) => {
-    const cleanContent = content.replace(/^🎙️ \*\*ROTEIRO DE NARRAÇÃO:.*?---\n\n/s, '');
-    navigator.clipboard.writeText(cleanContent);
+    navigator.clipboard.writeText(content);
     toast.success("Roteiro copiado!");
   };
 
   const startEditing = (messageId: string, content: string) => {
-    // Extract only the script content (after the stats section)
-    const cleanContent = content.replace(/^🎙️ \*\*ROTEIRO DE NARRAÇÃO:.*?---\n\n/s, '');
     setEditingMessageId(messageId);
-    setEditedContent(cleanContent);
+    setEditedContent(content);
   };
 
   const saveEdit = (messageId: string) => {
     setMessages(prev => prev.map(msg => {
       if (msg.id === messageId) {
-        // Recalculate stats for edited content
-        const wordCount = editedContent.split(/\s+/).filter(w => w.length > 0).length;
-        const actualMinutes = Math.round((wordCount / 150) * 10) / 10;
-        const actualSeconds = Math.round((wordCount / 150) * 60);
-        const formattedTime = actualMinutes >= 1 
-          ? `${Math.floor(actualMinutes)}:${String(Math.round((actualMinutes % 1) * 60)).padStart(2, '0')} min`
-          : `${actualSeconds} seg`;
-        
-        // Extract original title from content
-        const titleMatch = msg.content.match(/🎙️ \*\*ROTEIRO DE NARRAÇÃO: (.*?)\*\*/);
-        const title = titleMatch ? titleMatch[1] : "Roteiro";
-        
         return {
           ...msg,
-          content: `🎙️ **ROTEIRO DE NARRAÇÃO: ${title}**\n\n📊 **Estatísticas (atualizado):**\n• Palavras: ${wordCount.toLocaleString()}\n• Tempo estimado: ${formattedTime}\n\n---\n\n${editedContent}`
+          content: editedContent
         };
       }
       return msg;
@@ -603,8 +588,8 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
           <div className="flex flex-col items-center gap-6">
             {/* Animated Logo */}
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-amber-500/10 flex items-center justify-center border-2 border-primary/40">
-                <img src={logoGif} alt="Logo" className="w-16 h-16 object-contain" />
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-amber-500/10 flex items-center justify-center border-2 border-primary/40 overflow-hidden">
+                <img src={logoGif} alt="Logo" className="w-full h-full object-cover rounded-full" />
               </div>
               <div className="absolute -inset-1 rounded-full border border-primary/20 animate-ping opacity-40" />
             </div>
