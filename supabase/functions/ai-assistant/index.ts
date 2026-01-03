@@ -713,6 +713,9 @@ serve(async (req) => {
         2. CONCORRÊNCIA: Número de canais, qualidade do conteúdo existente, saturação
         3. OPORTUNIDADE: Potencial de monetização, crescimento projetado, facilidade de entrada
         4. DIFERENCIAÇÃO: Como se destacar neste subnicho
+        5. MICRO-NICHO: Um segmento ainda mais específico dentro do subnicho
+        6. TÍTULOS VIRAIS: 3 exemplos de títulos que funcionariam bem
+        7. PAÍSES ALVO: Países ideais para começar com menor concorrência
         
         Retorne EXATAMENTE 5 subnichos promissores em formato JSON:
         {
@@ -727,6 +730,13 @@ serve(async (req) => {
               "competitionScore": número de 1-10,
               "opportunityScore": número de 1-10,
               "description": "Descrição detalhada do subnicho e por que é uma boa oportunidade",
+              "microNiche": "Um segmento ultra-específico dentro deste subnicho para dominar mais rápido",
+              "exampleTitles": [
+                "Título viral exemplo 1 usando gatilhos mentais",
+                "Título viral exemplo 2 com curiosidade",
+                "Título viral exemplo 3 com urgência"
+              ],
+              "targetCountries": ["🇧🇷 Brasil", "🇵🇹 Portugal", "etc - países com melhor oportunidade"],
               "contentIdeas": ["ideia 1", "ideia 2", "ideia 3"],
               "keywords": ["palavra-chave 1", "palavra-chave 2"],
               "monetizationPotential": "Alto" | "Médio" | "Baixo",
@@ -741,6 +751,9 @@ serve(async (req) => {
         IMPORTANTE:
         - Priorize subnichos com ALTA demanda e BAIXA concorrência
         - Seja específico e prático nos subnichos sugeridos
+        - O microNiche deve ser MUITO específico (ex: "Histórias de sobrevivência na Antártida" ao invés de apenas "Histórias de sobrevivência")
+        - Os 3 títulos de exemplo devem usar gatilhos mentais fortes (curiosidade, urgência, medo de perder)
+        - Os países alvo devem considerar concorrência menor e potencial de crescimento
         - Considere tendências atuais de 2025/2026
         - Foque em oportunidades reais e acionáveis
         - Os subnichos devem ser diferentes o suficiente para diversificar
