@@ -28,7 +28,8 @@ import {
   Check,
   Globe,
   FileText,
-  Layers
+  Layers,
+  RefreshCw
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +86,7 @@ const ExploreNiche = () => {
   const [loadingSubniches, setLoadingSubniches] = useState(false);
   const [expandedSubniche, setExpandedSubniche] = useState<number | null>(null);
   const [copiedKeyword, setCopiedKeyword] = useState<string | null>(null);
+  const [regeneratingTitles, setRegeneratingTitles] = useState<number | null>(null);
 
   // Etapa 2 states
   const [channelUrl, setChannelUrl] = usePersistedState("explore_channelUrl", "");
@@ -97,6 +99,52 @@ const ExploreNiche = () => {
     setCopiedKeyword(keyword);
     toast.success("Palavra-chave copiada!");
     setTimeout(() => setCopiedKeyword(null), 2000);
+  };
+
+  const handleRegenerateTitles = async (subnicheIndex: number) => {
+    const sub = subnicheResults[subnicheIndex];
+    if (!sub) return;
+
+    setRegeneratingTitles(subnicheIndex);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Você precisa estar logado");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("ai-assistant", {
+        body: {
+          action: "regenerate_titles",
+          niche: mainNiche,
+          subNiche: sub.name,
+          microNiche: sub.microNiche,
+          model: subnicheModel,
+          userId: user.id,
+        },
+      });
+
+      if (error) throw error;
+
+      const newTitles = data?.titles || data?.exampleTitles;
+      if (newTitles && Array.isArray(newTitles)) {
+        const updatedResults = [...subnicheResults];
+        updatedResults[subnicheIndex] = {
+          ...updatedResults[subnicheIndex],
+          exampleTitles: newTitles,
+        };
+        setSubnicheResults(updatedResults);
+        toast.success("Títulos regenerados com sucesso!");
+      } else {
+        toast.error("Não foi possível regenerar os títulos");
+      }
+    } catch (err) {
+      console.error("Error regenerating titles:", err);
+      toast.error("Erro ao regenerar títulos");
+    } finally {
+      setRegeneratingTitles(null);
+    }
   };
 
   const getScoreColor = (score: number) => {
@@ -858,10 +906,34 @@ const ExploreNiche = () => {
                             {/* Example Titles */}
                             {sub.exampleTitles && sub.exampleTitles.length > 0 && (
                               <div className="mb-4">
-                                <h5 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                                  <FileText className="w-4 h-4 text-primary" />
-                                  Exemplos de Títulos Virais
-                                </h5>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h5 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-primary" />
+                                    Exemplos de Títulos Virais
+                                  </h5>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRegenerateTitles(index);
+                                    }}
+                                    disabled={regeneratingTitles === index}
+                                    className="h-7 text-xs text-muted-foreground hover:text-primary"
+                                  >
+                                    {regeneratingTitles === index ? (
+                                      <>
+                                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                        Gerando...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <RefreshCw className="w-3 h-3 mr-1" />
+                                        Regenerar
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
                                 <div className="space-y-2">
                                   {sub.exampleTitles.map((title, i) => (
                                     <div key={i} className="flex items-center justify-between gap-2 text-sm bg-success/10 border border-success/20 rounded-lg px-3 py-2 group">
