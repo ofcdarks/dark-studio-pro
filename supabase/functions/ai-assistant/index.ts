@@ -19,6 +19,7 @@ const CREDIT_PRICING = {
   EXPLORE_NICHE: { base: 6, gemini: 7, claude: 9 },
   ANALYZE_COMPETITOR: { base: 6, gemini: 7, claude: 9 },
   CHANNEL_ANALYSIS: { base: 5, gemini: 6, claude: 7 },
+  MULTI_CHANNEL_ANALYSIS: { base: 15, gemini: 18, claude: 22 }, // Análise de múltiplos canais
   
   // 🎬 VÍDEO & ROTEIRO
   READY_VIDEO: { base: 10, gemini: 12, claude: 15 },
@@ -73,6 +74,10 @@ function calculateCreditsForOperation(
     case 'viral_analysis':
     case 'CHANNEL_ANALYSIS':
       return CREDIT_PRICING.CHANNEL_ANALYSIS[modelKey];
+    
+    case 'analyze_multiple_channels':
+    case 'MULTI_CHANNEL_ANALYSIS':
+      return CREDIT_PRICING.MULTI_CHANNEL_ANALYSIS[modelKey];
     
     default:
       // Fallback: preço base de 5 créditos com multiplicador (seção 4.3)
@@ -1017,6 +1022,90 @@ serve(async (req) => {
           "voiceover_text": string,
           "music_suggestion": string
         }`;
+        break;
+
+      case "analyze_multiple_channels":
+        // Análise de múltiplos canais para identificar lacunas, padrões e oportunidades
+        const channelsData = agentData?.channels || [];
+        const channelsList = channelsData.map((ch: any) => 
+          `- ${ch.name || 'Canal'}: ${ch.niche || 'Nicho desconhecido'} / ${ch.subniche || 'Subnicho desconhecido'} (${ch.subscribers || 'N/A'} inscritos)
+           Vídeos populares: ${ch.topVideos?.map((v: any) => v.title).join(', ') || 'N/A'}`
+        ).join('\n');
+        
+        systemPrompt = `Você é um estrategista de conteúdo ESPECIALISTA em análise competitiva do YouTube.
+        
+        Analise os seguintes ${channelsData.length} canais simultaneamente e forneça uma análise profunda:
+        
+        ${channelsList}
+        
+        Sua análise deve incluir:
+        
+        1. ANÁLISE DE LACUNAS (gaps):
+           - Identifique temas que NENHUM dos canais está cobrindo adequadamente
+           - Identifique formatos de vídeo ausentes
+           - Identifique públicos sub-atendidos
+        
+        2. OPORTUNIDADES:
+           - Baseado nos gaps, liste oportunidades de conteúdo
+           - Identifique tendências que eles não estão aproveitando
+           - Sugira combinações únicas de nichos
+        
+        3. PADRÕES IDENTIFICADOS:
+           - Quais fórmulas de título funcionam para todos?
+           - Quais elementos visuais são comuns?
+           - Qual frequência de postagem funciona?
+        
+        4. TÍTULOS OTIMIZADOS (15 títulos):
+           - Misture as fórmulas de TODOS os canais analisados
+           - Crie títulos que preencham as lacunas identificadas
+           - Use gatilhos mentais: Urgência, Escassez, Curiosidade, Exclusividade
+           - Cada título deve ter score de potencial viral (0-100)
+        
+        5. IDEIAS DE CANAL (3 ideias):
+           - Sugira conceitos de novos canais baseados nas lacunas
+           - Para cada canal, sugira os 5 primeiros vídeos
+           - Foque em diferenciação e público sub-atendido
+        
+        Retorne em formato JSON:
+        {
+          "gapAnalysis": {
+            "gaps": ["lacuna 1", "lacuna 2", "lacuna 3", "lacuna 4", "lacuna 5"],
+            "opportunities": ["oportunidade 1", "oportunidade 2", "oportunidade 3", "oportunidade 4", "oportunidade 5"]
+          },
+          "patternsMixed": ["padrão comum 1", "padrão comum 2", "padrão comum 3", "fórmula identificada 1", "fórmula identificada 2"],
+          "optimizedTitles": [
+            {
+              "title": "Título otimizado que mistura fórmulas dos canais",
+              "formula": "Fórmula utilizada (ex: Curiosidade + Número + Exclusividade)",
+              "explanation": "Por que este título funciona e preenche lacunas",
+              "score": 85
+            }
+          ],
+          "channelIdeas": [
+            {
+              "name": "Nome sugerido para o canal",
+              "concept": "Conceito e proposta de valor única",
+              "niche": "Nicho específico combinando elementos dos analisados",
+              "firstVideos": [
+                "Título do vídeo 1 - gancho forte",
+                "Título do vídeo 2 - estabelece autoridade",
+                "Título do vídeo 3 - viralização",
+                "Título do vídeo 4 - engajamento",
+                "Título do vídeo 5 - consolidação"
+              ]
+            }
+          ]
+        }
+        
+        IMPORTANTE:
+        - Gere exatamente 15 títulos otimizados
+        - Gere exatamente 3 ideias de canal
+        - Cada ideia de canal deve ter exatamente 5 vídeos sugeridos
+        - Todos os títulos em português brasileiro
+        - Foque em diferenciação real baseada nos gaps identificados
+        
+        Responda APENAS com o JSON válido, sem texto adicional.`;
+        userPrompt = `Analise estes ${channelsData.length} canais e gere uma estratégia completa baseada nas lacunas e oportunidades identificadas.`;
         break;
 
       default:
