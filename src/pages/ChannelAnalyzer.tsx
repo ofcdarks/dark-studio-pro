@@ -15,7 +15,9 @@ import {
   Rocket,
   Youtube,
   Target,
-  Zap
+  Zap,
+  Save,
+  Check
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,6 +78,8 @@ const ChannelAnalyzer = () => {
   const [generatingAnalysis, setGeneratingAnalysis] = useState(false);
   const [progress, setProgress] = useState(0);
   const [activeTab, setActiveTab] = useState("gaps");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -229,6 +233,40 @@ const ChannelAnalyzer = () => {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copiado!");
+  };
+
+  const handleSaveToDatabase = async () => {
+    if (!user?.id || !analysisResult) return;
+    
+    setSaving(true);
+    try {
+      const channelNames = channels
+        .filter(ch => ch.isAnalyzed)
+        .map(ch => ch.channelName || 'Canal')
+        .join(', ');
+
+      const { error } = await supabase
+        .from('channel_analyses' as any)
+        .insert({
+          user_id: user.id,
+          channels: channels.filter(ch => ch.isAnalyzed),
+          analysis_result: analysisResult,
+          name: `Análise: ${channelNames}`
+        } as any);
+
+      if (error) throw error;
+
+      setSaved(true);
+      toast.success("Análise salva com sucesso!");
+      
+      // Reset saved state after 3 seconds
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      console.error('Error saving analysis:', error);
+      toast.error('Erro ao salvar análise');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const analyzedCount = channels.filter(ch => ch.isAnalyzed).length;
@@ -548,14 +586,42 @@ const ChannelAnalyzer = () => {
                 transition={{ duration: 0.5 }}
               >
                 <Card className="p-6 bg-card/50 backdrop-blur-xl border-primary/20 rounded-2xl shadow-xl">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center">
-                      <Rocket className="w-5 h-5 text-primary-foreground" />
+                  <div className="flex items-center justify-between gap-3 mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center">
+                        <Rocket className="w-5 h-5 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-foreground">Resultado da Análise</h2>
+                        <p className="text-sm text-muted-foreground">Insights gerados a partir dos canais analisados</p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-foreground">Resultado da Análise</h2>
-                      <p className="text-sm text-muted-foreground">Insights gerados a partir dos canais analisados</p>
-                    </div>
+                    <Button
+                      onClick={handleSaveToDatabase}
+                      disabled={saving || saved}
+                      className={`${
+                        saved 
+                          ? 'bg-green-500 hover:bg-green-500' 
+                          : 'bg-primary hover:bg-primary/90'
+                      } text-primary-foreground rounded-xl transition-all duration-300`}
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : saved ? (
+                        <>
+                          <Check className="w-4 h-4 mr-2" />
+                          Salvo!
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Salvar Análise
+                        </>
+                      )}
+                    </Button>
                   </div>
 
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
