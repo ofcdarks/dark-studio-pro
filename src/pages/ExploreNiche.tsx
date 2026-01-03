@@ -625,44 +625,53 @@ const ExploreNiche = () => {
                             {/* Scores Row */}
                             {(sub.demandScore || sub.opportunityScore || sub.competitionScore) && (
                               <div className="grid grid-cols-3 gap-6 mb-4">
-                                {sub.demandScore && (
+                                {sub.demandScore !== undefined && sub.demandScore !== null && (
                                   <div>
                                     <div className="flex items-center justify-between mb-1.5">
                                       <span className="text-sm text-muted-foreground">Demanda</span>
                                       <span className={`text-base font-bold ${getScoreColor(sub.demandScore)}`}>{sub.demandScore}/10</span>
                                     </div>
-                                    <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
+                                    <div className="h-2.5 bg-muted/50 rounded-full overflow-hidden">
                                       <div 
-                                        className={`h-full ${getScoreBarColor(sub.demandScore)} transition-all`}
-                                        style={{ width: `${sub.demandScore * 10}%` }}
+                                        className="h-full transition-all rounded-full"
+                                        style={{ 
+                                          width: `${sub.demandScore * 10}%`,
+                                          backgroundColor: sub.demandScore >= 8 ? '#22c55e' : sub.demandScore >= 5 ? '#f59e0b' : '#ef4444'
+                                        }}
                                       />
                                     </div>
                                   </div>
                                 )}
-                                {sub.opportunityScore && (
+                                {sub.opportunityScore !== undefined && sub.opportunityScore !== null && (
                                   <div>
                                     <div className="flex items-center justify-between mb-1.5">
                                       <span className="text-sm text-muted-foreground">Oportunidade</span>
                                       <span className={`text-base font-bold ${getScoreColor(sub.opportunityScore)}`}>{sub.opportunityScore}/10</span>
                                     </div>
-                                    <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
+                                    <div className="h-2.5 bg-muted/50 rounded-full overflow-hidden">
                                       <div 
-                                        className={`h-full ${getScoreBarColor(sub.opportunityScore)} transition-all`}
-                                        style={{ width: `${sub.opportunityScore * 10}%` }}
+                                        className="h-full transition-all rounded-full"
+                                        style={{ 
+                                          width: `${sub.opportunityScore * 10}%`,
+                                          backgroundColor: sub.opportunityScore >= 8 ? '#22c55e' : sub.opportunityScore >= 5 ? '#f59e0b' : '#ef4444'
+                                        }}
                                       />
                                     </div>
                                   </div>
                                 )}
-                                {sub.competitionScore && (
+                                {sub.competitionScore !== undefined && sub.competitionScore !== null && (
                                   <div>
                                     <div className="flex items-center justify-between mb-1.5">
                                       <span className="text-sm text-muted-foreground">Dificuldade</span>
                                       <span className={`text-base font-bold ${getScoreColor(10 - sub.competitionScore)}`}>{sub.competitionScore}/10</span>
                                     </div>
-                                    <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
+                                    <div className="h-2.5 bg-muted/50 rounded-full overflow-hidden">
                                       <div 
-                                        className={`h-full ${getScoreBarColor(10 - sub.competitionScore)} transition-all`}
-                                        style={{ width: `${sub.competitionScore * 10}%` }}
+                                        className="h-full transition-all rounded-full"
+                                        style={{ 
+                                          width: `${sub.competitionScore * 10}%`,
+                                          backgroundColor: (10 - sub.competitionScore) >= 8 ? '#22c55e' : (10 - sub.competitionScore) >= 5 ? '#f59e0b' : '#ef4444'
+                                        }}
                                       />
                                     </div>
                                   </div>
