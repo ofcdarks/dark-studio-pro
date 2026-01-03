@@ -983,6 +983,53 @@ export type Database = {
         }
         Relationships: []
       }
+      video_notifications: {
+        Row: {
+          channel_id: string | null
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          published_at: string | null
+          thumbnail_url: string | null
+          user_id: string
+          video_id: string
+          video_title: string | null
+          video_url: string
+        }
+        Insert: {
+          channel_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          published_at?: string | null
+          thumbnail_url?: string | null
+          user_id: string
+          video_id: string
+          video_title?: string | null
+          video_url: string
+        }
+        Update: {
+          channel_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          published_at?: string | null
+          thumbnail_url?: string | null
+          user_id?: string
+          video_id?: string
+          video_title?: string | null
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_notifications_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "monitored_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_tags: {
         Row: {
           created_at: string

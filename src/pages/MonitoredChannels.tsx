@@ -15,6 +15,7 @@ import {
   Play,
   Folder,
   Bell,
+  RefreshCw,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -273,6 +274,34 @@ const MonitoredChannels = () => {
     },
   });
 
+  // Check new videos mutation
+  const [checkingVideos, setCheckingVideos] = useState(false);
+  const checkNewVideosMutation = useMutation({
+    mutationFn: async () => {
+      setCheckingVideos(true);
+      const { data, error } = await supabase.functions.invoke("check-new-videos");
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      setCheckingVideos(false);
+      queryClient.invalidateQueries({ queryKey: ["video-notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["monitored-channels"] });
+      toast({
+        title: "Verificação concluída",
+        description: `${data.newVideosFound || 0} novo(s) vídeo(s) encontrado(s)`,
+      });
+    },
+    onError: (error: Error) => {
+      setCheckingVideos(false);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível verificar novos vídeos",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAddChannel = async () => {
     if (!channelUrl.trim()) {
       toast({
@@ -407,13 +436,24 @@ const MonitoredChannels = () => {
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Canais Monitorados
-            </h1>
-            <p className="text-muted-foreground">
-              Adicione canais do YouTube para monitorar novos vídeos.
-            </p>
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                Canais Monitorados
+              </h1>
+              <p className="text-muted-foreground">
+                Adicione canais do YouTube para monitorar novos vídeos.
+              </p>
+            </div>
+            <Button
+              onClick={() => checkNewVideosMutation.mutate()}
+              disabled={checkingVideos}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${checkingVideos ? "animate-spin" : ""}`} />
+              Verificar Novos Vídeos
+            </Button>
           </div>
 
           {/* Two column layout */}
