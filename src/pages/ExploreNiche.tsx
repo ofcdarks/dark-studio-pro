@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Zap, 
   Loader2, 
@@ -35,9 +37,12 @@ import {
   FolderOpen,
   Video,
   Timer,
-  Image
+  Image,
+  History,
+  Download
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePersistedState } from "@/hooks/usePersistedState";
@@ -122,6 +127,64 @@ const ExploreNiche = () => {
   const [planProcessingStep, setPlanProcessingStep] = useState<string>("");
   const [selectedFolderForPlan, setSelectedFolderForPlan] = useState<string | null>(null);
   const [savingPlan, setSavingPlan] = useState(false);
+  const [showSavedAnalyses, setShowSavedAnalyses] = useState(false);
+
+  // Query para buscar análises salvas
+  const { data: savedAnalyses, refetch: refetchSavedAnalyses } = useQuery({
+    queryKey: ["saved-channel-analyses", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("analyzed_videos")
+        .select("id, original_title, video_url, detected_niche, analysis_data_json, created_at, folder_id")
+        .eq("user_id", user.id)
+        .not("analysis_data_json", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      
+      if (error) throw error;
+      
+      // Filtrar apenas análises de canal
+      return (data || []).filter((item: any) => 
+        item.analysis_data_json?.type === "channel_analysis"
+      );
+    },
+    enabled: !!user,
+  });
+
+  const loadSavedAnalysis = (analysis: any) => {
+    const data = analysis.analysis_data_json;
+    setChannelUrl(analysis.video_url);
+    setStrategicPlan({
+      channelName: data.channelName,
+      niche: data.niche,
+      strategy: data.strategy,
+      contentIdeas: data.contentIdeas || [],
+      differentials: data.differentials || [],
+      recommendations: data.recommendations || [],
+      positioning: data.positioning,
+      uniqueValue: data.uniqueValue,
+      postingSchedule: data.postingSchedule,
+      growthTimeline: data.growthTimeline,
+      quickWins: data.quickWins,
+      summary: data.summary,
+      strengths: data.strengths,
+      weaknesses: data.weaknesses,
+      opportunities: data.opportunities,
+      threats: data.threats,
+      metrics: data.metrics,
+      dataSource: data.dataSource,
+      idealVideoDuration: data.idealVideoDuration,
+      bestPostingTimes: data.bestPostingTimes || [],
+      bestPostingDays: data.bestPostingDays || [],
+      exampleTitles: data.exampleTitles || [],
+      thumbnailTips: data.thumbnailTips || [],
+      audienceInsights: data.audienceInsights,
+      strategicKeywords: data.strategicKeywords || [],
+    });
+    setShowSavedAnalyses(false);
+    toast.success("Análise carregada com sucesso!");
+  };
 
   // Etapas de processamento para feedback visual
   const planProcessingSteps = [
@@ -190,6 +253,7 @@ const ExploreNiche = () => {
 
       if (error) throw error;
 
+      refetchSavedAnalyses();
       toast.success("Análise salva com sucesso!");
     } catch (error) {
       console.error("Error saving plan:", error);
@@ -1157,16 +1221,73 @@ const ExploreNiche = () => {
 
           {/* Etapa 2: Analisar Canal Concorrente */}
           <Card className="p-6 border-blue-500/20 bg-gradient-to-br from-card to-card/80">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/20 text-blue-500 font-bold text-lg">
-                2
+            <div className="flex items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/20 text-blue-500 font-bold text-lg">
+                  2
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">Analisar Concorrência</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Obtenha um plano estratégico baseado em um canal de sucesso
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Analisar Concorrência</h2>
-                <p className="text-sm text-muted-foreground">
-                  Obtenha um plano estratégico baseado em um canal de sucesso
-                </p>
-              </div>
+
+              {/* Botão para carregar análises salvas */}
+              {savedAnalyses && savedAnalyses.length > 0 && (
+                <Dialog open={showSavedAnalyses} onOpenChange={setShowSavedAnalyses}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+                      <History className="w-4 h-4 mr-2" />
+                      Carregar Análise ({savedAnalyses.length})
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-xl">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-foreground">
+                        <History className="w-5 h-5 text-blue-500" />
+                        Análises Salvas
+                      </DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[400px] pr-4">
+                      <div className="space-y-3">
+                        {savedAnalyses.map((analysis: any) => (
+                          <div
+                            key={analysis.id}
+                            className="p-4 bg-secondary/50 rounded-xl border border-border/50 hover:border-blue-500/30 transition-colors cursor-pointer group"
+                            onClick={() => loadSavedAnalysis(analysis)}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-foreground truncate group-hover:text-blue-400 transition-colors">
+                                  {analysis.original_title || "Análise sem título"}
+                                </h4>
+                                <p className="text-sm text-muted-foreground truncate mt-1">
+                                  {analysis.video_url}
+                                </p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  {analysis.detected_niche && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {analysis.detected_niche}
+                                    </Badge>
+                                  )}
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(analysis.created_at).toLocaleDateString('pt-BR')}
+                                  </span>
+                                </div>
+                              </div>
+                              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
 
             <div className="space-y-4">
