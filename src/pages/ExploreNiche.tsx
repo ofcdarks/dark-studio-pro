@@ -29,7 +29,8 @@ import {
   Globe,
   FileText,
   Layers,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,8 +74,17 @@ interface StrategicPlan {
   summary?: string;
   strengths?: string[];
   weaknesses?: string[];
-  opportunities?: string[];
+  opportunities?: any[];
   threats?: string[];
+  metrics?: {
+    subscribers?: number;
+    videos?: number;
+    totalViews?: number;
+    avgViewsPerVideo?: number;
+    postingFrequency?: string;
+    engagementLevel?: string;
+  };
+  dataSource?: string;
 }
 
 const ExploreNiche = () => {
@@ -398,92 +408,55 @@ const ExploreNiche = () => {
 
     setLoadingPlan(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+      // Usar a Edge Function analyze-channel que busca dados REAIS do YouTube
+      const { data, error } = await supabase.functions.invoke('analyze-channel', {
         body: {
-          type: 'analyze_competitor_channel',
           channelUrl,
+          maxVideos: 10,
           model: channelModel
         }
       });
 
       if (error) throw error;
 
-      const result = data.result;
-      if (result?.strategicPlan) {
+      const analysis = data.analysis;
+      if (analysis) {
         setStrategicPlan({
-          channelName: result.channelAnalysis?.name || "Canal Analisado",
-          niche: result.channelAnalysis?.niche || "Nicho detectado",
-          strategy: result.strategicPlan.contentStrategy || result.strategicPlan.positioning || "",
-          contentIdeas: result.strategicPlan.contentIdeas || [],
-          differentials: result.strategicPlan.differentials || [],
-          recommendations: result.strategicPlan.recommendations || [],
-          positioning: result.strategicPlan.positioning,
-          uniqueValue: result.strategicPlan.uniqueValue,
-          postingSchedule: result.strategicPlan.postingSchedule,
-          growthTimeline: result.strategicPlan.growthTimeline,
-          quickWins: result.quickWins,
-          summary: result.summary,
-          strengths: result.channelAnalysis?.strengths,
-          weaknesses: result.channelAnalysis?.weaknesses,
-          opportunities: result.opportunities,
-          threats: result.threats
+          channelName: analysis.channelInfo?.name || "Canal Analisado",
+          niche: analysis.channelInfo?.niche || "Nicho detectado",
+          strategy: analysis.strategicPlan?.contentStrategy || analysis.channelInfo?.positioning || "",
+          contentIdeas: analysis.strategicPlan?.contentIdeas || [],
+          differentials: analysis.strategicPlan?.differentials || [],
+          recommendations: analysis.strategicPlan?.recommendations || [],
+          positioning: analysis.strategicPlan?.positioning,
+          uniqueValue: analysis.strategicPlan?.uniqueValue,
+          postingSchedule: analysis.strategicPlan?.postingSchedule || analysis.metrics?.postingFrequency,
+          growthTimeline: analysis.strategicPlan?.growthTimeline,
+          quickWins: analysis.quickWins,
+          summary: analysis.summary,
+          strengths: analysis.strengths,
+          weaknesses: analysis.weaknesses,
+          opportunities: analysis.opportunities,
+          threats: analysis.threats,
+          metrics: analysis.metrics,
+          dataSource: analysis.dataSource
         });
-        toast.success("Plano estratégico gerado!");
+        
+        if (analysis.dataSource?.includes('dados reais')) {
+          toast.success(`Plano estratégico gerado com dados reais do canal ${analysis.channelInfo?.name}!`);
+        } else {
+          toast.warning("Plano gerado sem dados reais. Configure sua YouTube API Key nas configurações para análises mais precisas.");
+        }
       } else {
         throw new Error("Formato de resposta inválido");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating plan:', error);
-      toast.error('Erro ao gerar plano. Usando sugestões padrão.');
-      setStrategicPlan({
-        channelName: "Canal Analisado",
-        niche: "Nicho detectado",
-        strategy: "Baseado na análise do canal, recomendamos focar em conteúdo diferenciado com maior profundidade técnica e storytelling envolvente.",
-        contentIdeas: [
-          "Série sobre tópicos pouco explorados",
-          "Colaborações com especialistas",
-          "Vídeos de reação e análise",
-          "Tutoriais aprofundados",
-          "Behind the scenes"
-        ],
-        differentials: [
-          "Melhor qualidade de produção",
-          "Narrativa mais envolvente",
-          "Frequência de postagem consistente",
-          "Edição cinematográfica",
-          "Pesquisa aprofundada"
-        ],
-        recommendations: [
-          "Postar 3x por semana",
-          "Usar thumbnails impactantes",
-          "Engajar nos comentários",
-          "Criar séries de conteúdo",
-          "Investir em SEO de vídeo"
-        ],
-        quickWins: [
-          "Otimizar títulos e thumbnails existentes",
-          "Responder a todos os comentários",
-          "Criar um vídeo respondendo dúvidas comuns",
-          "Fazer um compilado dos melhores momentos",
-          "Criar shorts a partir de vídeos longos"
-        ],
-        strengths: [
-          "Boa qualidade de áudio",
-          "Conteúdo bem pesquisado",
-          "Comunidade engajada"
-        ],
-        weaknesses: [
-          "Thumbnails pouco atrativas",
-          "Títulos genéricos",
-          "Frequência irregular"
-        ],
-        opportunities: [
-          "Explorar shorts/reels",
-          "Parcerias com outros criadores",
-          "Conteúdo em outros idiomas"
-        ],
-        summary: "O canal tem bom potencial de crescimento. Focando em melhorar thumbnails e títulos, mantendo consistência de postagem, é possível dobrar as visualizações em 3-6 meses."
-      });
+      if (error.message?.includes('Créditos insuficientes')) {
+        toast.error(error.message);
+      } else {
+        toast.error('Erro ao gerar plano. Tente novamente.');
+      }
     } finally {
       setLoadingPlan(false);
     }
@@ -1141,6 +1114,62 @@ const ExploreNiche = () => {
                   Plano Estratégico
                 </h3>
                 
+                {/* Data Source Badge */}
+                {strategicPlan.dataSource && (
+                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+                    strategicPlan.dataSource.includes('dados reais') 
+                      ? 'bg-success/20 text-success' 
+                      : 'bg-orange-500/20 text-orange-500'
+                  }`}>
+                    {strategicPlan.dataSource.includes('dados reais') ? (
+                      <CheckCircle className="w-3 h-3" />
+                    ) : (
+                      <AlertTriangle className="w-3 h-3" />
+                    )}
+                    {strategicPlan.dataSource}
+                  </div>
+                )}
+
+                {/* Channel Metrics - Dados Reais do YouTube */}
+                {strategicPlan.metrics && strategicPlan.metrics.subscribers > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl border border-primary/20 text-center">
+                      <p className="text-2xl font-bold text-primary">
+                        {strategicPlan.metrics.subscribers >= 1000000
+                          ? `${(strategicPlan.metrics.subscribers / 1000000).toFixed(1)}M`
+                          : strategicPlan.metrics.subscribers >= 1000
+                          ? `${(strategicPlan.metrics.subscribers / 1000).toFixed(1)}K`
+                          : strategicPlan.metrics.subscribers.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">Inscritos</p>
+                    </div>
+                    <div className="p-4 bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-xl border border-blue-500/20 text-center">
+                      <p className="text-2xl font-bold text-blue-500">
+                        {(strategicPlan.metrics.videos || 0).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">Vídeos</p>
+                    </div>
+                    <div className="p-4 bg-gradient-to-br from-success/10 to-success/5 rounded-xl border border-success/20 text-center">
+                      <p className="text-2xl font-bold text-success">
+                        {strategicPlan.metrics.totalViews >= 1000000000
+                          ? `${(strategicPlan.metrics.totalViews / 1000000000).toFixed(1)}B`
+                          : strategicPlan.metrics.totalViews >= 1000000
+                          ? `${(strategicPlan.metrics.totalViews / 1000000).toFixed(1)}M`
+                          : strategicPlan.metrics.totalViews >= 1000
+                          ? `${(strategicPlan.metrics.totalViews / 1000).toFixed(1)}K`
+                          : (strategicPlan.metrics.totalViews || 0).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">Views Totais</p>
+                    </div>
+                    <div className="p-4 bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-xl border border-orange-500/20 text-center">
+                      <p className="text-lg font-bold text-orange-500">
+                        {strategicPlan.metrics.postingFrequency || strategicPlan.postingSchedule || "N/A"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">Frequência</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Summary Card */}
                 {strategicPlan.summary && (
                   <div className="p-5 bg-gradient-to-r from-blue-500/10 to-primary/10 rounded-xl border border-blue-500/20">
