@@ -1017,6 +1017,125 @@ const Analytics = () => {
                 </div>
               </Card>
 
+              {/* Monetization Progress Card */}
+              {(() => {
+                const subs = analyticsData.statistics.subscribers;
+                const totalViews = analyticsData.statistics.totalViews;
+                // Estimate watch hours: avg view = 4 min = 0.067 hours
+                const estimatedWatchHours = Math.round((totalViews * 4) / 60);
+                const subsTarget = 1000;
+                const hoursTarget = 4000;
+                const subsProgress = Math.min(100, Math.round((subs / subsTarget) * 100));
+                const hoursProgress = Math.min(100, Math.round((estimatedWatchHours / hoursTarget) * 100));
+                const isMonetized = subs >= subsTarget && estimatedWatchHours >= hoursTarget;
+
+                return (
+                  <Card className="p-6 mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-foreground flex items-center gap-2">
+                        <DollarSign className="w-5 h-5 text-primary" />
+                        Progresso para Monetização
+                      </h3>
+                      {isMonetized ? (
+                        <Badge className="bg-green-500/20 text-green-500 border-green-500/30 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Elegível para YPP
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          Ainda não elegível
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Subscribers Progress */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                              <Users className="w-5 h-5 text-blue-500" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">Inscritos</p>
+                              <p className="text-xs text-muted-foreground">Mínimo: 1.000</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-foreground">{formatNumber(subs)}</p>
+                            <p className="text-xs text-muted-foreground">{subsProgress}%</p>
+                          </div>
+                        </div>
+                        <Progress 
+                          value={subsProgress} 
+                          className="h-3" 
+                        />
+                        {subs < subsTarget && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            Faltam <span className="font-medium text-foreground">{formatNumber(subsTarget - subs)}</span> inscritos
+                          </p>
+                        )}
+                        {subs >= subsTarget && (
+                          <p className="text-xs text-green-500 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Meta atingida!
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Watch Hours Progress */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                              <Clock className="w-5 h-5 text-purple-500" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">Horas de Exibição</p>
+                              <p className="text-xs text-muted-foreground">Mínimo: 4.000h (12 meses)</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-foreground">{formatNumber(estimatedWatchHours)}h</p>
+                            <p className="text-xs text-muted-foreground">{hoursProgress}%</p>
+                          </div>
+                        </div>
+                        <Progress 
+                          value={hoursProgress} 
+                          className="h-3" 
+                        />
+                        {estimatedWatchHours < hoursTarget && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            Faltam <span className="font-medium text-foreground">~{formatNumber(hoursTarget - estimatedWatchHours)}h</span> de exibição
+                          </p>
+                        )}
+                        {estimatedWatchHours >= hoursTarget && (
+                          <p className="text-xs text-green-500 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Meta atingida!
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Info disclaimer */}
+                    <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border">
+                      <p className="text-xs text-muted-foreground flex items-start gap-2">
+                        <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>
+                          As horas de exibição são <strong>estimadas</strong> com base em views × 4 min de média. 
+                          Para dados reais, consulte o <a href="https://studio.youtube.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">YouTube Studio</a>.
+                          O YouTube também aceita 10M de views em Shorts nos últimos 90 dias como alternativa.
+                        </span>
+                      </p>
+                    </div>
+                  </Card>
+                );
+              })()}
+
               {/* Goals Section */}
               <Card className="p-6 mb-8">
                 <div className="flex items-center justify-between mb-6">
