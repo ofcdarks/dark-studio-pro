@@ -33,49 +33,55 @@ serve(async (req) => {
 
     console.log('Fetching videos for channel:', channelUrl);
 
+    // Decode URL to handle encoded characters (like %C3%A9 for é)
+    const decodedUrl = decodeURIComponent(channelUrl);
+    console.log('Decoded URL:', decodedUrl);
+
     // Extract channel ID from URL
     let channelId = '';
     let channelHandle = '';
 
     // Handle different URL formats
-    if (channelUrl.includes('/channel/')) {
-      const match = channelUrl.match(/\/channel\/([a-zA-Z0-9_-]+)/);
+    if (decodedUrl.includes('/channel/')) {
+      const match = decodedUrl.match(/\/channel\/([a-zA-Z0-9_-]+)/);
       if (match) channelId = match[1];
-    } else if (channelUrl.includes('/@')) {
-      const match = channelUrl.match(/@([a-zA-Z0-9_-]+)/);
+    } else if (decodedUrl.includes('/@')) {
+      // Extract everything after @ until / or end of string
+      const match = decodedUrl.match(/@([^\/\?]+)/);
       if (match) channelHandle = match[1];
-    } else if (channelUrl.includes('/user/')) {
-      const match = channelUrl.match(/\/user\/([a-zA-Z0-9_-]+)/);
+    } else if (decodedUrl.includes('/user/')) {
+      const match = decodedUrl.match(/\/user\/([^\/\?]+)/);
       if (match) channelHandle = match[1];
-    } else if (channelUrl.includes('/c/')) {
-      const match = channelUrl.match(/\/c\/([a-zA-Z0-9_-]+)/);
+    } else if (decodedUrl.includes('/c/')) {
+      const match = decodedUrl.match(/\/c\/([^\/\?]+)/);
       if (match) channelHandle = match[1];
     }
 
-    // If we have a handle, we need to get the channel ID first
+    console.log('Extracted handle:', channelHandle);
+
+    // If we have a handle, we need to get the channel ID first using forHandle (more reliable)
     if (channelHandle && !channelId) {
       console.log('Looking up channel ID for handle:', channelHandle);
       
-      // Try to search for the channel
-      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(channelHandle)}&key=${apiKey}`;
-      const searchResponse = await fetch(searchUrl);
-      const searchData = await searchResponse.json();
-
-      if (searchData.items && searchData.items.length > 0) {
-        channelId = searchData.items[0].snippet.channelId;
-        console.log('Found channel ID:', channelId);
-      }
-    }
-
-    // If still no channel ID, try using forHandle parameter
-    if (!channelId && channelHandle) {
-      const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=id,snippet&forHandle=${channelHandle}&key=${apiKey}`;
-      const channelResponse = await fetch(channelUrl);
-      const channelData = await channelResponse.json();
+      // First try forHandle which is more accurate
+      const handleUrl = `https://www.googleapis.com/youtube/v3/channels?part=id,snippet&forHandle=${encodeURIComponent(channelHandle)}&key=${apiKey}`;
+      const handleResponse = await fetch(handleUrl);
+      const handleData = await handleResponse.json();
       
-      if (channelData.items && channelData.items.length > 0) {
-        channelId = channelData.items[0].id;
+      if (handleData.items && handleData.items.length > 0) {
+        channelId = handleData.items[0].id;
         console.log('Found channel ID via forHandle:', channelId);
+      } else {
+        // Fallback to search if forHandle doesn't work
+        console.log('forHandle failed, trying search...');
+        const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(channelHandle)}&maxResults=1&key=${apiKey}`;
+        const searchResponse = await fetch(searchUrl);
+        const searchData = await searchResponse.json();
+
+        if (searchData.items && searchData.items.length > 0) {
+          channelId = searchData.items[0].snippet.channelId;
+          console.log('Found channel ID via search:', channelId);
+        }
       }
     }
 
