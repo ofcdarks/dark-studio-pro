@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -205,6 +205,14 @@ const Analytics = () => {
     enabled: !!user && !!channelUrl,
   });
 
+  // Check for overdue goals on initial load
+  useEffect(() => {
+    if (channelGoals && channelGoals.length > 0) {
+      const timer = setTimeout(() => checkGoalDeadlines(), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [channelGoals]);
+
   const createGoal = async () => {
     if (!user || !channelUrl) return;
     
@@ -251,6 +259,11 @@ const Analytics = () => {
   const updateGoalProgress = async () => {
     if (!channelGoals || !analyticsData) return;
 
+    const completedGoals: string[] = [];
+    const nearDeadlineGoals: string[] = [];
+    const today = new Date();
+    const threeDaysFromNow = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
+
     for (const goal of channelGoals) {
       let currentValue = 0;
       switch (goal.goal_type) {
@@ -268,16 +281,80 @@ const Analytics = () => {
           break;
       }
 
+      const wasNotCompleted = !goal.completed_at;
       const isCompleted = currentValue >= goal.target_value;
+      
+      // Check for newly completed goals
+      if (isCompleted && wasNotCompleted) {
+        completedGoals.push(goalTypeLabels[goal.goal_type]?.label || goal.goal_type);
+      }
+      
+      // Check for goals near deadline (within 3 days)
+      if (goal.deadline && !isCompleted) {
+        const deadlineDate = new Date(goal.deadline);
+        if (deadlineDate <= threeDaysFromNow && deadlineDate >= today) {
+          const daysLeft = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          nearDeadlineGoals.push(`${goalTypeLabels[goal.goal_type]?.label} (${daysLeft} dia${daysLeft > 1 ? 's' : ''})`);
+        }
+      }
+
       await supabase
         .from("channel_goals")
         .update({
           current_value: currentValue,
-          completed_at: isCompleted && !goal.completed_at ? new Date().toISOString() : goal.completed_at,
+          completed_at: isCompleted && wasNotCompleted ? new Date().toISOString() : goal.completed_at,
         })
         .eq("id", goal.id);
     }
+    
+    // Show notifications for completed goals
+    if (completedGoals.length > 0) {
+      toast({
+        title: "🎉 Meta Atingida!",
+        description: `Parabéns! Você atingiu sua meta de ${completedGoals.join(", ")}!`,
+        duration: 8000,
+      });
+    }
+    
+    // Show notifications for goals near deadline
+    if (nearDeadlineGoals.length > 0) {
+      setTimeout(() => {
+        toast({
+          title: "⏰ Prazo Próximo",
+          description: `Metas com prazo próximo: ${nearDeadlineGoals.join(", ")}`,
+          variant: "destructive",
+          duration: 8000,
+        });
+      }, completedGoals.length > 0 ? 2000 : 0);
+    }
+    
     refetchGoals();
+  };
+
+  // Check goals on mount and when analytics data changes
+  const checkGoalDeadlines = () => {
+    if (!channelGoals) return;
+    
+    const today = new Date();
+    const overdueGoals: string[] = [];
+    
+    for (const goal of channelGoals) {
+      if (goal.deadline && !goal.completed_at) {
+        const deadlineDate = new Date(goal.deadline);
+        if (deadlineDate < today) {
+          overdueGoals.push(goalTypeLabels[goal.goal_type]?.label || goal.goal_type);
+        }
+      }
+    }
+    
+    if (overdueGoals.length > 0) {
+      toast({
+        title: "⚠️ Metas Atrasadas",
+        description: `Você tem metas com prazo vencido: ${overdueGoals.join(", ")}`,
+        variant: "destructive",
+        duration: 6000,
+      });
+    }
   };
 
   const deleteGoal = async (goalId: string) => {
