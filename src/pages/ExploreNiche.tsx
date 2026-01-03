@@ -904,9 +904,31 @@ const ExploreNiche = () => {
                                 </div>
                                 <div className="space-y-3">
                                   {sub.exampleTitles.map((title, i) => {
-                                    // Formatar título destacando palavras de impacto em CAIXA ALTA
+                                    // Formatar título destacando palavras de impacto em CAIXA ALTA com pipe
                                     const formatTitle = (t: string) => {
                                       let formatted = t;
+                                      
+                                      // Lista de palavras de poder para destacar
+                                      const powerWords = [
+                                        'nunca', 'sempre', 'segredo', 'verdade', 'mentira', 'chocante',
+                                        'incrível', 'absurdo', 'bizarro', 'proibido', 'escondido', 'revelado',
+                                        'finalmente', 'urgente', 'alerta', 'cuidado', 'perigo', 'erro',
+                                        'terrível', 'horrível', 'impressionante', 'surpreendente', 'real',
+                                        'fake', 'verdadeiro', 'falso', 'maior', 'menor', 'pior', 'melhor',
+                                        'primeiro', 'último', 'único', 'raro', 'impossível', 'possível',
+                                        'secreto', 'misterioso', 'desconhecido', 'famoso', 'rico', 'pobre',
+                                        'morreu', 'nasceu', 'descobriu', 'revelou', 'confessou', 'admitiu',
+                                        'traição', 'vingança', 'justiça', 'guerra', 'paz', 'morte', 'vida',
+                                        'milhões', 'bilhões', 'fortuna', 'milagre', 'tragédia', 'drama'
+                                      ];
+                                      
+                                      // Colocar palavras de poder em CAIXA ALTA
+                                      powerWords.forEach(word => {
+                                        const regex = new RegExp(`\\b(${word})\\b`, 'gi');
+                                        formatted = formatted.replace(regex, (match) => {
+                                          return `<strong class="font-bold">${match.toUpperCase()}</strong>`;
+                                        });
+                                      });
                                       
                                       // Colocar nomes próprios em CAIXA ALTA (2+ palavras capitalizadas seguidas)
                                       formatted = formatted.replace(/([A-Z][a-záéíóúàèìòùâêîôûãõ]+(?:\s+[A-Z][a-záéíóúàèìòùâêîôûãõ]+)+)/g, (match) => {
@@ -915,6 +937,12 @@ const ExploreNiche = () => {
                                       
                                       // Colocar números + contexto em destaque (negrito)
                                       formatted = formatted.replace(/(\d+(?:\.\d+)?(?:\s*(?:mil|milhões?|bilhões?|anos?|dias?|horas?|minutos?|vidas?|pessoas?|crianças?|%))?)/gi, '<strong class="font-bold">$1</strong>');
+                                      
+                                      // Substituir dois pontos por pipe estilizado
+                                      formatted = formatted.replace(/\s*:\s*/g, ' <span class="text-muted-foreground mx-1">|</span> ');
+                                      
+                                      // Substituir travessão por pipe
+                                      formatted = formatted.replace(/\s*[–—-]\s*/g, ' <span class="text-muted-foreground mx-1">|</span> ');
                                       
                                       return formatted;
                                     };
