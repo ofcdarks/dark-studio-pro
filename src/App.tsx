@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LandingSettingsProvider } from "@/hooks/useLandingSettings";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
@@ -38,10 +39,11 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
@@ -74,8 +76,9 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+        </TooltipProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
