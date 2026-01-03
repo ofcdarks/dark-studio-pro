@@ -34,7 +34,11 @@ import {
   Target,
   Plus,
   Trash2,
-  Calendar
+  Calendar,
+  Trophy,
+  History,
+  Timer,
+  Award
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -47,6 +51,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -187,7 +192,7 @@ const Analytics = () => {
     enabled: !!user,
   });
 
-  // Fetch channel goals
+  // Fetch active channel goals
   const { data: channelGoals, refetch: refetchGoals } = useQuery({
     queryKey: ["channel-goals", user?.id, channelUrl],
     queryFn: async () => {
@@ -198,12 +203,56 @@ const Analytics = () => {
         .eq("user_id", user.id)
         .eq("channel_url", channelUrl)
         .eq("is_active", true)
+        .is("completed_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
     enabled: !!user && !!channelUrl,
   });
+
+  // Fetch completed goals for history
+  const { data: completedGoals, refetch: refetchCompletedGoals } = useQuery({
+    queryKey: ["completed-goals", user?.id, channelUrl],
+    queryFn: async () => {
+      if (!user || !channelUrl) return [];
+      const { data, error } = await supabase
+        .from("channel_goals")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("channel_url", channelUrl)
+        .not("completed_at", "is", null)
+        .order("completed_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && !!channelUrl,
+  });
+
+  // Calculate statistics for completed goals
+  const completedStats = completedGoals && completedGoals.length > 0 ? {
+    totalCompleted: completedGoals.length,
+    avgDaysToComplete: Math.round(
+      completedGoals.reduce((sum, goal) => {
+        const start = new Date(goal.created_at);
+        const end = new Date(goal.completed_at!);
+        return sum + (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+      }, 0) / completedGoals.length
+    ),
+    fastestCompletion: Math.min(
+      ...completedGoals.map((goal) => {
+        const start = new Date(goal.created_at);
+        const end = new Date(goal.completed_at!);
+        return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      })
+    ),
+    byType: {
+      subscribers: completedGoals.filter((g) => g.goal_type === "subscribers").length,
+      views: completedGoals.filter((g) => g.goal_type === "views").length,
+      videos: completedGoals.filter((g) => g.goal_type === "videos").length,
+      engagement: completedGoals.filter((g) => g.goal_type === "engagement").length,
+    },
+  } : null;
 
   // Check for overdue goals on initial load
   useEffect(() => {
@@ -329,6 +378,7 @@ const Analytics = () => {
     }
     
     refetchGoals();
+    refetchCompletedGoals();
   };
 
   // Check goals on mount and when analytics data changes
@@ -734,96 +784,190 @@ const Analytics = () => {
                   </Dialog>
                 </div>
 
-                {channelGoals && channelGoals.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {channelGoals.map((goal) => {
-                      const GoalIcon = goalTypeLabels[goal.goal_type]?.icon || Target;
-                      const progress = goal.target_value > goal.start_value 
-                        ? Math.min(100, Math.round(((goal.current_value - goal.start_value) / (goal.target_value - goal.start_value)) * 100))
-                        : goal.current_value >= goal.target_value ? 100 : 0;
-                      const isCompleted = goal.completed_at !== null;
-                      const remaining = goal.target_value - goal.current_value;
-                      
-                      return (
-                        <div
-                          key={goal.id}
-                          className={`p-4 rounded-lg border ${isCompleted ? 'bg-green-500/5 border-green-500/20' : 'bg-secondary/50 border-border'}`}
-                        >
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-10 h-10 rounded-lg ${isCompleted ? 'bg-green-500/20' : 'bg-primary/10'} flex items-center justify-center`}>
-                                <GoalIcon className={`w-5 h-5 ${isCompleted ? 'text-green-500' : 'text-primary'}`} />
+                <Tabs defaultValue="active" className="w-full">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="active" className="flex items-center gap-2">
+                      <Target className="w-4 h-4" />
+                      Ativas ({channelGoals?.length || 0})
+                    </TabsTrigger>
+                    <TabsTrigger value="completed" className="flex items-center gap-2">
+                      <Trophy className="w-4 h-4" />
+                      Concluídas ({completedGoals?.length || 0})
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="active">
+                    {channelGoals && channelGoals.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {channelGoals.map((goal) => {
+                          const GoalIcon = goalTypeLabels[goal.goal_type]?.icon || Target;
+                          const progress = goal.target_value > goal.start_value 
+                            ? Math.min(100, Math.round(((goal.current_value - goal.start_value) / (goal.target_value - goal.start_value)) * 100))
+                            : goal.current_value >= goal.target_value ? 100 : 0;
+                          const remaining = goal.target_value - goal.current_value;
+                          
+                          return (
+                            <div
+                              key={goal.id}
+                              className="p-4 rounded-lg border bg-secondary/50 border-border"
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <GoalIcon className="w-5 h-5 text-primary" />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-foreground">
+                                      {goalTypeLabels[goal.goal_type]?.label || goal.goal_type}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Meta: {formatNumber(goal.target_value)}
+                                      {goal.goal_type === "engagement" ? "%" : ""}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                  onClick={() => deleteGoal(goal.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
                               </div>
-                              <div>
-                                <p className="font-medium text-foreground">
-                                  {goalTypeLabels[goal.goal_type]?.label || goal.goal_type}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  Meta: {formatNumber(goal.target_value)}
+                              
+                              <div className="mb-2">
+                                <div className="flex justify-between text-sm mb-1">
+                                  <span className="text-muted-foreground">Progresso</span>
+                                  <span className="font-medium text-foreground">{progress}%</span>
+                                </div>
+                                <Progress value={progress} className="h-2" />
+                              </div>
+                              
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>
+                                  Atual: {formatNumber(goal.current_value)}
                                   {goal.goal_type === "engagement" ? "%" : ""}
+                                </span>
+                                {remaining > 0 && (
+                                  <span className="text-primary">
+                                    Faltam: {formatNumber(remaining)}
+                                    {goal.goal_type === "engagement" ? "%" : ""}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {goal.deadline && (
+                                <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                                  <Calendar className="w-3 h-3" />
+                                  Prazo: {new Date(goal.deadline).toLocaleDateString("pt-BR")}
+                                  {new Date(goal.deadline) < new Date() && (
+                                    <Badge variant="destructive" className="ml-2 text-[10px] py-0">Atrasada</Badge>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Target className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                        <p className="text-muted-foreground text-sm">
+                          Nenhuma meta ativa. Crie sua primeira meta de crescimento!
+                        </p>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="completed">
+                    {completedStats && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20 text-center">
+                          <Trophy className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                          <p className="text-2xl font-bold text-foreground">{completedStats.totalCompleted}</p>
+                          <p className="text-xs text-muted-foreground">Metas Concluídas</p>
+                        </div>
+                        <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/20 text-center">
+                          <Timer className="w-8 h-8 mx-auto mb-2 text-blue-500" />
+                          <p className="text-2xl font-bold text-foreground">{completedStats.avgDaysToComplete}</p>
+                          <p className="text-xs text-muted-foreground">Média de Dias</p>
+                        </div>
+                        <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/20 text-center">
+                          <Award className="w-8 h-8 mx-auto mb-2 text-amber-500" />
+                          <p className="text-2xl font-bold text-foreground">{completedStats.fastestCompletion}</p>
+                          <p className="text-xs text-muted-foreground">Mais Rápida (dias)</p>
+                        </div>
+                        <div className="p-4 rounded-lg bg-purple-500/5 border border-purple-500/20 text-center">
+                          <History className="w-8 h-8 mx-auto mb-2 text-purple-500" />
+                          <div className="flex justify-center gap-2 text-xs text-muted-foreground mt-2">
+                            {completedStats.byType.subscribers > 0 && <Badge variant="outline">{completedStats.byType.subscribers} Inscritos</Badge>}
+                            {completedStats.byType.views > 0 && <Badge variant="outline">{completedStats.byType.views} Views</Badge>}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Por Tipo</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {completedGoals && completedGoals.length > 0 ? (
+                      <div className="space-y-3">
+                        {completedGoals.map((goal) => {
+                          const GoalIcon = goalTypeLabels[goal.goal_type]?.icon || Target;
+                          const startDate = new Date(goal.created_at);
+                          const endDate = new Date(goal.completed_at!);
+                          const daysToComplete = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                          
+                          return (
+                            <div
+                              key={goal.id}
+                              className="p-4 rounded-lg bg-green-500/5 border border-green-500/20 flex items-center gap-4"
+                            >
+                              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                                <CheckCircle2 className="w-6 h-6 text-green-500" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <GoalIcon className="w-4 h-4 text-muted-foreground" />
+                                  <p className="font-medium text-foreground">
+                                    {goalTypeLabels[goal.goal_type]?.label}
+                                  </p>
+                                  <Badge className="bg-green-500/20 text-green-500 border-green-500/30">
+                                    {formatNumber(goal.target_value)}{goal.goal_type === "engagement" ? "%" : ""}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    Concluída em {endDate.toLocaleDateString("pt-BR")}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Timer className="w-3 h-3" />
+                                    {daysToComplete} dia{daysToComplete !== 1 ? 's' : ''} para concluir
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <p className="text-sm text-muted-foreground">
+                                  Início: {formatNumber(goal.start_value)}{goal.goal_type === "engagement" ? "%" : ""}
+                                </p>
+                                <p className="text-sm font-medium text-green-500">
+                                  Final: {formatNumber(goal.current_value)}{goal.goal_type === "engagement" ? "%" : ""}
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {isCompleted && (
-                                <Badge className="bg-green-500/20 text-green-500 border-green-500/30">
-                                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                                  Concluída
-                                </Badge>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                onClick={() => deleteGoal(goal.id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <div className="mb-2">
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="text-muted-foreground">Progresso</span>
-                              <span className="font-medium text-foreground">{progress}%</span>
-                            </div>
-                            <Progress value={progress} className="h-2" />
-                          </div>
-                          
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>
-                              Atual: {formatNumber(goal.current_value)}
-                              {goal.goal_type === "engagement" ? "%" : ""}
-                            </span>
-                            {!isCompleted && remaining > 0 && (
-                              <span className="text-primary">
-                                Faltam: {formatNumber(remaining)}
-                                {goal.goal_type === "engagement" ? "%" : ""}
-                              </span>
-                            )}
-                          </div>
-                          
-                          {goal.deadline && (
-                            <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                              <Calendar className="w-3 h-3" />
-                              Prazo: {new Date(goal.deadline).toLocaleDateString("pt-BR")}
-                              {new Date(goal.deadline) < new Date() && !isCompleted && (
-                                <Badge variant="destructive" className="ml-2 text-[10px] py-0">Atrasada</Badge>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Target className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
-                    <p className="text-muted-foreground text-sm">
-                      Nenhuma meta definida. Crie sua primeira meta de crescimento!
-                    </p>
-                  </div>
-                )}
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Trophy className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                        <p className="text-muted-foreground text-sm">
+                          Nenhuma meta concluída ainda. Continue trabalhando nas suas metas!
+                        </p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </Card>
 
               {/* Main Stats */}
