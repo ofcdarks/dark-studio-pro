@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pencil, Check } from "lucide-react";
+import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pencil, Check, Brain, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -64,6 +64,9 @@ export function AgentChatModal({ open, onOpenChange, agent, onModelChange }: Age
   const [ctaInicio, setCtaInicio] = useState(false);
   const [ctaMeio, setCtaMeio] = useState(false);
   const [ctaFinal, setCtaFinal] = useState(true);
+  const [autoTriggers, setAutoTriggers] = useState<string[]>([]);
+  const [isGeneratingTriggers, setIsGeneratingTriggers] = useState(false);
+  const [useAutoTriggers, setUseAutoTriggers] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -227,6 +230,65 @@ export function AgentChatModal({ open, onOpenChange, agent, onModelChange }: Age
   };
   const estimatedCredits = getCreditsForModel();
 
+  // Generate auto triggers based on niche and title
+  const handleGenerateTriggers = async () => {
+    if (!scriptTitle.trim()) {
+      toast.error("Insira um título primeiro para gerar gatilhos personalizados");
+      return;
+    }
+
+    setIsGeneratingTriggers(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-assistant", {
+        body: {
+          type: "generate_mental_triggers",
+          prompt: `Gere 8 gatilhos mentais PODEROSOS e específicos para criar um vídeo viral 10/10 no YouTube.
+
+TÍTULO DO VÍDEO: "${scriptTitle}"
+NICHO: ${agent.niche || "Geral"}
+SUBNICHO: ${agent.sub_niche || "Geral"}
+
+REQUISITOS:
+1. Os gatilhos devem ser ESPECÍFICOS para este nicho e título
+2. Foque em gatilhos que geram alta retenção e engajamento
+3. Inclua gatilhos emocionais, de curiosidade e de urgência
+4. Cada gatilho deve ser uma palavra ou frase curta (máx 3 palavras)
+
+GATILHOS CLÁSSICOS PARA REFERÊNCIA:
+- Escassez, Urgência, Prova Social, Autoridade, Reciprocidade
+- Curiosidade, Medo de Perder (FOMO), Exclusividade, Novidade
+- Antecipação, História, Transformação, Contraste, Especificidade
+
+Retorne APENAS os 8 gatilhos, um por linha, sem numeração ou explicação.`,
+          model: selectedModel,
+        },
+      });
+
+      if (error) throw error;
+
+      const triggersText = data?.response || data?.text || data?.result || "";
+      const triggers = triggersText
+        .split('\n')
+        .map((t: string) => t.trim())
+        .filter((t: string) => t.length > 0 && t.length < 50)
+        .slice(0, 8);
+
+      if (triggers.length > 0) {
+        setAutoTriggers(triggers);
+        setUseAutoTriggers(true);
+        toast.success(`${triggers.length} gatilhos mentais gerados!`);
+      } else {
+        toast.error("Não foi possível gerar gatilhos");
+      }
+    } catch (error) {
+      console.error("Error generating triggers:", error);
+      toast.error("Erro ao gerar gatilhos mentais");
+    } finally {
+      setIsGeneratingTriggers(false);
+    }
+  };
+
   const handleGenerateScript = async () => {
     if (!scriptTitle.trim()) {
       toast.error("Por favor, insira o título do vídeo");
@@ -274,7 +336,15 @@ ${agent.formula ? `\n🎯 FÓRMULA VIRAL A SEGUIR:\n${agent.formula}` : ''}
 
 ${agent.formula_structure?.memory ? `\n📝 MEMÓRIA/CONTEXTO DO AGENTE:\n${agent.formula_structure.memory}` : ''}
 
-${agent.mental_triggers && agent.mental_triggers.length > 0 ? `\n🧠 GATILHOS MENTAIS OBRIGATÓRIOS:\n${agent.mental_triggers.map(t => `- ${t}`).join('\n')}` : ''}
+${(() => {
+  const allTriggers = [
+    ...(agent.mental_triggers || []),
+    ...(useAutoTriggers ? autoTriggers : [])
+  ];
+  return allTriggers.length > 0 
+    ? `\n🧠 GATILHOS MENTAIS OBRIGATÓRIOS (use TODOS para roteiro viral 10/10):\n${allTriggers.map(t => `- ${t}`).join('\n')}` 
+    : '';
+})()}
 
 ${agent.formula_structure?.instructions ? `\n📋 INSTRUÇÕES ESPECÍFICAS:\n${agent.formula_structure.instructions}` : ''}
 
@@ -676,6 +746,68 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Auto Mental Triggers Section */}
+            <div className="bg-background/30 rounded-lg p-3 border border-border/30">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-medium text-foreground">Gatilhos Mentais Automáticos</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateTriggers}
+                  disabled={isGeneratingTriggers || !scriptTitle.trim()}
+                  className="h-7 px-2 text-xs"
+                >
+                  {isGeneratingTriggers ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : autoTriggers.length > 0 ? (
+                    <>
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      Regenerar
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      Gerar
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              {autoTriggers.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {autoTriggers.map((trigger, idx) => (
+                      <Badge
+                        key={idx}
+                        variant="secondary"
+                        className="text-[10px] px-2 py-0.5 bg-primary/10 text-primary border-primary/20 cursor-pointer hover:bg-primary/20"
+                        onClick={() => {
+                          setAutoTriggers(prev => prev.filter((_, i) => i !== idx));
+                        }}
+                      >
+                        {trigger} ×
+                      </Badge>
+                    ))}
+                  </div>
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <Checkbox
+                      checked={useAutoTriggers}
+                      onCheckedChange={(c) => setUseAutoTriggers(c === true)}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span className="text-muted-foreground">Usar estes gatilhos no roteiro</span>
+                  </label>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Insira o título e clique em "Gerar" para criar gatilhos mentais otimizados para viralizar
+                </p>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-4">
