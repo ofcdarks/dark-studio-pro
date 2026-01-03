@@ -755,10 +755,7 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
                 <SelectContent>
                   {AI_MODELS.map((model) => (
                     <SelectItem key={model.id} value={model.id}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{model.name}</span>
-                        <span className="text-xs text-muted-foreground">{model.description}</span>
-                      </div>
+                      {model.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
