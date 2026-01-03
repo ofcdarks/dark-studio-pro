@@ -691,11 +691,11 @@ const ChannelAnalyzer = () => {
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <Badge className="bg-gradient-to-r from-primary/20 to-amber-500/20 text-primary border-0">
-                                    <Star className="w-3 h-3 mr-1 fill-primary" />
+                                  <Badge className="bg-primary text-primary-foreground border-0 font-bold px-3 py-1">
+                                    <Star className="w-3 h-3 mr-1 fill-primary-foreground" />
                                     {title.score}/100
                                   </Badge>
-                                  <Badge variant="outline" className="text-xs border-border/50">
+                                  <Badge variant="outline" className="text-xs border-border/50 bg-background/50">
                                     {title.formula}
                                   </Badge>
                                 </div>
