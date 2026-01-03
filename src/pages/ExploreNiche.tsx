@@ -111,6 +111,49 @@ const ExploreNiche = () => {
     return "bg-destructive";
   };
 
+  const normalizeCountryName = (value: string) => {
+    const trimmed = value.trim();
+    const withoutCode = trimmed.replace(/^[a-z]{2}\s+/i, "");
+    return withoutCode
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase();
+  };
+
+  const getCountryBadgeClass = (country: string) => {
+    const name = normalizeCountryName(country);
+
+    const toneMap: Record<string, "success" | "primary" | "destructive" | "secondary"> = {
+      brasil: "success",
+      mexico: "success",
+      italia: "success",
+
+      alemanha: "primary",
+      india: "primary",
+      espanha: "primary",
+
+      turquia: "destructive",
+      canada: "destructive",
+      japao: "destructive",
+      portugal: "destructive",
+      "reino unido": "destructive",
+      eua: "destructive",
+      usa: "destructive",
+      "estados unidos": "destructive",
+
+      argentina: "primary",
+      "coreia do sul": "primary",
+      franca: "primary",
+    };
+
+    const tone = toneMap[name] ?? "secondary";
+
+    if (tone === "success") return "!bg-success/20 !text-success !border-success/30";
+    if (tone === "primary") return "!bg-primary/20 !text-primary !border-primary/30";
+    if (tone === "destructive") return "!bg-destructive/20 !text-destructive !border-destructive/30";
+    return "!bg-secondary/50 !text-foreground !border-border/50";
+  };
+
   const getPotentialBadge = (potential: string) => {
     if (potential === "Muito Alto") {
       return "bg-success text-success-foreground border-0";
@@ -636,7 +679,12 @@ const ExploreNiche = () => {
                                         className="h-full transition-all rounded-full"
                                         style={{ 
                                           width: `${sub.demandScore * 10}%`,
-                                          backgroundColor: sub.demandScore >= 8 ? '#22c55e' : sub.demandScore >= 5 ? '#f59e0b' : '#ef4444'
+                                          backgroundColor:
+                                            sub.demandScore >= 8
+                                              ? "hsl(var(--success))"
+                                              : sub.demandScore >= 5
+                                                ? "hsl(var(--primary))"
+                                                : "hsl(var(--destructive))",
                                         }}
                                       />
                                     </div>
@@ -653,7 +701,12 @@ const ExploreNiche = () => {
                                         className="h-full transition-all rounded-full"
                                         style={{ 
                                           width: `${sub.opportunityScore * 10}%`,
-                                          backgroundColor: sub.opportunityScore >= 8 ? '#22c55e' : sub.opportunityScore >= 5 ? '#f59e0b' : '#ef4444'
+                                          backgroundColor:
+                                            sub.opportunityScore >= 8
+                                              ? "hsl(var(--success))"
+                                              : sub.opportunityScore >= 5
+                                                ? "hsl(var(--primary))"
+                                                : "hsl(var(--destructive))",
                                         }}
                                       />
                                     </div>
@@ -670,7 +723,12 @@ const ExploreNiche = () => {
                                         className="h-full transition-all rounded-full"
                                         style={{ 
                                           width: `${sub.competitionScore * 10}%`,
-                                          backgroundColor: (10 - sub.competitionScore) >= 8 ? '#22c55e' : (10 - sub.competitionScore) >= 5 ? '#f59e0b' : '#ef4444'
+                                          backgroundColor:
+                                            (10 - sub.competitionScore) >= 8
+                                              ? "hsl(var(--success))"
+                                              : (10 - sub.competitionScore) >= 5
+                                                ? "hsl(var(--primary))"
+                                                : "hsl(var(--destructive))",
                                         }}
                                       />
                                     </div>
@@ -739,47 +797,15 @@ const ExploreNiche = () => {
                                   Países Recomendados para Iniciar
                                 </h5>
                                 <div className="flex flex-wrap gap-2">
-                                  {sub.targetCountries.map((country, i) => {
-                                    const countryColors: Record<string, string> = {
-                                      'Brasil': 'bg-green-600/20 text-green-400 border-green-500/30',
-                                      'BR Brasil': 'bg-green-600/20 text-green-400 border-green-500/30',
-                                      'EUA': 'bg-blue-600/20 text-blue-400 border-blue-500/30',
-                                      'USA': 'bg-blue-600/20 text-blue-400 border-blue-500/30',
-                                      'Estados Unidos': 'bg-blue-600/20 text-blue-400 border-blue-500/30',
-                                      'Alemanha': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-                                      'DE Alemanha': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-                                      'Portugal': 'bg-red-600/20 text-red-400 border-red-500/30',
-                                      'PT Portugal': 'bg-red-600/20 text-red-400 border-red-500/30',
-                                      'Espanha': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-                                      'ES Espanha': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-                                      'França': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-                                      'FR França': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-                                      'Itália': 'bg-green-500/20 text-green-400 border-green-500/30',
-                                      'IT Itália': 'bg-green-500/20 text-green-400 border-green-500/30',
-                                      'Reino Unido': 'bg-red-500/20 text-red-400 border-red-500/30',
-                                      'UK': 'bg-red-500/20 text-red-400 border-red-500/30',
-                                      'México': 'bg-green-600/20 text-green-400 border-green-500/30',
-                                      'MX México': 'bg-green-600/20 text-green-400 border-green-500/30',
-                                      'Argentina': 'bg-sky-500/20 text-sky-400 border-sky-500/30',
-                                      'AR Argentina': 'bg-sky-500/20 text-sky-400 border-sky-500/30',
-                                      'Japão': 'bg-red-500/20 text-red-400 border-red-500/30',
-                                      'JP Japão': 'bg-red-500/20 text-red-400 border-red-500/30',
-                                      'Índia': 'bg-orange-600/20 text-orange-400 border-orange-500/30',
-                                      'IN Índia': 'bg-orange-600/20 text-orange-400 border-orange-500/30',
-                                      'Canadá': 'bg-red-600/20 text-red-400 border-red-500/30',
-                                      'CA Canadá': 'bg-red-600/20 text-red-400 border-red-500/30',
-                                      'Turquia': 'bg-red-600/20 text-red-400 border-red-500/30',
-                                      'TR Turquia': 'bg-red-600/20 text-red-400 border-red-500/30',
-                                      'Coreia do Sul': 'bg-blue-600/20 text-blue-400 border-blue-500/30',
-                                      'KR Coreia do Sul': 'bg-blue-600/20 text-blue-400 border-blue-500/30',
-                                    };
-                                    const colorClass = countryColors[country] || 'bg-secondary/50 text-foreground border-border/50';
-                                    return (
-                                      <Badge key={i} className={`${colorClass} text-sm px-3 py-1.5 font-medium`}>
-                                        {country}
-                                      </Badge>
-                                    );
-                                  })}
+                                  {sub.targetCountries.map((country, i) => (
+                                    <Badge
+                                      key={i}
+                                      variant="outline"
+                                      className={`${getCountryBadgeClass(country)} text-sm px-3 py-1.5 font-medium`}
+                                    >
+                                      {country}
+                                    </Badge>
+                                  ))}
                                 </div>
                               </div>
                             )}
