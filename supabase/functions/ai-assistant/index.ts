@@ -294,6 +294,8 @@ serve(async (req) => {
       videoData, 
       channelUrl, 
       niche, 
+      subNiche,
+      microNiche,
       text, 
       voiceId, 
       language,
@@ -841,6 +843,43 @@ serve(async (req) => {
         - Foque em diferenciação real, não apenas cópia
         Responda APENAS com o JSON válido, sem texto adicional.`;
         userPrompt = `Analise este canal e crie um plano estratégico: ${channelUrlInput}`;
+        break;
+
+      case "regenerate_titles":
+        // Regenerar apenas títulos de exemplo para um subnicho específico
+        const regenNiche = niche || "";
+        const regenSubNiche = subNiche || "";
+        const regenMicroNiche = microNiche || "";
+        systemPrompt = `Você é um especialista em títulos VIRAIS do YouTube.
+        
+        Gere 3 títulos ULTRA-ESPECÍFICOS e VIRAIS para o seguinte contexto:
+        - Nicho: ${regenNiche}
+        - Subnicho: ${regenSubNiche}
+        ${regenMicroNiche ? `- Micro-nicho: ${regenMicroNiche}` : ""}
+        
+        ⚠️ REGRA CRÍTICA:
+        Os títulos DEVEM ser ULTRA-ESPECÍFICOS com NOMES, NÚMEROS, DATAS, LUGARES REAIS.
+        
+        ❌ ERRADO (genérico): "A história incrível que ninguém conhece"
+        ✅ CERTO (específico): "O piloto Sully que salvou 155 vidas pousando no Rio Hudson em 2009"
+        
+        ❌ ERRADO (genérico): "O herói esquecido que mudou tudo"  
+        ✅ CERTO (específico): "Irena Sendler: a mulher que salvou 2.500 crianças dos nazistas"
+        
+        ❌ ERRADO (genérico): "A invenção proibida que mudaria o mundo"
+        ✅ CERTO (específico): "Por que a Kodak inventou a câmera digital em 1975 e escondeu por 20 anos?"
+        
+        Retorne APENAS um JSON válido:
+        {
+          "titles": [
+            "Título específico 1 com nome/número/data real",
+            "Título específico 2 com fato concreto e impactante",
+            "Título específico 3 com gancho emocional forte"
+          ]
+        }
+        
+        Responda APENAS com o JSON, sem texto adicional.`;
+        userPrompt = `Gere 3 títulos virais específicos para o subnicho: ${regenSubNiche}`;
         break;
 
       case "analyze_niche":
