@@ -65,6 +65,47 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_files: {
+        Row: {
+          agent_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number
+          file_type?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_files_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "script_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analyzed_videos: {
         Row: {
           analysis_data_json: Json | null
