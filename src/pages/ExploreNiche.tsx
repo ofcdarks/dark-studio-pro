@@ -99,6 +99,7 @@ interface StrategicPlan {
   exampleTitles?: string[];
   thumbnailTips?: string[];
   audienceInsights?: string;
+  strategicKeywords?: string[];
 }
 
 const ExploreNiche = () => {
@@ -555,6 +556,7 @@ const ExploreNiche = () => {
         exampleTitles: analysis.insights?.exampleTitles || [],
         thumbnailTips: analysis.insights?.thumbnailTips || [],
         audienceInsights: analysis.insights?.audienceInsights,
+        strategicKeywords: analysis.insights?.strategicKeywords || [],
       });
 
       if (analysis.dataSource?.includes('dados reais')) {
@@ -1624,6 +1626,33 @@ const ExploreNiche = () => {
                             </div>
                           ))}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Strategic Keywords */}
+                    {strategicPlan.strategicKeywords && strategicPlan.strategicKeywords.length > 0 && (
+                      <div className="p-5 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-xl border border-emerald-500/20">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Hash className="w-5 h-5 text-emerald-500" />
+                          <h5 className="font-semibold text-emerald-400">Palavras-Chave Estratégicas</h5>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {strategicPlan.strategicKeywords.map((keyword, i) => (
+                            <Badge 
+                              key={i} 
+                              variant="outline" 
+                              className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 px-3 py-1.5 cursor-pointer hover:bg-emerald-500/20 transition-colors"
+                              onClick={() => {
+                                navigator.clipboard.writeText(keyword);
+                                toast.success("Palavra-chave copiada!");
+                              }}
+                            >
+                              <Hash className="w-3 h-3 mr-1" />
+                              {keyword}
+                            </Badge>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-3">Clique para copiar</p>
                       </div>
                     )}
 
