@@ -153,6 +153,7 @@ const PromptsImages = () => {
   const [editingPromptText, setEditingPromptText] = useState("");
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [savedCapcutFolder, setSavedCapcutFolder] = useState<string | null>(null);
+  const [showCapcutInstructions, setShowCapcutInstructions] = useState(false);
   const cancelGenerationRef = useRef(false);
   
   const { user } = useAuth();
@@ -889,10 +890,42 @@ const PromptsImages = () => {
     }
   };
 
-  // Handler principal do CapCut - tenta salvar direto, fallback para ZIP
-  const handleExportForCapcut = async () => {
+  // Handler principal do CapCut - abre modal de instruções primeiro
+  const handleExportForCapcut = () => {
+    setShowCapcutInstructions(true);
+  };
+
+  // Executa a exportação após confirmação
+  const handleConfirmCapcutExport = async () => {
+    setShowCapcutInstructions(false);
     await handleSaveToCapcutFolder();
   };
+
+  // Texto das instruções para copiar
+  const capcutInstructionsText = `COMO EXPORTAR PARA O CAPCUT
+
+=== MÉTODO 1: SELEÇÃO DE PASTA (RECOMENDADO) ===
+Ao clicar em "Exportar Agora", você escolhe uma pasta e os arquivos são salvos diretamente.
+
+Caminho típico no Windows:
+  C:\\Users\\[SeuUsuário]\\Documents\\CapCut\\User Data\\Projects\\[NomeDoProjeto]
+
+Caminho típico no macOS:
+  ~/Documents/CapCut/User Data/Projects/[NomeDoProjeto]
+
+IMPORTANTE: Escolha uma SUBPASTA do projeto, não a pasta "Documentos" raiz.
+
+=== MÉTODO 2: DOWNLOAD ZIP (ALTERNATIVA) ===
+Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
+1. Extraia o ZIP em qualquer pasta
+2. No CapCut, importe as imagens manualmente
+3. Use DURACOES.txt para ajustar a duração de cada cena
+
+=== DICAS ===
+• As imagens são nomeadas em ordem: cena_001.png, cena_002.png...
+• O arquivo DURACOES.txt contém os tempos de cada cena
+• Após escolher uma pasta, ela será lembrada para próximas exportações`;
+
 
   // Editar prompt de uma cena
   const handleEditPrompt = (index: number) => {
@@ -1826,6 +1859,87 @@ const PromptsImages = () => {
               <X className="w-4 h-4 mr-2" />
               Cancelar Geração
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Instruções CapCut */}
+      <Dialog open={showCapcutInstructions} onOpenChange={setShowCapcutInstructions}>
+        <DialogContent className="max-w-lg bg-card border-primary/50 rounded-xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Video className="w-5 h-5 text-primary" />
+              Exportar para CapCut
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Método 1 */}
+            <div className="p-4 bg-secondary/50 rounded-lg border border-border">
+              <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">1</span>
+                Seleção de Pasta (Recomendado)
+              </h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Ao clicar em "Exportar Agora", você escolhe uma pasta e os arquivos são salvos diretamente.
+              </p>
+              <div className="space-y-2 text-xs font-mono bg-background/50 p-3 rounded border border-border">
+                <div>
+                  <span className="text-muted-foreground">Windows:</span>
+                  <p className="text-foreground">C:\Users\[Você]\Documents\CapCut\User Data\Projects\[Projeto]</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">macOS:</span>
+                  <p className="text-foreground">~/Documents/CapCut/User Data/Projects/[Projeto]</p>
+                </div>
+              </div>
+              <p className="text-xs text-primary mt-2">
+                ⚠️ Escolha uma SUBPASTA do projeto, não a pasta "Documentos" raiz.
+              </p>
+            </div>
+
+            {/* Método 2 */}
+            <div className="p-4 bg-secondary/30 rounded-lg border border-border/50">
+              <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs flex items-center justify-center">2</span>
+                Download ZIP (Alternativa)
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Se o navegador bloquear a pasta, um ZIP será baixado automaticamente. Extraia e importe no CapCut.
+              </p>
+            </div>
+
+            {/* Pasta salva */}
+            {savedCapcutFolder && (
+              <div className="p-3 bg-primary/10 rounded-lg border border-primary/30 flex items-center gap-2">
+                <Check className="w-4 h-4 text-primary" />
+                <span className="text-sm text-foreground">
+                  Pasta salva: <strong>{savedCapcutFolder}</strong>
+                </span>
+              </div>
+            )}
+
+            {/* Botões */}
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(capcutInstructionsText);
+                  toast({ title: "Instruções copiadas!", description: "Cole em um bloco de notas para referência." });
+                }}
+                className="flex-1"
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Copiar Instruções
+              </Button>
+              <Button
+                onClick={handleConfirmCapcutExport}
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Video className="w-4 h-4 mr-2" />
+                Exportar Agora
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
