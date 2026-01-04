@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES } from "@/lib/thumbnailStyles";
 
 interface ScenePrompt {
   number: number;
@@ -54,17 +55,6 @@ interface SceneHistory {
   credits_used: number;
   created_at: string;
 }
-
-const STYLES = [
-  { value: "photorealistic", label: "Fotorrealista" },
-  { value: "cinematic", label: "Cinematográfico" },
-  { value: "3d-render", label: "3D Render" },
-  { value: "anime", label: "Anime" },
-  { value: "illustration", label: "Ilustração" },
-  { value: "oil-painting", label: "Pintura a Óleo" },
-  { value: "watercolor", label: "Aquarela" },
-  { value: "digital-art", label: "Arte Digital" },
-];
 
 const AI_MODELS = [
   { value: "gpt-4o", label: "GPT-4o", speed: "Rápido" },
@@ -384,11 +374,21 @@ const PromptsImages = () => {
                         <SelectTrigger className="bg-secondary border-border">
                           <SelectValue placeholder="Estilo" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {STYLES.map((s) => (
-                            <SelectItem key={s.value} value={s.value}>
-                              {s.label}
-                            </SelectItem>
+                        <SelectContent className="max-h-80">
+                          {THUMBNAIL_STYLE_CATEGORIES.map((category) => (
+                            <div key={category.id}>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                                {category.icon} {category.name}
+                              </div>
+                              {THUMBNAIL_STYLES.filter(s => s.category === category.id).map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                  <div className="flex items-center gap-2">
+                                    <span>{s.icon}</span>
+                                    <span>{s.name}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </div>
                           ))}
                         </SelectContent>
                       </Select>
@@ -585,7 +585,7 @@ const PromptsImages = () => {
                               )}
                               {history.style && (
                                 <Badge variant="secondary" className="text-xs">
-                                  {STYLES.find(s => s.value === history.style)?.label || history.style}
+                                  {THUMBNAIL_STYLES.find(s => s.id === history.style)?.name || history.style}
                                 </Badge>
                               )}
                             </div>
