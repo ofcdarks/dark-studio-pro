@@ -1549,13 +1549,13 @@ DICA: Importe o arquivo SRT como legenda para ver os timecodes durante a edicao.
 
       {/* Modal de Loading - Geração de Imagens */}
       <Dialog open={generatingImages} onOpenChange={() => {}}>
-        <DialogContent className="max-w-lg bg-card border-primary/50 rounded-xl shadow-xl" hideCloseButton>
-          <div className="flex flex-col items-center justify-center py-6 space-y-6">
+        <DialogContent className="max-w-sm bg-card border-primary/50 rounded-xl shadow-xl" hideCloseButton>
+          <div className="flex flex-col items-center justify-center py-4 space-y-4">
             {/* Logo com efeito de pulso */}
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
               <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
-              <div className="relative w-16 h-16 rounded-full border-2 border-primary/50 overflow-hidden bg-card flex items-center justify-center">
+              <div className="relative w-24 h-24 rounded-full border-2 border-primary/50 overflow-hidden bg-card flex items-center justify-center">
                 <img 
                   src={logoGif} 
                   alt="Loading" 
