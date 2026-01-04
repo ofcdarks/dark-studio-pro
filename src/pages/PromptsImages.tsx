@@ -558,8 +558,15 @@ const PromptsImages = () => {
       return;
     }
 
-    // Verificar suporte à API
-    if (!('showDirectoryPicker' in window)) {
+    // Verificar suporte à API de forma mais robusta
+    const hasFileSystemAPI = typeof window !== 'undefined' && 
+                              'showDirectoryPicker' in window &&
+                              typeof (window as any).showDirectoryPicker === 'function';
+    
+    console.log("File System Access API disponível:", hasFileSystemAPI);
+    
+    if (!hasFileSystemAPI) {
+      console.log("API não suportada, baixando ZIP...");
       toast({ 
         title: "Navegador não suportado", 
         description: "Use Chrome, Edge ou outro navegador moderno. Baixando ZIP como alternativa...",
@@ -573,12 +580,19 @@ const PromptsImages = () => {
       let dirHandle: FileSystemDirectoryHandle | null = null;
       
       // Tentar recuperar o último diretório usado
-      const savedHandle = await getCapcutDirHandle();
+      let savedHandle: FileSystemDirectoryHandle | null = null;
+      try {
+        savedHandle = await getCapcutDirHandle();
+        console.log("Handle salvo encontrado:", savedHandle?.name || "nenhum");
+      } catch (e) {
+        console.log("Erro ao recuperar handle:", e);
+      }
       
       if (savedHandle) {
         // Verificar se ainda temos permissão
         try {
           const permission = await (savedHandle as any).queryPermission({ mode: 'readwrite' });
+          console.log("Permissão atual:", permission);
           if (permission === 'granted') {
             dirHandle = savedHandle;
             toast({ 
@@ -588,6 +602,7 @@ const PromptsImages = () => {
           } else if (permission === 'prompt') {
             // Pedir permissão novamente
             const newPermission = await (savedHandle as any).requestPermission({ mode: 'readwrite' });
+            console.log("Nova permissão:", newPermission);
             if (newPermission === 'granted') {
               dirHandle = savedHandle;
               toast({ 
@@ -596,8 +611,9 @@ const PromptsImages = () => {
               });
             }
           }
-        } catch {
-          // Handle inválido, ignorar
+        } catch (e) {
+          console.log("Erro ao verificar permissão:", e);
+          // Handle inválido, ignorar e pedir nova pasta
         }
       }
 
@@ -608,19 +624,13 @@ const PromptsImages = () => {
           description: "Caminho típico: Documentos > CapCut > User Data > Projects > [Seu Projeto]",
         });
 
-        try {
-          dirHandle = await (window as any).showDirectoryPicker({
-            id: 'capcut-project',
-            mode: 'readwrite',
-            startIn: 'documents'
-          });
-        } catch (e: any) {
-          if (e.name === 'AbortError') {
-            toast({ title: "Cancelado", description: "Nenhum arquivo foi salvo" });
-            return;
-          }
-          throw e;
-        }
+        console.log("Abrindo seletor de pasta...");
+        dirHandle = await (window as any).showDirectoryPicker({
+          id: 'capcut-project',
+          mode: 'readwrite',
+          startIn: 'documents'
+        });
+        console.log("Pasta selecionada:", dirHandle.name);
       }
 
       // Salvar o handle para uso futuro
@@ -701,13 +711,23 @@ const PromptsImages = () => {
       });
 
     } catch (error: any) {
+      console.error("Erro na exportação CapCut:", error);
+      
       if (error.name === 'AbortError') {
         toast({ title: "Cancelado", description: "Nenhum arquivo foi salvo" });
+      } else if (error.name === 'SecurityError' || error.message?.includes('cross-origin') || error.message?.includes('sandboxed')) {
+        // Erro de segurança do iframe - comum no preview do Lovable
+        console.log("Erro de segurança detectado, API bloqueada no iframe");
+        toast({ 
+          title: "⚠️ Acesso bloqueado no preview", 
+          description: "Para usar esta função, abra o app publicado. Baixando ZIP...",
+          variant: "destructive" 
+        });
+        await handleExportAsZip();
       } else {
-        console.error("Erro ao salvar:", error);
         toast({ 
           title: "Erro ao salvar na pasta", 
-          description: "Baixando ZIP como alternativa...",
+          description: error.message || "Baixando ZIP como alternativa...",
           variant: "destructive" 
         });
         await handleExportAsZip();
