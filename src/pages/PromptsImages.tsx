@@ -232,8 +232,20 @@ const PromptsImages = () => {
     setProgress(10);
 
     try {
-      setLoadingMessage(`Processando ~${estimatedScenes} cenas em ${totalBatches} lote(s)...`);
-      setProgress(30);
+      // Simular progresso gradual dos prompts
+      let simulatedPrompt = 1;
+      const progressInterval = setInterval(() => {
+        if (simulatedPrompt < estimatedScenes) {
+          simulatedPrompt++;
+          setLoadingMessage(`Gerando prompt ${simulatedPrompt} de ~${estimatedScenes}...`);
+          // Progresso vai de 20% a 80% durante a simulação
+          const progressPercent = 20 + Math.min(60, (simulatedPrompt / estimatedScenes) * 60);
+          setProgress(Math.round(progressPercent));
+        }
+      }, 800); // Atualiza a cada 800ms
+      
+      setLoadingMessage(`Gerando prompt 1 de ~${estimatedScenes}...`);
+      setProgress(20);
       
       const response = await supabase.functions.invoke("generate-scenes", {
         body: { 
@@ -245,8 +257,9 @@ const PromptsImages = () => {
         },
       });
 
-      setLoadingMessage("Finalizando...");
-      setProgress(80);
+      clearInterval(progressInterval);
+      setLoadingMessage(`Finalizando ${estimatedScenes} prompts...`);
+      setProgress(90);
 
       // Check for errors in response
       if (response.error) {
