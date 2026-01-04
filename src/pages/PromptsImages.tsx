@@ -305,8 +305,7 @@ const PromptsImages = () => {
     }
   };
 
-  // Gerar TODAS as imagens pendentes com 1 clique (sequencial, mostrando cada uma)
-  // Com retry automático em caso de erro (até 2 tentativas)
+  // Gerar TODAS as imagens pendentes em PARALELO (lotes de 5)
   const handleGenerateAllImages = async () => {
     if (generatedScenes.length === 0) return;
 
@@ -324,25 +323,21 @@ const PromptsImages = () => {
     setImageBatchTotal(pendingIndexes.length);
     setImageBatchDone(0);
 
+    const BATCH_SIZE = 5; // Processar 5 imagens por vez
     let processed = 0;
     let errorOccurred = false;
-    const maxRetries = 2;
 
-    // Geração SEQUENCIAL - uma por uma, mostrando cada imagem no card
-    for (let i = 0; i < pendingIndexes.length && !errorOccurred; i++) {
-      const sceneIndex = pendingIndexes[i];
-      setCurrentGeneratingIndex(sceneIndex);
-
-      let success = false;
+    // Função para gerar uma única imagem com retry
+    const generateSingleImage = async (sceneIndex: number): Promise<{ index: number; url: string | null }> => {
+      const maxRetries = 2;
       let retries = 0;
 
-      while (!success && retries <= maxRetries && !errorOccurred) {
+      while (retries <= maxRetries) {
         try {
-          const currentScenes = generatedScenes;
           const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
           const fullPrompt = stylePrefix
-            ? `${stylePrefix} ${currentScenes[sceneIndex].imagePrompt}`
-            : currentScenes[sceneIndex].imagePrompt;
+            ? `${stylePrefix} ${generatedScenes[sceneIndex].imagePrompt}`
+            : generatedScenes[sceneIndex].imagePrompt;
 
           const { data, error } = await supabase.functions.invoke("generate-imagefx", {
             body: {
@@ -362,78 +357,76 @@ const PromptsImages = () => {
               } catch {}
             }
             
-            // Parar em erros de autenticação (não fazer retry)
             if (errMsg.includes("autenticação") || errMsg.includes("cookies")) {
-              toast({
-                title: "Erro de autenticação",
-                description: "Atualize os cookies do ImageFX nas configurações.",
-                variant: "destructive",
-              });
-              errorOccurred = true;
-              break;
+              throw new Error("AUTH_ERROR");
             }
             
             retries++;
-            if (retries > maxRetries) {
-              toast({
-                title: `Erro na cena ${sceneIndex + 1}`,
-                description: `${errMsg} (após ${maxRetries} tentativas)`,
-                variant: "destructive",
-              });
-            }
             continue;
           }
 
           if ((data as any)?.error) {
             const errMsg = (data as any).error;
-            
             if (errMsg.includes("autenticação") || errMsg.includes("cookies")) {
-              toast({
-                title: "Erro de autenticação",
-                description: "Atualize os cookies do ImageFX nas configurações.",
-                variant: "destructive",
-              });
-              errorOccurred = true;
-              break;
+              throw new Error("AUTH_ERROR");
             }
-            
             retries++;
-            if (retries > maxRetries) {
-              toast({
-                title: `Erro na cena ${sceneIndex + 1}`,
-                description: `${errMsg} (após ${maxRetries} tentativas)`,
-                variant: "destructive",
-              });
-            }
             continue;
           }
 
           const url = (data as any)?.images?.[0]?.url;
           if (url) {
-            // Atualizar imediatamente o card com a imagem gerada
+            return { index: sceneIndex, url };
+          }
+          retries++;
+        } catch (error: any) {
+          if (error.message === "AUTH_ERROR") throw error;
+          retries++;
+        }
+      }
+      return { index: sceneIndex, url: null };
+    };
+
+    // Processar em lotes de 5
+    for (let batchStart = 0; batchStart < pendingIndexes.length && !errorOccurred; batchStart += BATCH_SIZE) {
+      const batchIndexes = pendingIndexes.slice(batchStart, batchStart + BATCH_SIZE);
+      setCurrentGeneratingIndex(batchIndexes[0]); // Mostrar primeiro do lote
+
+      try {
+        // Executar 5 requisições em paralelo
+        const results = await Promise.allSettled(
+          batchIndexes.map(idx => generateSingleImage(idx))
+        );
+
+        // Processar resultados
+        for (const result of results) {
+          if (result.status === "fulfilled" && result.value.url) {
+            const { index, url } = result.value;
             setGeneratedScenes(prev => {
               const updated = [...prev];
-              updated[sceneIndex] = {
-                ...updated[sceneIndex],
-                generatedImage: url,
-              };
+              updated[index] = { ...updated[index], generatedImage: url };
               return updated;
             });
-            
-            processed += 1;
+            processed++;
             setImageBatchDone(processed);
-            success = true;
-          }
-        } catch (error: any) {
-          console.error(`Error generating image for scene ${sceneIndex + 1}:`, error);
-          retries++;
-          if (retries > maxRetries) {
+          } else if (result.status === "rejected" && result.reason?.message === "AUTH_ERROR") {
             toast({
-              title: `Erro na cena ${sceneIndex + 1}`,
-              description: error?.message || "Erro ao gerar imagem",
+              title: "Erro de autenticação",
+              description: "Atualize os cookies do ImageFX nas configurações.",
               variant: "destructive",
             });
+            errorOccurred = true;
+            break;
           }
+        }
+      } catch (error: any) {
+        if (error.message === "AUTH_ERROR") {
+          toast({
+            title: "Erro de autenticação",
+            description: "Atualize os cookies do ImageFX nas configurações.",
+            variant: "destructive",
+          });
+          errorOccurred = true;
         }
       }
     }
@@ -441,13 +434,9 @@ const PromptsImages = () => {
     setCurrentGeneratingIndex(null);
     setGeneratingImages(false);
 
-    const generatedCount = generatedScenes.filter(s => s.generatedImage).length + processed;
-    const total = generatedScenes.length;
-    const remaining = total - generatedCount;
-    
     toast({
-      title: remaining === 0 ? "Todas as imagens geradas!" : "Geração concluída",
-      description: `${generatedCount}/${total} imagens criadas${remaining > 0 ? ` (${remaining} pendentes)` : ""}`,
+      title: processed === pendingIndexes.length ? "Todas as imagens geradas!" : "Geração concluída",
+      description: `${processed}/${pendingIndexes.length} imagens criadas`,
     });
   };
 
