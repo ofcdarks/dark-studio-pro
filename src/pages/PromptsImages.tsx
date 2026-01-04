@@ -581,16 +581,24 @@ const PromptsImages = () => {
   const clearCapcutDirHandle = async () => {
     try {
       const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open('capcutExport', 1);
-        request.onsuccess = () => resolve(request.result);
+        const request = indexedDB.open('capcut-settings', 1);
         request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = () => {
+          // Garantir que o object store exista
+          if (!request.result.objectStoreNames.contains('handles')) {
+            request.result.createObjectStore('handles');
+          }
+        };
       });
+
       await new Promise<void>((resolve, reject) => {
         const tx = db.transaction('handles', 'readwrite');
         const request = tx.objectStore('handles').delete('lastCapcutDir');
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
       });
+
       db.close();
     } catch (e) {
       console.log("Erro ao limpar handle:", e);
@@ -776,16 +784,15 @@ const PromptsImages = () => {
         });
         await handleExportAsZip();
       } else if (error.name === 'NotAllowedError' || error.message?.includes('system') || error.message?.includes('arquivos do sistema')) {
-        // Pasta protegida do sistema - usuário selecionou pasta errada
-        console.log("Pasta do sistema detectada, pedindo para escolher outra");
+        // Pasta protegida do sistema - o navegador bloqueia o acesso
+        console.log("Pasta do sistema detectada, fallback para ZIP");
         toast({ 
-          title: "⚠️ Pasta protegida", 
-          description: "Selecione uma subpasta dentro de Documentos > CapCut > User Data > Projects, não a pasta raiz.",
+          title: "⚠️ Pasta protegida (bloqueio do navegador)", 
+          description: "Sem problemas: baixei um ZIP para você extrair manualmente. Extraia em uma SUBPASTA do projeto: Documentos > CapCut > User Data > Projects > [Seu Projeto]. Leia README_CAPCUT.txt dentro do ZIP.",
           variant: "destructive" 
         });
-        // Limpar handle salvo e tentar novamente
         await clearCapcutDirHandle();
-        // Não chamar recursivamente, deixar usuário tentar de novo manualmente
+        await handleExportAsZip();
       } else {
         toast({ 
           title: "Erro ao salvar na pasta", 
@@ -839,12 +846,30 @@ const PromptsImages = () => {
         ? scenesWithDurations[scenesWithDurations.length - 1].endTimecode 
         : "00:00";
 
-      const instructions = `DURAÇÕES DAS CENAS - ${totalDuration} total\n\n` +
+      const durationsTxt = `DURAÇÕES DAS CENAS - ${totalDuration} total\n` +
+        `Gerado em: ${new Date().toLocaleString('pt-BR')}\n\n` +
         scenesWithDurations.map(s => 
           `Cena ${String(s.number).padStart(2, "0")}: ${s.durationSeconds}s (${s.timecode} → ${s.endTimecode})`
         ).join("\n");
+
+      const readme = [
+        "COMO USAR NO CAPCUT (EXPORTAÇÃO VIA ZIP)",
+        "",
+        "1) Extraia este ZIP em QUALQUER pasta do seu computador.",
+        "2) No CapCut, abra/crie um projeto.",
+        "3) Importe as imagens cena_001.png, cena_002.png... (em ordem).",
+        "4) Ajuste a duração de cada imagem usando DURACOES.txt.",
+        "",
+        "Se você quer COLOCAR os arquivos direto na pasta do projeto CapCut:",
+        "- Selecione a pasta do PROJETO (uma subpasta dentro de):",
+        "  Documentos > CapCut > User Data > Projects > [Seu Projeto]",
+        "- NÃO escolha 'Documentos' (raiz) nem pastas do sistema, pois o navegador bloqueia.",
+        "",
+        "Dica: se tiver dúvida, use a opção de importar pelo CapCut (passo 3) — é a mais segura.",
+      ].join("\n");
       
-      zip.file("DURACOES.txt", instructions);
+      zip.file("DURACOES.txt", durationsTxt);
+      zip.file("README_CAPCUT.txt", readme);
 
       // Baixar ZIP
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -857,7 +882,7 @@ const PromptsImages = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast({ title: "ZIP baixado!", description: "Extraia e importe no CapCut" });
+      toast({ title: "ZIP baixado!", description: "Abra o ZIP e leia README_CAPCUT.txt para saber onde extrair/importar." });
     } catch (error) {
       console.error("Erro ZIP:", error);
       toast({ title: "Erro ao gerar ZIP", variant: "destructive" });
