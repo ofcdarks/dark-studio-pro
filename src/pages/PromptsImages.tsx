@@ -67,9 +67,9 @@ const STYLES = [
 ];
 
 const AI_MODELS = [
-  { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", speed: "Rápido" },
-  { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", speed: "Preciso" },
-  { value: "openai/gpt-5-mini", label: "GPT-5 Mini", speed: "Balanceado" },
+  { value: "gpt-4o", label: "GPT-4o", speed: "Rápido" },
+  { value: "claude-sonnet-4-20250514", label: "Claude 4 Sonnet", speed: "Criativo" },
+  { value: "gemini-2.5-pro-preview-06-05", label: "Gemini 2.5 Pro", speed: "Preciso" },
 ];
 
 // Calcular tempo estimado baseado em palavras (média 150 palavras/min para narração)
