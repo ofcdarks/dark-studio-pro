@@ -172,9 +172,21 @@ const PromptsImages = () => {
         },
       });
 
-      if (response.error) throw response.error;
+      // Check for errors in response
+      if (response.error) {
+        throw new Error(response.error.message || "Erro na função");
+      }
+
+      // Check for error in data
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
 
       const { scenes, totalScenes, creditsUsed } = response.data;
+      
+      if (!scenes || scenes.length === 0) {
+        throw new Error("Nenhuma cena foi gerada. Tente novamente.");
+      }
       
       // Enriquecer cenas com tempo e timecode
       const enrichedScenes: ScenePrompt[] = scenes.map((scene: ScenePrompt, index: number) => ({
