@@ -73,10 +73,13 @@ export const GenerateScriptModal = ({
     const durationNum = parseInt(duration || "1");
     switch (aiModel) {
       case "gemini-flash":
-      case "gemini-pro":
         return Math.ceil(durationNum * 2.4);
-      case "gpt-5":
+      case "gemini-pro":
+        return Math.ceil(durationNum * 2.6);
+      case "claude-sonnet":
         return Math.ceil(durationNum * 2.8);
+      case "gpt-5":
+        return Math.ceil(durationNum * 3.0);
       default:
         return Math.ceil(durationNum * 2);
     }
@@ -429,6 +432,7 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
                       </span>
                     </SelectItem>
                     <SelectItem value="gemini-pro">Gemini 2.5 Pro (2025)</SelectItem>
+                    <SelectItem value="claude-sonnet">Claude 4 Sonnet</SelectItem>
                     <SelectItem value="gpt-5">GPT-5 (2025)</SelectItem>
                   </SelectContent>
                 </Select>
