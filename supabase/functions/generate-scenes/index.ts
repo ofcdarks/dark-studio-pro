@@ -8,10 +8,22 @@ const corsHeaders = {
 
 // Preços conforme documentação seção 4.2
 const CREDIT_PRICING = {
-  base: 3,
-  gemini: 5,
+  base: 5,
+  gemini: 6,
   claude: 8,
 };
+
+// Interface for admin API settings
+interface AdminApiKeys {
+  openai?: string;
+  gemini?: string;
+  claude?: string;
+  laozhang?: string;
+  openai_validated?: boolean;
+  gemini_validated?: boolean;
+  claude_validated?: boolean;
+  laozhang_validated?: boolean;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -19,13 +31,9 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
 
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -62,6 +70,53 @@ serve(async (req) => {
 
     const creditsNeeded = CREDIT_PRICING[modelKey];
 
+    // Get admin API keys
+    const { data: adminData } = await supabaseAdmin
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'api_keys')
+      .maybeSingle();
+
+    const adminApiKeys = adminData?.value as AdminApiKeys | null;
+
+    // Determine which API to use
+    let apiUrl: string;
+    let apiKey: string;
+    let apiModel: string;
+
+    // Priority: Laozhang > OpenAI
+    if (adminApiKeys?.laozhang && adminApiKeys.laozhang_validated) {
+      apiUrl = "https://api.laozhang.ai/v1/chat/completions";
+      apiKey = adminApiKeys.laozhang;
+      
+      // Map model for Laozhang
+      if (model?.includes("claude")) {
+        apiModel = "claude-sonnet-4-20250514";
+      } else if (model?.includes("gemini-pro") || model?.includes("gemini-2.5-pro")) {
+        apiModel = "gemini-2.5-pro";
+      } else if (model?.includes("gemini")) {
+        apiModel = "gemini-2.5-flash";
+      } else {
+        apiModel = "gpt-4o";
+      }
+      console.log(`[Generate Scenes] Using Laozhang AI - Model: ${apiModel}`);
+    } else if (adminApiKeys?.openai && adminApiKeys.openai_validated) {
+      apiUrl = "https://api.openai.com/v1/chat/completions";
+      apiKey = adminApiKeys.openai;
+      apiModel = "gpt-4o";
+      console.log('[Generate Scenes] Using admin OpenAI API key');
+    } else if (OPENAI_API_KEY) {
+      apiUrl = "https://api.openai.com/v1/chat/completions";
+      apiKey = OPENAI_API_KEY;
+      apiModel = "gpt-4o";
+      console.log('[Generate Scenes] Using system OpenAI API key');
+    } else {
+      return new Response(
+        JSON.stringify({ error: "Nenhuma chave de API configurada. Configure as chaves no painel admin." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Verificar e debitar créditos
     if (userId) {
       const { data: creditData } = await supabaseAdmin
@@ -88,8 +143,15 @@ serve(async (req) => {
         user_id: userId,
         operation_type: "scene_prompts",
         credits_used: creditsNeeded,
-        model_used: model,
+        model_used: apiModel,
         details: { word_count: wordCount, estimated_scenes: estimatedScenes }
+      });
+
+      await supabaseAdmin.from("credit_transactions").insert({
+        user_id: userId,
+        amount: -creditsNeeded,
+        transaction_type: "debit",
+        description: "Geração de prompts de cenas"
       });
     }
 
@@ -126,20 +188,22 @@ ${script}
 ESTILO VISUAL: ${style}
 PALAVRAS POR CENA: ~${wordsPerScene}`;
 
-    console.log(`[Generate Scenes] Calling AI API with model: google/gemini-2.5-flash`);
+    console.log(`[Generate Scenes] Calling ${apiUrl} with model: ${apiModel}`);
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: apiModel,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
+        max_tokens: 8000,
+        temperature: 0.7
       }),
     });
 
@@ -147,17 +211,33 @@ PALAVRAS POR CENA: ~${wordsPerScene}`;
       const errorText = await aiResponse.text();
       console.error(`[Generate Scenes] AI API error: ${aiResponse.status}`, errorText);
       
+      // Refund credits on error
+      if (userId) {
+        const { data: creditData } = await supabaseAdmin
+          .from("user_credits")
+          .select("balance")
+          .eq("user_id", userId)
+          .single();
+
+        if (creditData) {
+          await supabaseAdmin
+            .from("user_credits")
+            .update({ balance: creditData.balance + creditsNeeded })
+            .eq("user_id", userId);
+
+          await supabaseAdmin.from("credit_transactions").insert({
+            user_id: userId,
+            amount: creditsNeeded,
+            transaction_type: "refund",
+            description: "Reembolso - Erro na geração de prompts"
+          });
+        }
+      }
+      
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos de IA da plataforma esgotados. Adicione créditos em Configurações > Workspace > Uso." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
@@ -187,7 +267,31 @@ PALAVRAS POR CENA: ~${wordsPerScene}`;
 
       parsedScenes = JSON.parse(jsonContent);
     } catch (parseError) {
-      console.error("[Generate Scenes] Failed to parse AI response:", content);
+      console.error("[Generate Scenes] Failed to parse AI response:", content.substring(0, 500));
+      
+      // Refund credits on parse error
+      if (userId) {
+        const { data: creditData } = await supabaseAdmin
+          .from("user_credits")
+          .select("balance")
+          .eq("user_id", userId)
+          .single();
+
+        if (creditData) {
+          await supabaseAdmin
+            .from("user_credits")
+            .update({ balance: creditData.balance + creditsNeeded })
+            .eq("user_id", userId);
+
+          await supabaseAdmin.from("credit_transactions").insert({
+            user_id: userId,
+            amount: creditsNeeded,
+            transaction_type: "refund",
+            description: "Reembolso - Erro no parsing da resposta"
+          });
+        }
+      }
+      
       throw new Error("Falha ao processar resposta da IA. Tente novamente.");
     }
 
