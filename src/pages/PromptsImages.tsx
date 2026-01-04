@@ -17,13 +17,15 @@ import {
   ChevronDown,
   ChevronUp,
   Trash2,
-  Eye
+  Eye,
+  Download,
+  ImagePlus
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -40,6 +42,8 @@ interface ScenePrompt {
   wordCount: number;
   estimatedTime?: string;
   timecode?: string;
+  generatedImage?: string;
+  generatingImage?: boolean;
 }
 
 interface SceneHistory {
@@ -87,8 +91,6 @@ const calculateTimecode = (scenes: ScenePrompt[], currentIndex: number): string 
 const PromptsImages = () => {
   // Persisted states
   const [script, setScript] = usePersistedState("prompts_script", "");
-  const [title, setTitle] = usePersistedState("prompts_title", "");
-  const [niche, setNiche] = usePersistedState("prompts_niche", "");
   const [style, setStyle] = usePersistedState("prompts_style", "cinematic");
   const [model, setModel] = usePersistedState("prompts_model", "gpt-4o");
   const [wordsPerScene, setWordsPerScene] = usePersistedState("prompts_wordsPerScene", "80");
@@ -99,6 +101,8 @@ const PromptsImages = () => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [expandedScene, setExpandedScene] = useState<number | null>(null);
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
+  const [generatingImages, setGeneratingImages] = useState(false);
+  const [currentGeneratingIndex, setCurrentGeneratingIndex] = useState<number | null>(null);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -159,8 +163,6 @@ const PromptsImages = () => {
       const response = await supabase.functions.invoke("generate-scenes", {
         body: { 
           script,
-          title,
-          niche,
           model,
           style,
           wordsPerScene: parseInt(wordsPerScene) || 80
@@ -188,7 +190,7 @@ const PromptsImages = () => {
       if (user) {
         await supabase.from("scene_prompts").insert([{
           user_id: user.id,
-          title: title || "Roteiro sem título",
+          title: `Roteiro ${new Date().toLocaleDateString('pt-BR')}`,
           script,
           total_scenes: totalScenes,
           total_words: totalWords,
@@ -218,6 +220,58 @@ const PromptsImages = () => {
     }
   };
 
+  // Gerar imagens para todas as cenas usando ImageFX
+  const handleGenerateAllImages = async () => {
+    if (generatedScenes.length === 0) return;
+
+    setGeneratingImages(true);
+    const updatedScenes = [...generatedScenes];
+
+    for (let i = 0; i < updatedScenes.length; i++) {
+      setCurrentGeneratingIndex(i);
+      
+      try {
+        const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
+        const fullPrompt = stylePrefix 
+          ? `${stylePrefix} ${updatedScenes[i].imagePrompt}`
+          : updatedScenes[i].imagePrompt;
+
+        const response = await supabase.functions.invoke("generate-imagefx", {
+          body: {
+            prompt: fullPrompt,
+            aspectRatio: "LANDSCAPE",
+            numberOfImages: 1
+          }
+        });
+
+        if (response.error) throw response.error;
+
+        if (response.data?.images?.[0]?.url) {
+          updatedScenes[i] = {
+            ...updatedScenes[i],
+            generatedImage: response.data.images[0].url
+          };
+          setGeneratedScenes([...updatedScenes]);
+        }
+      } catch (error: any) {
+        console.error(`Error generating image for scene ${i + 1}:`, error);
+        toast({
+          title: `Erro na cena ${i + 1}`,
+          description: error.message || "Não foi possível gerar a imagem",
+          variant: "destructive",
+        });
+      }
+    }
+
+    setCurrentGeneratingIndex(null);
+    setGeneratingImages(false);
+    
+    toast({
+      title: "Imagens geradas!",
+      description: `${updatedScenes.filter(s => s.generatedImage).length} imagens criadas`,
+    });
+  };
+
   // Copiar prompt individual
   const copyPrompt = (prompt: string, index: number) => {
     navigator.clipboard.writeText(prompt);
@@ -241,9 +295,30 @@ const PromptsImages = () => {
     });
   };
 
+  // Baixar prompts como TXT
+  const downloadPrompts = () => {
+    const content = generatedScenes
+      .map(s => `=== CENA ${s.number} ===\nTimecode: ${s.timecode}\nDuração: ${s.estimatedTime}\nPalavras: ${s.wordCount}\n\nTexto:\n${s.text}\n\nPrompt de Imagem:\n${s.imagePrompt}`)
+      .join("\n\n" + "=".repeat(50) + "\n\n");
+    
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `prompts-cenas-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Download iniciado!",
+      description: "Arquivo TXT com os prompts",
+    });
+  };
+
   // Carregar histórico
   const loadFromHistory = (history: SceneHistory) => {
-    setTitle(history.title || "");
     setScript(history.script);
     setStyle(history.style || "cinematic");
     setGeneratedScenes(history.scenes);
@@ -288,8 +363,6 @@ const PromptsImages = () => {
             label="Roteiro anterior"
             onClear={() => {
               setScript("");
-              setTitle("");
-              setNiche("");
               setGeneratedScenes([]);
             }}
           />
@@ -321,21 +394,6 @@ const PromptsImages = () => {
                     <div className="flex items-center gap-2 mb-4">
                       <Wand2 className="w-5 h-5 text-primary" />
                       <h3 className="font-semibold text-foreground">Análise de Roteiro</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <Input
-                        placeholder="Título do vídeo"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className="bg-secondary border-border"
-                      />
-                      <Input
-                        placeholder="Nicho (ex: tecnologia, finanças)"
-                        value={niche}
-                        onChange={(e) => setNiche(e.target.value)}
-                        className="bg-secondary border-border"
-                      />
                     </div>
 
                     <Textarea
@@ -444,13 +502,71 @@ const PromptsImages = () => {
                             {generatedScenes.length} Cenas Analisadas
                           </h3>
                         </div>
-                        <Button variant="outline" size="sm" onClick={copyAllPrompts}>
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copiar Todos
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={downloadPrompts}>
+                            <Download className="w-4 h-4 mr-2" />
+                            Baixar TXT
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={copyAllPrompts}>
+                            <Copy className="w-4 h-4 mr-2" />
+                            Copiar Todos
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            onClick={handleGenerateAllImages}
+                            disabled={generatingImages}
+                            className="bg-primary text-primary-foreground"
+                          >
+                            {generatingImages ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Gerando {currentGeneratingIndex !== null ? `${currentGeneratingIndex + 1}/${generatedScenes.length}` : '...'}
+                              </>
+                            ) : (
+                              <>
+                                <ImagePlus className="w-4 h-4 mr-2" />
+                                Gerar Imagens
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
 
-                      <ScrollArea className="h-[500px] pr-4">
+                      {/* Grid de imagens geradas */}
+                      {generatedScenes.some(s => s.generatedImage) && (
+                        <div className="mb-6">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-3">Imagens Geradas</h4>
+                          <div className="grid grid-cols-5 gap-3">
+                            {generatedScenes.map((scene, index) => (
+                              <div 
+                                key={`img-${scene.number}`}
+                                className="relative aspect-video rounded-lg overflow-hidden bg-secondary border border-border"
+                              >
+                                {scene.generatedImage ? (
+                                  <img 
+                                    src={scene.generatedImage} 
+                                    alt={`Cena ${scene.number}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : currentGeneratingIndex === index ? (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                                  </div>
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Image className="w-6 h-6 text-muted-foreground/50" />
+                                  </div>
+                                )}
+                                <div className="absolute bottom-1 left-1 bg-background/80 px-1.5 py-0.5 rounded text-xs font-medium">
+                                  {scene.number}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <ScrollArea className="h-[400px] pr-4">
                         <div className="space-y-4">
                           {generatedScenes.map((scene, index) => (
                             <div 
