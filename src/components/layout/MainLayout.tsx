@@ -17,7 +17,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
         {user && (
-          <div className="fixed top-0 right-0 z-50 flex items-center gap-3 px-6 py-4 bg-background/80 backdrop-blur-sm border-b border-border/50">
+          <div className="fixed top-0 right-0 z-50 flex items-center gap-3 px-6 py-4 bg-gradient-to-l from-background via-background/95 to-transparent">
             <CreditsDisplay collapsed={false} showRefresh={false} />
             <StorageIndicator />
             <ThemeToggle />
