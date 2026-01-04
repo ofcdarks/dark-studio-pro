@@ -329,8 +329,8 @@ const PromptsImages = () => {
     let processed = 0;
     let errorOccurred = false;
 
-    // Função para gerar uma única imagem com retry
-    const generateSingleImage = async (sceneIndex: number): Promise<{ index: number; url: string | null }> => {
+    // Função para gerar uma única imagem com retry - atualiza UI imediatamente
+    const generateSingleImage = async (sceneIndex: number): Promise<{ index: number; success: boolean }> => {
       const maxRetries = 2;
       let retries = 0;
 
@@ -378,7 +378,16 @@ const PromptsImages = () => {
 
           const url = (data as any)?.images?.[0]?.url;
           if (url) {
-            return { index: sceneIndex, url };
+            // Atualizar UI IMEDIATAMENTE quando a imagem é gerada
+            setGeneratedScenes(prev => {
+              const updated = [...prev];
+              updated[sceneIndex] = { ...updated[sceneIndex], generatedImage: url };
+              return updated;
+            });
+            processed++;
+            setImageBatchDone(processed);
+            setCurrentGeneratingIndex(sceneIndex); // Mostrar qual cena acabou
+            return { index: sceneIndex, success: true };
           }
           retries++;
         } catch (error: any) {
@@ -386,19 +395,18 @@ const PromptsImages = () => {
           retries++;
         }
       }
-      return { index: sceneIndex, url: null };
+      return { index: sceneIndex, success: false };
     };
 
     // Processar em lotes de 5
     for (let batchStart = 0; batchStart < pendingIndexes.length && !errorOccurred && !cancelGenerationRef.current; batchStart += BATCH_SIZE) {
       const batchIndexes = pendingIndexes.slice(batchStart, batchStart + BATCH_SIZE);
-      setCurrentGeneratingIndex(batchIndexes[0]); // Mostrar primeiro do lote
 
       // Verificar cancelamento antes de iniciar o lote
       if (cancelGenerationRef.current) break;
 
       try {
-        // Executar 5 requisições em paralelo
+        // Executar 5 requisições em paralelo - cada uma atualiza UI ao terminar
         const results = await Promise.allSettled(
           batchIndexes.map(idx => generateSingleImage(idx))
         );
@@ -406,18 +414,9 @@ const PromptsImages = () => {
         // Verificar cancelamento após o lote
         if (cancelGenerationRef.current) break;
 
-        // Processar resultados
+        // Verificar erros de autenticação
         for (const result of results) {
-          if (result.status === "fulfilled" && result.value.url) {
-            const { index, url } = result.value;
-            setGeneratedScenes(prev => {
-              const updated = [...prev];
-              updated[index] = { ...updated[index], generatedImage: url };
-              return updated;
-            });
-            processed++;
-            setImageBatchDone(processed);
-          } else if (result.status === "rejected" && result.reason?.message === "AUTH_ERROR") {
+          if (result.status === "rejected" && result.reason?.message === "AUTH_ERROR") {
             toast({
               title: "Erro de autenticação",
               description: "Atualize os cookies do ImageFX nas configurações.",
