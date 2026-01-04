@@ -505,6 +505,50 @@ const PromptsImages = () => {
     }
   };
 
+  // IndexedDB para persistir o handle do diretório (localStorage não suporta FileSystemDirectoryHandle)
+  const saveCapcutDirHandle = async (handle: FileSystemDirectoryHandle) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('capcut-settings', 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      request.onupgradeneeded = () => {
+        request.result.createObjectStore('handles');
+      };
+    });
+    
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('handles', 'readwrite');
+      tx.objectStore('handles').put(handle, 'lastCapcutDir');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  };
+
+  const getCapcutDirHandle = async (): Promise<FileSystemDirectoryHandle | null> => {
+    try {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('capcut-settings', 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = () => {
+          request.result.createObjectStore('handles');
+        };
+      });
+      
+      const handle = await new Promise<FileSystemDirectoryHandle | null>((resolve, reject) => {
+        const tx = db.transaction('handles', 'readonly');
+        const request = tx.objectStore('handles').get('lastCapcutDir');
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+      });
+      db.close();
+      return handle;
+    } catch {
+      return null;
+    }
+  };
+
   // Salvar diretamente na pasta do CapCut usando File System Access API
   const handleSaveToCapcutFolder = async () => {
     const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
@@ -526,27 +570,61 @@ const PromptsImages = () => {
     }
 
     try {
-      // Mostrar instruções detalhadas antes de pedir permissão
-      toast({ 
-        title: "📁 Selecione a pasta do CapCut", 
-        description: "Caminho típico: Documentos > CapCut > User Data > Projects > [Seu Projeto]",
-      });
-
-      // Tentar iniciar na pasta de documentos onde geralmente fica o CapCut
-      let dirHandle;
-      try {
-        dirHandle = await (window as any).showDirectoryPicker({
-          id: 'capcut-project',
-          mode: 'readwrite',
-          startIn: 'documents'
-        });
-      } catch (e: any) {
-        if (e.name === 'AbortError') {
-          toast({ title: "Cancelado", description: "Nenhum arquivo foi salvo" });
-          return;
+      let dirHandle: FileSystemDirectoryHandle | null = null;
+      
+      // Tentar recuperar o último diretório usado
+      const savedHandle = await getCapcutDirHandle();
+      
+      if (savedHandle) {
+        // Verificar se ainda temos permissão
+        try {
+          const permission = await (savedHandle as any).queryPermission({ mode: 'readwrite' });
+          if (permission === 'granted') {
+            dirHandle = savedHandle;
+            toast({ 
+              title: "📁 Pasta anterior encontrada!", 
+              description: `Usando "${savedHandle.name}". Clique em "Cancelar" para escolher outra pasta.`,
+            });
+          } else if (permission === 'prompt') {
+            // Pedir permissão novamente
+            const newPermission = await (savedHandle as any).requestPermission({ mode: 'readwrite' });
+            if (newPermission === 'granted') {
+              dirHandle = savedHandle;
+              toast({ 
+                title: "📁 Pasta restaurada!", 
+                description: `Usando "${savedHandle.name}"`,
+              });
+            }
+          }
+        } catch {
+          // Handle inválido, ignorar
         }
-        throw e;
       }
+
+      // Se não temos um handle válido, pedir para escolher
+      if (!dirHandle) {
+        toast({ 
+          title: "📁 Selecione a pasta do CapCut", 
+          description: "Caminho típico: Documentos > CapCut > User Data > Projects > [Seu Projeto]",
+        });
+
+        try {
+          dirHandle = await (window as any).showDirectoryPicker({
+            id: 'capcut-project',
+            mode: 'readwrite',
+            startIn: 'documents'
+          });
+        } catch (e: any) {
+          if (e.name === 'AbortError') {
+            toast({ title: "Cancelado", description: "Nenhum arquivo foi salvo" });
+            return;
+          }
+          throw e;
+        }
+      }
+
+      // Salvar o handle para uso futuro
+      await saveCapcutDirHandle(dirHandle);
 
       // Verificar se parece ser uma pasta do CapCut (heurística simples)
       const folderName = dirHandle.name.toLowerCase();
@@ -557,7 +635,7 @@ const PromptsImages = () => {
       if (!isCapcutFolder) {
         toast({ 
           title: "⚠️ Pasta selecionada", 
-          description: `"${dirHandle.name}" - Os arquivos serão salvos aqui. Certifique-se de que é a pasta correta do projeto CapCut.`,
+          description: `"${dirHandle.name}" - Os arquivos serão salvos aqui.`,
         });
       } else {
         toast({ 
@@ -619,7 +697,7 @@ const PromptsImages = () => {
 
       toast({
         title: "✅ Arquivos salvos com sucesso!",
-        description: `${savedCount} imagens + DURACOES.txt salvos em "${dirHandle.name}". Abra o CapCut e importe os arquivos!`,
+        description: `${savedCount} imagens + DURACOES.txt salvos em "${dirHandle.name}". Pasta será lembrada para próxima vez!`,
       });
 
     } catch (error: any) {
