@@ -578,54 +578,62 @@ const PromptsImages = () => {
                         </div>
                       </div>
 
-                      {/* Grid de imagens geradas */}
-                      {generatedScenes.some(s => s.generatedImage) && (
-                        <div className="mb-6">
-                          <h4 className="text-sm font-medium text-muted-foreground mb-3">Imagens Geradas</h4>
-                          <div className="grid grid-cols-5 gap-3">
-                            {generatedScenes.map((scene, index) => (
-                              <div 
-                                key={`img-${scene.number}`}
-                                className="group relative aspect-video rounded-lg overflow-hidden bg-secondary border border-border"
-                              >
-                                {scene.generatedImage ? (
-                                  <>
-                                    <img 
-                                      src={scene.generatedImage} 
-                                      alt={`Cena ${scene.number}`}
-                                      className="w-full h-full object-cover"
-                                    />
-                                    <Button
-                                      variant="secondary"
-                                      size="icon"
-                                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={() => handleRegenerateImage(index)}
-                                      disabled={currentGeneratingIndex === index}
-                                    >
-                                      {currentGeneratingIndex === index ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                      ) : (
-                                        <RefreshCw className="w-3 h-3" />
-                                      )}
-                                    </Button>
-                                  </>
-                                ) : currentGeneratingIndex === index ? (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                                  </div>
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <Image className="w-6 h-6 text-muted-foreground/50" />
-                                  </div>
-                                )}
-                                <div className="absolute bottom-1 left-1 bg-background/80 px-1.5 py-0.5 rounded text-xs font-medium">
-                                  {scene.number}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                      {/* Grid de imagens - sempre visível */}
+                      <div className="mb-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-muted-foreground">
+                            Imagens das Cenas ({generatedScenes.filter(s => s.generatedImage).length}/{generatedScenes.length})
+                          </h4>
                         </div>
-                      )}
+                        <div className="grid grid-cols-5 gap-3">
+                          {generatedScenes.map((scene, index) => (
+                            <div 
+                              key={`img-${scene.number}`}
+                              className="group relative aspect-video rounded-lg overflow-hidden bg-secondary border border-border"
+                            >
+                              {scene.generatedImage ? (
+                                <>
+                                  <img 
+                                    src={scene.generatedImage} 
+                                    alt={`Cena ${scene.number}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <Button
+                                    variant="secondary"
+                                    size="icon"
+                                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => handleRegenerateImage(index)}
+                                    disabled={currentGeneratingIndex === index}
+                                  >
+                                    {currentGeneratingIndex === index ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <RefreshCw className="w-3 h-3" />
+                                    )}
+                                  </Button>
+                                </>
+                              ) : currentGeneratingIndex === index ? (
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                                  <span className="text-[10px] text-muted-foreground">Gerando...</span>
+                                </div>
+                              ) : (
+                                <button 
+                                  className="w-full h-full flex flex-col items-center justify-center gap-1 hover:bg-secondary/80 transition-colors"
+                                  onClick={() => handleRegenerateImage(index)}
+                                  disabled={generatingImages}
+                                >
+                                  <ImagePlus className="w-5 h-5 text-muted-foreground/50" />
+                                  <span className="text-[10px] text-muted-foreground">Gerar</span>
+                                </button>
+                              )}
+                              <div className="absolute bottom-1 left-1 bg-background/80 px-1.5 py-0.5 rounded text-xs font-bold">
+                                {scene.number}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
 
                       <ScrollArea className="h-[400px] pr-4">
                         <div className="space-y-4">
