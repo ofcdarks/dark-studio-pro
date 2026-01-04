@@ -496,8 +496,8 @@ const PromptsImages = () => {
     }
   };
 
-  // Exportar para CapCut - ZIP único com tudo organizado
-  const handleExportForCapcut = async () => {
+  // Salvar diretamente na pasta do CapCut usando File System Access API
+  const handleSaveToCapcutFolder = async () => {
     const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
     
     if (scenesWithImages.length === 0) {
@@ -505,12 +505,35 @@ const PromptsImages = () => {
       return;
     }
 
-    toast({ title: "Preparando ZIP...", description: "Aguarde enquanto organizamos os arquivos" });
+    // Verificar suporte à API
+    if (!('showDirectoryPicker' in window)) {
+      toast({ 
+        title: "Navegador não suportado", 
+        description: "Use Chrome, Edge ou outro navegador moderno. Baixando ZIP como alternativa...",
+        variant: "destructive"
+      });
+      // Fallback para ZIP
+      await handleExportAsZip();
+      return;
+    }
 
     try {
-      const zip = new JSZip();
-      const projectFolder = zip.folder("CapCut_Projeto");
-      const imagesFolder = projectFolder?.folder("imagens");
+      // Pedir permissão para acessar a pasta
+      toast({ 
+        title: "Selecione a pasta do CapCut", 
+        description: "Navegue até: Documentos > CapCut > User Data > Projects" 
+      });
+
+      const dirHandle = await (window as any).showDirectoryPicker({
+        mode: 'readwrite',
+        startIn: 'documents'
+      });
+
+      // Criar pasta do projeto
+      const projectName = `Projeto_${new Date().toISOString().split("T")[0]}_${Date.now().toString().slice(-4)}`;
+      const projectFolder = await dirHandle.getDirectoryHandle(projectName, { create: true });
+
+      toast({ title: "Salvando arquivos...", description: "Aguarde enquanto salvamos as imagens" });
 
       // Calcular durações
       const scenesWithDurations = generatedScenes.map((scene) => {
@@ -519,90 +542,132 @@ const PromptsImages = () => {
         const endSeconds = scene.endTimecode ? 
           parseInt(scene.endTimecode.split(":")[0]) * 60 + parseInt(scene.endTimecode.split(":")[1]) : startSeconds;
         const durationSeconds = Math.max(1, endSeconds - startSeconds);
-        
         return { ...scene, startSeconds, endSeconds, durationSeconds };
       });
 
-      // Baixar e adicionar imagens ao ZIP
+      // Salvar cada imagem diretamente
       for (const scene of scenesWithImages) {
         if (scene.generatedImage) {
           try {
             const response = await fetch(scene.generatedImage);
             const blob = await response.blob();
             const fileName = `cena_${String(scene.number).padStart(3, "0")}.png`;
-            imagesFolder?.file(fileName, blob);
+            
+            const fileHandle = await projectFolder.getFileHandle(fileName, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
           } catch (err) {
-            console.warn(`Erro ao baixar imagem da cena ${scene.number}`, err);
+            console.warn(`Erro ao salvar cena ${scene.number}`, err);
           }
         }
       }
 
-      // Gerar CSV com durações
-      const csvContent = `Cena,Arquivo,Inicio,Fim,Duracao\n` + 
-        scenesWithDurations.map(s => 
-          `${s.number},cena_${String(s.number).padStart(3, "0")}.png,${s.timecode},${s.endTimecode},${s.durationSeconds}s`
-        ).join("\n");
-      projectFolder?.file("durações.csv", csvContent);
-
-      // Gerar instruções SUPER SIMPLES
+      // Salvar arquivo de instruções
       const totalDuration = scenesWithDurations.length > 0 
         ? scenesWithDurations[scenesWithDurations.length - 1].endTimecode 
         : "00:00";
 
-      const instructions = `
-╔════════════════════════════════════════════════════════════╗
-║           COMO USAR NO CAPCUT - SUPER FÁCIL               ║
-╚════════════════════════════════════════════════════════════╝
+      const instructions = `DURAÇÕES DAS CENAS - ${totalDuration} total\n\n` +
+        scenesWithDurations.map(s => 
+          `Cena ${String(s.number).padStart(2, "0")}: ${s.durationSeconds}s (${s.timecode} → ${s.endTimecode})`
+        ).join("\n");
 
-📁 PASSO 1: Abra a pasta "imagens" deste ZIP
+      const instructionsHandle = await projectFolder.getFileHandle("DURACOES.txt", { create: true });
+      const instructionsWritable = await instructionsHandle.createWritable();
+      await instructionsWritable.write(instructions);
+      await instructionsWritable.close();
 
-📲 PASSO 2: Arraste TODAS as imagens para o CapCut
-   (Pode selecionar tudo com Ctrl+A e arrastar)
+      toast({
+        title: "✅ Arquivos salvos!",
+        description: `Pasta "${projectName}" criada com ${scenesWithImages.length} imagens`,
+      });
 
-⏱️ PASSO 3: Ajuste a duração de cada imagem:
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        toast({ title: "Cancelado", description: "Nenhum arquivo foi salvo" });
+      } else {
+        console.error("Erro:", error);
+        toast({ 
+          title: "Erro ao salvar", 
+          description: "Baixando ZIP como alternativa...",
+          variant: "destructive" 
+        });
+        await handleExportAsZip();
+      }
+    }
+  };
 
-┌─────────────────────────────────────────────────────────────┐
-${scenesWithDurations.map(s => 
-  `│ Cena ${String(s.number).padStart(2, "0")}: ${s.durationSeconds}s (de ${s.timecode} até ${s.endTimecode})`
-).join("\n")}
-└─────────────────────────────────────────────────────────────┘
+  // Exportar como ZIP (fallback)
+  const handleExportAsZip = async () => {
+    const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
+    
+    if (scenesWithImages.length === 0) {
+      toast({ title: "Nenhuma imagem para exportar", variant: "destructive" });
+      return;
+    }
 
-⏰ DURAÇÃO TOTAL: ${totalDuration}
+    toast({ title: "Preparando ZIP...", description: "Aguarde" });
 
-═══════════════════════════════════════════════════════════════
+    try {
+      const zip = new JSZip();
 
-💡 DICA RÁPIDA:
-   No CapCut, clique na imagem na timeline e arraste 
-   a borda para ajustar a duração conforme a tabela acima.
+      // Calcular durações
+      const scenesWithDurations = generatedScenes.map((scene) => {
+        const startSeconds = scene.timecode ? 
+          parseInt(scene.timecode.split(":")[0]) * 60 + parseInt(scene.timecode.split(":")[1]) : 0;
+        const endSeconds = scene.endTimecode ? 
+          parseInt(scene.endTimecode.split(":")[0]) * 60 + parseInt(scene.endTimecode.split(":")[1]) : startSeconds;
+        const durationSeconds = Math.max(1, endSeconds - startSeconds);
+        return { ...scene, startSeconds, endSeconds, durationSeconds };
+      });
 
-`;
-      projectFolder?.file("LEIA_PRIMEIRO.txt", instructions);
+      // Adicionar imagens
+      for (const scene of scenesWithImages) {
+        if (scene.generatedImage) {
+          try {
+            const response = await fetch(scene.generatedImage);
+            const blob = await response.blob();
+            zip.file(`cena_${String(scene.number).padStart(3, "0")}.png`, blob);
+          } catch (err) {
+            console.warn(`Erro cena ${scene.number}`, err);
+          }
+        }
+      }
 
-      // Gerar o ZIP
-      const zipBlob = await zip.generateAsync({ type: "blob" });
+      // Adicionar instruções
+      const totalDuration = scenesWithDurations.length > 0 
+        ? scenesWithDurations[scenesWithDurations.length - 1].endTimecode 
+        : "00:00";
+
+      const instructions = `DURAÇÕES DAS CENAS - ${totalDuration} total\n\n` +
+        scenesWithDurations.map(s => 
+          `Cena ${String(s.number).padStart(2, "0")}: ${s.durationSeconds}s (${s.timecode} → ${s.endTimecode})`
+        ).join("\n");
       
-      // Baixar
+      zip.file("DURACOES.txt", instructions);
+
+      // Baixar ZIP
+      const zipBlob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(zipBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `CapCut_Projeto_${new Date().toISOString().split("T")[0]}.zip`;
+      link.download = `CapCut_${new Date().toISOString().split("T")[0]}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast({
-        title: "ZIP pronto!",
-        description: "Extraia e siga as instruções do arquivo LEIA_PRIMEIRO.txt",
-      });
+      toast({ title: "ZIP baixado!", description: "Extraia e importe no CapCut" });
     } catch (error) {
-      console.error("Erro ao gerar ZIP:", error);
-      toast({ 
-        title: "Erro ao gerar ZIP", 
-        description: "Tente novamente", 
-        variant: "destructive" 
-      });
+      console.error("Erro ZIP:", error);
+      toast({ title: "Erro ao gerar ZIP", variant: "destructive" });
     }
+  };
+
+  // Handler principal do CapCut - tenta salvar direto, fallback para ZIP
+  const handleExportForCapcut = async () => {
+    await handleSaveToCapcutFolder();
   };
 
   // Editar prompt de uma cena
