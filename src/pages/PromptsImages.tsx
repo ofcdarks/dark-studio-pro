@@ -842,7 +842,7 @@ const PromptsImages = () => {
         }
       }
 
-      // Adicionar instruções
+      // Adicionar instruções e arquivos de suporte
       const totalDuration = scenesWithDurations.length > 0 
         ? scenesWithDurations[scenesWithDurations.length - 1].endTimecode 
         : "00:00";
@@ -853,23 +853,79 @@ const PromptsImages = () => {
           `Cena ${String(s.number).padStart(2, "0")}: ${s.durationSeconds}s (${s.timecode} → ${s.endTimecode})`
         ).join("\n");
 
+      // Gerar arquivo SRT para narração
+      const formatSrtTime = (seconds: number): string => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+        const ms = Math.round((seconds % 1) * 1000);
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+      };
+
+      const srtContent = scenesWithDurations.map((scene, idx) => {
+        const startSrt = formatSrtTime(scene.startSeconds);
+        const endSrt = formatSrtTime(scene.endSeconds);
+        return `${idx + 1}\n${startSrt} --> ${endSrt}\n${scene.text}\n`;
+      }).join("\n");
+
       const readme = [
-        "COMO USAR NO CAPCUT (EXPORTAÇÃO VIA ZIP)",
+        "═══════════════════════════════════════════════════════════════",
+        "          PROJETO CAPCUT - GUIA DE IMPORTAÇÃO",
+        "═══════════════════════════════════════════════════════════════",
         "",
-        "1) Extraia este ZIP em QUALQUER pasta do seu computador.",
-        "2) No CapCut, abra/crie um projeto.",
-        "3) Importe as imagens cena_001.png, cena_002.png... (em ordem).",
-        "4) Ajuste a duração de cada imagem usando DURACOES.txt.",
+        "📁 CONTEÚDO DO ZIP:",
+        "  • cena_001.png, cena_002.png... - Imagens das cenas",
+        "  • DURACOES.txt - Tempo de cada cena (para ajuste manual)",
+        "  • NARRACOES.srt - Texto para narração com timecodes",
+        "  • README_CAPCUT.txt - Este arquivo",
         "",
-        "Se você quer COLOCAR os arquivos direto na pasta do projeto CapCut:",
-        "- Selecione a pasta do PROJETO (uma subpasta dentro de):",
-        "  Documentos > CapCut > User Data > Projects > [Seu Projeto]",
-        "- NÃO escolha 'Documentos' (raiz) nem pastas do sistema, pois o navegador bloqueia.",
+        "═══════════════════════════════════════════════════════════════",
+        "          MÉTODO 1: IMPORTAÇÃO MANUAL (RECOMENDADO)",
+        "═══════════════════════════════════════════════════════════════",
         "",
-        "Dica: se tiver dúvida, use a opção de importar pelo CapCut (passo 3) — é a mais segura.",
+        "1) Extraia este ZIP em QUALQUER pasta do seu computador",
+        "",
+        "2) Abra o CapCut e crie/abra um projeto",
+        "",
+        "3) Importe as imagens (cena_001.png, cena_002.png...) pelo CapCut:",
+        "   - Clique em 'Importar' ou arraste as imagens",
+        "   - Adicione-as à timeline na ordem correta",
+        "",
+        "4) Ajuste a duração de cada imagem usando DURACOES.txt:",
+        "   - Selecione cada imagem na timeline",
+        "   - Altere a duração conforme indicado no arquivo",
+        "",
+        "5) Para narração, use NARRACOES.srt:",
+        "   - Use como referência para gravar sua narração",
+        "   - Ou importe como legenda no CapCut (Legendas > Importar SRT)",
+        "",
+        "═══════════════════════════════════════════════════════════════",
+        "          MÉTODO 2: EXTRAÇÃO DIRETA (AVANÇADO)",
+        "═══════════════════════════════════════════════════════════════",
+        "",
+        "Windows:",
+        "  C:\\Users\\[Você]\\Documents\\CapCut\\User Data\\Projects\\[Projeto]",
+        "",
+        "macOS:",
+        "  ~/Documents/CapCut/User Data/Projects/[Projeto]",
+        "",
+        "⚠️ Extraia DENTRO de uma pasta de projeto específico, não na raiz.",
+        "",
+        "═══════════════════════════════════════════════════════════════",
+        "          DICA: NARRAÇÃO COM IA",
+        "═══════════════════════════════════════════════════════════════",
+        "",
+        "O arquivo NARRACOES.srt contém o texto de cada cena com timecodes.",
+        "Você pode:",
+        "  • Usar como script para gravar sua voz",
+        "  • Importar em ferramentas de TTS (Text-to-Speech)",
+        "  • Importar como legenda no CapCut e usar a função de voz IA",
+        "",
+        "═══════════════════════════════════════════════════════════════",
       ].join("\n");
       
       zip.file("DURACOES.txt", durationsTxt);
+      zip.file("NARRACOES.srt", srtContent);
       zip.file("README_CAPCUT.txt", readme);
 
       // Baixar ZIP
@@ -883,7 +939,10 @@ const PromptsImages = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast({ title: "ZIP baixado!", description: "Abra o ZIP e leia README_CAPCUT.txt para saber onde extrair/importar." });
+      toast({ 
+        title: "✅ ZIP baixado com sucesso!", 
+        description: "Inclui imagens, durações e SRT para narração. Leia README_CAPCUT.txt" 
+      });
     } catch (error) {
       console.error("Erro ZIP:", error);
       toast({ title: "Erro ao gerar ZIP", variant: "destructive" });
