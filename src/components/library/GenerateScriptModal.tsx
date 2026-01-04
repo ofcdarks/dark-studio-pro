@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Zap, Star, Info, Copy, Check } from "lucide-react";
+import logoGif from "@/assets/logo.gif";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -278,14 +279,18 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
         {/* Loading Overlay */}
         {generating && (
           <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-lg">
-            <img 
-              src="/logo-official.svg" 
-              alt="Logo" 
-              className="w-20 h-20 mb-6 animate-pulse"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
+            {/* Logo com efeito de pulso */}
+            <div className="relative w-20 h-20 mb-6">
+              <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+              <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
+              <div className="relative w-20 h-20 rounded-full border-2 border-primary/50 overflow-hidden">
+                <img 
+                  src={logoGif} 
+                  alt="Logo" 
+                  className="w-full h-full object-cover scale-110"
+                />
+              </div>
+            </div>
             
             <h3 className="text-lg font-bold text-foreground mb-2">Gerando Roteiro</h3>
             <p className="text-sm text-muted-foreground mb-3 animate-pulse">
