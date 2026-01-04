@@ -33,6 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES } from "@/lib/thumbnailStyles";
 
@@ -104,6 +105,7 @@ const PromptsImages = () => {
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
   const [generatingImages, setGeneratingImages] = useState(false);
   const [currentGeneratingIndex, setCurrentGeneratingIndex] = useState<number | null>(null);
+  const [previewScene, setPreviewScene] = useState<ScenePrompt | null>(null);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -596,13 +598,17 @@ const PromptsImages = () => {
                                   <img 
                                     src={scene.generatedImage} 
                                     alt={`Cena ${scene.number}`}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-cover cursor-pointer"
+                                    onClick={() => setPreviewScene(scene)}
                                   />
                                   <Button
                                     variant="secondary"
                                     size="icon"
                                     className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => handleRegenerateImage(index)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRegenerateImage(index);
+                                    }}
                                     disabled={currentGeneratingIndex === index}
                                   >
                                     {currentGeneratingIndex === index ? (
@@ -875,6 +881,68 @@ const PromptsImages = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Modal de Preview da Imagem */}
+      <Dialog open={!!previewScene} onOpenChange={() => setPreviewScene(null)}>
+        <DialogContent className="max-w-4xl bg-card border-primary/50 rounded-xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <Badge className="bg-primary/20 text-primary">Cena {previewScene?.number}</Badge>
+              <span className="text-sm text-muted-foreground">
+                {previewScene?.wordCount} palavras • {previewScene?.estimatedTime}
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Imagem ampliada */}
+            {previewScene?.generatedImage && (
+              <div className="relative aspect-video rounded-lg overflow-hidden bg-secondary">
+                <img 
+                  src={previewScene.generatedImage} 
+                  alt={`Cena ${previewScene.number}`}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
+
+            {/* Prompt usado */}
+            <div className="p-4 bg-secondary/50 rounded-lg border border-border">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-muted-foreground">Prompt de Imagem</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    if (previewScene?.imagePrompt) {
+                      navigator.clipboard.writeText(previewScene.imagePrompt);
+                      toast({
+                        title: "Copiado!",
+                        description: "Prompt copiado para a área de transferência",
+                      });
+                    }
+                  }}
+                >
+                  <Copy className="w-3 h-3 mr-1" />
+                  Copiar
+                </Button>
+              </div>
+              <p className="text-sm text-foreground font-mono leading-relaxed">
+                {previewScene?.imagePrompt}
+              </p>
+            </div>
+
+            {/* Texto da cena */}
+            <div className="p-4 bg-secondary/50 rounded-lg border border-border">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Texto da Cena</p>
+              <p className="text-sm text-foreground leading-relaxed">
+                {previewScene?.text}
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
