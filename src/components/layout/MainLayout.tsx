@@ -17,14 +17,18 @@ export function MainLayout({ children }: MainLayoutProps) {
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
         {user && (
-          <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
-            <CreditsDisplay collapsed={false} showRefresh={false} className="mr-2" />
+          <div className="fixed top-0 right-0 z-50 flex items-center gap-3 px-6 py-4 bg-background/80 backdrop-blur-sm border-b border-border/50">
+            <CreditsDisplay collapsed={false} showRefresh={false} />
             <StorageIndicator />
             <ThemeToggle />
             <NotificationsBell />
           </div>
         )}
-        {children}
+        {/* Spacer for fixed header */}
+        {user && <div className="h-16 flex-shrink-0" />}
+        <div className="flex-1 overflow-auto">
+          {children}
+        </div>
       </main>
     </div>
   );
