@@ -642,55 +642,51 @@ serve(async (req) => {
         const agentFormula = agentData?.formula || "Hook + Desenvolvimento + Clímax + CTA";
         const agentStructure = agentData?.formula_structure ? JSON.stringify(agentData.formula_structure) : "Usar estrutura padrão de vídeo viral";
         const agentTriggers = agentData?.mental_triggers?.join(", ") || "Curiosidade, Urgência, Prova Social";
+        const scriptDuration = duration ? parseInt(duration.toString()) : 5;
+        const wordsPerMinute = 130;
+        const totalWords = (scriptDuration + 1) * wordsPerMinute; // +1 minuto conforme memória
         
-        systemPrompt = `Você é um roteirista profissional especializado em vídeos virais para YouTube.
-        Crie um roteiro COMPLETO seguindo a fórmula viral fornecida pelo agente.
+        systemPrompt = `Você é um roteirista profissional especializado em criar ROTEIROS PUROS PARA NARRAÇÃO (VOICE-OVER) de vídeos virais para YouTube.
         
-        FÓRMULA DO AGENTE A SEGUIR:
+        🎯 OBJETIVO: Gerar APENAS o texto que será narrado - SEM instruções de produção, SEM marcações técnicas, SEM colchetes com direções.
+        
+        ⚠️ REGRA CRÍTICA: O roteiro deve conter APENAS o texto falado pelo narrador. NADA MAIS.
+        
+        FÓRMULA VIRAL DO AGENTE:
         ${agentFormula}
         
-        ESTRUTURA BASE DO AGENTE:
+        ESTRUTURA BASE:
         ${agentStructure}
         
-        GATILHOS MENTAIS OBRIGATÓRIOS:
+        GATILHOS MENTAIS A USAR NATURALMENTE:
         ${agentTriggers}
         
-        O roteiro DEVE incluir:
-        - Hook impactante nos primeiros 10 segundos que capture atenção imediata
-        - Estrutura narrativa com tensão crescente conforme a fórmula
-        - Marcações de tempo para cada seção [00:00 - 00:30]
-        - Pausas dramáticas indicadas com [PAUSA]
-        - Calls-to-action posicionados conforme solicitado
-        - Notas de produção entre [colchetes]
-        - Uso estratégico dos gatilhos mentais especificados
+        📏 ESPECIFICAÇÕES TÉCNICAS:
+        - Duração alvo: ${scriptDuration + 1} minutos (${totalWords} palavras aproximadamente)
+        - Velocidade de leitura: 130 palavras/minuto
+        - Dividir em partes de aproximadamente 400-500 caracteres para facilitar a narração
         
-        FORMATO DO ROTEIRO:
+        ✅ O QUE INCLUIR:
+        - Hook poderoso nos primeiros 30 segundos que prenda a atenção
+        - Narrativa envolvente com tensão crescente
+        - Transições suaves entre os tópicos
+        - CTAs naturais onde solicitado pelo usuário
+        - Os gatilhos mentais integrados de forma orgânica
         
-        # TÍTULO DO VÍDEO
+        ❌ O QUE NÃO INCLUIR:
+        - [Instruções entre colchetes]
+        - Marcações de tempo como [00:00 - 00:30]
+        - [PAUSA], [MÚSICA], [EFEITO SONORO] ou qualquer marcação técnica
+        - Comentários para o editor
+        - Descrições de cenas ou imagens
+        - Emojis ou formatações visuais
         
-        ## PARTE 1 - HOOK [00:00 - 00:30]
-        [Instruções de produção e tom de voz]
-        "Texto de narração exato"
+        📝 FORMATO DE SAÍDA:
+        Texto corrido de narração, dividido em parágrafos naturais.
+        Cada parágrafo deve fluir naturalmente para o próximo.
+        O texto deve soar como uma história contada, não como um roteiro técnico.
         
-        ## PARTE 2 - DESENVOLVIMENTO [00:30 - XX:XX]
-        [Instruções]
-        "Narração"
-        
-        ## PARTE 3 - CLÍMAX [XX:XX - XX:XX]
-        [Instruções]
-        "Narração"
-        
-        ## PARTE 4 - CTA [XX:XX - FIM]
-        [Instruções]
-        "Narração com call-to-action"
-        
-        ---
-        
-        IMPORTANTE:
-        - Siga a fórmula do agente RIGOROSAMENTE
-        - Use os gatilhos mentais especificados de forma natural
-        - O roteiro deve estar 100% pronto para narração
-        - Responda em português brasileiro`;
+        IMPORTANTE: O narrador vai ler EXATAMENTE o que você escrever. Não inclua NADA além do texto narrado.`;
         break;
 
       case "generate_script":
