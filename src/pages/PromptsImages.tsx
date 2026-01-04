@@ -1,6 +1,7 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -495,8 +496,8 @@ const PromptsImages = () => {
     }
   };
 
-  // Exportar para CapCut (CSV + SRT + JSON projeto + instruções)
-  const handleExportForCapcut = () => {
+  // Exportar para CapCut - ZIP único com tudo organizado
+  const handleExportForCapcut = async () => {
     const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
     
     if (scenesWithImages.length === 0) {
@@ -504,211 +505,104 @@ const PromptsImages = () => {
       return;
     }
 
-    const generateId = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    const MICROSECONDS = 1000000; // CapCut usa microsegundos
+    toast({ title: "Preparando ZIP...", description: "Aguarde enquanto organizamos os arquivos" });
 
-    // Calcular durações em microsegundos
-    const scenesWithDurations = generatedScenes.map((scene) => {
-      const startSeconds = scene.timecode ? 
-        parseInt(scene.timecode.split(":")[0]) * 60 + parseInt(scene.timecode.split(":")[1]) : 0;
-      const endSeconds = scene.endTimecode ? 
-        parseInt(scene.endTimecode.split(":")[0]) * 60 + parseInt(scene.endTimecode.split(":")[1]) : startSeconds;
-      const durationSeconds = Math.max(1, endSeconds - startSeconds);
-      
-      return {
-        ...scene,
-        startMicro: startSeconds * MICROSECONDS,
-        endMicro: endSeconds * MICROSECONDS,
-        durationMicro: durationSeconds * MICROSECONDS,
-        durationSeconds
-      };
-    });
+    try {
+      const zip = new JSZip();
+      const projectFolder = zip.folder("CapCut_Projeto");
+      const imagesFolder = projectFolder?.folder("imagens");
 
-    // 1. Gerar JSON de projeto CapCut/JianYing
-    const projectId = generateId();
-    const now = Date.now();
-    const totalDuration = scenesWithDurations.reduce((acc, s) => acc + s.durationMicro, 0);
+      // Calcular durações
+      const scenesWithDurations = generatedScenes.map((scene) => {
+        const startSeconds = scene.timecode ? 
+          parseInt(scene.timecode.split(":")[0]) * 60 + parseInt(scene.timecode.split(":")[1]) : 0;
+        const endSeconds = scene.endTimecode ? 
+          parseInt(scene.endTimecode.split(":")[0]) * 60 + parseInt(scene.endTimecode.split(":")[1]) : startSeconds;
+        const durationSeconds = Math.max(1, endSeconds - startSeconds);
+        
+        return { ...scene, startSeconds, endSeconds, durationSeconds };
+      });
 
-    const materials = scenesWithDurations.map((scene, index) => ({
-      id: generateId(),
-      type: "photo",
-      path: `cena_${String(scene.number).padStart(3, "0")}.png`,
-      duration: scene.durationMicro,
-      width: 1920,
-      height: 1080
-    }));
-
-    const segments = scenesWithDurations.map((scene, index) => {
-      const materialId = materials[index].id;
-      return {
-        id: generateId(),
-        material_id: materialId,
-        target_timerange: {
-          start: scene.startMicro,
-          duration: scene.durationMicro
-        },
-        source_timerange: {
-          start: 0,
-          duration: scene.durationMicro
-        },
-        speed: 1.0,
-        volume: 1.0,
-        extra_material_refs: []
-      };
-    });
-
-    const draftContent = {
-      id: projectId,
-      name: `Roteiro_${new Date().toISOString().split("T")[0]}`,
-      type: "draft",
-      create_time: now,
-      update_time: now,
-      duration: totalDuration,
-      canvas_config: {
-        width: 1920,
-        height: 1080,
-        ratio: "16:9"
-      },
-      materials: {
-        videos: [],
-        audios: [],
-        texts: [],
-        stickers: [],
-        effects: [],
-        transitions: [],
-        photos: materials
-      },
-      tracks: [
-        {
-          id: generateId(),
-          type: "video",
-          segments: segments,
-          attribute: 0
+      // Baixar e adicionar imagens ao ZIP
+      for (const scene of scenesWithImages) {
+        if (scene.generatedImage) {
+          try {
+            const response = await fetch(scene.generatedImage);
+            const blob = await response.blob();
+            const fileName = `cena_${String(scene.number).padStart(3, "0")}.png`;
+            imagesFolder?.file(fileName, blob);
+          } catch (err) {
+            console.warn(`Erro ao baixar imagem da cena ${scene.number}`, err);
+          }
         }
-      ],
-      keyframes: {},
-      platform: "capcut",
-      version: "1.0.0"
-    };
+      }
 
-    // Gerar JSON de metadados do projeto
-    const draftMetaInfo = {
-      draft_id: projectId,
-      draft_name: `Roteiro_${new Date().toISOString().split("T")[0]}`,
-      draft_root_path: "",
-      tm_draft_create: now,
-      tm_draft_modified: now,
-      duration: totalDuration,
-      draft_materials: materials.map(m => ({
-        file_path: m.path,
-        type: "photo",
-        width: m.width,
-        height: m.height,
-        duration: m.duration
-      }))
-    };
+      // Gerar CSV com durações
+      const csvContent = `Cena,Arquivo,Inicio,Fim,Duracao\n` + 
+        scenesWithDurations.map(s => 
+          `${s.number},cena_${String(s.number).padStart(3, "0")}.png,${s.timecode},${s.endTimecode},${s.durationSeconds}s`
+        ).join("\n");
+      projectFolder?.file("durações.csv", csvContent);
 
-    // Baixar draft_content.json
-    const draftBlob = new Blob([JSON.stringify(draftContent, null, 2)], { type: "application/json" });
-    const draftUrl = URL.createObjectURL(draftBlob);
-    const draftLink = document.createElement("a");
-    draftLink.href = draftUrl;
-    draftLink.download = "draft_content.json";
-    document.body.appendChild(draftLink);
-    draftLink.click();
-    document.body.removeChild(draftLink);
-    URL.revokeObjectURL(draftUrl);
+      // Gerar instruções SUPER SIMPLES
+      const totalDuration = scenesWithDurations.length > 0 
+        ? scenesWithDurations[scenesWithDurations.length - 1].endTimecode 
+        : "00:00";
 
-    // Baixar draft_meta_info.json
-    const metaBlob = new Blob([JSON.stringify(draftMetaInfo, null, 2)], { type: "application/json" });
-    const metaUrl = URL.createObjectURL(metaBlob);
-    const metaLink = document.createElement("a");
-    metaLink.href = metaUrl;
-    metaLink.download = "draft_meta_info.json";
-    document.body.appendChild(metaLink);
-    metaLink.click();
-    document.body.removeChild(metaLink);
-    URL.revokeObjectURL(metaUrl);
+      const instructions = `
+╔════════════════════════════════════════════════════════════╗
+║           COMO USAR NO CAPCUT - SUPER FÁCIL               ║
+╚════════════════════════════════════════════════════════════╝
 
-    // 2. Gerar CSV com informações de timing (backup)
-    const csvHeader = "Cena,Arquivo,Inicio,Fim,Duracao_Segundos,Palavras\n";
-    const csvRows = scenesWithDurations.map((scene) => {
-      return `${scene.number},cena_${String(scene.number).padStart(3, "0")}.png,${scene.timecode},${scene.endTimecode},${scene.durationSeconds.toFixed(1)},${scene.wordCount}`;
-    }).join("\n");
-    
-    const csvContent = csvHeader + csvRows;
-    const csvBlob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-    const csvUrl = URL.createObjectURL(csvBlob);
-    const csvLink = document.createElement("a");
-    csvLink.href = csvUrl;
-    csvLink.download = "capcut_timeline.csv";
-    document.body.appendChild(csvLink);
-    csvLink.click();
-    document.body.removeChild(csvLink);
-    URL.revokeObjectURL(csvUrl);
+📁 PASSO 1: Abra a pasta "imagens" deste ZIP
 
-    // 3. Gerar arquivo SRT
-    const srtContent = scenesWithDurations.map((scene, index) => {
-      const startTime = scene.timecode || "00:00";
-      const endTime = scene.endTimecode || "00:00";
-      
-      const formatSrtTime = (time: string) => {
-        const [mins, secs] = time.split(":");
-        return `00:${mins.padStart(2, "0")}:${secs.padStart(2, "0")},000`;
-      };
-      
-      return `${index + 1}\n${formatSrtTime(startTime)} --> ${formatSrtTime(endTime)}\nCena ${scene.number} - ${scene.wordCount} palavras\n`;
-    }).join("\n");
-    
-    const srtBlob = new Blob([srtContent], { type: "text/plain;charset=utf-8" });
-    const srtUrl = URL.createObjectURL(srtBlob);
-    const srtLink = document.createElement("a");
-    srtLink.href = srtUrl;
-    srtLink.download = "capcut_timeline.srt";
-    document.body.appendChild(srtLink);
-    srtLink.click();
-    document.body.removeChild(srtLink);
-    URL.revokeObjectURL(srtUrl);
+📲 PASSO 2: Arraste TODAS as imagens para o CapCut
+   (Pode selecionar tudo com Ctrl+A e arrastar)
 
-    // 4. Gerar instruções
-    const instructionsContent = `=== INSTRUÇÕES PARA CAPCUT ===
+⏱️ PASSO 3: Ajuste a duração de cada imagem:
 
-DURACAO TOTAL DO VIDEO: ${generatedScenes.length > 0 ? generatedScenes[generatedScenes.length - 1].endTimecode : "00:00"}
+┌─────────────────────────────────────────────────────────────┐
+${scenesWithDurations.map(s => 
+  `│ Cena ${String(s.number).padStart(2, "0")}: ${s.durationSeconds}s (de ${s.timecode} até ${s.endTimecode})`
+).join("\n")}
+└─────────────────────────────────────────────────────────────┘
 
-=== METODO 1: IMPORTAR PROJETO JSON (RECOMENDADO) ===
+⏰ DURAÇÃO TOTAL: ${totalDuration}
 
-1. Baixe as imagens com os nomes corretos (cena_001.png, cena_002.png, etc.)
-2. Coloque os arquivos JSON (draft_content.json e draft_meta_info.json) em uma pasta de projeto CapCut
-3. Coloque as imagens na mesma pasta ou ajuste os caminhos no JSON
-4. Abra o projeto no CapCut - as duracoes ja estarao configuradas!
+═══════════════════════════════════════════════════════════════
 
-=== METODO 2: IMPORTAR MANUALMENTE ===
+💡 DICA RÁPIDA:
+   No CapCut, clique na imagem na timeline e arraste 
+   a borda para ajustar a duração conforme a tabela acima.
 
-1. Importe todas as imagens para o CapCut
-2. Arraste as imagens para a timeline NA ORDEM NUMERICA
-3. Ajuste a duracao de cada imagem conforme a tabela:
-
-${scenesWithDurations.map((scene) => {
-  return `Cena ${String(scene.number).padStart(2, "0")}: ${scene.durationSeconds.toFixed(1)} segundos (${scene.timecode} -> ${scene.endTimecode})`;
-}).join("\n")}
-
-DICA: Importe o arquivo SRT como legenda para ver os timecodes durante a edicao.
 `;
-    
-    const txtBlob = new Blob([instructionsContent], { type: "text/plain;charset=utf-8" });
-    const txtUrl = URL.createObjectURL(txtBlob);
-    const txtLink = document.createElement("a");
-    txtLink.href = txtUrl;
-    txtLink.download = "capcut_instrucoes.txt";
-    document.body.appendChild(txtLink);
-    txtLink.click();
-    document.body.removeChild(txtLink);
-    URL.revokeObjectURL(txtUrl);
+      projectFolder?.file("LEIA_PRIMEIRO.txt", instructions);
 
-    toast({
-      title: "Exportado para CapCut!",
-      description: "5 arquivos: draft_content.json, draft_meta_info.json, CSV, SRT e instrucoes",
-    });
+      // Gerar o ZIP
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      
+      // Baixar
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `CapCut_Projeto_${new Date().toISOString().split("T")[0]}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "ZIP pronto!",
+        description: "Extraia e siga as instruções do arquivo LEIA_PRIMEIRO.txt",
+      });
+    } catch (error) {
+      console.error("Erro ao gerar ZIP:", error);
+      toast({ 
+        title: "Erro ao gerar ZIP", 
+        description: "Tente novamente", 
+        variant: "destructive" 
+      });
+    }
   };
 
   // Editar prompt de uma cena
