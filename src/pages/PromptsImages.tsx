@@ -23,7 +23,7 @@ import {
   ImagePlus,
   RefreshCw
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -103,12 +103,31 @@ const calculateTimecode = (scenes: ScenePrompt[], currentIndex: number): string 
 };
 
 const PromptsImages = () => {
-  // Persisted states
+  // Persisted states (sem imagens - muito grandes para localStorage)
   const [script, setScript] = usePersistedState("prompts_script", "");
   const [style, setStyle] = usePersistedState("prompts_style", "cinematic");
   const [model, setModel] = usePersistedState("prompts_model", "gpt-4o");
   const [wordsPerScene, setWordsPerScene] = usePersistedState("prompts_wordsPerScene", "80");
-  const [generatedScenes, setGeneratedScenes] = usePersistedState<ScenePrompt[]>("prompts_scenes", []);
+  
+  // Cenas - persistimos apenas os prompts, não as imagens (base64 muito grande)
+  const [persistedScenes, setPersistedScenes] = usePersistedState<Omit<ScenePrompt, 'generatedImage' | 'generatingImage'>[]>("prompts_scenes_meta", []);
+  
+  // Estado local com imagens (não persistido)
+  const [generatedScenes, setGeneratedScenes] = useState<ScenePrompt[]>([]);
+  
+  // Sincronizar persistedScenes com generatedScenes
+  useEffect(() => {
+    if (persistedScenes.length > 0 && generatedScenes.length === 0) {
+      setGeneratedScenes(persistedScenes.map(s => ({ ...s })));
+    }
+  }, [persistedScenes]);
+  
+  // Atualizar persistedScenes quando generatedScenes mudar (sem imagens)
+  const updateScenes = (scenes: ScenePrompt[]) => {
+    setGeneratedScenes(scenes);
+    // Persistir apenas metadados (sem imagens base64)
+    setPersistedScenes(scenes.map(({ generatedImage, generatingImage, ...rest }) => rest));
+  };
   
   // Non-persisted states
   const [generating, setGenerating] = useState(false);
@@ -236,7 +255,7 @@ const PromptsImages = () => {
         };
       });
 
-      setGeneratedScenes(enrichedScenes);
+      updateScenes(enrichedScenes);
       setProgress(100);
 
       // Calcular duração total
@@ -277,7 +296,7 @@ const PromptsImages = () => {
     }
   };
 
-  // Gerar TODAS as imagens pendentes com 1 clique (4 em paralelo para velocidade)
+  // Gerar TODAS as imagens pendentes com 1 clique (sequencial, mostrando cada uma)
   const handleGenerateAllImages = async () => {
     if (generatedScenes.length === 0) return;
 
@@ -291,108 +310,103 @@ const PromptsImages = () => {
       return;
     }
 
-    // ImageFX permite até 4 imagens em paralelo
-    const parallelLimit = 4;
-
     setGeneratingImages(true);
     setImageBatchTotal(pendingIndexes.length);
     setImageBatchDone(0);
 
-    const updatedScenes = [...generatedScenes];
     let processed = 0;
     let errorOccurred = false;
 
-    // Processar em chunks de 4 paralelos
-    for (let i = 0; i < pendingIndexes.length && !errorOccurred; i += parallelLimit) {
-      const chunk = pendingIndexes.slice(i, i + parallelLimit);
-      setCurrentGeneratingIndex(chunk[0]);
+    // Geração SEQUENCIAL - uma por uma, mostrando cada imagem no card
+    for (let i = 0; i < pendingIndexes.length && !errorOccurred; i++) {
+      const sceneIndex = pendingIndexes[i];
+      setCurrentGeneratingIndex(sceneIndex);
 
       try {
-        const results = await Promise.all(
-          chunk.map(async (sceneIndex) => {
-            const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
-            const fullPrompt = stylePrefix
-              ? `${stylePrefix} ${updatedScenes[sceneIndex].imagePrompt}`
-              : updatedScenes[sceneIndex].imagePrompt;
+        const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
+        const fullPrompt = stylePrefix
+          ? `${stylePrefix} ${generatedScenes[sceneIndex].imagePrompt}`
+          : generatedScenes[sceneIndex].imagePrompt;
 
-            const { data, error } = await supabase.functions.invoke("generate-imagefx", {
-              body: {
-                prompt: fullPrompt,
-                aspectRatio: "LANDSCAPE",
-                numberOfImages: 1,
-              },
-            });
+        const { data, error } = await supabase.functions.invoke("generate-imagefx", {
+          body: {
+            prompt: fullPrompt,
+            aspectRatio: "LANDSCAPE",
+            numberOfImages: 1,
+          },
+        });
 
-            if (error) {
-              const bodyText = (error as any)?.context?.body;
-              if (bodyText) {
-                try {
-                  const parsed = JSON.parse(bodyText);
-                  return { sceneIndex, error: parsed?.error || error.message };
-                } catch {
-                  return { sceneIndex, error: error.message };
-                }
-              }
-              return { sceneIndex, error: error.message };
-            }
-
-            if ((data as any)?.error) {
-              return { sceneIndex, error: (data as any).error };
-            }
-
-            return {
-              sceneIndex,
-              url: (data as any)?.images?.[0]?.url,
-            };
-          })
-        );
-
-        // Atualizar cenas com as imagens geradas
-        for (const result of results) {
-          if (result.url) {
-            updatedScenes[result.sceneIndex] = {
-              ...updatedScenes[result.sceneIndex],
-              generatedImage: result.url,
-            };
-            processed += 1;
-          } else if (result.error) {
-            console.error(`Scene ${result.sceneIndex + 1} error:`, result.error);
-            // Mostrar erro mas continuar com as outras
-            toast({
-              title: `Erro na cena ${result.sceneIndex + 1}`,
-              description: result.error,
-              variant: "destructive",
-            });
-            // Se for erro de autenticação, parar tudo
-            if (result.error.includes("autenticação") || result.error.includes("cookies")) {
-              errorOccurred = true;
-              break;
-            }
+        if (error) {
+          const bodyText = (error as any)?.context?.body;
+          let errMsg = error.message;
+          if (bodyText) {
+            try {
+              const parsed = JSON.parse(bodyText);
+              errMsg = parsed?.error || error.message;
+            } catch {}
           }
+          
+          toast({
+            title: `Erro na cena ${sceneIndex + 1}`,
+            description: errMsg,
+            variant: "destructive",
+          });
+          
+          // Parar em erros de autenticação
+          if (errMsg.includes("autenticação") || errMsg.includes("cookies")) {
+            errorOccurred = true;
+          }
+          continue;
         }
 
-        setGeneratedScenes([...updatedScenes]);
-        setImageBatchDone(processed);
+        if ((data as any)?.error) {
+          toast({
+            title: `Erro na cena ${sceneIndex + 1}`,
+            description: (data as any).error,
+            variant: "destructive",
+          });
+          
+          if ((data as any).error.includes("autenticação") || (data as any).error.includes("cookies")) {
+            errorOccurred = true;
+          }
+          continue;
+        }
+
+        const url = (data as any)?.images?.[0]?.url;
+        if (url) {
+          // Atualizar imediatamente o card com a imagem gerada
+          setGeneratedScenes(prev => {
+            const updated = [...prev];
+            updated[sceneIndex] = {
+              ...updated[sceneIndex],
+              generatedImage: url,
+            };
+            return updated;
+          });
+          
+          processed += 1;
+          setImageBatchDone(processed);
+        }
       } catch (error: any) {
-        console.error(`Error generating images:`, error);
+        console.error(`Error generating image for scene ${sceneIndex + 1}:`, error);
         toast({
-          title: "Erro ao gerar imagens",
-          description: error?.message || "Não foi possível gerar as imagens",
+          title: `Erro na cena ${sceneIndex + 1}`,
+          description: error?.message || "Erro ao gerar imagem",
           variant: "destructive",
         });
-        errorOccurred = true;
       }
     }
 
     setCurrentGeneratingIndex(null);
     setGeneratingImages(false);
 
-    const generatedCount = updatedScenes.filter(s => s.generatedImage).length;
-    const remaining = updatedScenes.length - generatedCount;
+    const generatedCount = generatedScenes.filter(s => s.generatedImage).length + processed;
+    const total = generatedScenes.length;
+    const remaining = total - generatedCount;
     
     toast({
       title: remaining === 0 ? "Todas as imagens geradas!" : "Geração concluída",
-      description: `${generatedCount}/${updatedScenes.length} imagens criadas${remaining > 0 ? ` (${remaining} pendentes)` : ""}`,
+      description: `${generatedCount}/${total} imagens criadas${remaining > 0 ? ` (${remaining} pendentes)` : ""}`,
     });
   };
 
@@ -547,11 +561,12 @@ const PromptsImages = () => {
         <div className="max-w-7xl mx-auto">
           {/* Session Indicator */}
           <SessionIndicator 
-            storageKeys={["prompts_script", "prompts_scenes"]}
+            storageKeys={["prompts_script", "prompts_scenes_meta"]}
             label="Roteiro anterior"
             onClear={() => {
               setScript("");
               setGeneratedScenes([]);
+              setPersistedScenes([]);
             }}
           />
 
