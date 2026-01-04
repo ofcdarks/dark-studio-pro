@@ -569,25 +569,33 @@ serve(async (req) => {
         
         ⚠️ REGRAS OBRIGATÓRIAS PARA GERAÇÃO DE TÍTULOS:
         
-        1. FÓRMULA ORIGINAL SEMPRE PRESENTE: Cada título DEVE conter a fórmula viral extraída do título original. Não gere títulos que ignorem a fórmula.
+        🚫 REGRA #1 - NUNCA COPIAR O ORIGINAL:
+        - É ABSOLUTAMENTE PROIBIDO copiar o título original 100%
+        - NENHUM título gerado pode ser idêntico ao original
+        - TODOS os títulos devem ter MELHORIAS e ADIÇÕES ao original
+        - Se o original é "O SEGREDO dos Incas", você NÃO pode gerar "O SEGREDO dos Incas" - deve ser DIFERENTE e MELHORADO
         
-        2. MELHORIAS OBRIGATÓRIAS: Adicione elementos extras para potencializar a fórmula:
+        2. FÓRMULA ORIGINAL SEMPRE PRESENTE: Cada título DEVE usar a mesma fórmula viral identificada, mas aplicada de forma DIFERENTE e MELHORADA.
+        
+        3. MELHORIAS OBRIGATÓRIAS EM TODOS OS TÍTULOS: Adicione elementos extras para potencializar:
            - Misture com outras fórmulas virais (Mistério + Revelação, Proibido + Exclusivo)
            - Adicione gatilhos mentais: Urgência, Escassez, Prova Social, Curiosidade, Medo, Exclusividade
            - Use números específicos quando relevante (ex: "3 SEGREDOS", "A VERDADE sobre os 7")
            - Adicione palavras de poder: REVELADO, EXPOSTO, PROIBIDO, SECRETO, CHOCANTE, REAL
+           - Varie os personagens/sujeitos mantendo o nicho (Incas → Maias → Astecas)
         
-        3. NICHO INTOCÁVEL: NUNCA mude o nicho ou tema central. Se é sobre Incas, todos títulos são sobre Incas.
+        4. NICHO INTOCÁVEL: NUNCA mude o nicho ou tema central. Se é sobre Incas, todos títulos são sobre Incas.
            - PODE mudar: personagens específicos, situações, povos similares do mesmo nicho, detalhes
            - NÃO PODE mudar: o assunto central, a categoria temática, o universo do conteúdo
            
-        4. VARIAÇÃO CRIATIVA PERMITIDA:
+        5. VARIAÇÃO CRIATIVA OBRIGATÓRIA:
            - Troque civilizações/povos por outros do mesmo nicho (Incas → Maias → Astecas)
            - Mude situações específicas mantendo a estrutura
            - Varie os elementos dramáticos mas mantenha o tom
            - Explore ângulos diferentes do mesmo tema
+           - CADA título deve ser ÚNICO e diferente dos outros
         
-        5. FORMATO TÉCNICO:
+        6. FORMATO TÉCNICO:
            - Máximo 60 caracteres
            - Use CAIXA ALTA estrategicamente como no original
            - Todos os títulos em ${lang}
@@ -597,9 +605,10 @@ serve(async (req) => {
         Original: "O SEGREDO dos Incas que Arqueólogos Escondem"
         Fórmula: Segredo + Sujeito + Autoridade esconde
         
-        Título 1: "A TÉCNICA Maia que Cientistas NÃO Conseguem Explicar" (Fórmula + Mistério técnico)
-        Título 2: "O RITUAL Asteca PROIBIDO que a História Escondeu de Você" (Fórmula + Proibido + Personalização)
-        Título 3: "3 SEGREDOS Egípcios que Museus se Recusam a Expor" (Fórmula + Número + Exclusividade)`;
+        ❌ ERRADO: "O SEGREDO dos Incas que Arqueólogos Escondem" (CÓPIA - PROIBIDO!)
+        ✅ CERTO: "A TÉCNICA Maia que Cientistas NÃO Conseguem Explicar" (Fórmula + Mistério técnico)
+        ✅ CERTO: "O RITUAL Asteca PROIBIDO que a História Escondeu de Você" (Fórmula + Proibido + Personalização)
+        ✅ CERTO: "3 SEGREDOS Egípcios que Museus se Recusam a Expor" (Fórmula + Número + Exclusividade)`;
         userPrompt = prompt || `Analise este vídeo: ${JSON.stringify(videoData)}`;
         break;
 
