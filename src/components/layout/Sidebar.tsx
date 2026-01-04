@@ -352,10 +352,6 @@ export function Sidebar() {
 
       {/* Bottom Section */}
       <div className="p-4 border-t border-sidebar-border space-y-4">
-        {/* Credits - Now using real-time hook */}
-        <CreditsDisplay collapsed={collapsed} showRefresh={!collapsed} />
-
-
         {/* Plan */}
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
           <Crown className="w-5 h-5 text-primary flex-shrink-0" />

@@ -1,6 +1,7 @@
 import { Sidebar } from "./Sidebar";
 import { NotificationsBell } from "./NotificationsBell";
 import { StorageIndicator } from "./StorageIndicator";
+import { CreditsDisplay } from "./CreditsDisplay";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -16,7 +17,8 @@ export function MainLayout({ children }: MainLayoutProps) {
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
         {user && (
-          <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+          <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
+            <CreditsDisplay collapsed={false} showRefresh={false} className="mr-2" />
             <StorageIndicator />
             <ThemeToggle />
             <NotificationsBell />
