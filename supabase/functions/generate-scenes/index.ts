@@ -8,8 +8,9 @@ const corsHeaders = {
 
 // Preços conforme documentação seção 4.2
 const CREDIT_PRICING = {
-  IMAGE_PROMPT: { base: 1, gemini: 2, claude: 3 },
-  IMAGE_BATCH_10: { base: 10, gemini: 20, claude: 30 },
+  base: 3,
+  gemini: 5,
+  claude: 8,
 };
 
 serve(async (req) => {
@@ -40,47 +41,26 @@ serve(async (req) => {
     const body = await req.json();
     const { 
       script, 
-      title = "",
-      niche = "",
-      model = "gemini",
-      style = "photorealistic",
-      estimatedScenes = 8,
-      wordsPerScene = 100
+      model = "gpt-4o",
+      style = "cinematic",
+      wordsPerScene = 80
     } = body;
 
     if (!script) {
       throw new Error("script is required");
     }
 
-    console.log(`[Generate Scenes] Processing script with ${script.split(/\s+/).length} words`);
+    const wordCount = script.split(/\s+/).filter(Boolean).length;
+    const estimatedScenes = Math.ceil(wordCount / wordsPerScene);
 
-    // Passo 2: Dividir roteiro em cenas
-    const words = script.split(/\s+/);
-    const actualWordsPerScene = wordsPerScene || Math.ceil(words.length / estimatedScenes);
-    const scenes: { number: number; text: string; wordCount: number }[] = [];
+    console.log(`[Generate Scenes] Processing script with ${wordCount} words, estimating ${estimatedScenes} scenes`);
 
-    for (let i = 0; i < words.length; i += actualWordsPerScene) {
-      const sceneText = words.slice(i, i + actualWordsPerScene).join(' ');
-      scenes.push({
-        number: scenes.length + 1,
-        text: sceneText,
-        wordCount: sceneText.split(/\s+/).length
-      });
-    }
-
-    console.log(`[Generate Scenes] Divided into ${scenes.length} scenes`);
-
-    // Calcular créditos
+    // Calcular créditos baseado no modelo
     let modelKey: 'base' | 'gemini' | 'claude' = 'base';
     if (model?.includes('gemini')) modelKey = 'gemini';
     else if (model?.includes('claude') || model?.includes('gpt')) modelKey = 'claude';
 
-    let creditsNeeded: number;
-    if (scenes.length >= 10) {
-      creditsNeeded = Math.ceil((scenes.length / 10) * CREDIT_PRICING.IMAGE_BATCH_10[modelKey]);
-    } else {
-      creditsNeeded = Math.ceil(scenes.length * CREDIT_PRICING.IMAGE_PROMPT[modelKey]);
-    }
+    const creditsNeeded = CREDIT_PRICING[modelKey];
 
     // Verificar e debitar créditos
     if (userId) {
@@ -109,79 +89,116 @@ serve(async (req) => {
         operation_type: "scene_prompts",
         credits_used: creditsNeeded,
         model_used: model,
-        details: { scene_count: scenes.length, title }
+        details: { word_count: wordCount, estimated_scenes: estimatedScenes }
       });
     }
 
-    // Passo 3: Gerar prompt para cada cena
-    const scenePrompts: Array<{
-      sceneNumber: number;
-      sceneText: string;
-      imagePrompt: string;
-      wordCount: number;
-    }> = [];
+    // Prompt para gerar todas as cenas de uma vez
+    const systemPrompt = `Você é um especialista em produção audiovisual e geração de prompts para IA de imagem.
+Sua tarefa é analisar um roteiro e dividi-lo em cenas, gerando prompts de imagem otimizados para cada cena.
 
-    for (const scene of scenes) {
-      const prompt = `Crie um prompt detalhado para gerar uma imagem desta cena de vídeo:
+Regras:
+1. Divida o roteiro em segmentos de aproximadamente ${wordsPerScene} palavras cada
+2. Para cada cena, gere um prompt de imagem detalhado em INGLÊS
+3. O prompt deve ter entre 50-100 palavras
+4. Inclua: composição visual, elementos principais, iluminação, cores, estilo ${style}
+5. Otimize para geração de imagem com IA (sem texto, sem rostos específicos de celebridades)
 
-CENA ${scene.number}:
-"${scene.text}"
+Retorne APENAS um JSON válido no seguinte formato:
+{
+  "scenes": [
+    {
+      "number": 1,
+      "text": "texto original da cena em português",
+      "imagePrompt": "detailed image prompt in English...",
+      "wordCount": 80
+    }
+  ]
+}
 
-TÍTULO DO VÍDEO: "${title}"
-NICHO: "${niche}"
+IMPORTANTE: Retorne APENAS o JSON, sem markdown, sem \`\`\`json, apenas o objeto JSON puro.`;
+
+    const userPrompt = `Analise este roteiro e gere os prompts de imagem para cada cena:
+
+ROTEIRO:
+${script}
+
 ESTILO VISUAL: ${style}
+PALAVRAS POR CENA: ~${wordsPerScene}`;
 
-Requisitos do prompt:
-- Descreva a composição visual completa
-- Inclua elementos principais da cena
-- Especifique estilo: ${style}
-- Seja específico sobre cores, iluminação, ambiente
-- Prompt deve ter entre 50-150 palavras
-- Otimizado para geração de imagem com IA
+    console.log(`[Generate Scenes] Calling AI API with model: google/gemini-2.5-flash`);
 
-Retorne APENAS o prompt de imagem em inglês, sem explicações, sem aspas, apenas o texto do prompt.`;
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+      }),
+    });
 
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-
-      if (!aiResponse.ok) {
-        console.error(`[Generate Scenes] Error generating prompt for scene ${scene.number}`);
-        continue;
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error(`[Generate Scenes] AI API error: ${aiResponse.status}`, errorText);
+      
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
-
-      const aiData = await aiResponse.json();
-      const imagePrompt = aiData.choices?.[0]?.message?.content?.trim() || "";
-
-      scenePrompts.push({
-        sceneNumber: scene.number,
-        sceneText: scene.text,
-        imagePrompt,
-        wordCount: scene.wordCount
-      });
-
-      console.log(`[Generate Scenes] Generated prompt for scene ${scene.number}`);
+      
+      throw new Error(`AI API error: ${aiResponse.status}`);
     }
+
+    const aiData = await aiResponse.json();
+    const content = aiData.choices?.[0]?.message?.content?.trim() || "";
+
+    console.log(`[Generate Scenes] AI response received, parsing...`);
+
+    // Parse JSON response
+    let parsedScenes;
+    try {
+      // Remove markdown code blocks if present
+      let jsonContent = content;
+      if (jsonContent.startsWith("```json")) {
+        jsonContent = jsonContent.slice(7);
+      }
+      if (jsonContent.startsWith("```")) {
+        jsonContent = jsonContent.slice(3);
+      }
+      if (jsonContent.endsWith("```")) {
+        jsonContent = jsonContent.slice(0, -3);
+      }
+      jsonContent = jsonContent.trim();
+
+      parsedScenes = JSON.parse(jsonContent);
+    } catch (parseError) {
+      console.error("[Generate Scenes] Failed to parse AI response:", content);
+      throw new Error("Falha ao processar resposta da IA. Tente novamente.");
+    }
+
+    const scenes = parsedScenes.scenes || [];
+
+    console.log(`[Generate Scenes] Successfully generated ${scenes.length} scene prompts`);
 
     // Retornar resposta
     return new Response(
       JSON.stringify({
         success: true,
-        scenes: scenePrompts.map(s => ({
-          number: s.sceneNumber,
-          text: s.sceneText,
-          imagePrompt: s.imagePrompt,
-          wordCount: s.wordCount
+        scenes: scenes.map((s: any, index: number) => ({
+          number: s.number || index + 1,
+          text: s.text || "",
+          imagePrompt: s.imagePrompt || "",
+          wordCount: s.wordCount || 0
         })),
-        totalScenes: scenePrompts.length,
+        totalScenes: scenes.length,
         creditsUsed: creditsNeeded
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
