@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CreditsDisplayProps {
   collapsed?: boolean;
@@ -155,15 +156,33 @@ export function CreditsDisplay({ collapsed = false, showRefresh = true, classNam
   return (
     <>
       <div className={cn("flex items-center gap-2", className)}>
-        {/* Compact header display */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border">
-          <Coins className="w-4 h-4 text-primary flex-shrink-0" />
-          {loading ? (
-            <Loader2 className="w-4 h-4 text-primary animate-spin" />
-          ) : (
-            <span className="text-primary font-bold text-sm">{balance.toLocaleString()}</span>
-          )}
-        </div>
+        {/* Compact header display with tooltip */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border cursor-pointer hover:bg-secondary/70 transition-colors">
+              <Coins className="w-4 h-4 text-primary flex-shrink-0" />
+              {loading ? (
+                <Loader2 className="w-4 h-4 text-primary animate-spin" />
+              ) : (
+                <span className={cn(
+                  "font-bold text-sm",
+                  balance < 20 ? "text-destructive" : "text-primary"
+                )}>{balance.toLocaleString()}</span>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            <div className="space-y-1 text-xs">
+              <p className="font-semibold">Seus Créditos</p>
+              <p className="text-muted-foreground">
+                Créditos são usados para análises, geração de roteiros, thumbnails e mais.
+              </p>
+              {balance < 50 && (
+                <p className="text-primary font-medium">⚠️ Créditos baixos! Considere recarregar.</p>
+              )}
+            </div>
+          </TooltipContent>
+        </Tooltip>
         
         <Button 
           variant="outline" 
