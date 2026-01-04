@@ -155,38 +155,47 @@ serve(async (req) => {
       });
     }
 
+    // Limitar número de cenas para evitar resposta truncada
+    const maxScenes = 20;
+    const effectiveWordsPerScene = estimatedScenes > maxScenes 
+      ? Math.ceil(wordCount / maxScenes) 
+      : wordsPerScene;
+    const actualEstimatedScenes = Math.min(estimatedScenes, maxScenes);
+
+    console.log(`[Generate Scenes] Adjusted: ${actualEstimatedScenes} scenes, ~${effectiveWordsPerScene} words/scene`);
+
     // Prompt para gerar todas as cenas de uma vez
     const systemPrompt = `Você é um especialista em produção audiovisual e geração de prompts para IA de imagem.
 Sua tarefa é analisar um roteiro e dividi-lo em cenas, gerando prompts de imagem otimizados para cada cena.
 
-Regras:
-1. Divida o roteiro em segmentos de aproximadamente ${wordsPerScene} palavras cada
-2. Para cada cena, gere um prompt de imagem detalhado em INGLÊS
-3. O prompt deve ter entre 50-100 palavras
-4. Inclua: composição visual, elementos principais, iluminação, cores, estilo ${style}
-5. Otimize para geração de imagem com IA (sem texto, sem rostos específicos de celebridades)
+Regras IMPORTANTES:
+1. Divida o roteiro em NO MÁXIMO ${actualEstimatedScenes} cenas
+2. Cada cena deve ter aproximadamente ${effectiveWordsPerScene} palavras do roteiro
+3. Para cada cena, gere um prompt de imagem CONCISO em INGLÊS (máximo 60 palavras)
+4. Inclua: composição visual, elementos principais, iluminação, estilo ${style}
+5. Otimize para geração de imagem com IA (sem texto, sem rostos específicos)
 
-Retorne APENAS um JSON válido no seguinte formato:
+Retorne APENAS um JSON válido:
 {
   "scenes": [
     {
       "number": 1,
-      "text": "texto original da cena em português",
-      "imagePrompt": "detailed image prompt in English...",
-      "wordCount": 80
+      "text": "resumo da cena em português (máximo 50 palavras)",
+      "imagePrompt": "concise image prompt in English",
+      "wordCount": 150
     }
   ]
 }
 
-IMPORTANTE: Retorne APENAS o JSON, sem markdown, sem \`\`\`json, apenas o objeto JSON puro.`;
+CRÍTICO: Retorne APENAS o JSON puro, sem markdown, sem explicações.`;
 
-    const userPrompt = `Analise este roteiro e gere os prompts de imagem para cada cena:
+    const userPrompt = `Analise este roteiro e gere os prompts de imagem:
 
 ROTEIRO:
-${script}
+${script.substring(0, 15000)}
 
-ESTILO VISUAL: ${style}
-PALAVRAS POR CENA: ~${wordsPerScene}`;
+ESTILO: ${style}
+MÁXIMO DE CENAS: ${actualEstimatedScenes}`;
 
     console.log(`[Generate Scenes] Calling ${apiUrl} with model: ${apiModel}`);
 
@@ -202,8 +211,8 @@ PALAVRAS POR CENA: ~${wordsPerScene}`;
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
-        max_tokens: 8000,
-        temperature: 0.7
+        max_tokens: 16000,
+        temperature: 0.5
       }),
     });
 
