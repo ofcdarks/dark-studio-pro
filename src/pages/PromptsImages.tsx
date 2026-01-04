@@ -62,9 +62,9 @@ interface SceneHistory {
 }
 
 const AI_MODELS = [
-  { value: "gpt-4o", label: "GPT-4o", speed: "Rápido" },
-  { value: "claude-sonnet-4-20250514", label: "Claude 4 Sonnet", speed: "Criativo" },
-  { value: "gemini-2.5-pro-preview-06-05", label: "Gemini 2.5 Pro", speed: "Preciso" },
+  { value: "gpt-4o", label: "GPT-4o" },
+  { value: "claude-sonnet-4-20250514", label: "Claude 4 Sonnet" },
+  { value: "gemini-2.5-pro-preview-06-05", label: "Gemini 2.5 Pro" },
 ];
 
 // Calcular tempo estimado baseado em palavras (média 150 palavras/min para narração)
@@ -507,10 +507,7 @@ const PromptsImages = () => {
                         <SelectContent>
                           {AI_MODELS.map((m) => (
                             <SelectItem key={m.value} value={m.value}>
-                              <div className="flex items-center gap-2">
-                                <span>{m.label}</span>
-                                <Badge variant="outline" className="text-[10px]">{m.speed}</Badge>
-                              </div>
+                              {m.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
