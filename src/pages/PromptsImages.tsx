@@ -115,6 +115,7 @@ const PromptsImages = () => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [expandedScene, setExpandedScene] = useState<number | null>(null);
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
+  const [filterPending, setFilterPending] = useState(false);
   const [generatingImages, setGeneratingImages] = useState(false);
   const [currentGeneratingIndex, setCurrentGeneratingIndex] = useState<number | null>(null);
   const [imageBatchTotal, setImageBatchTotal] = useState(0);
@@ -693,9 +694,20 @@ const PromptsImages = () => {
                           <h4 className="text-sm font-medium text-muted-foreground">
                             Imagens das Cenas ({generatedScenes.filter(s => s.generatedImage).length}/{generatedScenes.length})
                           </h4>
+                          <Button
+                            variant={filterPending ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFilterPending(!filterPending)}
+                            className="h-7 text-xs"
+                          >
+                            {filterPending ? "Ver Todas" : "Só Pendentes"}
+                          </Button>
                         </div>
                         <div className="grid grid-cols-5 gap-3">
-                          {generatedScenes.map((scene, index) => (
+                          {generatedScenes
+                            .map((scene, index) => ({ scene, index }))
+                            .filter(({ scene }) => !filterPending || !scene.generatedImage)
+                            .map(({ scene, index }) => (
                             <div 
                               key={`img-${scene.number}`}
                               className="group relative aspect-video rounded-lg overflow-hidden bg-secondary border border-border"
@@ -743,8 +755,8 @@ const PromptsImages = () => {
                               <div className="absolute bottom-1 left-1 bg-background/80 px-1.5 py-0.5 rounded">
                                 <div className="text-xs font-bold leading-none">{scene.number}</div>
                                 {scene.timecode && (
-                                  <div className="text-[10px] text-muted-foreground font-mono leading-none mt-0.5">
-                                    {scene.timecode}
+                                  <div className="text-[9px] text-muted-foreground font-mono leading-none mt-0.5">
+                                    {scene.timecode}{scene.endTimecode ? `–${scene.endTimecode}` : ""}
                                   </div>
                                 )}
                               </div>
