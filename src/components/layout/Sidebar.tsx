@@ -303,50 +303,36 @@ export function Sidebar() {
           </div>
         )}
         <div className="space-y-0.5">
-          {navItems.map((item, index) => {
-            const prevItem = index > 0 ? navItems[index - 1] : null;
-            const showSeparator = !collapsed && item.category && prevItem?.category !== item.category && categories[item.category];
-            
-            return (
-              <div key={item.id}>
-                {showSeparator && (
-                  <div className="flex items-center gap-2 px-3 pt-4 pb-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/70">
-                      {categories[item.category!]}
-                    </span>
-                    <div className="flex-1 h-px bg-border/50" />
-                  </div>
+          {navItems.map((item) => (
+            <div
+              key={item.id}
+              draggable
+              onDragStart={() => handleDragStart(item.id)}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop(item.id)}
+              onDragEnd={handleDragEnd}
+              className={cn(
+                "group cursor-grab active:cursor-grabbing",
+                draggedItem === item.id && "opacity-50"
+              )}
+            >
+              <button
+                onClick={() => navigate(item.href)}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200",
+                  location.pathname === item.href
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
                 )}
-                <div
-                  draggable
-                  onDragStart={() => handleDragStart(item.id)}
-                  onDragOver={handleDragOver}
-                  onDrop={() => handleDrop(item.id)}
-                  onDragEnd={handleDragEnd}
-                  className={cn(
-                    "group cursor-grab active:cursor-grabbing",
-                    draggedItem === item.id && "opacity-50"
-                  )}
-                >
-                  <button
-                    onClick={() => navigate(item.href)}
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200",
-                      location.pathname === item.href
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
-                    )}
-                  >
-                    {!collapsed && (
-                      <GripVertical className="w-4 h-4 flex-shrink-0 opacity-0 group-hover:opacity-50 transition-opacity" />
-                    )}
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    {!collapsed && <span className="text-sm font-medium text-left flex-1">{item.label}</span>}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+              >
+                {!collapsed && (
+                  <GripVertical className="w-4 h-4 flex-shrink-0 opacity-0 group-hover:opacity-50 transition-opacity" />
+                )}
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && <span className="text-sm font-medium text-left flex-1">{item.label}</span>}
+              </button>
+            </div>
+          ))}
         </div>
       </nav>
 
