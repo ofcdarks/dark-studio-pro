@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pencil, Check, Brain, RefreshCw, Save, Download } from "lucide-react";
+import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pencil, Check, Brain, RefreshCw, Save, Download, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import logoGif from "@/assets/logo.gif";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCredits } from "@/hooks/useCredits";
 import { toast } from "sonner";
 
 const AI_MODELS = [
@@ -51,6 +53,8 @@ interface AgentChatModalProps {
 
 export function AgentChatModal({ open, onOpenChange, agent, onModelChange, onTriggersUpdate }: AgentChatModalProps) {
   const { user } = useAuth();
+  const { balance } = useCredits();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -1112,9 +1116,35 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
               </label>
             </div>
 
+            {/* Insufficient Credits Warning */}
+            {balance < estimatedCredits && (
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-destructive">Créditos Insuficientes</p>
+                    <p className="text-xs text-muted-foreground">
+                      Você precisa de <span className="font-bold text-foreground">{estimatedCredits} créditos</span> para gerar este roteiro, 
+                      mas possui apenas <span className="font-bold text-foreground">{balance} créditos</span>.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => {
+                    onOpenChange(false);
+                    navigate("/plans");
+                  }}
+                  className="w-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground hover:opacity-90"
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Comprar Créditos
+                </Button>
+              </div>
+            )}
+
             <Button
               onClick={handleGenerateScript}
-              disabled={!scriptTitle.trim() || isGeneratingScript}
+              disabled={!scriptTitle.trim() || isGeneratingScript || balance < estimatedCredits}
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {isGeneratingScript ? (
