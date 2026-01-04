@@ -1940,14 +1940,14 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
         <DialogContent className="max-w-md bg-card border-primary/50 rounded-xl shadow-xl" hideCloseButton>
           <div className="flex flex-col items-center justify-center py-8 space-y-6">
             {/* Logo com efeito de pulso */}
-            <div className="relative">
+            <div className="relative w-20 h-20">
               <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
               <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
-              <div className="relative w-20 h-20 rounded-full border-2 border-primary/50 overflow-hidden bg-card flex items-center justify-center">
+              <div className="relative w-20 h-20 rounded-full border-2 border-primary/50 overflow-hidden">
                 <img 
                   src={logoGif} 
                   alt="Loading" 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover scale-110"
                 />
               </div>
             </div>
@@ -1983,14 +1983,14 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
         <DialogContent className="max-w-sm bg-card border-primary/50 rounded-xl shadow-xl" hideCloseButton>
           <div className="flex flex-col items-center justify-center py-4 space-y-4">
             {/* Logo com efeito de pulso */}
-            <div className="relative">
+            <div className="relative w-24 h-24">
               <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
               <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
-              <div className="relative w-24 h-24 rounded-full border-2 border-primary/50 overflow-hidden bg-card flex items-center justify-center">
+              <div className="relative w-24 h-24 rounded-full border-2 border-primary/50 overflow-hidden">
                 <img 
                   src={logoGif} 
                   alt="Loading" 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover scale-110"
                 />
               </div>
             </div>
