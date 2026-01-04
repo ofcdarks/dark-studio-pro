@@ -901,6 +901,10 @@ const PromptsImages = () => {
     await handleSaveToCapcutFolder();
   };
 
+  // Detectar sistema operacional
+  const isWindows = typeof navigator !== 'undefined' && navigator.platform?.toLowerCase().includes('win');
+  const isMac = typeof navigator !== 'undefined' && (navigator.platform?.toLowerCase().includes('mac') || navigator.userAgent?.toLowerCase().includes('mac'));
+
   // Texto das instruções para copiar
   const capcutInstructionsText = `COMO EXPORTAR PARA O CAPCUT
 
@@ -1884,13 +1888,27 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                 Ao clicar em "Exportar Agora", você escolhe uma pasta e os arquivos são salvos diretamente.
               </p>
               <div className="space-y-2 text-xs font-mono bg-background/50 p-3 rounded border border-border">
-                <div>
-                  <span className="text-muted-foreground">Windows:</span>
-                  <p className="text-foreground">C:\Users\[Você]\Documents\CapCut\User Data\Projects\[Projeto]</p>
+                <div className={cn(
+                  "p-2 rounded transition-all",
+                  isWindows ? "bg-primary/10 border border-primary/30" : "opacity-60"
+                )}>
+                  <span className={cn("text-muted-foreground", isWindows && "text-primary font-semibold")}>
+                    {isWindows && "👉 "} Windows:
+                  </span>
+                  <p className={cn("text-foreground", isWindows && "text-primary")}>
+                    C:\Users\[Você]\Documents\CapCut\User Data\Projects\[Projeto]
+                  </p>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">macOS:</span>
-                  <p className="text-foreground">~/Documents/CapCut/User Data/Projects/[Projeto]</p>
+                <div className={cn(
+                  "p-2 rounded transition-all",
+                  isMac ? "bg-primary/10 border border-primary/30" : "opacity-60"
+                )}>
+                  <span className={cn("text-muted-foreground", isMac && "text-primary font-semibold")}>
+                    {isMac && "👉 "} macOS:
+                  </span>
+                  <p className={cn("text-foreground", isMac && "text-primary")}>
+                    ~/Documents/CapCut/User Data/Projects/[Projeto]
+                  </p>
                 </div>
               </div>
               <p className="text-xs text-primary mt-2">
