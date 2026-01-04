@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -248,11 +248,60 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
     onOpenChange(false);
   };
 
+  // Loading messages for professional experience
+  const loadingMessages = [
+    "Analisando título e nicho",
+    "Aplicando fórmula viral do agente",
+    "Estruturando narrativa com gatilhos mentais",
+    "Desenvolvendo hook poderoso",
+    "Criando conteúdo otimizado para engajamento",
+    "Finalizando roteiro"
+  ];
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+
+  // Rotate loading messages
+  useEffect(() => {
+    if (generating) {
+      setLoadingMessageIndex(0);
+      const interval = setInterval(() => {
+        setLoadingMessageIndex(prev => (prev + 1) % loadingMessages.length);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [generating]);
+
   if (!agent) return null;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-card border-primary/30">
+        {/* Loading Overlay */}
+        {generating && (
+          <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-lg">
+            <div className="relative mb-8">
+              <div className="w-24 h-24 rounded-full border-4 border-primary/30 flex items-center justify-center animate-pulse">
+                <img 
+                  src="/logo-official.svg" 
+                  alt="Logo" 
+                  className="w-12 h-12"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="absolute inset-0 w-24 h-24 rounded-full border-4 border-transparent border-t-primary animate-spin" />
+            </div>
+            
+            <h3 className="text-xl font-bold text-foreground mb-2">Gerando Roteiro</h3>
+            <p className="text-sm text-muted-foreground mb-4 animate-pulse">
+              {loadingMessages[loadingMessageIndex]}...
+            </p>
+            <p className="text-xs text-muted-foreground/70">
+              Aguarde, isso pode levar até 2 minutos
+            </p>
+          </div>
+        )}
+
         <DialogHeader className="pb-4 border-b border-border">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold text-foreground">

@@ -645,15 +645,19 @@ serve(async (req) => {
         const agentStructure = agentData?.formula_structure ? JSON.stringify(agentData.formula_structure) : "Usar estrutura padrão de vídeo viral";
         const agentTriggers = agentData?.mental_triggers?.join(", ") || "Curiosidade, Urgência, Prova Social";
         
-        // Usar minDuration/maxDuration do request ou calcular baseado na duration
-        const scriptDuration = duration ? parseInt(duration.toString()) : 5;
-        const scriptMinDuration = minDuration ? parseInt(minDuration.toString()) : scriptDuration;
-        const scriptMaxDuration = maxDuration ? parseInt(maxDuration.toString()) : scriptDuration + 3;
+        // Usar minDuration/maxDuration do request
+        const scriptMinDuration = minDuration ? parseInt(minDuration.toString()) : (duration ? parseInt(duration.toString()) : 5);
+        const scriptMaxDuration = maxDuration ? parseInt(maxDuration.toString()) : scriptMinDuration + 3;
+        // Target deve ser exatamente entre min e max, mais próximo do min
+        const scriptTargetDuration = scriptMinDuration + 1;
         
         const wordsPerMinute = 130;
         const minWords = scriptMinDuration * wordsPerMinute;
-        const targetWords = scriptDuration * wordsPerMinute;
+        const targetWords = scriptTargetDuration * wordsPerMinute;
         const maxWords = scriptMaxDuration * wordsPerMinute;
+        
+        console.log(`[AI Assistant] Script Duration - Min: ${scriptMinDuration}, Target: ${scriptTargetDuration}, Max: ${scriptMaxDuration}`);
+        console.log(`[AI Assistant] Script Words - Min: ${minWords}, Target: ${targetWords}, Max: ${maxWords}`);
         
         systemPrompt = `Você é um roteirista profissional especializado em criar ROTEIROS PUROS PARA NARRAÇÃO (VOICE-OVER) de vídeos virais para YouTube.
         
@@ -670,14 +674,17 @@ serve(async (req) => {
         GATILHOS MENTAIS A USAR NATURALMENTE:
         ${agentTriggers}
         
-        📏 ESPECIFICAÇÕES TÉCNICAS DE DURAÇÃO (CRÍTICO!):
-        - Duração MÍNIMA OBRIGATÓRIA: ${scriptMinDuration} minutos (${minWords} palavras) - NUNCA gerar menos que isso!
-        - Duração ALVO: ${scriptDuration} minutos (~${targetWords} palavras)
-        - Duração MÁXIMA PERMITIDA: ${scriptMaxDuration} minutos (${maxWords} palavras)
+        📏 ESPECIFICAÇÕES TÉCNICAS DE DURAÇÃO (OBRIGATÓRIO RESPEITAR!):
+        - Duração MÍNIMA: ${scriptMinDuration} minutos (${minWords} palavras)
+        - Duração ALVO: ${scriptTargetDuration} minutos (~${targetWords} palavras) ← GERE APROXIMADAMENTE ISSO
+        - Duração MÁXIMA ABSOLUTA: ${scriptMaxDuration} minutos (${maxWords} palavras) ← NUNCA ULTRAPASSAR!
         - Velocidade de leitura: ${wordsPerMinute} palavras/minuto
         
-        ⚠️ REGRA DE OURO: É MELHOR passar um pouco do tempo do que faltar conteúdo!
-        Se você gerar um roteiro com MENOS de ${minWords} palavras, o usuário vai RECLAMAR.
+        ⚠️ REGRAS DE OURO (CRÍTICO!):
+        1. NUNCA gere menos de ${minWords} palavras (${scriptMinDuration} minutos)
+        2. NUNCA gere mais de ${maxWords} palavras (${scriptMaxDuration} minutos)
+        3. O IDEAL é gerar entre ${minWords} e ${targetWords} palavras
+        4. Antes de finalizar, CONTE as palavras e ajuste se necessário!
         
         ✅ O QUE INCLUIR:
         - Hook poderoso nos primeiros 30 segundos que prenda a atenção
