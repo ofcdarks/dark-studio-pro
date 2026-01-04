@@ -277,7 +277,7 @@ const PromptsImages = () => {
     }
   };
 
-  // Gerar imagens para próximas 5 cenas (em sequência)
+  // Gerar imagens em lotes de 4 (máximo do ImageFX) para máxima velocidade
   const handleGenerateAllImages = async () => {
     if (generatedScenes.length === 0) return;
 
@@ -288,8 +288,10 @@ const PromptsImages = () => {
 
     if (pendingIndexes.length === 0) return;
 
-    const batchSize = 5;
-    const batchIndexes = pendingIndexes.slice(0, batchSize);
+    // ImageFX permite até 4 imagens por request - vamos usar isso para acelerar
+    const imagesPerRequest = 4;
+    const totalToGenerate = Math.min(pendingIndexes.length, 20); // Limitar a 20 por vez
+    const batchIndexes = pendingIndexes.slice(0, totalToGenerate);
 
     setGeneratingImages(true);
     setImageBatchTotal(batchIndexes.length);
@@ -298,60 +300,77 @@ const PromptsImages = () => {
     const updatedScenes = [...generatedScenes];
     let processed = 0;
 
-    for (let i = 0; i < batchIndexes.length; i++) {
-      const sceneIndex = batchIndexes[i];
-      setCurrentGeneratingIndex(sceneIndex);
+    // Dividir em chunks de 4 para enviar requests paralelos de 4 imagens cada
+    for (let i = 0; i < batchIndexes.length; i += imagesPerRequest) {
+      const chunk = batchIndexes.slice(i, i + imagesPerRequest);
+      setCurrentGeneratingIndex(chunk[0]);
 
-      try {
+      // Preparar prompts para este lote
+      const prompts = chunk.map((sceneIndex) => {
         const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
-        const fullPrompt = stylePrefix
+        return stylePrefix
           ? `${stylePrefix} ${updatedScenes[sceneIndex].imagePrompt}`
           : updatedScenes[sceneIndex].imagePrompt;
+      });
 
-        const { data, error } = await supabase.functions.invoke("generate-imagefx", {
-          body: {
-            prompt: fullPrompt,
-            aspectRatio: "LANDSCAPE",
-            numberOfImages: 1,
-          },
-        });
+      try {
+        // Gerar 4 imagens de uma vez (usando o primeiro prompt como base)
+        // Cada imagem terá seu próprio prompt
+        const results = await Promise.all(
+          chunk.map(async (sceneIndex, idx) => {
+            const { data, error } = await supabase.functions.invoke("generate-imagefx", {
+              body: {
+                prompt: prompts[idx],
+                aspectRatio: "LANDSCAPE",
+                numberOfImages: 1,
+              },
+            });
 
-        if (error) {
-          const bodyText = (error as any)?.context?.body;
-          if (bodyText) {
-            try {
-              const parsed = JSON.parse(bodyText);
-              throw new Error(parsed?.error || error.message);
-            } catch {
+            if (error) {
+              const bodyText = (error as any)?.context?.body;
+              if (bodyText) {
+                try {
+                  const parsed = JSON.parse(bodyText);
+                  throw new Error(parsed?.error || error.message);
+                } catch {
+                  throw new Error(error.message);
+                }
+              }
               throw new Error(error.message);
             }
+
+            if ((data as any)?.error) {
+              throw new Error((data as any).error);
+            }
+
+            return {
+              sceneIndex,
+              url: (data as any)?.images?.[0]?.url,
+            };
+          })
+        );
+
+        // Atualizar cenas com as imagens geradas
+        for (const result of results) {
+          if (result.url) {
+            updatedScenes[result.sceneIndex] = {
+              ...updatedScenes[result.sceneIndex],
+              generatedImage: result.url,
+            };
+            processed += 1;
           }
-          throw new Error(error.message);
         }
 
-        if ((data as any)?.error) {
-          throw new Error((data as any).error);
-        }
-
-        const url = (data as any)?.images?.[0]?.url;
-        if (url) {
-          updatedScenes[sceneIndex] = {
-            ...updatedScenes[sceneIndex],
-            generatedImage: url,
-          };
-          setGeneratedScenes([...updatedScenes]);
-        }
-
-        processed += 1;
+        setGeneratedScenes([...updatedScenes]);
         setImageBatchDone(processed);
       } catch (error: any) {
-        console.error(`Error generating image for scene ${sceneIndex + 1}:`, error);
+        console.error(`Error generating images:`, error);
         toast({
-          title: `Erro na cena ${sceneIndex + 1}`,
-          description: error?.message || "Não foi possível gerar a imagem",
+          title: "Erro ao gerar imagens",
+          description: error?.message || "Não foi possível gerar as imagens",
           variant: "destructive",
         });
-        // Para o lote ao primeiro erro (evita spam)
+        // Para ao primeiro erro
         break;
       }
     }
@@ -363,7 +382,7 @@ const PromptsImages = () => {
     const generatedCount = updatedScenes.filter(s => s.generatedImage).length;
     toast({
       title: "Lote concluído!",
-      description: `${generatedCount}/${updatedScenes.length} imagens criadas` ,
+      description: `${generatedCount}/${updatedScenes.length} imagens criadas`,
     });
   };
 
@@ -681,7 +700,7 @@ const PromptsImages = () => {
                             ) : (
                               <>
                                 <ImagePlus className="w-4 h-4 mr-2" />
-                                Gerar próximas {Math.min(5, generatedScenes.filter(s => !s.generatedImage).length)}
+                                Gerar próximas {Math.min(20, generatedScenes.filter(s => !s.generatedImage).length)} (4x paralelo)
                               </>
                             )}
                           </Button>
