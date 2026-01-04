@@ -274,26 +274,21 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-card border-primary/30">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-card border-primary/30">
         {/* Loading Overlay */}
         {generating && (
           <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-lg">
-            <div className="relative mb-8">
-              <div className="w-24 h-24 rounded-full border-4 border-primary/30 flex items-center justify-center animate-pulse">
-                <img 
-                  src="/logo-official.svg" 
-                  alt="Logo" 
-                  className="w-12 h-12"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              </div>
-              <div className="absolute inset-0 w-24 h-24 rounded-full border-4 border-transparent border-t-primary animate-spin" />
-            </div>
+            <img 
+              src="/logo-official.svg" 
+              alt="Logo" 
+              className="w-20 h-20 mb-6 animate-pulse"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
             
-            <h3 className="text-xl font-bold text-foreground mb-2">Gerando Roteiro</h3>
-            <p className="text-sm text-muted-foreground mb-4 animate-pulse">
+            <h3 className="text-lg font-bold text-foreground mb-2">Gerando Roteiro</h3>
+            <p className="text-sm text-muted-foreground mb-3 animate-pulse">
               {loadingMessages[loadingMessageIndex]}...
             </p>
             <p className="text-xs text-muted-foreground/70">
