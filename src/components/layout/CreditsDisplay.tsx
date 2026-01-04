@@ -154,45 +154,32 @@ export function CreditsDisplay({ collapsed = false, showRefresh = true, classNam
 
   return (
     <>
-      <div className={cn("space-y-2", className)}>
-        <div className="flex items-center gap-3">
-          <Coins className="w-5 h-5 text-primary flex-shrink-0" />
-          <div className="flex-1">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Créditos</span>
-              {showRefresh && !loading && (
-                <button
-                  onClick={refreshBalance}
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                  title="Atualizar créditos"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-            {loading ? (
-              <Loader2 className="w-4 h-4 text-primary animate-spin mt-1" />
-            ) : (
-              <p className="text-primary font-bold text-2xl">{balance.toLocaleString()}</p>
-            )}
-          </div>
+      <div className={cn("flex items-center gap-2", className)}>
+        {/* Compact header display */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border">
+          <Coins className="w-4 h-4 text-primary flex-shrink-0" />
+          {loading ? (
+            <Loader2 className="w-4 h-4 text-primary animate-spin" />
+          ) : (
+            <span className="text-primary font-bold text-sm">{balance.toLocaleString()}</span>
+          )}
         </div>
         
         <Button 
-          variant="default" 
+          variant="outline" 
           size="sm" 
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+          className="h-8 px-3 text-xs border-primary/50 text-primary hover:bg-primary/10"
           onClick={() => navigate("/plans")}
         >
-          Comprar Créditos
+          Comprar
         </Button>
         
         <button
           onClick={handleOpenHistory}
-          className="w-full text-sm text-primary hover:underline flex items-center justify-center gap-1"
+          className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-primary transition-colors"
+          title="Ver Histórico de Créditos"
         >
-          <History className="w-3 h-3" />
-          Ver Histórico
+          <History className="w-4 h-4" />
         </button>
       </div>
 
