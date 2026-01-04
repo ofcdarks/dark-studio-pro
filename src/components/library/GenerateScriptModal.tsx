@@ -298,15 +298,9 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
         )}
 
         <DialogHeader className="pb-4 border-b border-border">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold text-foreground">
-              {generatedScript ? "Roteiro Gerado" : "Gerar Roteiro com Agente"}
-            </DialogTitle>
-            <Badge className="bg-primary/20 text-primary border-primary/30 text-sm px-3 py-1.5">
-              <Zap className="w-4 h-4 mr-1.5" />
-              Custo estimado: {estimatedCredits} créditos
-            </Badge>
-          </div>
+          <DialogTitle className="text-xl font-bold text-foreground">
+            {generatedScript ? "Roteiro Gerado" : "Gerar Roteiro com Agente"}
+          </DialogTitle>
         </DialogHeader>
 
         {generatedScript ? (
@@ -482,11 +476,17 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
                 </p>
               </div>
 
-              {/* AI Model Selection */}
+              {/* AI Model Selection + Credits */}
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-foreground">
-                  Modelo de IA
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold text-foreground">
+                    Modelo de IA
+                  </Label>
+                  <Badge className="bg-primary/20 text-primary border-primary/30 text-xs px-2 py-1">
+                    <Zap className="w-3 h-3 mr-1" />
+                    {estimatedCredits} créditos
+                  </Badge>
+                </div>
                 <Select value={aiModel} onValueChange={setAiModel}>
                   <SelectTrigger className="bg-secondary/50 border-primary/50 h-11 text-sm">
                     <SelectValue />
