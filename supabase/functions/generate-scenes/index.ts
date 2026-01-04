@@ -154,7 +154,14 @@ PALAVRAS POR CENA: ~${wordsPerScene}`;
         );
       }
       
-      throw new Error(`AI API error: ${aiResponse.status}`);
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Créditos de IA da plataforma esgotados. Adicione créditos em Configurações > Workspace > Uso." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      throw new Error(`Erro na API de IA: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
