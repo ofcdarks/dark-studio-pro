@@ -29,7 +29,7 @@ import {
   DownloadCloud,
   Video
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -151,6 +151,7 @@ const PromptsImages = () => {
   const [editingPromptIndex, setEditingPromptIndex] = useState<number | null>(null);
   const [editingPromptText, setEditingPromptText] = useState("");
   const [downloadingAll, setDownloadingAll] = useState(false);
+  const cancelGenerationRef = useRef(false);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -319,6 +320,7 @@ const PromptsImages = () => {
       return;
     }
 
+    cancelGenerationRef.current = false; // Reset cancel flag
     setGeneratingImages(true);
     setImageBatchTotal(pendingIndexes.length);
     setImageBatchDone(0);
@@ -388,15 +390,21 @@ const PromptsImages = () => {
     };
 
     // Processar em lotes de 5
-    for (let batchStart = 0; batchStart < pendingIndexes.length && !errorOccurred; batchStart += BATCH_SIZE) {
+    for (let batchStart = 0; batchStart < pendingIndexes.length && !errorOccurred && !cancelGenerationRef.current; batchStart += BATCH_SIZE) {
       const batchIndexes = pendingIndexes.slice(batchStart, batchStart + BATCH_SIZE);
       setCurrentGeneratingIndex(batchIndexes[0]); // Mostrar primeiro do lote
+
+      // Verificar cancelamento antes de iniciar o lote
+      if (cancelGenerationRef.current) break;
 
       try {
         // Executar 5 requisições em paralelo
         const results = await Promise.allSettled(
           batchIndexes.map(idx => generateSingleImage(idx))
         );
+
+        // Verificar cancelamento após o lote
+        if (cancelGenerationRef.current) break;
 
         // Processar resultados
         for (const result of results) {
@@ -434,10 +442,23 @@ const PromptsImages = () => {
     setCurrentGeneratingIndex(null);
     setGeneratingImages(false);
 
-    toast({
-      title: processed === pendingIndexes.length ? "Todas as imagens geradas!" : "Geração concluída",
-      description: `${processed}/${pendingIndexes.length} imagens criadas`,
-    });
+    if (cancelGenerationRef.current) {
+      toast({
+        title: "Geração cancelada",
+        description: `${processed} imagens foram geradas antes do cancelamento`,
+      });
+    } else {
+      toast({
+        title: processed === pendingIndexes.length ? "Todas as imagens geradas!" : "Geração concluída",
+        description: `${processed}/${pendingIndexes.length} imagens criadas`,
+      });
+    }
+  };
+
+  // Cancelar geração
+  const handleCancelGeneration = () => {
+    cancelGenerationRef.current = true;
+    toast({ title: "Cancelando...", description: "Aguarde o lote atual finalizar" });
   };
 
   // Baixar todas as imagens geradas
@@ -1559,6 +1580,16 @@ const PromptsImages = () => {
                 </p>
               </div>
             )}
+
+            {/* Botão Cancelar */}
+            <Button
+              variant="outline"
+              onClick={handleCancelGeneration}
+              className="w-full border-destructive/50 text-destructive hover:bg-destructive/10"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancelar Geração
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
