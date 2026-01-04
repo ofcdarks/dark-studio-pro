@@ -277,7 +277,7 @@ const PromptsImages = () => {
     }
   };
 
-  // Gerar imagens em lotes de 4 (máximo do ImageFX) para máxima velocidade
+  // Gerar TODAS as imagens pendentes com 1 clique (4 em paralelo para velocidade)
   const handleGenerateAllImages = async () => {
     if (generatedScenes.length === 0) return;
 
@@ -286,41 +286,38 @@ const PromptsImages = () => {
       .filter(({ s }) => !s.generatedImage)
       .map(({ idx }) => idx);
 
-    if (pendingIndexes.length === 0) return;
+    if (pendingIndexes.length === 0) {
+      toast({ title: "Todas as imagens já foram geradas!" });
+      return;
+    }
 
-    // ImageFX permite até 4 imagens por request - vamos usar isso para acelerar
-    const imagesPerRequest = 4;
-    const totalToGenerate = Math.min(pendingIndexes.length, 20); // Limitar a 20 por vez
-    const batchIndexes = pendingIndexes.slice(0, totalToGenerate);
+    // ImageFX permite até 4 imagens em paralelo
+    const parallelLimit = 4;
 
     setGeneratingImages(true);
-    setImageBatchTotal(batchIndexes.length);
+    setImageBatchTotal(pendingIndexes.length);
     setImageBatchDone(0);
 
     const updatedScenes = [...generatedScenes];
     let processed = 0;
+    let errorOccurred = false;
 
-    // Dividir em chunks de 4 para enviar requests paralelos de 4 imagens cada
-    for (let i = 0; i < batchIndexes.length; i += imagesPerRequest) {
-      const chunk = batchIndexes.slice(i, i + imagesPerRequest);
+    // Processar em chunks de 4 paralelos
+    for (let i = 0; i < pendingIndexes.length && !errorOccurred; i += parallelLimit) {
+      const chunk = pendingIndexes.slice(i, i + parallelLimit);
       setCurrentGeneratingIndex(chunk[0]);
 
-      // Preparar prompts para este lote
-      const prompts = chunk.map((sceneIndex) => {
-        const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
-        return stylePrefix
-          ? `${stylePrefix} ${updatedScenes[sceneIndex].imagePrompt}`
-          : updatedScenes[sceneIndex].imagePrompt;
-      });
-
       try {
-        // Gerar 4 imagens de uma vez (usando o primeiro prompt como base)
-        // Cada imagem terá seu próprio prompt
         const results = await Promise.all(
-          chunk.map(async (sceneIndex, idx) => {
+          chunk.map(async (sceneIndex) => {
+            const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
+            const fullPrompt = stylePrefix
+              ? `${stylePrefix} ${updatedScenes[sceneIndex].imagePrompt}`
+              : updatedScenes[sceneIndex].imagePrompt;
+
             const { data, error } = await supabase.functions.invoke("generate-imagefx", {
               body: {
-                prompt: prompts[idx],
+                prompt: fullPrompt,
                 aspectRatio: "LANDSCAPE",
                 numberOfImages: 1,
               },
@@ -331,16 +328,16 @@ const PromptsImages = () => {
               if (bodyText) {
                 try {
                   const parsed = JSON.parse(bodyText);
-                  throw new Error(parsed?.error || error.message);
+                  return { sceneIndex, error: parsed?.error || error.message };
                 } catch {
-                  throw new Error(error.message);
+                  return { sceneIndex, error: error.message };
                 }
               }
-              throw new Error(error.message);
+              return { sceneIndex, error: error.message };
             }
 
             if ((data as any)?.error) {
-              throw new Error((data as any).error);
+              return { sceneIndex, error: (data as any).error };
             }
 
             return {
@@ -358,6 +355,19 @@ const PromptsImages = () => {
               generatedImage: result.url,
             };
             processed += 1;
+          } else if (result.error) {
+            console.error(`Scene ${result.sceneIndex + 1} error:`, result.error);
+            // Mostrar erro mas continuar com as outras
+            toast({
+              title: `Erro na cena ${result.sceneIndex + 1}`,
+              description: result.error,
+              variant: "destructive",
+            });
+            // Se for erro de autenticação, parar tudo
+            if (result.error.includes("autenticação") || result.error.includes("cookies")) {
+              errorOccurred = true;
+              break;
+            }
           }
         }
 
@@ -370,19 +380,19 @@ const PromptsImages = () => {
           description: error?.message || "Não foi possível gerar as imagens",
           variant: "destructive",
         });
-        // Para ao primeiro erro
-        break;
+        errorOccurred = true;
       }
     }
 
-    setImageBatchDone(processed);
     setCurrentGeneratingIndex(null);
     setGeneratingImages(false);
 
     const generatedCount = updatedScenes.filter(s => s.generatedImage).length;
+    const remaining = updatedScenes.length - generatedCount;
+    
     toast({
-      title: "Lote concluído!",
-      description: `${generatedCount}/${updatedScenes.length} imagens criadas`,
+      title: remaining === 0 ? "Todas as imagens geradas!" : "Geração concluída",
+      description: `${generatedCount}/${updatedScenes.length} imagens criadas${remaining > 0 ? ` (${remaining} pendentes)` : ""}`,
     });
   };
 
@@ -695,12 +705,12 @@ const PromptsImages = () => {
                             {generatingImages ? (
                               <>
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Gerando {imageBatchDone}/{imageBatchTotal}
+                                {imageBatchDone}/{imageBatchTotal}
                               </>
                             ) : (
                               <>
                                 <ImagePlus className="w-4 h-4 mr-2" />
-                                Gerar próximas {Math.min(20, generatedScenes.filter(s => !s.generatedImage).length)} (4x paralelo)
+                                Gerar Todas ({generatedScenes.filter(s => !s.generatedImage).length})
                               </>
                             )}
                           </Button>
