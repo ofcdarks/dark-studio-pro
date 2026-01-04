@@ -90,7 +90,7 @@ const PromptsImages = () => {
   const [title, setTitle] = usePersistedState("prompts_title", "");
   const [niche, setNiche] = usePersistedState("prompts_niche", "");
   const [style, setStyle] = usePersistedState("prompts_style", "cinematic");
-  const [model, setModel] = usePersistedState("prompts_model", "google/gemini-2.5-flash");
+  const [model, setModel] = usePersistedState("prompts_model", "gpt-4o");
   const [wordsPerScene, setWordsPerScene] = usePersistedState("prompts_wordsPerScene", "80");
   const [generatedScenes, setGeneratedScenes] = usePersistedState<ScenePrompt[]>("prompts_scenes", []);
   
