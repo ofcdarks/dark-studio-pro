@@ -25,7 +25,8 @@ import {
   Edit3,
   Check,
   X,
-  DownloadCloud
+  DownloadCloud,
+  Video
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -494,6 +495,101 @@ const PromptsImages = () => {
     }
   };
 
+  // Exportar para CapCut (CSV com timings + SRT + info)
+  const handleExportForCapcut = () => {
+    const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
+    
+    if (scenesWithImages.length === 0) {
+      toast({ title: "Nenhuma imagem para exportar", variant: "destructive" });
+      return;
+    }
+
+    // 1. Gerar CSV com informações de timing
+    const csvHeader = "Cena,Arquivo,Inicio,Fim,Duracao_Segundos,Palavras\n";
+    const csvRows = generatedScenes.map((scene) => {
+      const startSeconds = scene.timecode ? 
+        parseInt(scene.timecode.split(":")[0]) * 60 + parseInt(scene.timecode.split(":")[1]) : 0;
+      const endSeconds = scene.endTimecode ? 
+        parseInt(scene.endTimecode.split(":")[0]) * 60 + parseInt(scene.endTimecode.split(":")[1]) : startSeconds;
+      const durationSeconds = endSeconds - startSeconds;
+      
+      return `${scene.number},cena_${String(scene.number).padStart(3, '0')}.png,${scene.timecode},${scene.endTimecode},${durationSeconds.toFixed(1)},${scene.wordCount}`;
+    }).join("\n");
+    
+    const csvContent = csvHeader + csvRows;
+    const csvBlob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const csvUrl = URL.createObjectURL(csvBlob);
+    const csvLink = document.createElement("a");
+    csvLink.href = csvUrl;
+    csvLink.download = "capcut_timeline.csv";
+    document.body.appendChild(csvLink);
+    csvLink.click();
+    document.body.removeChild(csvLink);
+    URL.revokeObjectURL(csvUrl);
+
+    // 2. Gerar arquivo SRT para referência de timing
+    const srtContent = generatedScenes.map((scene, index) => {
+      const startTime = scene.timecode || "00:00";
+      const endTime = scene.endTimecode || "00:00";
+      
+      // Converter para formato SRT (HH:MM:SS,mmm)
+      const formatSrtTime = (time: string) => {
+        const [mins, secs] = time.split(":");
+        return `00:${mins.padStart(2, '0')}:${secs.padStart(2, '0')},000`;
+      };
+      
+      return `${index + 1}\n${formatSrtTime(startTime)} --> ${formatSrtTime(endTime)}\nCena ${scene.number} - ${scene.wordCount} palavras\n`;
+    }).join("\n");
+    
+    const srtBlob = new Blob([srtContent], { type: "text/plain;charset=utf-8" });
+    const srtUrl = URL.createObjectURL(srtBlob);
+    const srtLink = document.createElement("a");
+    srtLink.href = srtUrl;
+    srtLink.download = "capcut_timeline.srt";
+    document.body.appendChild(srtLink);
+    srtLink.click();
+    document.body.removeChild(srtLink);
+    URL.revokeObjectURL(srtUrl);
+
+    // 3. Gerar arquivo TXT com instruções
+    const instructionsContent = `=== INSTRUÇÕES PARA CAPCUT ===
+
+DURAÇÃO TOTAL DO VÍDEO: ${generatedScenes.length > 0 ? generatedScenes[generatedScenes.length - 1].endTimecode : "00:00"}
+
+PASSOS:
+1. Importe todas as imagens (cena_001.png, cena_002.png, etc.) para o CapCut
+2. Arraste as imagens para a timeline NA ORDEM NUMÉRICA
+3. Use a tabela abaixo para ajustar a duração de cada imagem:
+
+${generatedScenes.map((scene) => {
+  const startSeconds = scene.timecode ? 
+    parseInt(scene.timecode.split(":")[0]) * 60 + parseInt(scene.timecode.split(":")[1]) : 0;
+  const endSeconds = scene.endTimecode ? 
+    parseInt(scene.endTimecode.split(":")[0]) * 60 + parseInt(scene.endTimecode.split(":")[1]) : startSeconds;
+  const durationSeconds = endSeconds - startSeconds;
+  
+  return `Cena ${String(scene.number).padStart(2, '0')}: ${durationSeconds.toFixed(1)} segundos (${scene.timecode} → ${scene.endTimecode})`;
+}).join("\n")}
+
+DICA: Importe o arquivo SRT como legenda para ver os timecodes durante a edição.
+`;
+    
+    const txtBlob = new Blob([instructionsContent], { type: "text/plain;charset=utf-8" });
+    const txtUrl = URL.createObjectURL(txtBlob);
+    const txtLink = document.createElement("a");
+    txtLink.href = txtUrl;
+    txtLink.download = "capcut_instrucoes.txt";
+    document.body.appendChild(txtLink);
+    txtLink.click();
+    document.body.removeChild(txtLink);
+    URL.revokeObjectURL(txtUrl);
+
+    toast({
+      title: "Exportado para CapCut!",
+      description: "3 arquivos gerados: CSV, SRT e instruções",
+    });
+  };
+
   // Editar prompt de uma cena
   const handleEditPrompt = (index: number) => {
     setEditingPromptIndex(index);
@@ -832,7 +928,17 @@ const PromptsImages = () => {
                             ) : (
                               <DownloadCloud className="w-4 h-4 mr-2" />
                             )}
-                            Baixar Imagens ({generatedScenes.filter(s => s.generatedImage).length})
+                            Imagens ({generatedScenes.filter(s => s.generatedImage).length})
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            size="sm" 
+                            onClick={handleExportForCapcut}
+                            disabled={!generatedScenes.some(s => s.generatedImage)}
+                            className="border-primary/50 text-primary hover:bg-primary/10"
+                          >
+                            <Video className="w-4 h-4 mr-2" />
+                            CapCut
                           </Button>
                           <Button 
                             size="sm" 
