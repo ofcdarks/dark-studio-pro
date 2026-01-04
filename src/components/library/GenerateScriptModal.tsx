@@ -64,32 +64,33 @@ export const GenerateScriptModal = ({
 
   // Calculated values
   const wordsPerMinute = 130;
-  const estimatedWords = parseInt(duration || "1") * wordsPerMinute;
-  const estimatedParts = Math.max(1, Math.ceil(parseInt(duration || "1") / 3));
+  const durationNum = parseInt(duration || "1");
+  
+  // Duração mínima = solicitada, máxima = solicitada + 3 minutos
+  const minDuration = durationNum;
+  const maxDuration = durationNum + 3;
+  const targetDuration = durationNum + 1; // Alvo: +1 minuto para garantir conteúdo suficiente
+  
+  const estimatedWords = targetDuration * wordsPerMinute;
+  const estimatedParts = Math.max(1, Math.ceil(targetDuration / 3));
   
   // Credit calculation based on CREDIT_PRICING from documentation
   // SCRIPT_PER_MINUTE: { base: 2, gemini: 2.4, claude: 2.8 }
   const getCreditsForModel = () => {
-    const durationNum = parseInt(duration || "1");
     switch (aiModel) {
       case "gemini-flash":
-        return Math.ceil(durationNum * 2.4);
+        return Math.ceil(targetDuration * 2.4);
       case "gemini-pro":
-        return Math.ceil(durationNum * 2.6);
+        return Math.ceil(targetDuration * 2.6);
       case "claude-sonnet":
-        return Math.ceil(durationNum * 2.8);
+        return Math.ceil(targetDuration * 2.8);
       case "gpt-5":
-        return Math.ceil(durationNum * 3.0);
+        return Math.ceil(targetDuration * 3.0);
       default:
-        return Math.ceil(durationNum * 2);
+        return Math.ceil(targetDuration * 2);
     }
   };
   const estimatedCredits = getCreditsForModel();
-
-  // Max duration is 8 min for efficiency
-  const maxDuration = 8;
-  const adjustedDuration = parseInt(duration || "1") > maxDuration ? maxDuration : parseInt(duration || "1");
-  const showDurationWarning = parseInt(duration || "1") > maxDuration;
 
   // Result state
   const [generatedScript, setGeneratedScript] = useState<string | null>(null);
@@ -115,13 +116,19 @@ export const GenerateScriptModal = ({
       if (ctaMeio) ctaPositions.push("meio (metade do vídeo)");
       if (ctaFinal) ctaPositions.push("final (últimos 30 segundos)");
 
-      // Construir prompt conforme documentação - Passo 4: Geração de Roteiros
+      // Construir prompt com duração exata - Passo 4: Geração de Roteiros
       const prompt = `
 Gere um roteiro completo para um vídeo com o título: "${videoTitle}"
 
-ESPECIFICAÇÕES DO VÍDEO:
-- Duração: ${adjustedDuration} minutos (~${estimatedWords} palavras)
-- Partes: ${estimatedParts} partes de ~${Math.ceil(adjustedDuration / estimatedParts)} minutos cada
+📏 ESPECIFICAÇÕES CRÍTICAS DE DURAÇÃO:
+- Duração MÍNIMA OBRIGATÓRIA: ${minDuration} minutos
+- Duração ALVO: ${targetDuration} minutos (~${estimatedWords} palavras)
+- Duração MÁXIMA PERMITIDA: ${maxDuration} minutos
+- Palavras por minuto de narração: ${wordsPerMinute}
+
+⚠️ REGRA DE OURO: O roteiro NUNCA pode ter menos de ${minDuration} minutos. É MELHOR passar um pouco do que faltar conteúdo!
+
+- Partes: ${estimatedParts} partes de ~${Math.ceil(targetDuration / estimatedParts)} minutos cada
 - Idioma: ${language === "pt-BR" ? "Português (Brasil)" : language === "en-US" ? "English (US)" : "Español"}
 - Incluir CTA em: ${ctaPositions.length > 0 ? ctaPositions.join(", ") : "final do vídeo"}
 
@@ -136,7 +143,9 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
           type: "generate_script_with_formula",
           prompt,
           model: aiModel,
-          duration: adjustedDuration,
+          duration: targetDuration,
+          minDuration: minDuration,
+          maxDuration: maxDuration,
           language,
           userId: user.id,
           // Dados do agente conforme estrutura da documentação
@@ -173,7 +182,7 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
           agent_id: agent.id,
           title: videoTitle,
           content: scriptContent,
-          duration: adjustedDuration,
+          duration: targetDuration,
           language,
           model_used: aiModel,
           credits_used: data?.creditsUsed || estimatedCredits
@@ -207,10 +216,30 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
     }
   };
 
+  // Função para limpar marcações de partes do roteiro
+  const cleanScriptForCopy = (script: string): string => {
+    return script
+      // Remove linhas de título com # (ex: # TÍTULO DO VÍDEO)
+      .replace(/^#+ .+$/gm, '')
+      // Remove marcações de partes (ex: ## PARTE 1 - HOOK, PARTE 2:, etc)
+      .replace(/^##?\s*(PARTE|PART|Part)\s*\d+.*$/gim, '')
+      // Remove marcações de tempo entre colchetes (ex: [00:00 - 00:30])
+      .replace(/\[\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\]/g, '')
+      // Remove instruções entre colchetes (ex: [PAUSA], [Instruções])
+      .replace(/\[.*?\]/g, '')
+      // Remove linhas com --- (separadores)
+      .replace(/^-{3,}$/gm, '')
+      // Remove múltiplas linhas em branco consecutivas
+      .replace(/\n{3,}/g, '\n\n')
+      // Remove espaços extras no início e fim
+      .trim();
+  };
+
   const handleCopyScript = async () => {
     if (generatedScript) {
-      await navigator.clipboard.writeText(generatedScript);
-      toast.success("Roteiro copiado!");
+      const cleanScript = cleanScriptForCopy(generatedScript);
+      await navigator.clipboard.writeText(cleanScript);
+      toast.success("Roteiro copiado (sem marcações)!");
     }
   };
 
@@ -325,12 +354,7 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
                     className="bg-secondary/50 border-border h-11 text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Palavras: ~{estimatedWords.toLocaleString()}
-                    {showDurationWarning && (
-                      <span className="text-primary block mt-0.5">
-                        (máx. ajustado: {maxDuration} min)
-                      </span>
-                    )}
+                    Alvo: ~{estimatedWords.toLocaleString()} palavras ({targetDuration} min)
                   </p>
                 </div>
 
@@ -344,7 +368,7 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
                     className="bg-secondary/50 border-border h-11 text-sm opacity-80 cursor-not-allowed"
                   />
                   <p className="text-xs text-muted-foreground">
-                    ~{Math.ceil(adjustedDuration / estimatedParts)} min/parte
+                    ~{Math.ceil(targetDuration / estimatedParts)} min/parte
                   </p>
                 </div>
 

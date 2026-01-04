@@ -306,6 +306,8 @@ serve(async (req) => {
       language,
       model,
       duration,
+      minDuration,
+      maxDuration,
       agentData,
       userId: bodyUserId
     } = await req.json();
@@ -642,9 +644,16 @@ serve(async (req) => {
         const agentFormula = agentData?.formula || "Hook + Desenvolvimento + Clímax + CTA";
         const agentStructure = agentData?.formula_structure ? JSON.stringify(agentData.formula_structure) : "Usar estrutura padrão de vídeo viral";
         const agentTriggers = agentData?.mental_triggers?.join(", ") || "Curiosidade, Urgência, Prova Social";
+        
+        // Usar minDuration/maxDuration do request ou calcular baseado na duration
         const scriptDuration = duration ? parseInt(duration.toString()) : 5;
+        const scriptMinDuration = minDuration ? parseInt(minDuration.toString()) : scriptDuration;
+        const scriptMaxDuration = maxDuration ? parseInt(maxDuration.toString()) : scriptDuration + 3;
+        
         const wordsPerMinute = 130;
-        const totalWords = (scriptDuration + 1) * wordsPerMinute; // +1 minuto conforme memória
+        const minWords = scriptMinDuration * wordsPerMinute;
+        const targetWords = scriptDuration * wordsPerMinute;
+        const maxWords = scriptMaxDuration * wordsPerMinute;
         
         systemPrompt = `Você é um roteirista profissional especializado em criar ROTEIROS PUROS PARA NARRAÇÃO (VOICE-OVER) de vídeos virais para YouTube.
         
@@ -661,10 +670,14 @@ serve(async (req) => {
         GATILHOS MENTAIS A USAR NATURALMENTE:
         ${agentTriggers}
         
-        📏 ESPECIFICAÇÕES TÉCNICAS:
-        - Duração alvo: ${scriptDuration + 1} minutos (${totalWords} palavras aproximadamente)
-        - Velocidade de leitura: 130 palavras/minuto
-        - Dividir em partes de aproximadamente 400-500 caracteres para facilitar a narração
+        📏 ESPECIFICAÇÕES TÉCNICAS DE DURAÇÃO (CRÍTICO!):
+        - Duração MÍNIMA OBRIGATÓRIA: ${scriptMinDuration} minutos (${minWords} palavras) - NUNCA gerar menos que isso!
+        - Duração ALVO: ${scriptDuration} minutos (~${targetWords} palavras)
+        - Duração MÁXIMA PERMITIDA: ${scriptMaxDuration} minutos (${maxWords} palavras)
+        - Velocidade de leitura: ${wordsPerMinute} palavras/minuto
+        
+        ⚠️ REGRA DE OURO: É MELHOR passar um pouco do tempo do que faltar conteúdo!
+        Se você gerar um roteiro com MENOS de ${minWords} palavras, o usuário vai RECLAMAR.
         
         ✅ O QUE INCLUIR:
         - Hook poderoso nos primeiros 30 segundos que prenda a atenção
@@ -672,6 +685,7 @@ serve(async (req) => {
         - Transições suaves entre os tópicos
         - CTAs naturais onde solicitado pelo usuário
         - Os gatilhos mentais integrados de forma orgânica
+        - Desenvolvimento COMPLETO e DETALHADO do tema
         
         ❌ O QUE NÃO INCLUIR:
         - [Instruções entre colchetes]
@@ -680,6 +694,7 @@ serve(async (req) => {
         - Comentários para o editor
         - Descrições de cenas ou imagens
         - Emojis ou formatações visuais
+        - Títulos como "# TÍTULO" ou "## PARTE 1"
         
         📝 FORMATO DE SAÍDA:
         Texto corrido de narração, dividido em parágrafos naturais.
