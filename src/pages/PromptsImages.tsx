@@ -21,7 +21,11 @@ import {
   Eye,
   Download,
   ImagePlus,
-  RefreshCw
+  RefreshCw,
+  Edit3,
+  Check,
+  X,
+  DownloadCloud
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -142,6 +146,9 @@ const PromptsImages = () => {
   const [previewScene, setPreviewScene] = useState<ScenePrompt | null>(null);
   const [loadingMessage, setLoadingMessage] = useState("");
   const [progress, setProgress] = useState(0);
+  const [editingPromptIndex, setEditingPromptIndex] = useState<number | null>(null);
+  const [editingPromptText, setEditingPromptText] = useState("");
+  const [downloadingAll, setDownloadingAll] = useState(false);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -297,6 +304,7 @@ const PromptsImages = () => {
   };
 
   // Gerar TODAS as imagens pendentes com 1 clique (sequencial, mostrando cada uma)
+  // Com retry automático em caso de erro (até 2 tentativas)
   const handleGenerateAllImages = async () => {
     if (generatedScenes.length === 0) return;
 
@@ -316,84 +324,115 @@ const PromptsImages = () => {
 
     let processed = 0;
     let errorOccurred = false;
+    const maxRetries = 2;
 
     // Geração SEQUENCIAL - uma por uma, mostrando cada imagem no card
     for (let i = 0; i < pendingIndexes.length && !errorOccurred; i++) {
       const sceneIndex = pendingIndexes[i];
       setCurrentGeneratingIndex(sceneIndex);
 
-      try {
-        const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
-        const fullPrompt = stylePrefix
-          ? `${stylePrefix} ${generatedScenes[sceneIndex].imagePrompt}`
-          : generatedScenes[sceneIndex].imagePrompt;
+      let success = false;
+      let retries = 0;
 
-        const { data, error } = await supabase.functions.invoke("generate-imagefx", {
-          body: {
-            prompt: fullPrompt,
-            aspectRatio: "LANDSCAPE",
-            numberOfImages: 1,
-          },
-        });
+      while (!success && retries <= maxRetries && !errorOccurred) {
+        try {
+          const currentScenes = generatedScenes;
+          const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
+          const fullPrompt = stylePrefix
+            ? `${stylePrefix} ${currentScenes[sceneIndex].imagePrompt}`
+            : currentScenes[sceneIndex].imagePrompt;
 
-        if (error) {
-          const bodyText = (error as any)?.context?.body;
-          let errMsg = error.message;
-          if (bodyText) {
-            try {
-              const parsed = JSON.parse(bodyText);
-              errMsg = parsed?.error || error.message;
-            } catch {}
-          }
-          
-          toast({
-            title: `Erro na cena ${sceneIndex + 1}`,
-            description: errMsg,
-            variant: "destructive",
+          const { data, error } = await supabase.functions.invoke("generate-imagefx", {
+            body: {
+              prompt: fullPrompt,
+              aspectRatio: "LANDSCAPE",
+              numberOfImages: 1,
+            },
           });
-          
-          // Parar em erros de autenticação
-          if (errMsg.includes("autenticação") || errMsg.includes("cookies")) {
-            errorOccurred = true;
-          }
-          continue;
-        }
 
-        if ((data as any)?.error) {
-          toast({
-            title: `Erro na cena ${sceneIndex + 1}`,
-            description: (data as any).error,
-            variant: "destructive",
-          });
-          
-          if ((data as any).error.includes("autenticação") || (data as any).error.includes("cookies")) {
-            errorOccurred = true;
+          if (error) {
+            const bodyText = (error as any)?.context?.body;
+            let errMsg = error.message;
+            if (bodyText) {
+              try {
+                const parsed = JSON.parse(bodyText);
+                errMsg = parsed?.error || error.message;
+              } catch {}
+            }
+            
+            // Parar em erros de autenticação (não fazer retry)
+            if (errMsg.includes("autenticação") || errMsg.includes("cookies")) {
+              toast({
+                title: "Erro de autenticação",
+                description: "Atualize os cookies do ImageFX nas configurações.",
+                variant: "destructive",
+              });
+              errorOccurred = true;
+              break;
+            }
+            
+            retries++;
+            if (retries > maxRetries) {
+              toast({
+                title: `Erro na cena ${sceneIndex + 1}`,
+                description: `${errMsg} (após ${maxRetries} tentativas)`,
+                variant: "destructive",
+              });
+            }
+            continue;
           }
-          continue;
-        }
 
-        const url = (data as any)?.images?.[0]?.url;
-        if (url) {
-          // Atualizar imediatamente o card com a imagem gerada
-          setGeneratedScenes(prev => {
-            const updated = [...prev];
-            updated[sceneIndex] = {
-              ...updated[sceneIndex],
-              generatedImage: url,
-            };
-            return updated;
-          });
-          
-          processed += 1;
-          setImageBatchDone(processed);
+          if ((data as any)?.error) {
+            const errMsg = (data as any).error;
+            
+            if (errMsg.includes("autenticação") || errMsg.includes("cookies")) {
+              toast({
+                title: "Erro de autenticação",
+                description: "Atualize os cookies do ImageFX nas configurações.",
+                variant: "destructive",
+              });
+              errorOccurred = true;
+              break;
+            }
+            
+            retries++;
+            if (retries > maxRetries) {
+              toast({
+                title: `Erro na cena ${sceneIndex + 1}`,
+                description: `${errMsg} (após ${maxRetries} tentativas)`,
+                variant: "destructive",
+              });
+            }
+            continue;
+          }
+
+          const url = (data as any)?.images?.[0]?.url;
+          if (url) {
+            // Atualizar imediatamente o card com a imagem gerada
+            setGeneratedScenes(prev => {
+              const updated = [...prev];
+              updated[sceneIndex] = {
+                ...updated[sceneIndex],
+                generatedImage: url,
+              };
+              return updated;
+            });
+            
+            processed += 1;
+            setImageBatchDone(processed);
+            success = true;
+          }
+        } catch (error: any) {
+          console.error(`Error generating image for scene ${sceneIndex + 1}:`, error);
+          retries++;
+          if (retries > maxRetries) {
+            toast({
+              title: `Erro na cena ${sceneIndex + 1}`,
+              description: error?.message || "Erro ao gerar imagem",
+              variant: "destructive",
+            });
+          }
         }
-      } catch (error: any) {
-        console.error(`Error generating image for scene ${sceneIndex + 1}:`, error);
-        toast({
-          title: `Erro na cena ${sceneIndex + 1}`,
-          description: error?.message || "Erro ao gerar imagem",
-          variant: "destructive",
-        });
       }
     }
 
@@ -408,6 +447,77 @@ const PromptsImages = () => {
       title: remaining === 0 ? "Todas as imagens geradas!" : "Geração concluída",
       description: `${generatedCount}/${total} imagens criadas${remaining > 0 ? ` (${remaining} pendentes)` : ""}`,
     });
+  };
+
+  // Baixar todas as imagens geradas
+  const handleDownloadAllImages = async () => {
+    const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
+    
+    if (scenesWithImages.length === 0) {
+      toast({ title: "Nenhuma imagem para baixar" });
+      return;
+    }
+
+    setDownloadingAll(true);
+    
+    try {
+      for (let i = 0; i < scenesWithImages.length; i++) {
+        const scene = scenesWithImages[i];
+        if (!scene.generatedImage) continue;
+        
+        // Criar link de download
+        const link = document.createElement("a");
+        link.href = scene.generatedImage;
+        link.download = `cena-${scene.number}-${scene.timecode?.replace(":", "m")}s.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Pequena pausa entre downloads
+        if (i < scenesWithImages.length - 1) {
+          await new Promise(r => setTimeout(r, 300));
+        }
+      }
+      
+      toast({
+        title: "Download iniciado!",
+        description: `${scenesWithImages.length} imagens baixadas`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro no download",
+        description: "Não foi possível baixar as imagens",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
+
+  // Editar prompt de uma cena
+  const handleEditPrompt = (index: number) => {
+    setEditingPromptIndex(index);
+    setEditingPromptText(generatedScenes[index].imagePrompt);
+  };
+
+  const handleSavePrompt = (index: number) => {
+    setGeneratedScenes(prev => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        imagePrompt: editingPromptText,
+        generatedImage: undefined, // Limpar imagem antiga ao editar prompt
+      };
+      return updated;
+    });
+    setEditingPromptIndex(null);
+    setEditingPromptText("");
+    toast({ title: "Prompt atualizado!", description: "Gere a imagem novamente." });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPromptIndex(null);
+    setEditingPromptText("");
   };
 
   // Regenerar imagem individual
@@ -702,14 +812,27 @@ const PromptsImages = () => {
                             {generatedScenes.length} Cenas Analisadas
                           </h3>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button variant="outline" size="sm" onClick={downloadPrompts}>
                             <Download className="w-4 h-4 mr-2" />
-                            Baixar TXT
+                            TXT
                           </Button>
                           <Button variant="outline" size="sm" onClick={copyAllPrompts}>
                             <Copy className="w-4 h-4 mr-2" />
-                            Copiar Todos
+                            Copiar
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            size="sm" 
+                            onClick={handleDownloadAllImages}
+                            disabled={downloadingAll || !generatedScenes.some(s => s.generatedImage)}
+                          >
+                            {downloadingAll ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <DownloadCloud className="w-4 h-4 mr-2" />
+                            )}
+                            Baixar Imagens ({generatedScenes.filter(s => s.generatedImage).length})
                           </Button>
                           <Button 
                             size="sm" 
@@ -853,6 +976,15 @@ const PromptsImages = () => {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8"
+                                    onClick={() => handleEditPrompt(index)}
+                                    title="Editar prompt"
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
                                     onClick={() => handleRegenerateImage(index)}
                                     disabled={currentGeneratingIndex === index}
                                     title="Regenerar imagem"
@@ -874,10 +1006,40 @@ const PromptsImages = () => {
                               )}
 
                               <div className="p-3 bg-background rounded border border-border">
-                                <p className="text-xs text-muted-foreground mb-1">Prompt de Imagem:</p>
-                                <p className="text-sm text-foreground font-mono leading-relaxed">
-                                  {scene.imagePrompt}
-                                </p>
+                                <div className="flex items-center justify-between mb-1">
+                                  <p className="text-xs text-muted-foreground">Prompt de Imagem:</p>
+                                  {editingPromptIndex === index ? (
+                                    <div className="flex gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-green-500"
+                                        onClick={() => handleSavePrompt(index)}
+                                      >
+                                        <Check className="w-3 h-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-destructive"
+                                        onClick={handleCancelEdit}
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  ) : null}
+                                </div>
+                                {editingPromptIndex === index ? (
+                                  <Textarea
+                                    value={editingPromptText}
+                                    onChange={(e) => setEditingPromptText(e.target.value)}
+                                    className="bg-secondary border-border font-mono text-sm min-h-24"
+                                  />
+                                ) : (
+                                  <p className="text-sm text-foreground font-mono leading-relaxed">
+                                    {scene.imagePrompt}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           ))}
