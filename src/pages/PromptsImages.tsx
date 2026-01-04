@@ -1277,6 +1277,7 @@ const PromptsImages = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Modal de Loading - Análise de Roteiro */}
       <Dialog open={generating} onOpenChange={() => {}}>
         <DialogContent className="max-w-md bg-card border-primary/50 rounded-xl shadow-xl" hideCloseButton>
           <div className="flex flex-col items-center justify-center py-8 space-y-6">
@@ -1315,6 +1316,74 @@ const PromptsImages = () => {
                 </span>
               </div>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Loading - Geração de Imagens */}
+      <Dialog open={generatingImages} onOpenChange={() => {}}>
+        <DialogContent className="max-w-lg bg-card border-primary/50 rounded-xl shadow-xl" hideCloseButton>
+          <div className="flex flex-col items-center justify-center py-6 space-y-6">
+            {/* Logo com efeito de pulso */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+              <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
+              <div className="relative w-16 h-16 rounded-full border-2 border-primary/50 overflow-hidden bg-card flex items-center justify-center">
+                <img 
+                  src={logoGif} 
+                  alt="Loading" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+            
+            {/* Contador de progresso */}
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold text-foreground">
+                Gerando Imagens
+              </h3>
+              <p className="text-2xl font-bold text-primary">
+                {imageBatchDone} / {imageBatchTotal}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {currentGeneratingIndex !== null 
+                  ? `Processando cena ${currentGeneratingIndex + 1}...` 
+                  : "Iniciando..."}
+              </p>
+            </div>
+
+            {/* Barra de progresso */}
+            <div className="w-full space-y-2">
+              <Progress 
+                value={imageBatchTotal > 0 ? (imageBatchDone / imageBatchTotal) * 100 : 0} 
+                className="h-3 bg-secondary" 
+              />
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">
+                  {imageBatchTotal - imageBatchDone} restantes
+                </span>
+                <span className="text-xs font-medium text-primary">
+                  {imageBatchTotal > 0 ? Math.round((imageBatchDone / imageBatchTotal) * 100) : 0}%
+                </span>
+              </div>
+            </div>
+
+            {/* Preview da cena atual */}
+            {currentGeneratingIndex !== null && generatedScenes[currentGeneratingIndex] && (
+              <div className="w-full p-3 bg-secondary/50 rounded-lg border border-border">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge className="bg-primary/20 text-primary text-xs">
+                    Cena {currentGeneratingIndex + 1}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {generatedScenes[currentGeneratingIndex]?.timecode}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground font-mono line-clamp-2">
+                  {generatedScenes[currentGeneratingIndex]?.imagePrompt}
+                </p>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
