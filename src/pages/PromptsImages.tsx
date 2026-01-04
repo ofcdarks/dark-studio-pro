@@ -521,28 +521,50 @@ const PromptsImages = () => {
         description: "Use Chrome, Edge ou outro navegador moderno. Baixando ZIP como alternativa...",
         variant: "destructive"
       });
-      // Fallback para ZIP
       await handleExportAsZip();
       return;
     }
 
     try {
-      // Pedir permissão para acessar a pasta
+      // Mostrar instruções detalhadas antes de pedir permissão
       toast({ 
-        title: "Selecione a pasta do CapCut", 
-        description: "Navegue até: Documentos > CapCut > User Data > Projects" 
+        title: "📁 Selecione a pasta do CapCut", 
+        description: "Caminho típico: Documentos > CapCut > User Data > Projects > [Seu Projeto]",
       });
 
-      const dirHandle = await (window as any).showDirectoryPicker({
-        mode: 'readwrite',
-        startIn: 'documents'
-      });
+      // Tentar iniciar na pasta de documentos onde geralmente fica o CapCut
+      let dirHandle;
+      try {
+        dirHandle = await (window as any).showDirectoryPicker({
+          id: 'capcut-project',
+          mode: 'readwrite',
+          startIn: 'documents'
+        });
+      } catch (e: any) {
+        if (e.name === 'AbortError') {
+          toast({ title: "Cancelado", description: "Nenhum arquivo foi salvo" });
+          return;
+        }
+        throw e;
+      }
 
-      // Criar pasta do projeto
-      const projectName = `Projeto_${new Date().toISOString().split("T")[0]}_${Date.now().toString().slice(-4)}`;
-      const projectFolder = await dirHandle.getDirectoryHandle(projectName, { create: true });
-
-      toast({ title: "Salvando arquivos...", description: "Aguarde enquanto salvamos as imagens" });
+      // Verificar se parece ser uma pasta do CapCut (heurística simples)
+      const folderName = dirHandle.name.toLowerCase();
+      const isCapcutFolder = folderName.includes('capcut') || 
+                             folderName.includes('project') || 
+                             folderName.includes('draft');
+      
+      if (!isCapcutFolder) {
+        toast({ 
+          title: "⚠️ Pasta selecionada", 
+          description: `"${dirHandle.name}" - Os arquivos serão salvos aqui. Certifique-se de que é a pasta correta do projeto CapCut.`,
+        });
+      } else {
+        toast({ 
+          title: "✅ Pasta do CapCut detectada!", 
+          description: `Salvando em "${dirHandle.name}"...`,
+        });
+      }
 
       // Calcular durações
       const scenesWithDurations = generatedScenes.map((scene) => {
@@ -554,7 +576,8 @@ const PromptsImages = () => {
         return { ...scene, startSeconds, endSeconds, durationSeconds };
       });
 
-      // Salvar cada imagem diretamente
+      // Salvar cada imagem diretamente na pasta selecionada
+      let savedCount = 0;
       for (const scene of scenesWithImages) {
         if (scene.generatedImage) {
           try {
@@ -562,43 +585,50 @@ const PromptsImages = () => {
             const blob = await response.blob();
             const fileName = `cena_${String(scene.number).padStart(3, "0")}.png`;
             
-            const fileHandle = await projectFolder.getFileHandle(fileName, { create: true });
+            const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
             const writable = await fileHandle.createWritable();
             await writable.write(blob);
             await writable.close();
+            savedCount++;
           } catch (err) {
             console.warn(`Erro ao salvar cena ${scene.number}`, err);
           }
         }
       }
 
-      // Salvar arquivo de instruções
+      // Salvar arquivo de durações
       const totalDuration = scenesWithDurations.length > 0 
         ? scenesWithDurations[scenesWithDurations.length - 1].endTimecode 
         : "00:00";
 
-      const instructions = `DURAÇÕES DAS CENAS - ${totalDuration} total\n\n` +
+      const instructions = `DURAÇÕES DAS CENAS - ${totalDuration} total\n` +
+        `Gerado em: ${new Date().toLocaleString('pt-BR')}\n\n` +
         scenesWithDurations.map(s => 
           `Cena ${String(s.number).padStart(2, "0")}: ${s.durationSeconds}s (${s.timecode} → ${s.endTimecode})`
-        ).join("\n");
+        ).join("\n") +
+        `\n\n--- INSTRUÇÕES PARA CAPCUT ---\n` +
+        `1. Abra o CapCut e crie um novo projeto ou abra um existente\n` +
+        `2. Importe as imagens desta pasta (cena_001.png, cena_002.png, etc.)\n` +
+        `3. Ajuste a duração de cada imagem conforme as durações acima\n` +
+        `4. As imagens já estão ordenadas por número de cena`;
 
-      const instructionsHandle = await projectFolder.getFileHandle("DURACOES.txt", { create: true });
+      const instructionsHandle = await dirHandle.getFileHandle("DURACOES.txt", { create: true });
       const instructionsWritable = await instructionsHandle.createWritable();
       await instructionsWritable.write(instructions);
       await instructionsWritable.close();
 
       toast({
-        title: "✅ Arquivos salvos!",
-        description: `Pasta "${projectName}" criada com ${scenesWithImages.length} imagens`,
+        title: "✅ Arquivos salvos com sucesso!",
+        description: `${savedCount} imagens + DURACOES.txt salvos em "${dirHandle.name}". Abra o CapCut e importe os arquivos!`,
       });
 
     } catch (error: any) {
       if (error.name === 'AbortError') {
         toast({ title: "Cancelado", description: "Nenhum arquivo foi salvo" });
       } else {
-        console.error("Erro:", error);
+        console.error("Erro ao salvar:", error);
         toast({ 
-          title: "Erro ao salvar", 
+          title: "Erro ao salvar na pasta", 
           description: "Baixando ZIP como alternativa...",
           variant: "destructive" 
         });
