@@ -36,6 +36,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES } from "@/lib/thumbnailStyles";
+import logoGif from "@/assets/logo.gif";
 
 interface ScenePrompt {
   number: number;
@@ -106,6 +107,7 @@ const PromptsImages = () => {
   const [generatingImages, setGeneratingImages] = useState(false);
   const [currentGeneratingIndex, setCurrentGeneratingIndex] = useState<number | null>(null);
   const [previewScene, setPreviewScene] = useState<ScenePrompt | null>(null);
+  const [loadingMessage, setLoadingMessage] = useState("");
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -161,8 +163,11 @@ const PromptsImages = () => {
 
     setGenerating(true);
     setGeneratedScenes([]);
+    setLoadingMessage("Analisando roteiro...");
 
     try {
+      setLoadingMessage("Dividindo em cenas...");
+      
       const response = await supabase.functions.invoke("generate-scenes", {
         body: { 
           script,
@@ -171,6 +176,8 @@ const PromptsImages = () => {
           wordsPerScene: parseInt(wordsPerScene) || 80
         },
       });
+
+      setLoadingMessage("Gerando prompts de imagem...");
 
       // Check for errors in response
       if (response.error) {
@@ -951,6 +958,44 @@ const PromptsImages = () => {
               <p className="text-sm text-foreground leading-relaxed">
                 {previewScene?.text}
               </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Loading */}
+      <Dialog open={generating} onOpenChange={() => {}}>
+        <DialogContent className="max-w-md bg-card border-primary/50 rounded-xl shadow-xl" hideCloseButton>
+          <div className="flex flex-col items-center justify-center py-8 space-y-6">
+            {/* Logo com efeito de pulso */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+              <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
+              <div className="relative w-20 h-20 rounded-full border-2 border-primary/50 overflow-hidden bg-card flex items-center justify-center">
+                <img 
+                  src={logoGif} 
+                  alt="Loading" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+            
+            {/* Mensagem de progresso */}
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold text-foreground">
+                Analisando Roteiro
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {loadingMessage}
+              </p>
+            </div>
+
+            {/* Indicador de loading */}
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              <span className="text-xs text-muted-foreground">
+                Processando com IA
+              </span>
             </div>
           </div>
         </DialogContent>
