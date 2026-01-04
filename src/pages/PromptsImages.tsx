@@ -45,7 +45,8 @@ interface ScenePrompt {
   imagePrompt: string;
   wordCount: number;
   estimatedTime?: string;
-  timecode?: string;
+  timecode?: string; // início
+  endTimecode?: string; // fim
   generatedImage?: string;
   generatingImage?: boolean;
 }
@@ -81,15 +82,24 @@ const calculateEstimatedTime = (wordCount: number): string => {
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 };
 
+const WORDS_PER_MINUTE = 150;
+
+const wordCountToSeconds = (wordCount: number): number => (wordCount / WORDS_PER_MINUTE) * 60;
+
+const formatTimecode = (totalSeconds: number): string => {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const mins = Math.floor(s / 60);
+  const secs = s % 60;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+};
+
 // Calcular timecode baseado em posição no roteiro
 const calculateTimecode = (scenes: ScenePrompt[], currentIndex: number): string => {
   let totalSeconds = 0;
   for (let i = 0; i < currentIndex; i++) {
-    totalSeconds += (scenes[i].wordCount / 150) * 60;
+    totalSeconds += wordCountToSeconds(scenes[i].wordCount);
   }
-  const mins = Math.floor(totalSeconds / 60);
-  const secs = Math.floor(totalSeconds % 60);
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  return formatTimecode(totalSeconds);
 };
 
 const PromptsImages = () => {
@@ -107,6 +117,8 @@ const PromptsImages = () => {
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
   const [generatingImages, setGeneratingImages] = useState(false);
   const [currentGeneratingIndex, setCurrentGeneratingIndex] = useState<number | null>(null);
+  const [imageBatchTotal, setImageBatchTotal] = useState(0);
+  const [imageBatchDone, setImageBatchDone] = useState(0);
   const [previewScene, setPreviewScene] = useState<ScenePrompt | null>(null);
   const [loadingMessage, setLoadingMessage] = useState("");
   const [progress, setProgress] = useState(0);
@@ -208,11 +220,20 @@ const PromptsImages = () => {
       }
       
       // Enriquecer cenas com tempo e timecode
-      const enrichedScenes: ScenePrompt[] = scenes.map((scene: ScenePrompt, index: number) => ({
-        ...scene,
-        estimatedTime: calculateEstimatedTime(scene.wordCount),
-        timecode: calculateTimecode(scenes, index)
-      }));
+      let cumulativeSeconds = 0;
+      const enrichedScenes: ScenePrompt[] = scenes.map((scene: ScenePrompt) => {
+        const startSeconds = cumulativeSeconds;
+        const durationSeconds = wordCountToSeconds(scene.wordCount);
+        const endSeconds = startSeconds + durationSeconds;
+        cumulativeSeconds = endSeconds;
+
+        return {
+          ...scene,
+          estimatedTime: calculateEstimatedTime(scene.wordCount),
+          timecode: formatTimecode(startSeconds),
+          endTimecode: formatTimecode(endSeconds),
+        };
+      });
 
       setGeneratedScenes(enrichedScenes);
       setProgress(100);
@@ -255,55 +276,93 @@ const PromptsImages = () => {
     }
   };
 
-  // Gerar imagens para todas as cenas usando ImageFX
+  // Gerar imagens para próximas 5 cenas (em sequência)
   const handleGenerateAllImages = async () => {
     if (generatedScenes.length === 0) return;
 
-    setGeneratingImages(true);
-    const updatedScenes = [...generatedScenes];
+    const pendingIndexes = generatedScenes
+      .map((s, idx) => ({ s, idx }))
+      .filter(({ s }) => !s.generatedImage)
+      .map(({ idx }) => idx);
 
-    for (let i = 0; i < updatedScenes.length; i++) {
-      setCurrentGeneratingIndex(i);
-      
+    if (pendingIndexes.length === 0) return;
+
+    const batchSize = 5;
+    const batchIndexes = pendingIndexes.slice(0, batchSize);
+
+    setGeneratingImages(true);
+    setImageBatchTotal(batchIndexes.length);
+    setImageBatchDone(0);
+
+    const updatedScenes = [...generatedScenes];
+    let processed = 0;
+
+    for (let i = 0; i < batchIndexes.length; i++) {
+      const sceneIndex = batchIndexes[i];
+      setCurrentGeneratingIndex(sceneIndex);
+
       try {
         const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
-        const fullPrompt = stylePrefix 
-          ? `${stylePrefix} ${updatedScenes[i].imagePrompt}`
-          : updatedScenes[i].imagePrompt;
+        const fullPrompt = stylePrefix
+          ? `${stylePrefix} ${updatedScenes[sceneIndex].imagePrompt}`
+          : updatedScenes[sceneIndex].imagePrompt;
 
-        const response = await supabase.functions.invoke("generate-imagefx", {
+        const { data, error } = await supabase.functions.invoke("generate-imagefx", {
           body: {
             prompt: fullPrompt,
             aspectRatio: "LANDSCAPE",
-            numberOfImages: 1
-          }
+            numberOfImages: 1,
+          },
         });
 
-        if (response.error) throw response.error;
+        if (error) {
+          const bodyText = (error as any)?.context?.body;
+          if (bodyText) {
+            try {
+              const parsed = JSON.parse(bodyText);
+              throw new Error(parsed?.error || error.message);
+            } catch {
+              throw new Error(error.message);
+            }
+          }
+          throw new Error(error.message);
+        }
 
-        if (response.data?.images?.[0]?.url) {
-          updatedScenes[i] = {
-            ...updatedScenes[i],
-            generatedImage: response.data.images[0].url
+        if ((data as any)?.error) {
+          throw new Error((data as any).error);
+        }
+
+        const url = (data as any)?.images?.[0]?.url;
+        if (url) {
+          updatedScenes[sceneIndex] = {
+            ...updatedScenes[sceneIndex],
+            generatedImage: url,
           };
           setGeneratedScenes([...updatedScenes]);
         }
+
+        processed += 1;
+        setImageBatchDone(processed);
       } catch (error: any) {
-        console.error(`Error generating image for scene ${i + 1}:`, error);
+        console.error(`Error generating image for scene ${sceneIndex + 1}:`, error);
         toast({
-          title: `Erro na cena ${i + 1}`,
-          description: error.message || "Não foi possível gerar a imagem",
+          title: `Erro na cena ${sceneIndex + 1}`,
+          description: error?.message || "Não foi possível gerar a imagem",
           variant: "destructive",
         });
+        // Para o lote ao primeiro erro (evita spam)
+        break;
       }
     }
 
+    setImageBatchDone(processed);
     setCurrentGeneratingIndex(null);
     setGeneratingImages(false);
-    
+
+    const generatedCount = updatedScenes.filter(s => s.generatedImage).length;
     toast({
-      title: "Imagens geradas!",
-      description: `${updatedScenes.filter(s => s.generatedImage).length} imagens criadas`,
+      title: "Lote concluído!",
+      description: `${generatedCount}/${updatedScenes.length} imagens criadas` ,
     });
   };
 
@@ -320,7 +379,7 @@ const PromptsImages = () => {
         ? `${stylePrefix} ${scene.imagePrompt}`
         : scene.imagePrompt;
 
-      const response = await supabase.functions.invoke("generate-imagefx", {
+      const { data, error } = await supabase.functions.invoke("generate-imagefx", {
         body: {
           prompt: fullPrompt,
           aspectRatio: "LANDSCAPE",
@@ -328,13 +387,29 @@ const PromptsImages = () => {
         }
       });
 
-      if (response.error) throw response.error;
+      if (error) {
+        const bodyText = (error as any)?.context?.body;
+        if (bodyText) {
+          try {
+            const parsed = JSON.parse(bodyText);
+            throw new Error(parsed?.error || error.message);
+          } catch {
+            throw new Error(error.message);
+          }
+        }
+        throw new Error(error.message);
+      }
 
-      if (response.data?.images?.[0]?.url) {
+      if ((data as any)?.error) {
+        throw new Error((data as any).error);
+      }
+
+      const url = (data as any)?.images?.[0]?.url;
+      if (url) {
         const updatedScenes = [...generatedScenes];
         updatedScenes[index] = {
           ...updatedScenes[index],
-          generatedImage: response.data.images[0].url
+          generatedImage: url
         };
         setGeneratedScenes(updatedScenes);
         
@@ -347,7 +422,7 @@ const PromptsImages = () => {
       console.error(`Error regenerating image for scene ${index + 1}:`, error);
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível regenerar a imagem",
+        description: error?.message || "Não foi possível regenerar a imagem",
         variant: "destructive",
       });
     } finally {
@@ -594,18 +669,18 @@ const PromptsImages = () => {
                           <Button 
                             size="sm" 
                             onClick={handleGenerateAllImages}
-                            disabled={generatingImages}
+                            disabled={generatingImages || generatedScenes.every(s => s.generatedImage)}
                             className="bg-primary text-primary-foreground"
                           >
                             {generatingImages ? (
                               <>
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Gerando {currentGeneratingIndex !== null ? `${currentGeneratingIndex + 1}/${generatedScenes.length}` : '...'}
+                                Gerando {imageBatchDone}/{imageBatchTotal}
                               </>
                             ) : (
                               <>
                                 <ImagePlus className="w-4 h-4 mr-2" />
-                                Gerar Imagens
+                                Gerar próximas {Math.min(5, generatedScenes.filter(s => !s.generatedImage).length)}
                               </>
                             )}
                           </Button>
@@ -665,8 +740,13 @@ const PromptsImages = () => {
                                   <span className="text-[10px] text-muted-foreground">Gerar</span>
                                 </button>
                               )}
-                              <div className="absolute bottom-1 left-1 bg-background/80 px-1.5 py-0.5 rounded text-xs font-bold">
-                                {scene.number}
+                              <div className="absolute bottom-1 left-1 bg-background/80 px-1.5 py-0.5 rounded">
+                                <div className="text-xs font-bold leading-none">{scene.number}</div>
+                                {scene.timecode && (
+                                  <div className="text-[10px] text-muted-foreground font-mono leading-none mt-0.5">
+                                    {scene.timecode}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -686,7 +766,7 @@ const PromptsImages = () => {
                                     Cena {scene.number}
                                   </Badge>
                                   <Badge variant="outline" className="font-mono">
-                                    {scene.timecode}
+                                    {scene.timecode}{scene.endTimecode ? `–${scene.endTimecode}` : ""}
                                   </Badge>
                                   <span className="text-xs text-muted-foreground">
                                     {scene.wordCount} palavras • {scene.estimatedTime}
@@ -920,6 +1000,9 @@ const PromptsImages = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <Badge className="bg-primary/20 text-primary">Cena {previewScene?.number}</Badge>
+              <span className="text-sm text-muted-foreground font-mono">
+                {previewScene?.timecode}{previewScene?.endTimecode ? `–${previewScene?.endTimecode}` : ""}
+              </span>
               <span className="text-sm text-muted-foreground">
                 {previewScene?.wordCount} palavras • {previewScene?.estimatedTime}
               </span>
