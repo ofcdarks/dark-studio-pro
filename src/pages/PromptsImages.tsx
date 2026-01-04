@@ -1201,9 +1201,10 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
             </TabsList>
 
             <TabsContent value="generator" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Layout adaptável: quando há cenas geradas, grid de imagens ocupa toda largura */}
+              <div className={generatedScenes.length > 0 ? "space-y-6" : "grid grid-cols-1 lg:grid-cols-3 gap-6"}>
                 {/* Área de Input */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className={generatedScenes.length > 0 ? "" : "lg:col-span-2 space-y-6"}>
                   <Card className="p-6">
                     <div className="flex items-center gap-2 mb-4">
                       <Wand2 className="w-5 h-5 text-primary" />
@@ -1403,7 +1404,7 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                             {filterPending ? "Ver Todas" : "Só Pendentes"}
                           </Button>
                         </div>
-                        <div className="grid grid-cols-4 gap-4">
+                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                           {generatedScenes
                             .map((scene, index) => ({ scene, index }))
                             .filter(({ scene }) => !filterPending || !scene.generatedImage)
@@ -1586,34 +1587,36 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                   )}
                 </div>
 
-                {/* Sidebar - Prompts Salvos */}
-                <div>
-                  <Card className="p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Save className="w-5 h-5 text-primary" />
-                      <h3 className="font-semibold text-foreground">Prompts Salvos</h3>
-                    </div>
-                    <ScrollArea className="h-[400px]">
-                      <div className="space-y-3 pr-2">
-                        {savedPrompts && savedPrompts.length > 0 ? (
-                          savedPrompts.map((item) => (
-                            <div 
-                              key={item.id} 
-                              className="p-3 bg-secondary/50 rounded-lg cursor-pointer hover:bg-secondary transition-colors"
-                            >
-                              <h4 className="font-medium text-foreground text-sm mb-1">{item.title}</h4>
-                              <p className="text-xs text-muted-foreground line-clamp-2">{item.prompt}</p>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-center text-muted-foreground py-8 text-sm">
-                            Nenhum prompt salvo
-                          </p>
-                        )}
+                {/* Sidebar - Prompts Salvos (oculto quando há cenas geradas para dar mais espaço) */}
+                {generatedScenes.length === 0 && (
+                  <div>
+                    <Card className="p-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Save className="w-5 h-5 text-primary" />
+                        <h3 className="font-semibold text-foreground">Prompts Salvos</h3>
                       </div>
-                    </ScrollArea>
-                  </Card>
-                </div>
+                      <ScrollArea className="h-[400px]">
+                        <div className="space-y-3 pr-2">
+                          {savedPrompts && savedPrompts.length > 0 ? (
+                            savedPrompts.map((item) => (
+                              <div 
+                                key={item.id} 
+                                className="p-3 bg-secondary/50 rounded-lg cursor-pointer hover:bg-secondary transition-colors"
+                              >
+                                <h4 className="font-medium text-foreground text-sm mb-1">{item.title}</h4>
+                                <p className="text-xs text-muted-foreground line-clamp-2">{item.prompt}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-center text-muted-foreground py-8 text-sm">
+                              Nenhum prompt salvo
+                            </p>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </Card>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
