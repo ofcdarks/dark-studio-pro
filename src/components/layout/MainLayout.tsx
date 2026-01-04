@@ -14,6 +14,7 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   const { user } = useAuth();
   const [headerVisible, setHeaderVisible] = useState(true);
+  const [headerHovered, setHeaderHovered] = useState(false);
   const lastScrollY = useRef(0);
   const mainRef = useRef<HTMLDivElement>(null);
 
@@ -39,22 +40,34 @@ export function MainLayout({ children }: MainLayoutProps) {
     return () => mainElement.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const showHeader = headerVisible || headerHovered;
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
         {user && (
-          <div 
-            className={cn(
-              "fixed top-0 right-0 z-50 flex items-center gap-3 px-6 py-4 bg-gradient-to-l from-background via-background/95 to-transparent transition-all duration-300",
-              headerVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
-            )}
-          >
-            <CreditsDisplay collapsed={false} showRefresh={false} />
-            <StorageIndicator />
-            <ThemeToggle />
-            <NotificationsBell />
-          </div>
+          <>
+            {/* Invisible hover zone at top */}
+            <div 
+              className="fixed top-0 right-0 h-4 w-96 z-40"
+              onMouseEnter={() => setHeaderHovered(true)}
+              onMouseLeave={() => setHeaderHovered(false)}
+            />
+            <div 
+              className={cn(
+                "fixed top-0 right-0 z-50 flex items-center gap-3 px-6 py-4 bg-gradient-to-l from-background via-background/95 to-transparent transition-all duration-300",
+                showHeader ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+              )}
+              onMouseEnter={() => setHeaderHovered(true)}
+              onMouseLeave={() => setHeaderHovered(false)}
+            >
+              <CreditsDisplay collapsed={false} showRefresh={false} />
+              <StorageIndicator />
+              <ThemeToggle />
+              <NotificationsBell />
+            </div>
+          </>
         )}
         {/* Spacer for fixed header */}
         {user && <div className="h-16 flex-shrink-0" />}
