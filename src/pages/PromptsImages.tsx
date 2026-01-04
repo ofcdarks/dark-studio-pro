@@ -27,7 +27,8 @@ import {
   Check,
   X,
   DownloadCloud,
-  Video
+  Video,
+  RotateCcw
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -1187,6 +1188,18 @@ const PromptsImages = () => {
                           >
                             <Video className="w-4 h-4 mr-2" />
                             CapCut
+                          </Button>
+                          <Button 
+                            variant="ghost"
+                            size="sm" 
+                            onClick={async () => {
+                              await clearCapcutDirHandle();
+                              toast({ title: "Pasta resetada", description: "Na próxima exportação você poderá escolher uma nova pasta." });
+                            }}
+                            className="text-muted-foreground hover:text-destructive"
+                            title="Esquecer pasta CapCut salva"
+                          >
+                            <RotateCcw className="w-4 h-4" />
                           </Button>
                           <Button 
                             size="sm" 
