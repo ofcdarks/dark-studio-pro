@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { 
   Image, 
   Wand2, 
@@ -108,6 +109,7 @@ const PromptsImages = () => {
   const [currentGeneratingIndex, setCurrentGeneratingIndex] = useState<number | null>(null);
   const [previewScene, setPreviewScene] = useState<ScenePrompt | null>(null);
   const [loadingMessage, setLoadingMessage] = useState("");
+  const [progress, setProgress] = useState(0);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -163,15 +165,18 @@ const PromptsImages = () => {
 
     setGenerating(true);
     setGeneratedScenes([]);
+    setProgress(0);
     
     const wordCount = script.split(/\s+/).filter(Boolean).length;
     const estimatedScenes = Math.ceil(wordCount / (parseInt(wordsPerScene) || 80));
     const totalBatches = Math.ceil(estimatedScenes / 10);
     
     setLoadingMessage(`Analisando ${wordCount} palavras...`);
+    setProgress(10);
 
     try {
       setLoadingMessage(`Processando ~${estimatedScenes} cenas em ${totalBatches} lote(s)...`);
+      setProgress(30);
       
       const response = await supabase.functions.invoke("generate-scenes", {
         body: { 
@@ -184,6 +189,7 @@ const PromptsImages = () => {
       });
 
       setLoadingMessage("Finalizando...");
+      setProgress(80);
 
       // Check for errors in response
       if (response.error) {
@@ -209,6 +215,7 @@ const PromptsImages = () => {
       }));
 
       setGeneratedScenes(enrichedScenes);
+      setProgress(100);
 
       // Calcular duração total
       const totalWords = enrichedScenes.reduce((acc: number, s: ScenePrompt) => acc + s.wordCount, 0);
@@ -969,7 +976,6 @@ const PromptsImages = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Loading */}
       <Dialog open={generating} onOpenChange={() => {}}>
         <DialogContent className="max-w-md bg-card border-primary/50 rounded-xl shadow-xl" hideCloseButton>
           <div className="flex flex-col items-center justify-center py-8 space-y-6">
@@ -996,12 +1002,17 @@ const PromptsImages = () => {
               </p>
             </div>
 
-            {/* Indicador de loading */}
-            <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span className="text-xs text-muted-foreground">
-                Processando com IA
-              </span>
+            {/* Barra de progresso */}
+            <div className="w-full space-y-2">
+              <Progress value={progress} className="h-2 bg-secondary" />
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">
+                  Processando com IA
+                </span>
+                <span className="text-xs font-medium text-primary">
+                  {progress}%
+                </span>
+              </div>
             </div>
           </div>
         </DialogContent>
