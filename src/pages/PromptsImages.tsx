@@ -18,6 +18,8 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Trash2,
   Eye,
   Download,
@@ -147,6 +149,9 @@ const PromptsImages = () => {
   const [imageBatchTotal, setImageBatchTotal] = useState(0);
   const [imageBatchDone, setImageBatchDone] = useState(0);
   const [previewScene, setPreviewScene] = useState<ScenePrompt | null>(null);
+  const [previewIndex, setPreviewIndex] = useState<number>(0);
+  const [previewEditPrompt, setPreviewEditPrompt] = useState<string>("");
+  const [regeneratingPreview, setRegeneratingPreview] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
   const [progress, setProgress] = useState(0);
   const [editingPromptIndex, setEditingPromptIndex] = useState<number | null>(null);
@@ -1398,7 +1403,7 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                             {filterPending ? "Ver Todas" : "Só Pendentes"}
                           </Button>
                         </div>
-                        <div className="grid grid-cols-5 gap-3">
+                        <div className="grid grid-cols-4 gap-4">
                           {generatedScenes
                             .map((scene, index) => ({ scene, index }))
                             .filter(({ scene }) => !filterPending || !scene.generatedImage)
@@ -1413,7 +1418,11 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                                     src={scene.generatedImage} 
                                     alt={`Cena ${scene.number}`}
                                     className="w-full h-full object-cover cursor-pointer"
-                                    onClick={() => setPreviewScene(scene)}
+                                    onClick={() => {
+                                      setPreviewScene(scene);
+                                      setPreviewIndex(index);
+                                      setPreviewEditPrompt(scene.imagePrompt);
+                                    }}
                                   />
                                   <Button
                                     variant="secondary"
@@ -1742,56 +1751,177 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
 
       {/* Modal de Preview da Imagem */}
       <Dialog open={!!previewScene} onOpenChange={() => setPreviewScene(null)}>
-        <DialogContent className="max-w-4xl bg-card border-primary/50 rounded-xl shadow-xl">
+        <DialogContent className="max-w-5xl bg-card border-primary/50 rounded-xl shadow-xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <Badge className="bg-primary/20 text-primary">Cena {previewScene?.number}</Badge>
-              <span className="text-sm text-muted-foreground font-mono">
-                {previewScene?.timecode}{previewScene?.endTimecode ? `–${previewScene?.endTimecode}` : ""}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {previewScene?.wordCount} palavras • {previewScene?.estimatedTime}
-              </span>
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Badge className="bg-primary/20 text-primary">Cena {previewScene?.number}</Badge>
+                <span className="text-sm text-muted-foreground font-mono">
+                  {previewScene?.timecode}{previewScene?.endTimecode ? `–${previewScene?.endTimecode}` : ""}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {previewScene?.wordCount} palavras • {previewScene?.estimatedTime}
+                </span>
+              </div>
+              {/* Navegação entre cenas */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={previewIndex <= 0}
+                  onClick={() => {
+                    const newIndex = previewIndex - 1;
+                    if (newIndex >= 0) {
+                      setPreviewIndex(newIndex);
+                      setPreviewScene(generatedScenes[newIndex]);
+                      setPreviewEditPrompt(generatedScenes[newIndex].imagePrompt);
+                    }
+                  }}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground min-w-[60px] text-center">
+                  {previewIndex + 1} / {generatedScenes.length}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={previewIndex >= generatedScenes.length - 1}
+                  onClick={() => {
+                    const newIndex = previewIndex + 1;
+                    if (newIndex < generatedScenes.length) {
+                      setPreviewIndex(newIndex);
+                      setPreviewScene(generatedScenes[newIndex]);
+                      setPreviewEditPrompt(generatedScenes[newIndex].imagePrompt);
+                    }
+                  }}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4">
             {/* Imagem ampliada */}
-            {previewScene?.generatedImage && (
-              <div className="relative aspect-video rounded-lg overflow-hidden bg-secondary">
+            <div className="relative aspect-video rounded-lg overflow-hidden bg-secondary">
+              {previewScene?.generatedImage ? (
                 <img 
                   src={previewScene.generatedImage} 
                   alt={`Cena ${previewScene.number}`}
                   className="w-full h-full object-contain"
                 />
-              </div>
-            )}
+              ) : regeneratingPreview ? (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Gerando imagem...</span>
+                </div>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                  <ImagePlus className="w-12 h-12 text-muted-foreground/30" />
+                  <span className="text-sm text-muted-foreground">Nenhuma imagem gerada</span>
+                </div>
+              )}
+            </div>
 
-            {/* Prompt usado */}
-            <div className="p-4 bg-secondary/50 rounded-lg border border-border">
-              <div className="flex items-center justify-between mb-2">
+            {/* Editar Prompt e Regenerar */}
+            <div className="p-4 bg-secondary/50 rounded-lg border border-border space-y-3">
+              <div className="flex items-center justify-between">
                 <p className="text-xs font-medium text-muted-foreground">Prompt de Imagem</p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      navigator.clipboard.writeText(previewEditPrompt);
+                      toast({ title: "Copiado!", description: "Prompt copiado" });
+                    }}
+                  >
+                    <Copy className="w-3 h-3 mr-1" />
+                    Copiar
+                  </Button>
+                </div>
+              </div>
+              <Textarea
+                value={previewEditPrompt}
+                onChange={(e) => setPreviewEditPrompt(e.target.value)}
+                className="bg-background border-border min-h-20 text-sm font-mono"
+                placeholder="Edite o prompt aqui..."
+              />
+              <div className="flex gap-2">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="h-7 text-xs"
+                  className="flex-1"
+                  disabled={regeneratingPreview || previewEditPrompt === previewScene?.imagePrompt}
                   onClick={() => {
-                    if (previewScene?.imagePrompt) {
-                      navigator.clipboard.writeText(previewScene.imagePrompt);
-                      toast({
-                        title: "Copiado!",
-                        description: "Prompt copiado para a área de transferência",
+                    // Salvar o prompt editado
+                    setGeneratedScenes(prev => {
+                      const updated = [...prev];
+                      updated[previewIndex] = {
+                        ...updated[previewIndex],
+                        imagePrompt: previewEditPrompt,
+                        generatedImage: undefined, // Limpar imagem antiga
+                      };
+                      return updated;
+                    });
+                    setPreviewScene(prev => prev ? { ...prev, imagePrompt: previewEditPrompt, generatedImage: undefined } : null);
+                    toast({ title: "Prompt atualizado!", description: "Clique em Regenerar para criar nova imagem." });
+                  }}
+                >
+                  <Check className="w-3 h-3 mr-1" />
+                  Salvar Prompt
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-primary text-primary-foreground"
+                  disabled={regeneratingPreview}
+                  onClick={async () => {
+                    setRegeneratingPreview(true);
+                    try {
+                      const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
+                      const fullPrompt = stylePrefix ? `${stylePrefix} ${previewEditPrompt}` : previewEditPrompt;
+
+                      const { data, error } = await supabase.functions.invoke("generate-imagefx", {
+                        body: { prompt: fullPrompt, aspectRatio: "LANDSCAPE", numberOfImages: 1 }
                       });
+
+                      if (error) throw error;
+                      if ((data as any)?.error) throw new Error((data as any).error);
+
+                      const url = (data as any)?.images?.[0]?.url;
+                      if (url) {
+                        // Atualizar cena com novo prompt e imagem
+                        setGeneratedScenes(prev => {
+                          const updated = [...prev];
+                          updated[previewIndex] = {
+                            ...updated[previewIndex],
+                            imagePrompt: previewEditPrompt,
+                            generatedImage: url,
+                          };
+                          return updated;
+                        });
+                        setPreviewScene(prev => prev ? { ...prev, imagePrompt: previewEditPrompt, generatedImage: url } : null);
+                        toast({ title: "Imagem regenerada!", description: `Cena ${previewScene?.number} atualizada` });
+                      }
+                    } catch (err: any) {
+                      toast({ title: "Erro", description: err.message || "Falha ao regenerar", variant: "destructive" });
+                    } finally {
+                      setRegeneratingPreview(false);
                     }
                   }}
                 >
-                  <Copy className="w-3 h-3 mr-1" />
-                  Copiar
+                  {regeneratingPreview ? (
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                  )}
+                  Regenerar
                 </Button>
               </div>
-              <p className="text-sm text-foreground font-mono leading-relaxed">
-                {previewScene?.imagePrompt}
-              </p>
             </div>
 
             {/* Texto da cena */}
