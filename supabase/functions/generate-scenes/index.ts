@@ -6,14 +6,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Preços conforme documentação seção 4.2
+// Preços conforme documentação
 const CREDIT_PRICING = {
-  base: 5,
-  gemini: 6,
-  claude: 8,
+  base: 2,    // por lote de 10 cenas
+  gemini: 3,
+  claude: 4,
 };
 
-// Interface for admin API settings
 interface AdminApiKeys {
   openai?: string;
   gemini?: string;
@@ -23,6 +22,90 @@ interface AdminApiKeys {
   gemini_validated?: boolean;
   claude_validated?: boolean;
   laozhang_validated?: boolean;
+}
+
+interface SceneResult {
+  number: number;
+  text: string;
+  imagePrompt: string;
+  wordCount: number;
+}
+
+// Função para dividir texto em partes
+function splitTextIntoChunks(text: string, wordsPerScene: number, scenesPerBatch: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const wordsPerBatch = wordsPerScene * scenesPerBatch;
+  const chunks: string[] = [];
+  
+  for (let i = 0; i < words.length; i += wordsPerBatch) {
+    chunks.push(words.slice(i, i + wordsPerBatch).join(' '));
+  }
+  
+  return chunks;
+}
+
+// Função para gerar prompts de um lote
+async function generateBatchPrompts(
+  chunk: string,
+  batchNumber: number,
+  startSceneNumber: number,
+  scenesInBatch: number,
+  style: string,
+  apiUrl: string,
+  apiKey: string,
+  apiModel: string
+): Promise<SceneResult[]> {
+  const systemPrompt = `Você é um especialista em produção audiovisual. Analise o texto e divida em ${scenesInBatch} cenas, gerando prompts de imagem para cada.
+
+Regras:
+1. Divida em EXATAMENTE ${scenesInBatch} cenas (ou menos se o texto for curto)
+2. Prompts de imagem CONCISOS em INGLÊS (40-60 palavras)
+3. Inclua: composição visual, elementos, iluminação, estilo ${style}
+4. Numere as cenas a partir de ${startSceneNumber}
+
+Retorne APENAS JSON:
+{"scenes":[{"number":${startSceneNumber},"text":"resumo curto","imagePrompt":"english prompt","wordCount":100}]}`;
+
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: apiModel,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `LOTE ${batchNumber} - Gere prompts:\n\n${chunk}` }
+      ],
+      max_tokens: 4000,
+      temperature: 0.5
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[Batch ${batchNumber}] API error:`, errorText);
+    throw new Error(`Erro no lote ${batchNumber}: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content?.trim() || "";
+
+  // Parse JSON
+  let jsonContent = content;
+  if (jsonContent.startsWith("```json")) jsonContent = jsonContent.slice(7);
+  if (jsonContent.startsWith("```")) jsonContent = jsonContent.slice(3);
+  if (jsonContent.endsWith("```")) jsonContent = jsonContent.slice(0, -3);
+  jsonContent = jsonContent.trim();
+
+  try {
+    const parsed = JSON.parse(jsonContent);
+    return parsed.scenes || [];
+  } catch (e) {
+    console.error(`[Batch ${batchNumber}] Parse error:`, jsonContent.substring(0, 200));
+    return [];
+  }
 }
 
 serve(async (req) => {
@@ -51,7 +134,8 @@ serve(async (req) => {
       script, 
       model = "gpt-4o",
       style = "cinematic",
-      wordsPerScene = 80
+      wordsPerScene = 80,
+      maxScenes = 500
     } = body;
 
     if (!script) {
@@ -59,16 +143,18 @@ serve(async (req) => {
     }
 
     const wordCount = script.split(/\s+/).filter(Boolean).length;
-    const estimatedScenes = Math.ceil(wordCount / wordsPerScene);
+    const estimatedScenes = Math.min(Math.ceil(wordCount / wordsPerScene), maxScenes);
+    const scenesPerBatch = 10; // Processar 10 cenas por vez
+    const totalBatches = Math.ceil(estimatedScenes / scenesPerBatch);
 
-    console.log(`[Generate Scenes] Processing script with ${wordCount} words, estimating ${estimatedScenes} scenes`);
+    console.log(`[Generate Scenes] ${wordCount} words -> ${estimatedScenes} scenes in ${totalBatches} batches`);
 
-    // Calcular créditos baseado no modelo
+    // Calcular créditos (por lote de 10)
     let modelKey: 'base' | 'gemini' | 'claude' = 'base';
     if (model?.includes('gemini')) modelKey = 'gemini';
     else if (model?.includes('claude') || model?.includes('gpt')) modelKey = 'claude';
 
-    const creditsNeeded = CREDIT_PRICING[modelKey];
+    const creditsNeeded = Math.ceil(totalBatches * CREDIT_PRICING[modelKey]);
 
     // Get admin API keys
     const { data: adminData } = await supabaseAdmin
@@ -79,17 +165,15 @@ serve(async (req) => {
 
     const adminApiKeys = adminData?.value as AdminApiKeys | null;
 
-    // Determine which API to use
+    // Determine API config
     let apiUrl: string;
     let apiKey: string;
     let apiModel: string;
 
-    // Priority: Laozhang > OpenAI
     if (adminApiKeys?.laozhang && adminApiKeys.laozhang_validated) {
       apiUrl = "https://api.laozhang.ai/v1/chat/completions";
       apiKey = adminApiKeys.laozhang;
       
-      // Map model for Laozhang
       if (model?.includes("claude")) {
         apiModel = "claude-sonnet-4-20250514";
       } else if (model?.includes("gemini-pro") || model?.includes("gemini-2.5-pro")) {
@@ -104,15 +188,13 @@ serve(async (req) => {
       apiUrl = "https://api.openai.com/v1/chat/completions";
       apiKey = adminApiKeys.openai;
       apiModel = "gpt-4o";
-      console.log('[Generate Scenes] Using admin OpenAI API key');
     } else if (OPENAI_API_KEY) {
       apiUrl = "https://api.openai.com/v1/chat/completions";
       apiKey = OPENAI_API_KEY;
       apiModel = "gpt-4o";
-      console.log('[Generate Scenes] Using system OpenAI API key');
     } else {
       return new Response(
-        JSON.stringify({ error: "Nenhuma chave de API configurada. Configure as chaves no painel admin." }),
+        JSON.stringify({ error: "Nenhuma chave de API configurada." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -144,141 +226,66 @@ serve(async (req) => {
         operation_type: "scene_prompts",
         credits_used: creditsNeeded,
         model_used: apiModel,
-        details: { word_count: wordCount, estimated_scenes: estimatedScenes }
+        details: { word_count: wordCount, total_batches: totalBatches, estimated_scenes: estimatedScenes }
       });
 
       await supabaseAdmin.from("credit_transactions").insert({
         user_id: userId,
         amount: -creditsNeeded,
         transaction_type: "debit",
-        description: "Geração de prompts de cenas"
+        description: `Geração de ${estimatedScenes} prompts de cenas`
       });
     }
 
-    // Limitar número de cenas para evitar resposta truncada
-    const maxScenes = 20;
-    const effectiveWordsPerScene = estimatedScenes > maxScenes 
-      ? Math.ceil(wordCount / maxScenes) 
-      : wordsPerScene;
-    const actualEstimatedScenes = Math.min(estimatedScenes, maxScenes);
+    // Dividir script em chunks
+    const chunks = splitTextIntoChunks(script, wordsPerScene, scenesPerBatch);
+    console.log(`[Generate Scenes] Split into ${chunks.length} chunks`);
 
-    console.log(`[Generate Scenes] Adjusted: ${actualEstimatedScenes} scenes, ~${effectiveWordsPerScene} words/scene`);
+    // Processar cada chunk
+    const allScenes: SceneResult[] = [];
+    let currentSceneNumber = 1;
 
-    // Prompt para gerar todas as cenas de uma vez
-    const systemPrompt = `Você é um especialista em produção audiovisual e geração de prompts para IA de imagem.
-Sua tarefa é analisar um roteiro e dividi-lo em cenas, gerando prompts de imagem otimizados para cada cena.
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const chunkWords = chunk.split(/\s+/).filter(Boolean).length;
+      const scenesInBatch = Math.min(Math.ceil(chunkWords / wordsPerScene), scenesPerBatch);
 
-Regras IMPORTANTES:
-1. Divida o roteiro em NO MÁXIMO ${actualEstimatedScenes} cenas
-2. Cada cena deve ter aproximadamente ${effectiveWordsPerScene} palavras do roteiro
-3. Para cada cena, gere um prompt de imagem CONCISO em INGLÊS (máximo 60 palavras)
-4. Inclua: composição visual, elementos principais, iluminação, estilo ${style}
-5. Otimize para geração de imagem com IA (sem texto, sem rostos específicos)
+      console.log(`[Generate Scenes] Processing batch ${i + 1}/${chunks.length} (${scenesInBatch} scenes)`);
 
-Retorne APENAS um JSON válido:
-{
-  "scenes": [
-    {
-      "number": 1,
-      "text": "resumo da cena em português (máximo 50 palavras)",
-      "imagePrompt": "concise image prompt in English",
-      "wordCount": 150
-    }
-  ]
-}
-
-CRÍTICO: Retorne APENAS o JSON puro, sem markdown, sem explicações.`;
-
-    const userPrompt = `Analise este roteiro e gere os prompts de imagem:
-
-ROTEIRO:
-${script.substring(0, 15000)}
-
-ESTILO: ${style}
-MÁXIMO DE CENAS: ${actualEstimatedScenes}`;
-
-    console.log(`[Generate Scenes] Calling ${apiUrl} with model: ${apiModel}`);
-
-    const aiResponse = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: apiModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ],
-        max_tokens: 16000,
-        temperature: 0.5
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error(`[Generate Scenes] AI API error: ${aiResponse.status}`, errorText);
-      
-      // Refund credits on error
-      if (userId) {
-        const { data: creditData } = await supabaseAdmin
-          .from("user_credits")
-          .select("balance")
-          .eq("user_id", userId)
-          .single();
-
-        if (creditData) {
-          await supabaseAdmin
-            .from("user_credits")
-            .update({ balance: creditData.balance + creditsNeeded })
-            .eq("user_id", userId);
-
-          await supabaseAdmin.from("credit_transactions").insert({
-            user_id: userId,
-            amount: creditsNeeded,
-            transaction_type: "refund",
-            description: "Reembolso - Erro na geração de prompts"
-          });
-        }
-      }
-      
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      try {
+        const batchScenes = await generateBatchPrompts(
+          chunk,
+          i + 1,
+          currentSceneNumber,
+          scenesInBatch,
+          style,
+          apiUrl,
+          apiKey,
+          apiModel
         );
+
+        // Renumerar cenas corretamente
+        for (const scene of batchScenes) {
+          allScenes.push({
+            ...scene,
+            number: currentSceneNumber++
+          });
+        }
+
+        console.log(`[Generate Scenes] Batch ${i + 1} completed: ${batchScenes.length} scenes`);
+
+        // Pequena pausa entre lotes para evitar rate limit
+        if (i < chunks.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } catch (batchError) {
+        console.error(`[Generate Scenes] Batch ${i + 1} failed:`, batchError);
+        // Continuar com próximo lote em caso de erro
       }
-      
-      throw new Error(`Erro na API de IA: ${aiResponse.status}`);
     }
 
-    const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content?.trim() || "";
-
-    console.log(`[Generate Scenes] AI response received, parsing...`);
-
-    // Parse JSON response
-    let parsedScenes;
-    try {
-      // Remove markdown code blocks if present
-      let jsonContent = content;
-      if (jsonContent.startsWith("```json")) {
-        jsonContent = jsonContent.slice(7);
-      }
-      if (jsonContent.startsWith("```")) {
-        jsonContent = jsonContent.slice(3);
-      }
-      if (jsonContent.endsWith("```")) {
-        jsonContent = jsonContent.slice(0, -3);
-      }
-      jsonContent = jsonContent.trim();
-
-      parsedScenes = JSON.parse(jsonContent);
-    } catch (parseError) {
-      console.error("[Generate Scenes] Failed to parse AI response:", content.substring(0, 500));
-      
-      // Refund credits on parse error
+    // Se nenhuma cena foi gerada, reembolsar
+    if (allScenes.length === 0) {
       if (userId) {
         const { data: creditData } = await supabaseAdmin
           .from("user_credits")
@@ -296,29 +303,25 @@ MÁXIMO DE CENAS: ${actualEstimatedScenes}`;
             user_id: userId,
             amount: creditsNeeded,
             transaction_type: "refund",
-            description: "Reembolso - Erro no parsing da resposta"
+            description: "Reembolso - Falha na geração de prompts"
           });
         }
       }
-      
-      throw new Error("Falha ao processar resposta da IA. Tente novamente.");
+
+      return new Response(
+        JSON.stringify({ error: "Não foi possível gerar os prompts. Tente novamente." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const scenes = parsedScenes.scenes || [];
+    console.log(`[Generate Scenes] Completed: ${allScenes.length} total scenes`);
 
-    console.log(`[Generate Scenes] Successfully generated ${scenes.length} scene prompts`);
-
-    // Retornar resposta
     return new Response(
       JSON.stringify({
         success: true,
-        scenes: scenes.map((s: any, index: number) => ({
-          number: s.number || index + 1,
-          text: s.text || "",
-          imagePrompt: s.imagePrompt || "",
-          wordCount: s.wordCount || 0
-        })),
-        totalScenes: scenes.length,
+        scenes: allScenes,
+        totalScenes: allScenes.length,
+        totalBatches: chunks.length,
         creditsUsed: creditsNeeded
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

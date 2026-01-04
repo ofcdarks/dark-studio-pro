@@ -163,21 +163,27 @@ const PromptsImages = () => {
 
     setGenerating(true);
     setGeneratedScenes([]);
-    setLoadingMessage("Analisando roteiro...");
+    
+    const wordCount = script.split(/\s+/).filter(Boolean).length;
+    const estimatedScenes = Math.ceil(wordCount / (parseInt(wordsPerScene) || 80));
+    const totalBatches = Math.ceil(estimatedScenes / 10);
+    
+    setLoadingMessage(`Analisando ${wordCount} palavras...`);
 
     try {
-      setLoadingMessage("Dividindo em cenas...");
+      setLoadingMessage(`Processando ~${estimatedScenes} cenas em ${totalBatches} lote(s)...`);
       
       const response = await supabase.functions.invoke("generate-scenes", {
         body: { 
           script,
           model,
           style,
-          wordsPerScene: parseInt(wordsPerScene) || 80
+          wordsPerScene: parseInt(wordsPerScene) || 80,
+          maxScenes: 500
         },
       });
 
-      setLoadingMessage("Gerando prompts de imagem...");
+      setLoadingMessage("Finalizando...");
 
       // Check for errors in response
       if (response.error) {
