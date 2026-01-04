@@ -549,6 +549,26 @@ const PromptsImages = () => {
     }
   };
 
+  // Limpar o handle salvo do IndexedDB
+  const clearCapcutDirHandle = async () => {
+    try {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('capcutExport', 1);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction('handles', 'readwrite');
+        const request = tx.objectStore('handles').delete('lastCapcutDir');
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+      db.close();
+    } catch (e) {
+      console.log("Erro ao limpar handle:", e);
+    }
+  };
+
   // Salvar diretamente na pasta do CapCut usando File System Access API
   const handleSaveToCapcutFolder = async () => {
     const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
@@ -724,6 +744,17 @@ const PromptsImages = () => {
           variant: "destructive" 
         });
         await handleExportAsZip();
+      } else if (error.name === 'NotAllowedError' || error.message?.includes('system') || error.message?.includes('arquivos do sistema')) {
+        // Pasta protegida do sistema - usuário selecionou pasta errada
+        console.log("Pasta do sistema detectada, pedindo para escolher outra");
+        toast({ 
+          title: "⚠️ Pasta protegida", 
+          description: "Selecione uma subpasta dentro de Documentos > CapCut > User Data > Projects, não a pasta raiz.",
+          variant: "destructive" 
+        });
+        // Limpar handle salvo e tentar novamente
+        await clearCapcutDirHandle();
+        // Não chamar recursivamente, deixar usuário tentar de novo manualmente
       } else {
         toast({ 
           title: "Erro ao salvar na pasta", 
