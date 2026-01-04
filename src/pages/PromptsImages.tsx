@@ -3,7 +3,22 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Image, Wand2, Copy, Save, History, Loader2, Trash2 } from "lucide-react";
+import { 
+  Image, 
+  Wand2, 
+  Copy, 
+  Save, 
+  History, 
+  Loader2, 
+  Film, 
+  Clock, 
+  FileText, 
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  Eye
+} from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,19 +26,115 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+
+interface ScenePrompt {
+  number: number;
+  text: string;
+  imagePrompt: string;
+  wordCount: number;
+  estimatedTime?: string;
+  timecode?: string;
+}
+
+interface SceneHistory {
+  id: string;
+  title: string | null;
+  script: string;
+  total_scenes: number;
+  total_words: number;
+  estimated_duration: string | null;
+  model_used: string | null;
+  style: string | null;
+  scenes: ScenePrompt[];
+  credits_used: number;
+  created_at: string;
+}
+
+const STYLES = [
+  { value: "photorealistic", label: "Fotorrealista" },
+  { value: "cinematic", label: "Cinematográfico" },
+  { value: "3d-render", label: "3D Render" },
+  { value: "anime", label: "Anime" },
+  { value: "illustration", label: "Ilustração" },
+  { value: "oil-painting", label: "Pintura a Óleo" },
+  { value: "watercolor", label: "Aquarela" },
+  { value: "digital-art", label: "Arte Digital" },
+];
+
+const AI_MODELS = [
+  { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", speed: "Rápido" },
+  { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", speed: "Preciso" },
+  { value: "openai/gpt-5-mini", label: "GPT-5 Mini", speed: "Balanceado" },
+];
+
+// Calcular tempo estimado baseado em palavras (média 150 palavras/min para narração)
+const calculateEstimatedTime = (wordCount: number): string => {
+  const minutes = wordCount / 150;
+  if (minutes < 1) {
+    return `${Math.round(minutes * 60)}s`;
+  }
+  const mins = Math.floor(minutes);
+  const secs = Math.round((minutes - mins) * 60);
+  return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+};
+
+// Calcular timecode baseado em posição no roteiro
+const calculateTimecode = (scenes: ScenePrompt[], currentIndex: number): string => {
+  let totalSeconds = 0;
+  for (let i = 0; i < currentIndex; i++) {
+    totalSeconds += (scenes[i].wordCount / 150) * 60;
+  }
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = Math.floor(totalSeconds % 60);
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+};
 
 const PromptsImages = () => {
   // Persisted states
-  const [prompt, setPrompt] = usePersistedState("prompts_prompt", "");
-  const [promptTitle, setPromptTitle] = usePersistedState("prompts_promptTitle", "");
-  const [generatedImage, setGeneratedImage] = usePersistedState<string | null>("prompts_generatedImage", null);
+  const [script, setScript] = usePersistedState("prompts_script", "");
+  const [title, setTitle] = usePersistedState("prompts_title", "");
+  const [niche, setNiche] = usePersistedState("prompts_niche", "");
+  const [style, setStyle] = usePersistedState("prompts_style", "cinematic");
+  const [model, setModel] = usePersistedState("prompts_model", "google/gemini-2.5-flash");
+  const [wordsPerScene, setWordsPerScene] = usePersistedState("prompts_wordsPerScene", "80");
+  const [generatedScenes, setGeneratedScenes] = usePersistedState<ScenePrompt[]>("prompts_scenes", []);
   
   // Non-persisted states
   const [generating, setGenerating] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [expandedScene, setExpandedScene] = useState<number | null>(null);
+  const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
+  
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Buscar histórico de prompts de cenas
+  const { data: sceneHistory, isLoading: loadingHistory } = useQuery({
+    queryKey: ["scene-prompts-history", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("scene_prompts")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return (data || []).map(item => ({
+        ...item,
+        scenes: (item.scenes as unknown as ScenePrompt[]) || []
+      })) as SceneHistory[];
+    },
+    enabled: !!user,
+  });
+
+  // Buscar prompts salvos (mantendo funcionalidade existente)
   const { data: savedPrompts } = useQuery({
     queryKey: ["saved-prompts", user?.id],
     queryFn: async () => {
@@ -40,86 +151,76 @@ const PromptsImages = () => {
     enabled: !!user,
   });
 
-  const { data: generatedImages } = useQuery({
-    queryKey: ["generated-images", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from("generated_images")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(6);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const savePromptMutation = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error("User not authenticated");
-      const { error } = await supabase.from("saved_prompts").insert({
-        user_id: user.id,
-        title: promptTitle || "Prompt sem título",
-        prompt: prompt,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["saved-prompts"] });
-      setPromptTitle("");
-      toast({
-        title: "Prompt salvo!",
-        description: "O prompt foi salvo com sucesso",
-      });
-    },
-  });
-
+  // Gerar prompts de cenas
   const handleGenerate = async () => {
-    if (!prompt.trim()) {
+    if (!script.trim()) {
       toast({
         title: "Erro",
-        description: "Por favor, insira um prompt",
+        description: "Por favor, insira um roteiro",
         variant: "destructive",
       });
       return;
     }
 
     setGenerating(true);
-    setGeneratedImage(null);
+    setGeneratedScenes([]);
 
     try {
-      const response = await supabase.functions.invoke("generate-image", {
-        body: { prompt },
+      const response = await supabase.functions.invoke("generate-scenes", {
+        body: { 
+          script,
+          title,
+          niche,
+          model,
+          style,
+          wordsPerScene: parseInt(wordsPerScene) || 80
+        },
       });
 
       if (response.error) throw response.error;
 
-      const images = response.data.images;
-      if (images && images.length > 0) {
-        const imageUrl = images[0].image_url.url;
-        setGeneratedImage(imageUrl);
+      const { scenes, totalScenes, creditsUsed } = response.data;
+      
+      // Enriquecer cenas com tempo e timecode
+      const enrichedScenes: ScenePrompt[] = scenes.map((scene: ScenePrompt, index: number) => ({
+        ...scene,
+        estimatedTime: calculateEstimatedTime(scene.wordCount),
+        timecode: calculateTimecode(scenes, index)
+      }));
 
-        // Save to database
-        await supabase.from("generated_images").insert({
-          user_id: user?.id,
-          prompt: prompt,
-          image_url: imageUrl,
-        });
+      setGeneratedScenes(enrichedScenes);
 
-        queryClient.invalidateQueries({ queryKey: ["generated-images"] });
+      // Calcular duração total
+      const totalWords = enrichedScenes.reduce((acc: number, s: ScenePrompt) => acc + s.wordCount, 0);
+      const estimatedDuration = calculateEstimatedTime(totalWords);
 
-        toast({
-          title: "Imagem gerada!",
-          description: "A imagem foi gerada com sucesso",
-        });
+      // Salvar no histórico
+      if (user) {
+        await supabase.from("scene_prompts").insert([{
+          user_id: user.id,
+          title: title || "Roteiro sem título",
+          script,
+          total_scenes: totalScenes,
+          total_words: totalWords,
+          estimated_duration: estimatedDuration,
+          model_used: model,
+          style,
+          scenes: JSON.parse(JSON.stringify(enrichedScenes)),
+          credits_used: creditsUsed
+        }]);
       }
-    } catch (error) {
-      console.error("Error generating image:", error);
+
+      queryClient.invalidateQueries({ queryKey: ["scene-prompts-history"] });
+
+      toast({
+        title: "Prompts gerados!",
+        description: `${totalScenes} cenas analisadas. Créditos: ${creditsUsed}`,
+      });
+    } catch (error: any) {
+      console.error("Error generating scenes:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível gerar a imagem",
+        description: error.message || "Não foi possível gerar os prompts",
         variant: "destructive",
       });
     } finally {
@@ -127,152 +228,452 @@ const PromptsImages = () => {
     }
   };
 
-  const copyPrompt = () => {
+  // Copiar prompt individual
+  const copyPrompt = (prompt: string, index: number) => {
     navigator.clipboard.writeText(prompt);
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
     toast({
       title: "Copiado!",
       description: "Prompt copiado para a área de transferência",
     });
   };
 
-  const loadPrompt = (savedPrompt: { title: string; prompt: string }) => {
-    setPrompt(savedPrompt.prompt);
-    setPromptTitle(savedPrompt.title);
+  // Copiar todos os prompts
+  const copyAllPrompts = () => {
+    const allPrompts = generatedScenes
+      .map(s => `[Cena ${s.number} - ${s.timecode}]\n${s.imagePrompt}`)
+      .join("\n\n---\n\n");
+    navigator.clipboard.writeText(allPrompts);
+    toast({
+      title: "Copiado!",
+      description: "Todos os prompts copiados",
+    });
+  };
+
+  // Carregar histórico
+  const loadFromHistory = (history: SceneHistory) => {
+    setTitle(history.title || "");
+    setScript(history.script);
+    setStyle(history.style || "cinematic");
+    setGeneratedScenes(history.scenes);
+    toast({
+      title: "Carregado!",
+      description: "Roteiro carregado do histórico",
+    });
+  };
+
+  // Deletar do histórico
+  const deleteFromHistory = async (id: string) => {
+    try {
+      await supabase.from("scene_prompts").delete().eq("id", id);
+      queryClient.invalidateQueries({ queryKey: ["scene-prompts-history"] });
+      toast({
+        title: "Excluído!",
+        description: "Removido do histórico",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Estatísticas do roteiro atual
+  const scriptStats = {
+    words: script.split(/\s+/).filter(Boolean).length,
+    estimatedScenes: Math.ceil(script.split(/\s+/).filter(Boolean).length / (parseInt(wordsPerScene) || 80)),
+    estimatedDuration: calculateEstimatedTime(script.split(/\s+/).filter(Boolean).length)
   };
 
   return (
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Session Indicator */}
           <SessionIndicator 
-            storageKeys={["prompts_prompt", "prompts_generatedImage"]}
-            label="Prompt anterior"
+            storageKeys={["prompts_script", "prompts_scenes"]}
+            label="Roteiro anterior"
             onClear={() => {
-              setPrompt("");
-              setPromptTitle("");
-              setGeneratedImage(null);
+              setScript("");
+              setTitle("");
+              setNiche("");
+              setGeneratedScenes([]);
             }}
           />
 
           <div className="mb-8 mt-4">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Prompts e Imagens</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Prompts para Cenas</h1>
             <p className="text-muted-foreground">
-              Crie e gerencie prompts para geração de imagens
+              Analise seu roteiro e gere prompts de imagem otimizados para cada cena com direção de produção audiovisual
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <Card className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Wand2 className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold text-foreground">Gerador de Imagens</h3>
-                </div>
-                <Input
-                  placeholder="Título do prompt (opcional)"
-                  value={promptTitle}
-                  onChange={(e) => setPromptTitle(e.target.value)}
-                  className="bg-secondary border-border mb-3"
-                />
-                <Textarea
-                  placeholder="Descreva a imagem que você quer criar..."
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  className="bg-secondary border-border min-h-32 mb-4"
-                />
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleGenerate}
-                    disabled={generating}
-                    className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    {generating ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Image className="w-4 h-4 mr-2" />
+          <Tabs defaultValue="generator" className="space-y-6">
+            <TabsList className="bg-secondary">
+              <TabsTrigger value="generator" className="gap-2">
+                <Film className="w-4 h-4" />
+                Gerador
+              </TabsTrigger>
+              <TabsTrigger value="history" className="gap-2">
+                <History className="w-4 h-4" />
+                Histórico
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="generator" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Área de Input */}
+                <div className="lg:col-span-2 space-y-6">
+                  <Card className="p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Wand2 className="w-5 h-5 text-primary" />
+                      <h3 className="font-semibold text-foreground">Análise de Roteiro</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <Input
+                        placeholder="Título do vídeo"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="bg-secondary border-border"
+                      />
+                      <Input
+                        placeholder="Nicho (ex: tecnologia, finanças)"
+                        value={niche}
+                        onChange={(e) => setNiche(e.target.value)}
+                        className="bg-secondary border-border"
+                      />
+                    </div>
+
+                    <Textarea
+                      placeholder="Cole seu roteiro aqui... A IA irá analisar e dividir em cenas com prompts de imagem otimizados."
+                      value={script}
+                      onChange={(e) => setScript(e.target.value)}
+                      className="bg-secondary border-border min-h-48 mb-4 font-mono text-sm"
+                    />
+
+                    {/* Estatísticas em tempo real */}
+                    {script.trim() && (
+                      <div className="flex flex-wrap gap-4 mb-4 p-3 bg-secondary/50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">
+                            <strong className="text-foreground">{scriptStats.words}</strong> palavras
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Film className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">
+                            ~<strong className="text-foreground">{scriptStats.estimatedScenes}</strong> cenas
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">
+                            ~<strong className="text-foreground">{scriptStats.estimatedDuration}</strong> duração
+                          </span>
+                        </div>
+                      </div>
                     )}
-                    Gerar Imagem
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={copyPrompt} className="border-border text-muted-foreground hover:bg-secondary">
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => savePromptMutation.mutate()}
-                    disabled={!prompt.trim()}
-                    className="border-border text-muted-foreground hover:bg-secondary"
-                  >
-                    <Save className="w-4 h-4" />
-                  </Button>
-                </div>
-              </Card>
 
-              {generatedImage && (
-                <Card className="p-6 mt-6">
-                  <h3 className="font-semibold text-foreground mb-4">Imagem Gerada</h3>
-                  <img 
-                    src={generatedImage} 
-                    alt="Generated" 
-                    className="w-full rounded-lg"
-                  />
-                </Card>
-              )}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                      <Select value={style} onValueChange={setStyle}>
+                        <SelectTrigger className="bg-secondary border-border">
+                          <SelectValue placeholder="Estilo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STYLES.map((s) => (
+                            <SelectItem key={s.value} value={s.value}>
+                              {s.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-              <Card className="p-6 mt-6">
-                <h3 className="font-semibold text-foreground mb-4">Imagens Geradas</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {generatedImages && generatedImages.length > 0 ? (
-                    generatedImages.map((img) => (
-                      <div key={img.id} className="aspect-square bg-secondary rounded-lg overflow-hidden">
-                        {img.image_url ? (
-                          <img src={img.image_url} alt={img.prompt} className="w-full h-full object-cover" />
+                      <Select value={model} onValueChange={setModel}>
+                        <SelectTrigger className="bg-secondary border-border">
+                          <SelectValue placeholder="Modelo IA" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AI_MODELS.map((m) => (
+                            <SelectItem key={m.value} value={m.value}>
+                              <div className="flex items-center gap-2">
+                                <span>{m.label}</span>
+                                <Badge variant="outline" className="text-[10px]">{m.speed}</Badge>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Input
+                        type="number"
+                        placeholder="Palavras/cena"
+                        value={wordsPerScene}
+                        onChange={(e) => setWordsPerScene(e.target.value)}
+                        className="bg-secondary border-border"
+                        min={30}
+                        max={200}
+                      />
+
+                      <Button 
+                        onClick={handleGenerate}
+                        disabled={generating || !script.trim()}
+                        className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        {generating ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Image className="w-8 h-8 text-muted-foreground" />
+                          <Sparkles className="w-4 h-4 mr-2" />
+                        )}
+                        Analisar
+                      </Button>
+                    </div>
+                  </Card>
+
+                  {/* Cenas Geradas */}
+                  {generatedScenes.length > 0 && (
+                    <Card className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <Film className="w-5 h-5 text-primary" />
+                          <h3 className="font-semibold text-foreground">
+                            {generatedScenes.length} Cenas Analisadas
+                          </h3>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={copyAllPrompts}>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copiar Todos
+                        </Button>
+                      </div>
+
+                      <ScrollArea className="h-[500px] pr-4">
+                        <div className="space-y-4">
+                          {generatedScenes.map((scene, index) => (
+                            <div 
+                              key={scene.number}
+                              className="p-4 bg-secondary/50 rounded-lg border border-border/50"
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                  <Badge className="bg-primary/20 text-primary">
+                                    Cena {scene.number}
+                                  </Badge>
+                                  <Badge variant="outline" className="font-mono">
+                                    {scene.timecode}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground">
+                                    {scene.wordCount} palavras • {scene.estimatedTime}
+                                  </span>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => setExpandedScene(expandedScene === index ? null : index)}
+                                  >
+                                    {expandedScene === index ? (
+                                      <ChevronUp className="w-4 h-4" />
+                                    ) : (
+                                      <ChevronDown className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={cn("h-8 w-8", copiedIndex === index && "text-green-500")}
+                                    onClick={() => copyPrompt(scene.imagePrompt, index)}
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {expandedScene === index && (
+                                <div className="mb-3 p-3 bg-background rounded border border-border">
+                                  <p className="text-xs text-muted-foreground mb-1">Texto da Cena:</p>
+                                  <p className="text-sm text-foreground">{scene.text}</p>
+                                </div>
+                              )}
+
+                              <div className="p-3 bg-background rounded border border-border">
+                                <p className="text-xs text-muted-foreground mb-1">Prompt de Imagem:</p>
+                                <p className="text-sm text-foreground font-mono leading-relaxed">
+                                  {scene.imagePrompt}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </Card>
+                  )}
+                </div>
+
+                {/* Sidebar - Prompts Salvos */}
+                <div>
+                  <Card className="p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Save className="w-5 h-5 text-primary" />
+                      <h3 className="font-semibold text-foreground">Prompts Salvos</h3>
+                    </div>
+                    <ScrollArea className="h-[400px]">
+                      <div className="space-y-3 pr-2">
+                        {savedPrompts && savedPrompts.length > 0 ? (
+                          savedPrompts.map((item) => (
+                            <div 
+                              key={item.id} 
+                              className="p-3 bg-secondary/50 rounded-lg cursor-pointer hover:bg-secondary transition-colors"
+                            >
+                              <h4 className="font-medium text-foreground text-sm mb-1">{item.title}</h4>
+                              <p className="text-xs text-muted-foreground line-clamp-2">{item.prompt}</p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-center text-muted-foreground py-8 text-sm">
+                            Nenhum prompt salvo
+                          </p>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="history" className="space-y-6">
+              <Card className="p-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <History className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold text-foreground">Histórico de Análises</h3>
+                </div>
+
+                {loadingHistory ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : sceneHistory && sceneHistory.length > 0 ? (
+                  <div className="space-y-4">
+                    {sceneHistory.map((history) => (
+                      <div 
+                        key={history.id}
+                        className="p-4 bg-secondary/50 rounded-lg border border-border/50"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="font-medium text-foreground mb-1">
+                              {history.title || "Roteiro sem título"}
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                {history.total_scenes} cenas
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {history.total_words} palavras
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {history.estimated_duration}
+                              </Badge>
+                              {history.model_used && (
+                                <Badge className="text-xs bg-primary/20 text-primary">
+                                  {AI_MODELS.find(m => m.value === history.model_used)?.label || history.model_used}
+                                </Badge>
+                              )}
+                              {history.style && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {STYLES.find(s => s.value === history.style)?.label || history.style}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setExpandedHistory(expandedHistory === history.id ? null : history.id)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => loadFromHistory(history)}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => deleteFromHistory(history.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {new Date(history.created_at).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+
+                        {expandedHistory === history.id && (
+                          <div className="mt-4 space-y-3">
+                            <div className="p-3 bg-background rounded border border-border">
+                              <p className="text-xs text-muted-foreground mb-1">Roteiro Original:</p>
+                              <p className="text-sm text-foreground line-clamp-4">{history.script}</p>
+                            </div>
+                            
+                            <div className="grid gap-3">
+                              {history.scenes.slice(0, 3).map((scene) => (
+                                <div key={scene.number} className="p-3 bg-background rounded border border-border">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge className="bg-primary/20 text-primary text-xs">
+                                      Cena {scene.number}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {scene.wordCount} palavras
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-foreground font-mono line-clamp-2">
+                                    {scene.imagePrompt}
+                                  </p>
+                                </div>
+                              ))}
+                              {history.scenes.length > 3 && (
+                                <p className="text-xs text-muted-foreground text-center">
+                                  + {history.scenes.length - 3} cenas...
+                                </p>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
-                    ))
-                  ) : (
-                    [1, 2, 3, 4, 5, 6].map((_, index) => (
-                      <div key={index} className="aspect-square bg-secondary rounded-lg flex items-center justify-center">
-                        <Image className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                    ))
-                  )}
-                </div>
-              </Card>
-            </div>
-
-            <div>
-              <Card className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <History className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold text-foreground">Prompts Salvos</h3>
-                </div>
-                <div className="space-y-3">
-                  {savedPrompts && savedPrompts.length > 0 ? (
-                    savedPrompts.map((item) => (
-                      <div 
-                        key={item.id} 
-                        onClick={() => loadPrompt(item)}
-                        className="p-3 bg-secondary/50 rounded-lg cursor-pointer hover:bg-secondary transition-colors"
-                      >
-                        <h4 className="font-medium text-foreground text-sm mb-1">{item.title}</h4>
-                        <p className="text-xs text-muted-foreground line-clamp-2">{item.prompt}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground py-8 text-sm">
-                      Nenhum prompt salvo ainda
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Film className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Nenhuma análise no histórico</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Suas análises de roteiro aparecerão aqui
                     </p>
-                  )}
-                </div>
+                  </div>
+                )}
               </Card>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </MainLayout>

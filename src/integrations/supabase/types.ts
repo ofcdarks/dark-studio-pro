@@ -907,6 +907,51 @@ export type Database = {
           },
         ]
       }
+      scene_prompts: {
+        Row: {
+          created_at: string
+          credits_used: number
+          estimated_duration: string | null
+          id: string
+          model_used: string | null
+          scenes: Json
+          script: string
+          style: string | null
+          title: string | null
+          total_scenes: number
+          total_words: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number
+          estimated_duration?: string | null
+          id?: string
+          model_used?: string | null
+          scenes?: Json
+          script: string
+          style?: string | null
+          title?: string | null
+          total_scenes?: number
+          total_words?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number
+          estimated_duration?: string | null
+          id?: string
+          model_used?: string | null
+          scenes?: Json
+          script?: string
+          style?: string | null
+          title?: string | null
+          total_scenes?: number
+          total_words?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       script_agents: {
         Row: {
           based_on_title: string | null
