@@ -168,7 +168,10 @@ export function CreditsDisplay({ collapsed = false, showRefresh = true, classNam
         <Button 
           variant="outline" 
           size="sm" 
-          className="h-8 px-3 text-xs border-primary/50 text-primary hover:bg-primary/10"
+          className={cn(
+            "h-8 px-3 text-xs border-primary/50 text-primary hover:bg-primary/10",
+            balance < 50 && "animate-pulse bg-primary/20 border-primary"
+          )}
           onClick={() => navigate("/plans")}
         >
           Comprar
