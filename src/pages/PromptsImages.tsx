@@ -19,7 +19,8 @@ import {
   Trash2,
   Eye,
   Download,
-  ImagePlus
+  ImagePlus,
+  RefreshCw
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -270,6 +271,54 @@ const PromptsImages = () => {
       title: "Imagens geradas!",
       description: `${updatedScenes.filter(s => s.generatedImage).length} imagens criadas`,
     });
+  };
+
+  // Regenerar imagem individual
+  const handleRegenerateImage = async (index: number) => {
+    const scene = generatedScenes[index];
+    if (!scene) return;
+
+    setCurrentGeneratingIndex(index);
+    
+    try {
+      const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
+      const fullPrompt = stylePrefix 
+        ? `${stylePrefix} ${scene.imagePrompt}`
+        : scene.imagePrompt;
+
+      const response = await supabase.functions.invoke("generate-imagefx", {
+        body: {
+          prompt: fullPrompt,
+          aspectRatio: "LANDSCAPE",
+          numberOfImages: 1
+        }
+      });
+
+      if (response.error) throw response.error;
+
+      if (response.data?.images?.[0]?.url) {
+        const updatedScenes = [...generatedScenes];
+        updatedScenes[index] = {
+          ...updatedScenes[index],
+          generatedImage: response.data.images[0].url
+        };
+        setGeneratedScenes(updatedScenes);
+        
+        toast({
+          title: "Imagem regenerada!",
+          description: `Cena ${scene.number} atualizada`,
+        });
+      }
+    } catch (error: any) {
+      console.error(`Error regenerating image for scene ${index + 1}:`, error);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível regenerar a imagem",
+        variant: "destructive",
+      });
+    } finally {
+      setCurrentGeneratingIndex(null);
+    }
   };
 
   // Copiar prompt individual
@@ -540,14 +589,29 @@ const PromptsImages = () => {
                             {generatedScenes.map((scene, index) => (
                               <div 
                                 key={`img-${scene.number}`}
-                                className="relative aspect-video rounded-lg overflow-hidden bg-secondary border border-border"
+                                className="group relative aspect-video rounded-lg overflow-hidden bg-secondary border border-border"
                               >
                                 {scene.generatedImage ? (
-                                  <img 
-                                    src={scene.generatedImage} 
-                                    alt={`Cena ${scene.number}`}
-                                    className="w-full h-full object-cover"
-                                  />
+                                  <>
+                                    <img 
+                                      src={scene.generatedImage} 
+                                      alt={`Cena ${scene.number}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <Button
+                                      variant="secondary"
+                                      size="icon"
+                                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => handleRegenerateImage(index)}
+                                      disabled={currentGeneratingIndex === index}
+                                    >
+                                      {currentGeneratingIndex === index ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <RefreshCw className="w-3 h-3" />
+                                      )}
+                                    </Button>
+                                  </>
                                 ) : currentGeneratingIndex === index ? (
                                   <div className="w-full h-full flex items-center justify-center">
                                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -605,6 +669,20 @@ const PromptsImages = () => {
                                     onClick={() => copyPrompt(scene.imagePrompt, index)}
                                   >
                                     <Copy className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => handleRegenerateImage(index)}
+                                    disabled={currentGeneratingIndex === index}
+                                    title="Regenerar imagem"
+                                  >
+                                    {currentGeneratingIndex === index ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <RefreshCw className="w-4 h-4" />
+                                    )}
                                   </Button>
                                 </div>
                               </div>
