@@ -2090,7 +2090,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
   };
 
   // Handler para melhorar cenas com problemas de retenção
-  const handleImproveScenes = async (sceneNumbers: number[], improvementType: string) => {
+  const handleImproveScenes = async (sceneNumbers: number[], improvementType: string, regenerateImages: boolean = false) => {
     if (!user || sceneNumbers.length === 0) return;
     
     try {
@@ -2127,6 +2127,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
       // Atualizar as cenas com prompts melhorados usando IA
       const updatedScenes = [...generatedScenes];
+      const improvedIndexes: number[] = [];
       
       for (const sceneNum of sceneNumbers) {
         const index = sceneNum - 1;
@@ -2143,12 +2144,12 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
             const emotions = ['tension', 'curiosity', 'surprise', 'shock'];
             improvedEmotion = emotions[index % emotions.length];
             
-            // Adicionar termos cinematográficos ao prompt
+            // Adicionar termos cinematográficos ao prompt baseado no roteiro
             const cinematicEnhancements = [
-              'dramatic lighting, intense atmosphere',
-              'cinematic composition, emotional impact',
-              'powerful visual storytelling, tension-filled',
-              'striking imagery, high contrast lighting'
+              'dramatic lighting, intense atmosphere, emotional storytelling',
+              'cinematic composition, powerful visual impact, high tension',
+              'striking imagery, high contrast lighting, narrative tension',
+              'epic visual storytelling, dramatic shadows, emotional depth'
             ];
             if (!improvedPrompt.toLowerCase().includes('dramatic') && !improvedPrompt.toLowerCase().includes('cinematic')) {
               improvedPrompt = `${improvedPrompt}, ${cinematicEnhancements[index % cinematicEnhancements.length]}`;
@@ -2164,31 +2165,55 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
             improvedEmotion = 'shock';
             improvedTrigger = 'curiosity';
             if (!improvedPrompt.toLowerCase().includes('dramatic close-up') && !improvedPrompt.toLowerCase().includes('intense')) {
-              improvedPrompt = `${improvedPrompt}, dramatic close-up, intense gaze, high stakes moment, ultra cinematic`;
+              improvedPrompt = `${improvedPrompt}, dramatic close-up, intense gaze, high stakes moment, ultra cinematic, powerful hook`;
             }
           }
           
+          // Se vai regenerar, limpa a imagem atual
           updatedScenes[index] = {
             ...scene,
             imagePrompt: improvedPrompt,
             emotion: improvedEmotion,
-            retentionTrigger: improvedTrigger
+            retentionTrigger: improvedTrigger,
+            generatedImage: regenerateImages ? undefined : scene.generatedImage,
+            generatingImage: regenerateImages ? true : false
           };
+          
+          if (regenerateImages) {
+            improvedIndexes.push(index);
+          }
         }
       }
       
       setGeneratedScenes(updatedScenes);
       setPersistedScenes(updatedScenes.map(({ generatedImage, generatingImage, ...rest }) => rest));
       
-      toast({
-        title: "✅ Cenas melhoradas!",
-        description: `${sceneNumbers.length} cena(s) otimizada(s) para maior retenção`,
-      });
+      // Se deve regenerar imagens, iniciar geração em background
+      if (regenerateImages && improvedIndexes.length > 0) {
+        toast({
+          title: "🎬 Melhorando cenas e regenerando imagens...",
+          description: `${improvedIndexes.length} cena(s) serão regeneradas com prompts otimizados`,
+        });
+        
+        // Sincronizar cenas com o hook de background e iniciar geração
+        syncScenes(updatedScenes);
+        
+        // Pequeno delay para garantir sincronização
+        setTimeout(() => {
+          startBgGeneration(updatedScenes, style, improvedIndexes, detectedCharacters);
+        }, 100);
+        
+      } else {
+        toast({
+          title: "✅ Cenas melhoradas!",
+          description: `${sceneNumbers.length} cena(s) otimizada(s) para maior retenção`,
+        });
+      }
       
       // Log activity
       await logActivity({
         action: 'scenes_improved',
-        description: `${sceneNumbers.length} cenas melhoradas (${improvementType})`,
+        description: `${sceneNumbers.length} cenas melhoradas (${improvementType})${regenerateImages ? ' + imagens regeneradas' : ''}`,
       });
       
     } catch (error) {

@@ -5,10 +5,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Sparkles, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface GeneratedScene {
   number: number;
@@ -27,7 +28,7 @@ interface ScriptPreviewTimelineProps {
   className?: string;
   onSyncAudio?: (newWpm: number) => void;
   generatedScenes?: GeneratedScene[];
-  onImproveScenes?: (sceneNumbers: number[], improvementType: string) => void;
+  onImproveScenes?: (sceneNumbers: number[], improvementType: string, regenerateImages?: boolean) => void;
 }
 
 interface PreviewScene {
@@ -146,6 +147,7 @@ export function ScriptPreviewTimeline({
   const [showDetails, setShowDetails] = useState(false);
   const [audioDuration, setAudioDuration] = useState("");
   const [isImproving, setIsImproving] = useState(false);
+  const [regenerateAfterImprove, setRegenerateAfterImprove] = useState(true);
   
   // Se há cenas geradas, usa elas (com timecodes corretos)
   // Senão, estima baseado em palavras por cena
@@ -509,6 +511,26 @@ export function ScriptPreviewTimeline({
       {/* Alertas de Retenção com Sugestões */}
       {retentionAnalysis && retentionAnalysis.issues.length > 0 && generatedScenes.length > 0 && (
         <div className="mb-3 space-y-2">
+          {/* Opção de regenerar imagens */}
+          {onImproveScenes && (
+            <div className="flex items-center justify-between p-2 bg-primary/10 border border-primary/30 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="regenerate-images"
+                  checked={regenerateAfterImprove}
+                  onCheckedChange={(checked) => setRegenerateAfterImprove(checked === true)}
+                />
+                <label htmlFor="regenerate-images" className="text-xs text-foreground cursor-pointer flex items-center gap-1.5">
+                  <RefreshCw className="w-3 h-3 text-primary" />
+                  Regenerar imagens automaticamente após melhorar
+                </label>
+              </div>
+              <Badge variant="outline" className="text-[9px] text-primary border-primary/40">
+                Sincronizado com narração
+              </Badge>
+            </div>
+          )}
+          
           {retentionAnalysis.issues.slice(0, 3).map((issue, index) => (
             <Alert 
               key={index} 
@@ -548,17 +570,21 @@ export function ScriptPreviewTimeline({
                     disabled={isImproving}
                     onClick={() => {
                       setIsImproving(true);
-                      onImproveScenes(issue.scenes, issue.improvementType);
-                      toast.info(`Melhorando cenas ${issue.scenes.slice(0, 3).join(', ')}...`);
-                      setTimeout(() => setIsImproving(false), 3000);
+                      onImproveScenes(issue.scenes, issue.improvementType, regenerateAfterImprove);
+                      toast.info(
+                        regenerateAfterImprove 
+                          ? `Melhorando e regenerando imagens das cenas ${issue.scenes.slice(0, 3).join(', ')}...`
+                          : `Melhorando cenas ${issue.scenes.slice(0, 3).join(', ')}...`
+                      );
+                      setTimeout(() => setIsImproving(false), regenerateAfterImprove ? 10000 : 3000);
                     }}
                   >
                     {isImproving ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
                     ) : (
                       <>
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Melhorar
+                        {regenerateAfterImprove ? <RefreshCw className="w-3 h-3 mr-1" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                        {regenerateAfterImprove ? 'Melhorar + Gerar' : 'Melhorar'}
                       </>
                     )}
                   </Button>
@@ -569,7 +595,7 @@ export function ScriptPreviewTimeline({
           
           {/* Botão para melhorar todas as cenas com problemas */}
           {retentionAnalysis.issues.length > 1 && onImproveScenes && (
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
               <Button
                 size="sm"
                 variant="outline"
@@ -578,17 +604,23 @@ export function ScriptPreviewTimeline({
                 onClick={() => {
                   setIsImproving(true);
                   const allScenes = [...new Set(retentionAnalysis.issues.flatMap(i => i.scenes))];
-                  onImproveScenes(allScenes, 'improve_all');
-                  toast.info(`Melhorando ${allScenes.length} cenas com problemas...`);
-                  setTimeout(() => setIsImproving(false), 5000);
+                  onImproveScenes(allScenes, 'improve_all', regenerateAfterImprove);
+                  toast.info(
+                    regenerateAfterImprove
+                      ? `Melhorando e regenerando ${allScenes.length} cenas...`
+                      : `Melhorando ${allScenes.length} cenas com problemas...`
+                  );
+                  setTimeout(() => setIsImproving(false), regenerateAfterImprove ? 15000 : 5000);
                 }}
               >
                 {isImproving ? (
                   <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                ) : regenerateAfterImprove ? (
+                  <RefreshCw className="w-3 h-3 mr-1" />
                 ) : (
                   <Sparkles className="w-3 h-3 mr-1" />
                 )}
-                Melhorar Todas ({retentionAnalysis.issues.length} problemas)
+                {regenerateAfterImprove ? 'Melhorar + Regenerar Todas' : 'Melhorar Todas'} ({retentionAnalysis.issues.length})
               </Button>
             </div>
           )}
