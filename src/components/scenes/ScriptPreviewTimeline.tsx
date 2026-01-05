@@ -556,22 +556,23 @@ export function ScriptPreviewTimeline({
 
       {/* Alertas de Retenção com Sugestões */}
       {retentionAnalysis && retentionAnalysis.issues.length > 0 && generatedScenes.length > 0 && (
-        <div className="mb-3 space-y-2">
+        <div className="mb-4 space-y-3">
           {/* Opção de regenerar imagens */}
           {onImproveScenes && (
-            <div className="flex items-center justify-between p-2 bg-primary/10 border border-primary/30 rounded-lg">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/30 rounded-lg">
+              <div className="flex items-center gap-3">
                 <Checkbox
                   id="regenerate-images"
                   checked={regenerateAfterImprove}
                   onCheckedChange={(checked) => setRegenerateAfterImprove(checked === true)}
+                  className="w-5 h-5"
                 />
-                <label htmlFor="regenerate-images" className="text-xs text-foreground cursor-pointer flex items-center gap-1.5">
-                  <RefreshCw className="w-3 h-3 text-primary" />
+                <label htmlFor="regenerate-images" className="text-sm text-foreground cursor-pointer flex items-center gap-2 font-medium">
+                  <RefreshCw className="w-4 h-4 text-primary" />
                   Regenerar imagens automaticamente após melhorar
                 </label>
               </div>
-              <Badge variant="outline" className="text-[9px] text-primary border-primary/40">
+              <Badge variant="outline" className="text-xs text-primary border-primary/40 px-3 py-1">
                 Sincronizado com narração
               </Badge>
             </div>
@@ -580,26 +581,26 @@ export function ScriptPreviewTimeline({
           {retentionAnalysis.issues.slice(0, 3).map((issue, index) => (
             <Alert 
               key={index} 
-              className={`py-2 ${
+              className={`py-3 px-4 ${
                 issue.type === 'danger' 
-                  ? 'border-red-500/50 bg-red-500/10' 
-                  : 'border-amber-500/50 bg-amber-500/10'
+                  ? 'border-red-500/50 bg-red-500/15' 
+                  : 'border-amber-500/50 bg-amber-500/15'
               }`}
             >
-              <div className="flex items-start justify-between w-full gap-2">
-                <div className="flex items-start gap-2 flex-1">
-                  <AlertTriangle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${issue.type === 'danger' ? 'text-red-400' : 'text-amber-400'}`} />
+              <div className="flex items-center justify-between w-full gap-4">
+                <div className="flex items-center gap-3 flex-1">
+                  <AlertTriangle className={`w-5 h-5 flex-shrink-0 ${issue.type === 'danger' ? 'text-red-400' : 'text-amber-400'}`} />
                   <div className="flex-1 min-w-0">
-                    <AlertDescription className="text-xs">
+                    <AlertDescription className="text-sm font-medium">
                       <span className={issue.type === 'danger' ? 'text-red-300' : 'text-amber-300'}>
                         {issue.message}
                       </span>
-                      <span className="text-muted-foreground ml-1.5">
+                      <span className="text-muted-foreground ml-2 text-sm">
                         (Cenas {issue.scenes.slice(0, 5).join(', ')}{issue.scenes.length > 5 ? '...' : ''})
                       </span>
                     </AlertDescription>
-                    <p className="text-[10px] text-cyan-400 mt-0.5 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" />
+                    <p className="text-xs text-cyan-400 mt-1 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
                       💡 {issue.suggestion}
                     </p>
                   </div>
@@ -608,7 +609,7 @@ export function ScriptPreviewTimeline({
                   <Button
                     size="sm"
                     variant="outline"
-                    className={`h-7 text-[10px] px-2 flex-shrink-0 ${
+                    className={`h-9 text-xs px-4 flex-shrink-0 font-medium ${
                       issue.type === 'danger'
                         ? 'border-red-500/50 text-red-300 hover:bg-red-500/20'
                         : 'border-amber-500/50 text-amber-300 hover:bg-amber-500/20'
@@ -626,10 +627,10 @@ export function ScriptPreviewTimeline({
                     }}
                   >
                     {isImproving ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        {regenerateAfterImprove ? <RefreshCw className="w-3 h-3 mr-1" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                        {regenerateAfterImprove ? <RefreshCw className="w-4 h-4 mr-1.5" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
                         {regenerateAfterImprove ? 'Melhorar + Gerar' : 'Melhorar'}
                       </>
                     )}
@@ -641,11 +642,11 @@ export function ScriptPreviewTimeline({
           
           {/* Botão para melhorar todas as cenas com problemas */}
           {retentionAnalysis.issues.length > 1 && onImproveScenes && (
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 mt-2">
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-xs border-primary/50 text-primary hover:bg-primary/20"
+                className="h-9 text-sm font-medium border-primary/50 text-primary hover:bg-primary/20"
                 disabled={isImproving}
                 onClick={() => {
                   setIsImproving(true);
@@ -660,11 +661,11 @@ export function ScriptPreviewTimeline({
                 }}
               >
                 {isImproving ? (
-                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
                 ) : regenerateAfterImprove ? (
-                  <RefreshCw className="w-3 h-3 mr-1" />
+                  <RefreshCw className="w-4 h-4 mr-1.5" />
                 ) : (
-                  <Sparkles className="w-3 h-3 mr-1" />
+                  <Sparkles className="w-4 h-4 mr-1.5" />
                 )}
                 {regenerateAfterImprove ? 'Melhorar + Regenerar Todas' : 'Melhorar Todas'} ({retentionAnalysis.issues.length})
               </Button>
@@ -672,7 +673,7 @@ export function ScriptPreviewTimeline({
           )}
           
           {retentionAnalysis.issues.length > 3 && (
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-2">
               +{retentionAnalysis.issues.length - 3} outros alertas...
             </p>
           )}
