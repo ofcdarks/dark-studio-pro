@@ -2101,33 +2101,38 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
       
       if (scenesToImprove.length === 0) return;
 
-      // Construir prompt de melhoria baseado no tipo
-      let improvementPrompt = '';
-      switch (improvementType) {
-        case 'add_emotion':
-        case 'add_emotion_ending':
-          improvementPrompt = 'Adicione EMOÇÃO FORTE (tensão, surpresa, choque, curiosidade ou medo) a cada prompt de imagem. Torne as cenas visualmente IMPACTANTES com composição dramática, iluminação cinematográfica e elementos que transmitam a emoção.';
-          break;
-        case 'add_triggers':
-        case 'add_triggers_ending':
-          improvementPrompt = 'Adicione GATILHOS DE RETENÇÃO (curiosidade, antecipação, mistério ou revelação). Crie elementos visuais que gerem tensão e façam o espectador querer ver a próxima cena.';
-          break;
-        case 'improve_hook':
-          improvementPrompt = 'Crie um HOOK PODEROSO! As primeiras cenas devem ter IMPACTO IMEDIATO com emoção de choque, mistério ou promessa ousada. Use composição dramática, close-ups intensos ou cenas de ação.';
-          break;
-        case 'split_long_scenes':
-          improvementPrompt = 'Divida as cenas longas em cortes mais rápidos de 5-8 segundos. Mantenha o ritmo visual dinâmico com mudanças frequentes.';
-          break;
-        case 'improve_all':
-          improvementPrompt = 'MELHORE COMPLETAMENTE estas cenas para MÁXIMA RETENÇÃO. Adicione emoções fortes, gatilhos de curiosidade, composição cinematográfica dramática e elementos visuais impactantes.';
-          break;
-        default:
-          improvementPrompt = 'Melhore os prompts para criar cenas mais impactantes e cinematográficas.';
-      }
-
-      // Atualizar as cenas com prompts melhorados usando IA
-      const updatedScenes = [...generatedScenes];
+      // Atualizar as cenas com prompts melhorados
+      let updatedScenes = [...generatedScenes];
       const improvedIndexes: number[] = [];
+      
+      // CASO ESPECIAL: Cenas longas - ajustar duração automaticamente
+      if (improvementType === 'split_long_scenes') {
+        // Para cenas muito longas, vamos aumentar o WPM para que fiquem no tempo ideal
+        // O ideal é 5-8 segundos por cena
+        const idealDurationMax = 8; // segundos
+        
+        // Encontrar o WPM ideal para que as cenas longas fiquem no máximo 8s
+        const longScenes = updatedScenes.filter((s, i) => {
+          const duration = (s.wordCount / currentWpm) * 60;
+          return duration > 10;
+        });
+        
+        if (longScenes.length > 0) {
+          // Calcular o maior wordCount entre as cenas longas
+          const maxWords = Math.max(...longScenes.map(s => s.wordCount));
+          // WPM necessário para que maxWords dure no máximo 8s
+          const suggestedWpm = Math.ceil((maxWords / idealDurationMax) * 60);
+          const newWpm = Math.max(currentWpm, Math.min(suggestedWpm, 200)); // Limitar entre atual e 200
+          
+          if (newWpm > currentWpm) {
+            setNarrationSpeed(newWpm.toString());
+            toast({
+              title: "⚡ WPM ajustado automaticamente",
+              description: `Velocidade aumentada de ${currentWpm} para ${newWpm} WPM para otimizar durações`,
+            });
+          }
+        }
+      }
       
       for (const sceneNum of sceneNumbers) {
         const index = sceneNum - 1;
@@ -2169,30 +2174,60 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
             }
           }
           
-          // Se vai regenerar, limpa a imagem atual
+          // Para cenas longas, adicionar elementos de ritmo visual
+          if (improvementType === 'split_long_scenes') {
+            improvedEmotion = ['tension', 'curiosity', 'surprise'][index % 3];
+            improvedTrigger = ['anticipation', 'curiosity', 'mystery'][index % 3];
+            if (!improvedPrompt.toLowerCase().includes('dynamic')) {
+              improvedPrompt = `${improvedPrompt}, dynamic composition, visual rhythm, engaging framing`;
+            }
+          }
+          
+          // Se vai regenerar OU se não tem imagem, marca para gerar
+          const needsImage = regenerateImages || !scene.generatedImage;
+          
           updatedScenes[index] = {
             ...scene,
             imagePrompt: improvedPrompt,
             emotion: improvedEmotion,
             retentionTrigger: improvedTrigger,
-            generatedImage: regenerateImages ? undefined : scene.generatedImage,
-            generatingImage: regenerateImages ? true : false
+            generatedImage: needsImage ? undefined : scene.generatedImage,
+            generatingImage: needsImage ? true : false
           };
           
-          if (regenerateImages) {
+          if (needsImage) {
             improvedIndexes.push(index);
           }
         }
+      }
+      
+      // ADICIONAR: Verificar todas as cenas sem imagem e incluir na geração
+      if (regenerateImages) {
+        updatedScenes.forEach((scene, index) => {
+          if (!scene.generatedImage && !improvedIndexes.includes(index)) {
+            improvedIndexes.push(index);
+            updatedScenes[index] = {
+              ...scene,
+              generatingImage: true
+            };
+          }
+        });
+        
+        // Ordenar índices
+        improvedIndexes.sort((a, b) => a - b);
       }
       
       setGeneratedScenes(updatedScenes);
       setPersistedScenes(updatedScenes.map(({ generatedImage, generatingImage, ...rest }) => rest));
       
       // Se deve regenerar imagens, iniciar geração em background
-      if (regenerateImages && improvedIndexes.length > 0) {
+      if (improvedIndexes.length > 0) {
+        const missingCount = updatedScenes.filter(s => !s.generatedImage).length;
+        const improvedCount = sceneNumbers.length;
+        
         toast({
-          title: "🎬 Melhorando cenas e regenerando imagens...",
-          description: `${improvedIndexes.length} cena(s) serão regeneradas com prompts otimizados`,
+          title: "🎬 Otimizando vídeo para 100% cobertura...",
+          description: `${improvedCount} cena(s) melhoradas + ${missingCount > improvedCount ? missingCount - improvedCount : 0} imagem(ns) faltante(s) serão geradas`,
         });
         
         // Sincronizar cenas com o hook de background e iniciar geração
@@ -2213,7 +2248,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
       // Log activity
       await logActivity({
         action: 'scenes_improved',
-        description: `${sceneNumbers.length} cenas melhoradas (${improvementType})${regenerateImages ? ' + imagens regeneradas' : ''}`,
+        description: `${sceneNumbers.length} cenas melhoradas (${improvementType})${improvedIndexes.length > 0 ? ` + ${improvedIndexes.length} imagens geradas` : ''}`,
       });
       
     } catch (error) {
