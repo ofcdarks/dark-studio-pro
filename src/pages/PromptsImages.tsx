@@ -1500,6 +1500,148 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
     });
   };
 
+  // Exportar Plano de Produção para CapCut
+  const downloadProductionPlan = () => {
+    if (generatedScenes.length === 0) return;
+
+    // Calcular duração total
+    const totalDurationSeconds = generatedScenes.reduce((acc, s) => {
+      const startSec = s.timecode ? parseInt(s.timecode.split(":")[0]) * 60 + parseInt(s.timecode.split(":")[1]) : 0;
+      const endSec = s.endTimecode ? parseInt(s.endTimecode.split(":")[0]) * 60 + parseInt(s.endTimecode.split(":")[1]) : startSec;
+      return acc + (endSec - startSec);
+    }, 0);
+    
+    const formatDuration = (sec: number) => {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    };
+
+    // Agrupar cenas por intervalos de ~30 segundos ou ~1 minuto
+    const groups: { start: number; end: number; scenes: typeof generatedScenes }[] = [];
+    const INTERVAL = totalDurationSeconds > 180 ? 60 : 30; // 1 min se > 3min, senão 30s
+    
+    let currentGroup: typeof groups[0] | null = null;
+    let currentGroupEnd = INTERVAL;
+    
+    generatedScenes.forEach((scene) => {
+      const startSec = scene.timecode ? parseInt(scene.timecode.split(":")[0]) * 60 + parseInt(scene.timecode.split(":")[1]) : 0;
+      
+      if (!currentGroup || startSec >= currentGroupEnd) {
+        if (currentGroup) groups.push(currentGroup);
+        const groupStart = Math.floor(startSec / INTERVAL) * INTERVAL;
+        currentGroupEnd = groupStart + INTERVAL;
+        currentGroup = { start: groupStart, end: currentGroupEnd, scenes: [] };
+      }
+      currentGroup.scenes.push(scene);
+    });
+    if (currentGroup && currentGroup.scenes.length > 0) groups.push(currentGroup);
+
+    // Gerar documento
+    const header = `
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         PLANO DE PRODUÇÃO - CAPCUT                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📅 Data: ${new Date().toLocaleDateString("pt-BR")}
+⏱️ Duração Total: ${formatDuration(totalDurationSeconds)}
+🎬 Total de Cenas: ${generatedScenes.length}
+📝 Total de Palavras: ${totalWords}
+🎙️ Velocidade de Narração: ${currentWpm} WPM
+
+================================================================================
+                         INSTRUÇÕES PARA O CAPCUT
+================================================================================
+
+1. IMPORTE TODAS AS IMAGENS
+   - Arraste a pasta com as imagens (cena_001.jpg, cena_002.jpg, etc.) para a biblioteca do CapCut
+
+2. IMPORTE O ÁUDIO/NARRAÇÃO
+   - Adicione o arquivo de áudio da narração na timeline
+
+3. ORGANIZE AS CENAS EM BLOCOS
+   - Use os agrupamentos abaixo para facilitar a edição
+   - Arraste as cenas em lotes conforme as instruções
+
+`;
+
+    const groupsText = groups.map((group, idx) => {
+      const sceneNumbers = group.scenes.map(s => s.number);
+      const firstScene = sceneNumbers[0];
+      const lastScene = sceneNumbers[sceneNumbers.length - 1];
+      const sceneRange = firstScene === lastScene ? `Cena ${firstScene}` : `Cenas ${firstScene} a ${lastScene}`;
+      
+      return `
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ BLOCO ${idx + 1}: ${formatDuration(group.start)} → ${formatDuration(group.end)}                                          
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 📁 Arraste: ${sceneRange} (${group.scenes.length} arquivo${group.scenes.length > 1 ? "s" : ""})
+│ 📍 Posicione em: ${formatDuration(group.start)} na timeline
+│ 
+│ DETALHES:
+${group.scenes.map(s => `│   • Cena ${String(s.number).padStart(2, " ")}: ${s.timecode} → ${s.endTimecode} (${s.estimatedTime}) - ${s.wordCount}w`).join("\n")}
+└──────────────────────────────────────────────────────────────────────────────┘`;
+    }).join("\n");
+
+    const scenesDetail = `
+
+================================================================================
+                         LISTA COMPLETA DE CENAS
+================================================================================
+
+${generatedScenes.map(s => `
+CENA ${String(s.number).padStart(2, "0")} | ${s.timecode} → ${s.endTimecode} | ${s.estimatedTime} | ${s.wordCount} palavras
+${"─".repeat(78)}
+📝 Texto: ${s.text.substring(0, 150)}${s.text.length > 150 ? "..." : ""}
+🎨 Prompt: ${s.imagePrompt.substring(0, 120)}${s.imagePrompt.length > 120 ? "..." : ""}
+${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
+`).join("\n")}
+`;
+
+    const tips = `
+
+================================================================================
+                         DICAS DE EDIÇÃO
+================================================================================
+
+💡 AJUSTE FINO:
+   - Use a forma de onda do áudio para ajustar os cortes precisos
+   - O início de cada cena deve coincidir com o início da frase correspondente
+
+💡 TRANSIÇÕES:
+   - Use Cross Dissolve (0.3s) entre cenas do mesmo assunto
+   - Use corte seco para mudanças bruscas de assunto
+
+💡 KEN BURNS:
+   - Adicione zoom lento (5-10%) em cenas estáticas para dar vida
+
+💡 VERIFICAÇÃO:
+   - Assista o vídeo 1x e anote dessincronia
+   - Ajuste cenas individuais arrastando as bordas
+
+================================================================================
+                    Gerado por Prompts para Cenas • ${new Date().toLocaleString("pt-BR")}
+================================================================================
+`;
+
+    const fullContent = header + groupsText + scenesDetail + tips;
+    
+    const blob = new Blob([fullContent], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `PLANO_PRODUCAO_${projectName.trim().replace(/\s+/g, "_") || "video"}_${new Date().toISOString().split("T")[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Plano de Produção exportado!",
+      description: "Arquivo TXT com instruções para o CapCut",
+    });
+  };
+
   // Carregar histórico
   const loadFromHistory = (history: SceneHistory) => {
     setScript(history.script);
@@ -1842,6 +1984,16 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                           >
                             <Clock className="w-4 h-4 mr-2" />
                             {currentWpm} WPM
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={downloadProductionPlan}
+                            title="Plano de produção com instruções para CapCut"
+                            className="border-green-500/50 text-green-500 hover:bg-green-500/10"
+                          >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Plano
                           </Button>
                           <Button variant="outline" size="sm" onClick={downloadPrompts}>
                             <Download className="w-4 h-4 mr-2" />
