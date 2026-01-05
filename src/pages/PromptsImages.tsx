@@ -2174,13 +2174,21 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
             }
           }
           
-          // Para cenas longas, adicionar elementos de ritmo visual
+          // Para cenas longas, SEMPRE forçar melhorias visuais para compensar a duração
           if (improvementType === 'split_long_scenes') {
-            improvedEmotion = ['tension', 'curiosity', 'surprise'][index % 3];
-            improvedTrigger = ['anticipation', 'curiosity', 'mystery'][index % 3];
-            if (!improvedPrompt.toLowerCase().includes('dynamic')) {
-              improvedPrompt = `${improvedPrompt}, dynamic composition, visual rhythm, engaging framing`;
-            }
+            const strongEmotions = ['tension', 'shock', 'curiosity', 'surprise'];
+            const strongTriggers = ['anticipation', 'revelation', 'mystery', 'pattern_break'];
+            improvedEmotion = strongEmotions[index % strongEmotions.length];
+            improvedTrigger = strongTriggers[index % strongTriggers.length];
+            
+            // FORÇAR adição de elementos dinâmicos mesmo se já existirem
+            const dynamicEnhancements = [
+              'dynamic composition, fast visual rhythm, engaging close-up, dramatic angle',
+              'striking perspective, intense movement, high energy framing, powerful contrast',
+              'bold visual storytelling, cinematic movement, impactful composition, dramatic lighting',
+              'epic scale, intense action framing, dynamic camera movement, high stakes tension'
+            ];
+            improvedPrompt = `${scene.imagePrompt}, ${dynamicEnhancements[index % dynamicEnhancements.length]}`;
           }
           
           // Se vai regenerar OU se não tem imagem, marca para gerar
