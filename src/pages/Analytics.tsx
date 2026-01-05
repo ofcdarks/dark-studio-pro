@@ -2854,27 +2854,207 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                                   Editar
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent>
+                              <DialogContent className="max-w-lg">
                                 <DialogHeader>
                                   <DialogTitle>Definir Nicho Manualmente</DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-4 py-4">
+                                  {/* Predefined Niches */}
                                   <div className="space-y-2">
                                     <Label>Nicho Principal</Label>
+                                    <Select
+                                      value={editingNiche.niche}
+                                      onValueChange={(value) => setEditingNiche(prev => ({ ...prev, niche: value, subNiche: '', microNiche: '' }))}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Selecione ou digite abaixo" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Finanças">💰 Finanças</SelectItem>
+                                        <SelectItem value="Tecnologia">💻 Tecnologia</SelectItem>
+                                        <SelectItem value="Games">🎮 Games</SelectItem>
+                                        <SelectItem value="Beleza & Lifestyle">💄 Beleza & Lifestyle</SelectItem>
+                                        <SelectItem value="Fitness & Saúde">💪 Fitness & Saúde</SelectItem>
+                                        <SelectItem value="Educação">📚 Educação</SelectItem>
+                                        <SelectItem value="Entretenimento">🎬 Entretenimento</SelectItem>
+                                        <SelectItem value="Negócios">💼 Negócios</SelectItem>
+                                        <SelectItem value="Automóveis">🚗 Automóveis</SelectItem>
+                                        <SelectItem value="Culinária">🍳 Culinária</SelectItem>
+                                        <SelectItem value="Música">🎵 Música</SelectItem>
+                                        <SelectItem value="Viagem">✈️ Viagem</SelectItem>
+                                        <SelectItem value="Pets">🐕 Pets</SelectItem>
+                                        <SelectItem value="Arte & Design">🎨 Arte & Design</SelectItem>
+                                        <SelectItem value="Esportes">⚽ Esportes</SelectItem>
+                                      </SelectContent>
+                                    </Select>
                                     <Input
                                       value={editingNiche.niche}
                                       onChange={(e) => setEditingNiche(prev => ({ ...prev, niche: e.target.value }))}
-                                      placeholder="Ex: Finanças, Tecnologia, Games..."
+                                      placeholder="Ou digite um nicho personalizado..."
+                                      className="text-xs"
                                     />
                                   </div>
+                                  
+                                  {/* Predefined Sub-niches based on selected niche */}
                                   <div className="space-y-2">
                                     <Label>Sub-nicho</Label>
+                                    <Select
+                                      value={editingNiche.subNiche}
+                                      onValueChange={(value) => setEditingNiche(prev => ({ ...prev, subNiche: value }))}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Selecione ou digite abaixo" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {editingNiche.niche === 'Finanças' && (
+                                          <>
+                                            <SelectItem value="Day Trade">Day Trade</SelectItem>
+                                            <SelectItem value="Criptomoedas">Criptomoedas</SelectItem>
+                                            <SelectItem value="Investimentos">Investimentos</SelectItem>
+                                            <SelectItem value="Educação Financeira">Educação Financeira</SelectItem>
+                                            <SelectItem value="Renda Extra">Renda Extra</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Tecnologia' && (
+                                          <>
+                                            <SelectItem value="Reviews">Reviews</SelectItem>
+                                            <SelectItem value="Programação">Programação</SelectItem>
+                                            <SelectItem value="Smartphones">Smartphones</SelectItem>
+                                            <SelectItem value="PC/Hardware">PC/Hardware</SelectItem>
+                                            <SelectItem value="IA & Automação">IA & Automação</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Games' && (
+                                          <>
+                                            <SelectItem value="FPS/Shooter">FPS/Shooter</SelectItem>
+                                            <SelectItem value="RPG/Aventura">RPG/Aventura</SelectItem>
+                                            <SelectItem value="MOBA">MOBA</SelectItem>
+                                            <SelectItem value="Mobile Games">Mobile Games</SelectItem>
+                                            <SelectItem value="Gameplay/Stream">Gameplay/Stream</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Beleza & Lifestyle' && (
+                                          <>
+                                            <SelectItem value="Maquiagem">Maquiagem</SelectItem>
+                                            <SelectItem value="Skincare">Skincare</SelectItem>
+                                            <SelectItem value="Cabelo">Cabelo</SelectItem>
+                                            <SelectItem value="Moda">Moda</SelectItem>
+                                            <SelectItem value="Rotina/GRWM">Rotina/GRWM</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Fitness & Saúde' && (
+                                          <>
+                                            <SelectItem value="Musculação">Musculação</SelectItem>
+                                            <SelectItem value="Emagrecimento">Emagrecimento</SelectItem>
+                                            <SelectItem value="Nutrição">Nutrição</SelectItem>
+                                            <SelectItem value="Yoga/Bem-estar">Yoga/Bem-estar</SelectItem>
+                                            <SelectItem value="Suplementação">Suplementação</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Educação' && (
+                                          <>
+                                            <SelectItem value="Concursos">Concursos</SelectItem>
+                                            <SelectItem value="Vestibular/ENEM">Vestibular/ENEM</SelectItem>
+                                            <SelectItem value="Idiomas">Idiomas</SelectItem>
+                                            <SelectItem value="Aulas">Aulas</SelectItem>
+                                            <SelectItem value="Cursos Online">Cursos Online</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Entretenimento' && (
+                                          <>
+                                            <SelectItem value="React/Reações">React/Reações</SelectItem>
+                                            <SelectItem value="Humor">Humor</SelectItem>
+                                            <SelectItem value="Vlogs">Vlogs</SelectItem>
+                                            <SelectItem value="Curiosidades">Curiosidades</SelectItem>
+                                            <SelectItem value="Podcast">Podcast</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Negócios' && (
+                                          <>
+                                            <SelectItem value="Marketing Digital">Marketing Digital</SelectItem>
+                                            <SelectItem value="E-commerce">E-commerce</SelectItem>
+                                            <SelectItem value="Infoprodutos">Infoprodutos</SelectItem>
+                                            <SelectItem value="Empreendedorismo">Empreendedorismo</SelectItem>
+                                            <SelectItem value="Dropshipping">Dropshipping</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Automóveis' && (
+                                          <>
+                                            <SelectItem value="Reviews">Reviews</SelectItem>
+                                            <SelectItem value="Motos">Motos</SelectItem>
+                                            <SelectItem value="Performance">Performance</SelectItem>
+                                            <SelectItem value="Manutenção">Manutenção</SelectItem>
+                                            <SelectItem value="Comparativos">Comparativos</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Culinária' && (
+                                          <>
+                                            <SelectItem value="Receitas Rápidas">Receitas Rápidas</SelectItem>
+                                            <SelectItem value="Confeitaria">Confeitaria</SelectItem>
+                                            <SelectItem value="Fitness/Saudável">Fitness/Saudável</SelectItem>
+                                            <SelectItem value="Churrasco">Churrasco</SelectItem>
+                                            <SelectItem value="Comida Internacional">Comida Internacional</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Música' && (
+                                          <>
+                                            <SelectItem value="Covers">Covers</SelectItem>
+                                            <SelectItem value="Produção Musical">Produção Musical</SelectItem>
+                                            <SelectItem value="Tutoriais">Tutoriais</SelectItem>
+                                            <SelectItem value="Reações">Reações</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Viagem' && (
+                                          <>
+                                            <SelectItem value="Dicas de Viagem">Dicas de Viagem</SelectItem>
+                                            <SelectItem value="Vlogs de Viagem">Vlogs de Viagem</SelectItem>
+                                            <SelectItem value="Destinos">Destinos</SelectItem>
+                                            <SelectItem value="Mochilão">Mochilão</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Pets' && (
+                                          <>
+                                            <SelectItem value="Cachorros">Cachorros</SelectItem>
+                                            <SelectItem value="Gatos">Gatos</SelectItem>
+                                            <SelectItem value="Adestramento">Adestramento</SelectItem>
+                                            <SelectItem value="Cuidados">Cuidados</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Arte & Design' && (
+                                          <>
+                                            <SelectItem value="Desenho">Desenho</SelectItem>
+                                            <SelectItem value="Design Gráfico">Design Gráfico</SelectItem>
+                                            <SelectItem value="Pintura">Pintura</SelectItem>
+                                            <SelectItem value="Edição de Vídeo">Edição de Vídeo</SelectItem>
+                                          </>
+                                        )}
+                                        {editingNiche.niche === 'Esportes' && (
+                                          <>
+                                            <SelectItem value="Futebol">Futebol</SelectItem>
+                                            <SelectItem value="NBA/Basquete">NBA/Basquete</SelectItem>
+                                            <SelectItem value="MMA/UFC">MMA/UFC</SelectItem>
+                                            <SelectItem value="Análises">Análises</SelectItem>
+                                          </>
+                                        )}
+                                        {/* Fallback for custom or unmatched niches */}
+                                        {!['Finanças', 'Tecnologia', 'Games', 'Beleza & Lifestyle', 'Fitness & Saúde', 'Educação', 'Entretenimento', 'Negócios', 'Automóveis', 'Culinária', 'Música', 'Viagem', 'Pets', 'Arte & Design', 'Esportes'].includes(editingNiche.niche) && (
+                                          <>
+                                            <SelectItem value="Geral">Geral</SelectItem>
+                                            <SelectItem value="Tutoriais">Tutoriais</SelectItem>
+                                            <SelectItem value="Reviews">Reviews</SelectItem>
+                                            <SelectItem value="Vlogs">Vlogs</SelectItem>
+                                          </>
+                                        )}
+                                      </SelectContent>
+                                    </Select>
                                     <Input
                                       value={editingNiche.subNiche}
                                       onChange={(e) => setEditingNiche(prev => ({ ...prev, subNiche: e.target.value }))}
-                                      placeholder="Ex: Criptomoedas, Reviews, FPS..."
+                                      placeholder="Ou digite um sub-nicho personalizado..."
+                                      className="text-xs"
                                     />
                                   </div>
+                                  
                                   <div className="space-y-2">
                                     <Label>Micro-nicho (opcional)</Label>
                                     <Input
@@ -2882,7 +3062,11 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                                       onChange={(e) => setEditingNiche(prev => ({ ...prev, microNiche: e.target.value }))}
                                       placeholder="Ex: Bitcoin + DeFi, iPhone 15, Valorant..."
                                     />
+                                    <p className="text-xs text-muted-foreground">
+                                      💡 Micro-nicho é o tema específico dentro do sub-nicho
+                                    </p>
                                   </div>
+                                  
                                   <div className="flex gap-2">
                                     <Button
                                       onClick={() => {
