@@ -1696,9 +1696,10 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
     }];
 
     // Gerar SRT com o roteiro completo (será dividido em blocos de até 499 chars)
+    // Com 10 segundos de intervalo entre cada bloco
     const srtContent = generateNarrationSrt(scenesForSrt, {
       maxCharsPerBlock: 499,
-      gapBetweenScenes: 0
+      gapBetweenScenes: 10
     });
 
     // Parsear blocos para exibir no preview
