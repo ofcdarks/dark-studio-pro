@@ -1839,6 +1839,7 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                             </Button>
                           </div>
                         </div>
+                        <div className="relative">
                         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                           {generatedScenes
                             .map((scene, index) => ({ scene, index }))
@@ -1946,8 +1947,87 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                             </div>
                           )})}
                         </div>
+                        
+                        {/* Modal de progresso centralizado no grid */}
+                        {generatingImages && (() => {
+                          const elapsed = generationStartTime ? (Date.now() - generationStartTime) : 0;
+                          const avgTimePerImage = imageBatchDone > 0 ? elapsed / imageBatchDone : 0;
+                          const remaining = imageBatchTotal - imageBatchDone;
+                          const estimatedRemainingMs = remaining * avgTimePerImage;
+                          
+                          const formatTime = (ms: number): string => {
+                            if (ms <= 0) return "Calculando...";
+                            const totalSeconds = Math.ceil(ms / 1000);
+                            if (totalSeconds < 60) return `~${totalSeconds}s`;
+                            const minutes = Math.floor(totalSeconds / 60);
+                            const seconds = totalSeconds % 60;
+                            return seconds > 0 ? `~${minutes}m ${seconds}s` : `~${minutes}m`;
+                          };
+                          
+                          const timeEstimate = imageBatchDone > 0 ? formatTime(estimatedRemainingMs) : "Calculando...";
+                          const avgPerImage = imageBatchDone > 0 ? `${(avgTimePerImage / 1000).toFixed(1)}s/img` : "";
+                          
+                          return (
+                            <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+                              <div className="bg-card border-2 border-primary/60 rounded-2xl shadow-2xl shadow-primary/20 px-6 py-5 min-w-[420px] max-w-lg pointer-events-auto">
+                                <div className="flex items-center gap-5">
+                                  {/* Logo maior */}
+                                  <div className="relative w-16 h-16 flex-shrink-0">
+                                    <div className="absolute inset-0 bg-primary/20 rounded-full animate-pulse" />
+                                    <div className="relative w-16 h-16 rounded-full border-2 border-primary overflow-hidden">
+                                      <img 
+                                        src={logoGif} 
+                                        alt="Loading" 
+                                        className="w-full h-full object-cover scale-110"
+                                      />
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Progresso */}
+                                  <div className="flex-1 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-base font-bold text-foreground">
+                                        Gerando Imagens
+                                      </span>
+                                      <span className="text-lg font-bold text-primary">
+                                        {imageBatchDone}/{imageBatchTotal}
+                                      </span>
+                                    </div>
+                                    <Progress 
+                                      value={imageBatchTotal > 0 ? (imageBatchDone / imageBatchTotal) * 100 : 0} 
+                                      className="h-3 bg-secondary" 
+                                    />
+                                    {/* Estimativa de tempo */}
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span className="text-muted-foreground flex items-center gap-1.5 font-medium">
+                                        <Clock className="w-4 h-4" />
+                                        {timeEstimate}
+                                      </span>
+                                      {avgPerImage && (
+                                        <span className="text-muted-foreground">
+                                          {avgPerImage}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Botão Cancelar */}
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={handleCancelGeneration}
+                                    className="flex-shrink-0 h-10 w-10 text-destructive border-destructive/50 hover:bg-destructive/10"
+                                    title="Cancelar"
+                                  >
+                                    <X className="w-5 h-5" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        </div>
                       </div>
-
                       <ScrollArea className="h-[400px] pr-4">
                         <div className="space-y-4">
                           {generatedScenes.map((scene, index) => (
@@ -2459,84 +2539,6 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
         </DialogContent>
       </Dialog>
 
-      {/* Barra de progresso flutuante quando gerando (sem modal) */}
-      {generatingImages && (() => {
-        // Calcular estimativa de tempo restante
-        const elapsedMs = generationStartTime ? Date.now() - generationStartTime : 0;
-        const avgTimePerImage = imageBatchDone > 0 ? elapsedMs / imageBatchDone : 0;
-        const remainingImages = imageBatchTotal - imageBatchDone;
-        const estimatedRemainingMs = avgTimePerImage * remainingImages;
-        
-        // Formatar tempo
-        const formatTime = (ms: number): string => {
-          if (ms <= 0) return "Calculando...";
-          const totalSeconds = Math.ceil(ms / 1000);
-          if (totalSeconds < 60) return `~${totalSeconds}s`;
-          const minutes = Math.floor(totalSeconds / 60);
-          const seconds = totalSeconds % 60;
-          return seconds > 0 ? `~${minutes}m ${seconds}s` : `~${minutes}m`;
-        };
-        
-        const timeEstimate = imageBatchDone > 0 ? formatTime(estimatedRemainingMs) : "Calculando...";
-        const avgPerImage = imageBatchDone > 0 ? `${(avgTimePerImage / 1000).toFixed(1)}s/img` : "";
-        
-        return (
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-card border-2 border-primary/60 rounded-2xl shadow-2xl shadow-primary/20 px-6 py-5 min-w-[420px] max-w-lg">
-            <div className="flex items-center gap-5">
-              {/* Logo maior */}
-              <div className="relative w-16 h-16 flex-shrink-0">
-                <div className="absolute inset-0 bg-primary/20 rounded-full animate-pulse" />
-                <div className="relative w-16 h-16 rounded-full border-2 border-primary overflow-hidden">
-                  <img 
-                    src={logoGif} 
-                    alt="Loading" 
-                    className="w-full h-full object-cover scale-110"
-                  />
-                </div>
-              </div>
-              
-              {/* Progresso */}
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-base font-bold text-foreground">
-                    Gerando Imagens
-                  </span>
-                  <span className="text-lg font-bold text-primary">
-                    {imageBatchDone}/{imageBatchTotal}
-                  </span>
-                </div>
-                <Progress 
-                  value={imageBatchTotal > 0 ? (imageBatchDone / imageBatchTotal) * 100 : 0} 
-                  className="h-3 bg-secondary" 
-                />
-                {/* Estimativa de tempo */}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5 font-medium">
-                    <Clock className="w-4 h-4" />
-                    {timeEstimate}
-                  </span>
-                  {avgPerImage && (
-                    <span className="text-muted-foreground">
-                      {avgPerImage}
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* Botão Cancelar */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleCancelGeneration}
-                className="flex-shrink-0 h-10 w-10 text-destructive border-destructive/50 hover:bg-destructive/10"
-                title="Cancelar"
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Modal de Instruções CapCut */}
       <Dialog open={showCapcutInstructions} onOpenChange={setShowCapcutInstructions}>
