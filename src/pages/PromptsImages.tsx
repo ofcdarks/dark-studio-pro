@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
 import { CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
-import { useFFmpegVideo, ProcessingMode, supportsMultiThread } from "@/hooks/useFFmpegVideo";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
 import { generateEdl, generateEdlWithTransitions } from "@/lib/edlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
@@ -33,7 +32,6 @@ import {
   Edit3,
   Check,
   X,
-  XCircle,
   DownloadCloud,
   Video,
   RotateCcw,
@@ -213,20 +211,6 @@ const PromptsImages = () => {
   const [narrationSpeed, setNarrationSpeed] = usePersistedState("prompts_narration_speed", "140");
   const [audioDurationInput, setAudioDurationInput] = useState("");
   const [showDurationModal, setShowDurationModal] = useState(false);
-  
-  // Hook para gerar vídeo no navegador
-  const { 
-    isGenerating: isGeneratingVideo, 
-    videoProgress, 
-    currentMode: videoProcessingMode,
-    supportsMultiThread: browserSupportsMultiThread,
-    generateVideo, 
-    downloadVideo,
-    cancelGeneration: cancelVideoGeneration
-  } = useFFmpegVideo();
-  
-  // Modo de processamento de vídeo selecionado pelo usuário
-  const [selectedVideoMode, setSelectedVideoMode] = usePersistedState<ProcessingMode>("prompts_video_mode", "auto");
   
   // Derivar estados de geração do background
   const generatingImages = bgState.isGenerating;
@@ -1239,55 +1223,6 @@ echo "Agora importe o video no CapCut!"
       title: "✅ EDL exportado!", 
       description: "Importe no DaVinci Resolve: File > Import > Timeline > Import AAF, EDL, XML..." 
     });
-  };
-
-  // Gerar vídeo MP4 diretamente no navegador usando FFmpeg.wasm
-  const handleGenerateVideo = async () => {
-    const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
-    
-    if (scenesWithImages.length === 0) {
-      toast({ 
-        title: "Nenhuma imagem disponível", 
-        description: "Gere as imagens primeiro antes de criar o vídeo.",
-        variant: "destructive" 
-      });
-      return;
-    }
-
-    toast({ 
-      title: "🎬 Iniciando geração do vídeo", 
-      description: "Isso pode levar alguns minutos dependendo do número de cenas..." 
-    });
-
-    // Calcular durações das cenas
-    const scenesForVideo = scenesWithImages.map(scene => {
-      const durationSeconds = Math.max(1, wordCountToSeconds(scene.wordCount));
-      return {
-        imageUrl: scene.generatedImage!,
-        durationSeconds,
-        number: scene.number
-      };
-    });
-
-    const videoBlob = await generateVideo(scenesForVideo, projectName, 30, selectedVideoMode);
-    
-    if (videoBlob) {
-      const safeFileName = (projectName.trim() || "video").replace(/[^a-zA-Z0-9_-]/g, "_");
-      downloadVideo(videoBlob, `${safeFileName}_${new Date().toISOString().split("T")[0]}.mp4`);
-      
-      toast({ 
-        title: "✅ Vídeo gerado com sucesso!", 
-        description: "O vídeo foi baixado. Agora importe no CapCut!" 
-      });
-      
-      setShowCapcutInstructions(false);
-    } else {
-      toast({ 
-        title: "Erro ao gerar vídeo", 
-        description: "Tente novamente ou use a opção de baixar ZIP.",
-        variant: "destructive" 
-      });
-    }
   };
 
   // Importar imagens de pasta existente para relink
@@ -2883,78 +2818,6 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
 
             {/* Botões */}
             <div className="space-y-3 pt-2">
-              {/* Seletor de modo de processamento */}
-              <div className="p-3 bg-secondary/50 rounded-lg border border-border space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  ⚡ Modo de Processamento
-                </Label>
-                <RadioGroup 
-                  value={selectedVideoMode} 
-                  onValueChange={(v) => setSelectedVideoMode(v as ProcessingMode)}
-                  className="grid grid-cols-3 gap-2"
-                  disabled={isGeneratingVideo}
-                >
-                  <div>
-                    <RadioGroupItem value="auto" id="mode-auto" className="peer sr-only" />
-                    <Label
-                      htmlFor="mode-auto"
-                      className={cn(
-                        "flex flex-col items-center p-2 rounded-lg border-2 cursor-pointer transition-all text-center",
-                        "hover:border-primary/50 hover:bg-primary/5",
-                        selectedVideoMode === "auto" 
-                          ? "border-primary bg-primary/10" 
-                          : "border-border bg-background"
-                      )}
-                    >
-                      <span className="text-lg">🔄</span>
-                      <span className="text-xs font-medium">Auto</span>
-                      <span className="text-[9px] text-muted-foreground">Detectar</span>
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="multi" id="mode-multi" className="peer sr-only" />
-                    <Label
-                      htmlFor="mode-multi"
-                      className={cn(
-                        "flex flex-col items-center p-2 rounded-lg border-2 cursor-pointer transition-all text-center",
-                        "hover:border-primary/50 hover:bg-primary/5",
-                        selectedVideoMode === "multi" 
-                          ? "border-primary bg-primary/10" 
-                          : "border-border bg-background",
-                        !browserSupportsMultiThread && "opacity-50 cursor-not-allowed"
-                      )}
-                    >
-                      <span className="text-lg">🚀</span>
-                      <span className="text-xs font-medium">Multi-Core</span>
-                      <span className="text-[9px] text-muted-foreground">CPU Rápido</span>
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="single" id="mode-single" className="peer sr-only" />
-                    <Label
-                      htmlFor="mode-single"
-                      className={cn(
-                        "flex flex-col items-center p-2 rounded-lg border-2 cursor-pointer transition-all text-center",
-                        "hover:border-primary/50 hover:bg-primary/5",
-                        selectedVideoMode === "single" 
-                          ? "border-primary bg-primary/10" 
-                          : "border-border bg-background"
-                      )}
-                    >
-                      <span className="text-lg">💻</span>
-                      <span className="text-xs font-medium">Single</span>
-                      <span className="text-[9px] text-muted-foreground">Compatível</span>
-                    </Label>
-                  </div>
-                </RadioGroup>
-                <p className="text-[10px] text-muted-foreground">
-                  {browserSupportsMultiThread 
-                    ? "✅ Seu navegador suporta multi-thread (mais rápido)"
-                    : "⚠️ Seu navegador não suporta multi-thread. Use Chrome/Edge para melhor performance."
-                  }
-                </p>
-              </div>
-
               {/* Timeline Visual */}
               {generatedScenes.length > 0 && (
                 <SceneTimeline
@@ -2968,68 +2831,6 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                   className="p-3 bg-secondary/30 rounded-lg border border-border"
                 />
               )}
-
-              {/* Botão de GERAR VÍDEO (automático) */}
-              <Button
-                onClick={handleGenerateVideo}
-                disabled={isGeneratingVideo || generatedScenes.filter(s => s.generatedImage).length === 0}
-                className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70"
-              >
-                {isGeneratingVideo ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {videoProgress?.message || 'Gerando vídeo...'}
-                  </>
-                ) : (
-                  <>
-                    <Film className="w-4 h-4 mr-2" />
-                    🎬 Gerar Vídeo MP4
-                  </>
-                )}
-              </Button>
-              
-              {/* Barra de progresso do vídeo */}
-              {isGeneratingVideo && videoProgress && (
-                <div className="space-y-2 p-3 bg-secondary/50 rounded-lg border border-border">
-                  <Progress value={videoProgress.progress} className="h-2" />
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground">
-                      {videoProgress.currentScene && videoProgress.totalScenes 
-                        ? `Cena ${videoProgress.currentScene}/${videoProgress.totalScenes}`
-                        : videoProgress.message
-                      }
-                    </span>
-                    {videoProgress.estimatedTimeRemaining && (
-                      <span className="text-primary font-medium">
-                        ⏱️ {videoProgress.estimatedTimeRemaining}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground text-center">
-                    {videoProgress.phase === 'processing' && "Carregando imagens..."}
-                    {videoProgress.phase === 'encoding' && "Codificando vídeo - isso pode levar alguns minutos"}
-                    {videoProgress.phase === 'loading' && "Preparando FFmpeg..."}
-                  </p>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      cancelVideoGeneration();
-                      toast({ title: "Geração cancelada", description: "A geração do vídeo foi interrompida." });
-                    }}
-                    className="w-full mt-2"
-                  >
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Cancelar Geração
-                  </Button>
-                </div>
-              )}
-
-              <div className="relative flex items-center py-2">
-                <div className="flex-grow border-t border-border"></div>
-                <span className="flex-shrink mx-4 text-xs text-muted-foreground">ou exporte ZIP</span>
-                <div className="flex-grow border-t border-border"></div>
-              </div>
               
               {/* Botão de importar imagens */}
               <Button
