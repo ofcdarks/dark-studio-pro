@@ -957,13 +957,57 @@ const PromptsImages = () => {
       zip.file("draft_content.json", draftContentJson);
       zip.file("draft_meta_info.json", draftMetaInfoJson);
       
-      // Arquivos auxiliares obrigatórios (estrutura real do CapCut)
-      zip.file("draft_agency_config.json", "{}");
-      zip.file("draft_biz_config.json", "{}");
-      zip.file("draft_settings", "");
-      zip.file("attachment_editing.json", "{}");
-      zip.file("attachment_pc_common.json", "{}");
-      zip.file("performance_opt_info.json", "{}");
+      // Arquivos auxiliares obrigatórios (conteúdo real do CapCut)
+      const draftAgencyConfig = JSON.stringify({
+        is_auto_agency_enabled: false,
+        is_auto_agency_popup: false,
+        is_single_agency_mode: false,
+        marterials: null,
+        use_converter: false,
+        video_resolution: 720
+      });
+      
+      const performanceOptInfo = JSON.stringify({
+        manual_cancle_precombine_segs: null,
+        need_auto_precombine_segs: null
+      });
+      
+      const attachmentEditing = JSON.stringify({
+        editing_draft: {
+          ai_remove_filter_words: { enter_source: "", right_id: "" },
+          ai_shorts_info: { report_params: "", type: 0 },
+          crop_info_extra: { crop_mirror_type: 0, crop_rotate: 0.0, crop_rotate_total: 0.0 },
+          digital_human_template_to_video_info: { has_upload_material: false, template_type: 0 },
+          draft_used_recommend_function: "",
+          edit_type: 0,
+          is_open_expand_player: false,
+          is_use_adjust: false,
+          version: "1.0.0"
+        }
+      });
+      
+      const attachmentPcCommon = JSON.stringify({
+        ai_packaging_infos: [],
+        ai_packaging_report_info: { caption_id_list: [], commercial_material: "", material_source: "", method: "", page_from: "", style: "", task_id: "", text_style: "", tos_id: "", video_category: "" },
+        broll: { ai_packaging_infos: [], ai_packaging_report_info: { caption_id_list: [], commercial_material: "", material_source: "", method: "", page_from: "", style: "", task_id: "", text_style: "", tos_id: "", video_category: "" } },
+        commercial_music_category_ids: [],
+        pc_feature_flag: 0,
+        recognize_tasks: [],
+        reference_lines_config: { horizontal_lines: [], is_lock: false, is_visible: false, vertical_lines: [] },
+        safe_area_type: 0,
+        template_item_infos: [],
+        unlock_template_ids: []
+      });
+      
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      const draftSettings = `[General]\ndraft_create_time=${nowSeconds}\ndraft_last_edit_time=${nowSeconds}\nreal_edit_seconds=0\nreal_edit_keys=0\n`;
+      
+      zip.file("draft_agency_config.json", draftAgencyConfig);
+      zip.file("draft_biz_config.json", "");
+      zip.file("draft_settings", draftSettings);
+      zip.file("attachment_editing.json", attachmentEditing);
+      zip.file("attachment_pc_common.json", attachmentPcCommon);
+      zip.file("performance_opt_info.json", performanceOptInfo);
       zip.file("template.tmp", "");
       zip.file("template-2.tmp", "");
       
