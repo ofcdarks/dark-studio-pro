@@ -3,14 +3,18 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Clock, FileText, Scissors } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Eye, EyeOff, Clock, FileText, Scissors, Timer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface ScriptPreviewTimelineProps {
   script: string;
   wordsPerScene: number;
   wpm: number;
   className?: string;
+  onSyncAudio?: (newWpm: number) => void;
 }
 
 interface PreviewScene {
@@ -69,10 +73,13 @@ export function ScriptPreviewTimeline({
   script, 
   wordsPerScene, 
   wpm, 
-  className = "" 
+  className = "",
+  onSyncAudio
 }: ScriptPreviewTimelineProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showSyncInput, setShowSyncInput] = useState(false);
+  const [audioDuration, setAudioDuration] = useState("");
   
   const previewScenes = useMemo(() => 
     estimateScenes(script, wordsPerScene, wpm), 
@@ -108,6 +115,57 @@ export function ScriptPreviewTimeline({
     return markers;
   }, [totalDuration]);
 
+  // Formatar input de tempo enquanto digita (máscara MM:SS)
+  const handleDurationChange = (value: string) => {
+    // Remove tudo que não for número
+    const numbersOnly = value.replace(/\D/g, '');
+    
+    if (numbersOnly.length <= 2) {
+      setAudioDuration(numbersOnly);
+    } else {
+      // Formata como MM:SS
+      const mins = numbersOnly.slice(0, -2) || '0';
+      const secs = numbersOnly.slice(-2);
+      setAudioDuration(`${mins}:${secs}`);
+    }
+  };
+
+  // Sincronizar com duração do áudio
+  const handleSyncAudio = () => {
+    if (!audioDuration.trim()) {
+      toast.error("Insira a duração do áudio");
+      return;
+    }
+
+    let durationSeconds = 0;
+    
+    if (audioDuration.includes(":")) {
+      const parts = audioDuration.split(":");
+      const mins = parseInt(parts[0]) || 0;
+      const secs = parseInt(parts[1]) || 0;
+      durationSeconds = mins * 60 + secs;
+    } else {
+      durationSeconds = parseFloat(audioDuration) || 0;
+    }
+    
+    if (durationSeconds <= 0) {
+      toast.error("Duração inválida");
+      return;
+    }
+    
+    // Calcular WPM baseado na duração real
+    const calculatedWpm = Math.round(totalWords / (durationSeconds / 60));
+    const clampedWpm = Math.max(80, Math.min(250, calculatedWpm));
+    
+    if (onSyncAudio) {
+      onSyncAudio(clampedWpm);
+      toast.success(`WPM ajustado para ${clampedWpm} (${totalWords} palavras em ${formatTimecode(durationSeconds)})`);
+    }
+    
+    setShowSyncInput(false);
+    setAudioDuration("");
+  };
+
   if (!script.trim() || previewScenes.length === 0) {
     return null;
   }
@@ -124,6 +182,17 @@ export function ScriptPreviewTimeline({
           </Badge>
         </div>
         <div className="flex items-center gap-2">
+          {onSyncAudio && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
+              onClick={() => setShowSyncInput(!showSyncInput)}
+            >
+              <Timer className="w-3 h-3 mr-1" />
+              Sincronizar
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -143,6 +212,36 @@ export function ScriptPreviewTimeline({
           </Button>
         </div>
       </div>
+
+      {/* Sync Audio Input */}
+      {showSyncInput && onSyncAudio && (
+        <div className="mb-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <Label className="text-xs text-muted-foreground mb-1 block">
+                Duração real do áudio (MM:SS)
+              </Label>
+              <Input
+                placeholder="Ex: 15:30"
+                value={audioDuration}
+                onChange={(e) => handleDurationChange(e.target.value)}
+                className="h-8 text-sm bg-background"
+                onKeyDown={(e) => e.key === 'Enter' && handleSyncAudio()}
+              />
+            </div>
+            <Button
+              size="sm"
+              onClick={handleSyncAudio}
+              className="h-8 bg-amber-500 hover:bg-amber-600 text-black"
+            >
+              Aplicar
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2">
+            O WPM será recalculado para sincronizar as cenas com a duração real da narração.
+          </p>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="flex flex-wrap gap-4 mb-3 text-xs">
@@ -209,7 +308,7 @@ export function ScriptPreviewTimeline({
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-sm">
                       <div className="space-y-1">
-                        <p className="font-bold">Cena {scene.number} (estimativa)</p>
+                        <p className="font-bold">Cena {scene.number}</p>
                         <p className="text-xs text-muted-foreground">
                           {formatTimecode(scene.startTime)} → {formatTimecode(scene.endTime)}
                         </p>
@@ -255,23 +354,25 @@ export function ScriptPreviewTimeline({
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
 
-      {/* Detalhes expandidos */}
+      {/* Detalhes expandidos - mostra duração de cada cena */}
       {showDetails && (
         <div className="mt-3 pt-3 border-t border-border/50 max-h-40 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
             {previewScenes.map((scene) => (
               <div 
                 key={scene.number}
-                className="flex items-start gap-2 p-2 rounded bg-secondary/30"
+                className="flex items-center gap-2 p-2 rounded bg-secondary/30"
               >
-                <span className="font-bold text-primary min-w-[20px]">{scene.number}</span>
+                <span className="font-bold text-primary min-w-[24px] text-center">{scene.number}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-muted-foreground">{formatTimecode(scene.startTime)}</span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      {formatTimecode(scene.startTime)} → {formatTimecode(scene.endTime)}
+                    </Badge>
                     <span className="text-primary font-medium">{formatTime(scene.durationSeconds)}</span>
                   </div>
-                  <p className="text-muted-foreground line-clamp-1 text-[10px]">
-                    {scene.text.substring(0, 60)}...
+                  <p className="text-muted-foreground line-clamp-1 text-[10px] mt-0.5">
+                    {scene.wordCount}w • {scene.text.substring(0, 40)}...
                   </p>
                 </div>
               </div>
