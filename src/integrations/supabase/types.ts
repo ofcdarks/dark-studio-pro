@@ -832,6 +832,8 @@ export type Database = {
           display_order: number | null
           id: string
           last_fetched_at: string | null
+          notes: string | null
+          notes_updated_at: string | null
           subscribers: number | null
           total_videos: number | null
           total_views: number | null
@@ -848,6 +850,8 @@ export type Database = {
           display_order?: number | null
           id?: string
           last_fetched_at?: string | null
+          notes?: string | null
+          notes_updated_at?: string | null
           subscribers?: number | null
           total_videos?: number | null
           total_views?: number | null
@@ -864,6 +868,8 @@ export type Database = {
           display_order?: number | null
           id?: string
           last_fetched_at?: string | null
+          notes?: string | null
+          notes_updated_at?: string | null
           subscribers?: number | null
           total_videos?: number | null
           total_views?: number | null
