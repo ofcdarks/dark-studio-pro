@@ -171,7 +171,10 @@ export function ScriptPreviewTimeline({
     'floresta', 'forest', 'tempestade', 'storm', 'chuva', 'rain'
   ];
 
-  const shouldRecommendMotion = (text: string, emotion?: string): boolean => {
+  const shouldRecommendMotion = (text: string, emotion?: string, durationSeconds?: number): boolean => {
+    // Só recomendar movimento para cenas de até 5 segundos
+    if (durationSeconds !== undefined && durationSeconds > 5) return false;
+    
     const lowerText = text.toLowerCase();
     const hasMotionKeyword = MOTION_KEYWORDS.some(kw => lowerText.includes(kw));
     const hasActionEmotion = emotion && ['tension', 'tensão', 'shock', 'choque', 'surprise', 'surpresa'].includes(emotion.toLowerCase());
@@ -186,7 +189,7 @@ export function ScriptPreviewTimeline({
         const startTime = currentTime;
         const endTime = currentTime + scene.durationSeconds;
         currentTime = endTime;
-        const motionRecommended = scene.motionRecommended ?? shouldRecommendMotion(scene.text, scene.emotion);
+        const motionRecommended = scene.motionRecommended ?? shouldRecommendMotion(scene.text, scene.emotion, scene.durationSeconds);
         return {
           number: scene.number,
           text: scene.text,
