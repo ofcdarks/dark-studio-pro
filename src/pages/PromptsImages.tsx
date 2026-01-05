@@ -2848,22 +2848,28 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                                       setPreviewEditPrompt(scene.imagePrompt);
                                     }}
                                   />
-                                  <Button
-                                    variant="secondary"
-                                    size="icon"
-                                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleRegenerateImage(index);
-                                    }}
-                                    disabled={regeneratingIndex === index || currentGeneratingIndex === index}
-                                  >
-                                    {regeneratingIndex === index ? (
-                                      <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                      <RefreshCw className="w-3 h-3" />
-                                    )}
-                                  </Button>
+                                  {/* Duração da cena no canto superior direito */}
+                                  <div className="absolute top-1 right-1 z-10 flex items-center gap-1">
+                                    <span className="px-1.5 py-0.5 rounded bg-black/70 text-white text-[10px] font-bold backdrop-blur-sm">
+                                      {((scene.wordCount / currentWpm) * 60).toFixed(1)}s
+                                    </span>
+                                    <Button
+                                      variant="secondary"
+                                      size="icon"
+                                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRegenerateImage(index);
+                                      }}
+                                      disabled={regeneratingIndex === index || currentGeneratingIndex === index}
+                                    >
+                                      {regeneratingIndex === index ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <RefreshCw className="w-3 h-3" />
+                                      )}
+                                    </Button>
+                                  </div>
                                 </>
                               ) : isCurrentlyGenerating ? (
                                 <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-primary/10 to-primary/5">
