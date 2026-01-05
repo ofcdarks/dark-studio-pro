@@ -27,7 +27,9 @@ import {
   FolderInput,
   FolderOpen,
   RefreshCw,
+  Play,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -113,6 +115,7 @@ export default function AnalysisHistory() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Fetch folders for display names
   const { data: folders } = useQuery({
@@ -456,6 +459,48 @@ export default function AnalysisHistory() {
     }
   };
 
+  // Load analysis into VideoAnalyzer
+  const loadAnalysisIntoAnalyzer = (video: AnalyzedVideo) => {
+    // Parse analysis data
+    const analysisData = video.analysis_data_json as any;
+    const videoInfo = analysisData?.videoInfo || null;
+    const titles = analysisData?.titles || [];
+
+    // Store in localStorage for the VideoAnalyzer to pick up
+    localStorage.setItem('analyzer_videoUrl', JSON.stringify(video.video_url));
+    localStorage.setItem('analyzer_videoInfo', JSON.stringify(videoInfo ? {
+      title: video.original_title || videoInfo.title || '',
+      thumbnail: video.original_thumbnail_url || videoInfo.thumbnail || '',
+      views: video.original_views || videoInfo.views || 0,
+      daysAgo: video.original_days || videoInfo.daysAgo || 0,
+      comments: video.original_comments || videoInfo.comments || 0,
+      estimatedRevenue: videoInfo.estimatedRevenue || { usd: 0, brl: 0 },
+      rpm: videoInfo.rpm || { usd: 0, brl: 0 },
+      niche: video.detected_niche || videoInfo.niche || '',
+      subNiche: video.detected_subniche || videoInfo.subNiche || '',
+      microNiche: video.detected_microniche || videoInfo.microNiche || '',
+      originalTitleAnalysis: videoInfo.originalTitleAnalysis || null,
+    } : null));
+    localStorage.setItem('analyzer_generatedTitles', JSON.stringify(titles.map((t: any, idx: number) => ({
+      id: `loaded-${idx}`,
+      title: t.title || t.title_text || '',
+      formula: t.formula || '',
+      formulaSurpresa: t.formulaSurpresa || '',
+      quality: t.quality || Math.round((t.pontuacao || 0) / 10),
+      impact: t.impact || Math.round((t.pontuacao || 0) / 10),
+      isBest: t.isBest || false,
+      model: t.model || t.model_used || 'N/A',
+    }))));
+    localStorage.setItem('analyzer_currentAnalysisId', JSON.stringify(video.id));
+
+    toast({
+      title: "Análise carregada!",
+      description: "Redirecionando para o Analisador de Vídeos...",
+    });
+
+    navigate('/video-analyzer');
+  };
+
   return (
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
@@ -633,6 +678,15 @@ export default function AnalysisHistory() {
                                 itemType="video"
                                 existingTags={getVideoTags(video.id)}
                               />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => loadAnalysisIntoAnalyzer(video)}
+                                title="Carregar no Analisador"
+                                className="text-primary hover:text-primary"
+                              >
+                                <Play className="w-4 h-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
