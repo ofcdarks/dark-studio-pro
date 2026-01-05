@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
 import { CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
-import { useFFmpegVideo } from "@/hooks/useFFmpegVideo";
+import { useFFmpegVideo, ProcessingMode, supportsMultiThread } from "@/hooks/useFFmpegVideo";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { Input } from "@/components/ui/input";
@@ -215,9 +215,14 @@ const PromptsImages = () => {
   const { 
     isGenerating: isGeneratingVideo, 
     videoProgress, 
+    currentMode: videoProcessingMode,
+    supportsMultiThread: browserSupportsMultiThread,
     generateVideo, 
     downloadVideo 
   } = useFFmpegVideo();
+  
+  // Modo de processamento de vídeo selecionado pelo usuário
+  const [selectedVideoMode, setSelectedVideoMode] = usePersistedState<ProcessingMode>("prompts_video_mode", "auto");
   
   // Derivar estados de geração do background
   const generatingImages = bgState.isGenerating;
@@ -1208,7 +1213,7 @@ echo "Agora importe o video no CapCut!"
       };
     });
 
-    const videoBlob = await generateVideo(scenesForVideo, projectName);
+    const videoBlob = await generateVideo(scenesForVideo, projectName, 30, selectedVideoMode);
     
     if (videoBlob) {
       const safeFileName = (projectName.trim() || "video").replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -2821,7 +2826,79 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
             )}
 
             {/* Botões */}
-            <div className="space-y-2 pt-2">
+            <div className="space-y-3 pt-2">
+              {/* Seletor de modo de processamento */}
+              <div className="p-3 bg-secondary/50 rounded-lg border border-border space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  ⚡ Modo de Processamento
+                </Label>
+                <RadioGroup 
+                  value={selectedVideoMode} 
+                  onValueChange={(v) => setSelectedVideoMode(v as ProcessingMode)}
+                  className="grid grid-cols-3 gap-2"
+                  disabled={isGeneratingVideo}
+                >
+                  <div>
+                    <RadioGroupItem value="auto" id="mode-auto" className="peer sr-only" />
+                    <Label
+                      htmlFor="mode-auto"
+                      className={cn(
+                        "flex flex-col items-center p-2 rounded-lg border-2 cursor-pointer transition-all text-center",
+                        "hover:border-primary/50 hover:bg-primary/5",
+                        selectedVideoMode === "auto" 
+                          ? "border-primary bg-primary/10" 
+                          : "border-border bg-background"
+                      )}
+                    >
+                      <span className="text-lg">🔄</span>
+                      <span className="text-xs font-medium">Auto</span>
+                      <span className="text-[9px] text-muted-foreground">Detectar</span>
+                    </Label>
+                  </div>
+                  <div>
+                    <RadioGroupItem value="multi" id="mode-multi" className="peer sr-only" />
+                    <Label
+                      htmlFor="mode-multi"
+                      className={cn(
+                        "flex flex-col items-center p-2 rounded-lg border-2 cursor-pointer transition-all text-center",
+                        "hover:border-primary/50 hover:bg-primary/5",
+                        selectedVideoMode === "multi" 
+                          ? "border-primary bg-primary/10" 
+                          : "border-border bg-background",
+                        !browserSupportsMultiThread && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <span className="text-lg">🚀</span>
+                      <span className="text-xs font-medium">Multi-Core</span>
+                      <span className="text-[9px] text-muted-foreground">CPU Rápido</span>
+                    </Label>
+                  </div>
+                  <div>
+                    <RadioGroupItem value="single" id="mode-single" className="peer sr-only" />
+                    <Label
+                      htmlFor="mode-single"
+                      className={cn(
+                        "flex flex-col items-center p-2 rounded-lg border-2 cursor-pointer transition-all text-center",
+                        "hover:border-primary/50 hover:bg-primary/5",
+                        selectedVideoMode === "single" 
+                          ? "border-primary bg-primary/10" 
+                          : "border-border bg-background"
+                      )}
+                    >
+                      <span className="text-lg">💻</span>
+                      <span className="text-xs font-medium">Single</span>
+                      <span className="text-[9px] text-muted-foreground">Compatível</span>
+                    </Label>
+                  </div>
+                </RadioGroup>
+                <p className="text-[10px] text-muted-foreground">
+                  {browserSupportsMultiThread 
+                    ? "✅ Seu navegador suporta multi-thread (mais rápido)"
+                    : "⚠️ Seu navegador não suporta multi-thread. Use Chrome/Edge para melhor performance."
+                  }
+                </p>
+              </div>
+
               {/* Botão de GERAR VÍDEO (automático) */}
               <Button
                 onClick={handleGenerateVideo}
@@ -2836,7 +2913,7 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                 ) : (
                   <>
                     <Film className="w-4 h-4 mr-2" />
-                    🎬 Gerar Vídeo MP4 (Automático)
+                    🎬 Gerar Vídeo MP4
                   </>
                 )}
               </Button>
