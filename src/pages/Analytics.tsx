@@ -43,7 +43,8 @@ import {
   Pin,
   PinOff,
   Star,
-  GripVertical
+  GripVertical,
+  Copy
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -2028,11 +2029,32 @@ const Analytics = () => {
 
                   const keywords = extractKeywords([channelName, channelDescription, ...topVideoTitles]);
                   
-                  // Generate suggested tags
-                  const suggestedTags = keywords.slice(0, 8).map(k => `#${k}`);
+                  // Generate suggested tags (without #)
+                  const suggestedTagsRaw = keywords.slice(0, 8);
+                  const suggestedTags = suggestedTagsRaw.map(k => `#${k}`);
                   
                   // Generate suggested hashtags for description
-                  const suggestedHashtags = keywords.slice(0, 5).map(k => `#${k.charAt(0).toUpperCase() + k.slice(1)}`);
+                  const suggestedHashtagsRaw = keywords.slice(0, 5);
+                  const suggestedHashtags = suggestedHashtagsRaw.map(k => `#${k.charAt(0).toUpperCase() + k.slice(1)}`);
+                  
+                  // Copy functions
+                  const copyTags = () => {
+                    const tagsText = suggestedTagsRaw.join(', ');
+                    navigator.clipboard.writeText(tagsText);
+                    toast({ title: "Tags copiadas!", description: tagsText });
+                  };
+                  
+                  const copyHashtags = () => {
+                    const hashtagsText = suggestedHashtags.join(' ');
+                    navigator.clipboard.writeText(hashtagsText);
+                    toast({ title: "Hashtags copiadas!", description: hashtagsText });
+                  };
+                  
+                  const copyAll = () => {
+                    const allText = `TAGS:\n${suggestedTagsRaw.join(', ')}\n\nHASHTAGS:\n${suggestedHashtags.join(' ')}\n\nPALAVRAS-CHAVE:\n${keywords.join(', ')}`;
+                    navigator.clipboard.writeText(allText);
+                    toast({ title: "Tudo copiado!", description: "Tags, hashtags e palavras-chave" });
+                  };
                   
                   // Analyze top performing content patterns
                   const topVideoPatterns = topVideoTitles.length > 0 
@@ -2181,6 +2203,40 @@ const Analytics = () => {
 
                   return (
                     <>
+                      {/* Copy Buttons for Tags/Hashtags */}
+                      <div className="flex flex-wrap gap-2 mb-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-xs font-medium text-foreground">Copiar sugestões:</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={copyTags}
+                          className="text-xs h-7 gap-1"
+                        >
+                          <Copy className="w-3 h-3" />
+                          Tags ({suggestedTagsRaw.length})
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={copyHashtags}
+                          className="text-xs h-7 gap-1"
+                        >
+                          <Copy className="w-3 h-3" />
+                          Hashtags ({suggestedHashtags.length})
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={copyAll}
+                          className="text-xs h-7 gap-1"
+                        >
+                          <Copy className="w-3 h-3" />
+                          Copiar Tudo
+                        </Button>
+                      </div>
+
                       <Tabs defaultValue="seo" className="w-full">
                         <TabsList className="mb-4 flex-wrap h-auto gap-1">
                           <TabsTrigger value="seo" className="text-xs">
