@@ -457,11 +457,25 @@ const PromptsImages = () => {
       });
     } catch (error: any) {
       console.error("Error generating scenes:", error);
-      toast({
-        title: "Erro",
-        description: error.message || "Não foi possível gerar os prompts",
-        variant: "destructive",
-      });
+      
+      // Verificar se é erro de timeout/rede para roteiros muito grandes
+      const isTimeoutError = error.message?.includes('Failed to send') || 
+                             error.message?.includes('Failed to fetch') ||
+                             error.message?.includes('timeout');
+      
+      if (isTimeoutError && wordCount > 2000) {
+        toast({
+          title: "Roteiro muito grande",
+          description: `${wordCount} palavras pode demorar demais. Tente dividir em partes menores (até 2000 palavras).`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: error.message || "Não foi possível gerar os prompts",
+          variant: "destructive",
+        });
+      }
     } finally {
       setGenerating(false);
     }
