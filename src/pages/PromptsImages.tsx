@@ -2417,6 +2417,16 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                             <Download className="w-4 h-4 mr-2" />
                             TXT
                           </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={downloadSrt}
+                            className="border-cyan-500/50 text-cyan-500 hover:bg-cyan-500/10"
+                            title="Baixar legendas SRT (499 chars, 150 WPM)"
+                          >
+                            <Type className="w-4 h-4 mr-2" />
+                            SRT
+                          </Button>
                           <Button variant="outline" size="sm" onClick={copyAllPrompts}>
                             <Copy className="w-4 h-4 mr-2" />
                             Copiar
