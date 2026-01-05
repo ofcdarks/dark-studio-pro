@@ -44,7 +44,8 @@ import {
   PinOff,
   Star,
   GripVertical,
-  Copy
+  Copy,
+  Save
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -2370,8 +2371,8 @@ const Analytics = () => {
                     toast({ title: "Títulos virais copiados!", description: `${viralTitleSuggestions.length} sugestões de títulos` });
                   };
                   
-                  const copyAll = () => {
-                    const allText = `🎯 ESTRATÉGIA VIRAL PARA: ${channelName}
+                  const generateFullStrategyText = () => {
+                    return `🎯 ESTRATÉGIA VIRAL PARA: ${channelName}
 ═══════════════════════════════════════
 
 📊 SCORE DE SAÚDE DO CANAL: ${healthScore.score}/100
@@ -2398,9 +2399,71 @@ ${thumbnailStrategy.tips.map(t => `• ${t}`).join('\n')}
 ${keywords.join(', ')}
 
 ═══════════════════════════════════════
-Gerado por Viral Analytics Expert`;
+Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
+                  };
+
+                  const copyAll = () => {
+                    const allText = generateFullStrategyText();
                     navigator.clipboard.writeText(allText);
                     toast({ title: "Estratégia completa copiada!", description: "Pronta para implementar" });
+                  };
+                  
+                  const [isSavingNote, setIsSavingNote] = useState(false);
+                  
+                  const saveChecklistAsNote = async () => {
+                    if (!user || !channelUrl || !analyticsData) return;
+                    
+                    setIsSavingNote(true);
+                    try {
+                      const noteText = generateFullStrategyText();
+                      
+                      const { error } = await supabase
+                        .from("saved_analytics_channels")
+                        .update({
+                          notes: noteText,
+                          notes_updated_at: new Date().toISOString(),
+                        })
+                        .eq("user_id", user.id)
+                        .eq("channel_url", channelUrl);
+                      
+                      if (error) {
+                        // If channel not saved yet, save it first with the note
+                        if (!isChannelSaved) {
+                          const { error: insertError } = await supabase.from("saved_analytics_channels").insert({
+                            user_id: user.id,
+                            channel_url: channelUrl,
+                            channel_id: analyticsData.channel.id,
+                            channel_name: analyticsData.channel.name,
+                            channel_thumbnail: analyticsData.channel.thumbnail,
+                            subscribers: analyticsData.statistics.subscribers,
+                            total_views: analyticsData.statistics.totalViews,
+                            total_videos: analyticsData.statistics.totalVideos,
+                            last_fetched_at: new Date().toISOString(),
+                            cached_data: analyticsData as any,
+                            notes: noteText,
+                            notes_updated_at: new Date().toISOString(),
+                          });
+                          
+                          if (insertError) throw insertError;
+                          refetchSavedChannels();
+                        } else {
+                          throw error;
+                        }
+                      }
+                      
+                      toast({ 
+                        title: "✅ Checklist salvo!", 
+                        description: "A estratégia foi salva no histórico do canal" 
+                      });
+                    } catch (err: any) {
+                      toast({ 
+                        title: "Erro ao salvar", 
+                        description: err.message, 
+                        variant: "destructive" 
+                      });
+                    } finally {
+                      setIsSavingNote(false);
+                    }
                   };
                   
                   // ============================================
@@ -2629,6 +2692,20 @@ Gerado por Viral Analytics Expert`;
                         >
                           <Copy className="w-3 h-3" />
                           Estratégia Completa
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={saveChecklistAsNote}
+                          disabled={isSavingNote}
+                          className="text-xs h-7 gap-1 border-primary/50 text-primary hover:bg-primary/10"
+                        >
+                          {isSavingNote ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Save className="w-3 h-3" />
+                          )}
+                          Salvar no Histórico
                         </Button>
                       </div>
 
