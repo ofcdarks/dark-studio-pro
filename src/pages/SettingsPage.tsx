@@ -37,7 +37,6 @@ const SettingsPage = () => {
     openai: '',
     claude: '',
     gemini: '',
-    elevenlabs: '',
     youtube: '',
     imagefx: '',
   });
@@ -45,7 +44,6 @@ const SettingsPage = () => {
     openai: false,
     claude: false,
     gemini: false,
-    elevenlabs: false,
     youtube: false,
     imagefx: false,
   });
@@ -172,7 +170,6 @@ const SettingsPage = () => {
         openai: settings.openai_api_key || '',
         claude: settings.claude_api_key || '',
         gemini: settings.gemini_api_key || '',
-        elevenlabs: settings.elevenlabs_api_key || '',
         youtube: settings.youtube_api_key || '',
         imagefx: settings.imagefx_cookies || '',
       });
@@ -694,7 +691,7 @@ const SettingsPage = () => {
                 {renderApiKeyField('openai', 'OpenAI API Key', 'sk-...', !canUseOwnApiKeys)}
                 {renderApiKeyField('claude', 'Claude API Key', 'sk-ant-...', !canUseOwnApiKeys)}
                 {renderApiKeyField('gemini', 'Google Gemini API Key', 'AIza...', !canUseOwnApiKeys)}
-                {renderApiKeyField('elevenlabs', 'ElevenLabs API Key', '...', !canUseOwnApiKeys)}
+                
               </div>
             </Card>
 
