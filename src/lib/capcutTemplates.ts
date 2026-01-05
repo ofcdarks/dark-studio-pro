@@ -457,16 +457,58 @@ const createSpeed = (id: string) => ({
 
 /**
  * Gerar o draft_content.json com template selecionado
- * NOTA: Geramos um projeto LIMPO (tracks vazios) para evitar erros de "mídia não encontrada".
- * As imagens ficam na pasta Resources e o usuário arrasta para a timeline.
+ * Inclui timeline com durações corretas - requer relink manual das imagens no CapCut
  */
 export const generateCapcutDraftContentWithTemplate = (
   scenes: SceneData[],
   template: CapcutTemplate,
   projectName = "Projeto Gerado"
 ): string => {
-  // Projeto limpo sem timeline - imagens ficam na pasta Resources para importação manual
-  const totalDurationMicro = 0; // Projeto vazio
+  const trackId = generateId();
+  
+  const videoMaterials: any[] = [];
+  const segments: any[] = [];
+  const speeds: any[] = [];
+  const transitions: any[] = [];
+  
+  let currentStartMicro = 0;
+  
+  scenes.forEach((scene, index) => {
+    const materialId = generateId();
+    const segmentId = generateId();
+    const speedId = generateId();
+    const durationMicro = secondsToMicroseconds(scene.durationSeconds);
+    const isLastSegment = index === scenes.length - 1;
+    
+    // Material com path vazio (requer relink)
+    videoMaterials.push(createVideoMaterial(materialId, scene.fileName, durationMicro));
+    
+    // Segment com duração correta
+    segments.push(createVideoSegment(
+      materialId,
+      segmentId,
+      durationMicro,
+      currentStartMicro,
+      template,
+      isLastSegment
+    ));
+    
+    // Speed
+    speeds.push(createSpeed(speedId));
+    
+    // Transição
+    if (!isLastSegment && template.transitionType !== 'none') {
+      const transitionId = generateId();
+      const transition = createTransition(template, transitionId);
+      if (transition) {
+        transitions.push(transition);
+      }
+    }
+    
+    currentStartMicro += durationMicro;
+  });
+
+  const totalDurationMicro = currentStartMicro;
 
   const draftContent = {
     canvas_config: {
@@ -614,19 +656,19 @@ export const generateCapcutDraftContentWithTemplate = (
       smart_crops: [],
       smart_relights: [],
       sound_channel_mappings: [],
-      speeds: [],
+      speeds: speeds,
       stickers: [],
       tail_leaders: [],
       text_templates: [],
       texts: [],
       time_marks: [],
-      transitions: [],
+      transitions: transitions,
       video_effects: [],
       video_radius: [],
       video_shadows: [],
       video_strokes: [],
       video_trackings: [],
-      videos: [],
+      videos: videoMaterials,
       vocal_beautifys: [],
       vocal_separations: []
     },
@@ -655,7 +697,7 @@ export const generateCapcutDraftContentWithTemplate = (
     source: "default",
     static_cover_image_path: "",
     time_marks: null,
-    tracks: [],
+    tracks: segments.length > 0 ? [createVideoTrack(trackId, segments)] : [],
     uneven_animation_template_info: {
       composition: "",
       content: "",
