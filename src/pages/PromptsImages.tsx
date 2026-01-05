@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
+import { generateCapcutDraftContent, generateCapcutDraftMetaInfo } from "@/lib/capcutProject";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -880,58 +881,62 @@ const PromptsImages = () => {
         "",
         "📁 CONTEÚDO DO ZIP:",
         "  • cena_001.png, cena_002.png... - Imagens das cenas",
-        "  • DURACOES.txt - Tempo de cada cena (para ajuste manual)",
+        "  • draft_content.json - Timeline do projeto (PRINCIPAL!)",
+        "  • draft_meta_info.json - Metadados do projeto",
+        "  • DURACOES.txt - Tempo de cada cena (referência)",
         "  • NARRACOES.srt - Texto para narração com timecodes",
-        "  • README_CAPCUT.txt - Este arquivo",
         "",
         "═══════════════════════════════════════════════════════════════",
-        "          MÉTODO 1: IMPORTAÇÃO MANUAL (RECOMENDADO)",
+        "          MÉTODO AUTOMÁTICO (RECOMENDADO)",
         "═══════════════════════════════════════════════════════════════",
         "",
-        "1) Extraia este ZIP em QUALQUER pasta do seu computador",
+        "1) Abra o CapCut e crie um NOVO PROJETO (projeto vazio)",
         "",
-        "2) Abra o CapCut e crie/abra um projeto",
+        "2) FECHE o CapCut completamente",
         "",
-        "3) Importe as imagens (cena_001.png, cena_002.png...) pelo CapCut:",
-        "   - Clique em 'Importar' ou arraste as imagens",
-        "   - Adicione-as à timeline na ordem correta",
+        "3) Localize a pasta do projeto:",
+        "   Windows: C:\\Users\\[Você]\\Documents\\CapCut\\User Data\\Projects",
+        "   macOS: ~/Documents/CapCut/User Data/Projects",
         "",
-        "4) Ajuste a duração de cada imagem usando DURACOES.txt:",
-        "   - Selecione cada imagem na timeline",
-        "   - Altere a duração conforme indicado no arquivo",
+        "4) Encontre a pasta do projeto recém-criado (última modificada)",
         "",
-        "5) Para narração, use NARRACOES.srt:",
-        "   - Use como referência para gravar sua narração",
-        "   - Ou importe como legenda no CapCut (Legendas > Importar SRT)",
+        "5) Extraia TODO o conteúdo deste ZIP para dentro dessa pasta",
+        "   (sobrescreva se perguntado)",
         "",
-        "═══════════════════════════════════════════════════════════════",
-        "          MÉTODO 2: EXTRAÇÃO DIRETA (AVANÇADO)",
-        "═══════════════════════════════════════════════════════════════",
-        "",
-        "Windows:",
-        "  C:\\Users\\[Você]\\Documents\\CapCut\\User Data\\Projects\\[Projeto]",
-        "",
-        "macOS:",
-        "  ~/Documents/CapCut/User Data/Projects/[Projeto]",
-        "",
-        "⚠️ Extraia DENTRO de uma pasta de projeto específico, não na raiz.",
+        "6) Abra o CapCut novamente - o projeto terá todas as imagens",
+        "   JÁ NA TIMELINE com os tempos corretos!",
         "",
         "═══════════════════════════════════════════════════════════════",
-        "          DICA: NARRAÇÃO COM IA",
+        "          MÉTODO MANUAL (ALTERNATIVO)",
         "═══════════════════════════════════════════════════════════════",
         "",
-        "O arquivo NARRACOES.srt contém o texto de cada cena com timecodes.",
-        "Você pode:",
-        "  • Usar como script para gravar sua voz",
-        "  • Importar em ferramentas de TTS (Text-to-Speech)",
-        "  • Importar como legenda no CapCut e usar a função de voz IA",
+        "Se o método automático não funcionar:",
+        "",
+        "1) Abra o CapCut e importe as imagens manualmente",
+        "2) Use DURACOES.txt para ajustar o tempo de cada cena",
+        "3) Use NARRACOES.srt para adicionar legendas/narração",
         "",
         "═══════════════════════════════════════════════════════════════",
       ].join("\n");
+
+      // Gerar dados para o JSON do CapCut
+      const scenesForCapcut = scenesWithDurations.map(s => ({
+        number: s.number,
+        fileName: `cena_${String(s.number).padStart(3, "0")}.png`,
+        durationSeconds: s.durationSeconds,
+        startSeconds: s.startSeconds,
+        text: s.text
+      }));
+
+      // Gerar JSONs do projeto CapCut
+      const draftContentJson = generateCapcutDraftContent(scenesForCapcut, `Projeto_${new Date().toISOString().split("T")[0]}`);
+      const draftMetaInfoJson = generateCapcutDraftMetaInfo(scenesForCapcut, `Projeto_${new Date().toISOString().split("T")[0]}`);
       
       zip.file("DURACOES.txt", durationsTxt);
       zip.file("NARRACOES.srt", srtContent);
       zip.file("README_CAPCUT.txt", readme);
+      zip.file("draft_content.json", draftContentJson);
+      zip.file("draft_meta_info.json", draftMetaInfoJson);
 
       // Baixar ZIP
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -945,8 +950,8 @@ const PromptsImages = () => {
       URL.revokeObjectURL(url);
 
       toast({ 
-        title: "✅ ZIP baixado com sucesso!", 
-        description: "Inclui imagens, durações e SRT para narração. Leia README_CAPCUT.txt" 
+        title: "✅ Projeto CapCut baixado!", 
+        description: "Extraia na pasta do projeto CapCut para importar automaticamente. Leia README_CAPCUT.txt" 
       });
     } catch (error) {
       console.error("Erro ZIP:", error);
