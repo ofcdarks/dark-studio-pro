@@ -38,7 +38,10 @@ import {
   Layout,
   FolderSearch,
   Timer,
-  Play
+  Play,
+  Music,
+  Volume2,
+  Type
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +68,9 @@ import { Switch } from "@/components/ui/switch";
 import logoGif from "@/assets/logo.gif";
 import { SceneTimeline } from "@/components/scenes/SceneTimeline";
 import { ScriptPreviewTimeline } from "@/components/scenes/ScriptPreviewTimeline";
+import { SUBTITLE_STYLES, SubtitleStyle, generateSubtitleInstructions } from "@/lib/subtitleStyles";
+import { DEFAULT_AUDIO_MIX, AudioMixSettings, generateAudioFolderStructure, generateAudioMixReadme } from "@/lib/audioMixConfig";
+import { Slider } from "@/components/ui/slider";
 
 interface CharacterDescription {
   name: string;
@@ -240,6 +246,12 @@ const PromptsImages = () => {
   const [videoColorFilter, setVideoColorFilter] = useState<"warm" | "cool" | "cinematic" | "vintage" | "none">("cinematic");
   const [videoResolution, setVideoResolution] = useState<"720p" | "1080p">("1080p");
   const [generatedVideoBlob, setGeneratedVideoBlob] = useState<Blob | null>(null);
+  
+  // Subtitle & Audio settings
+  const [selectedSubtitleStyle, setSelectedSubtitleStyle] = usePersistedState("prompts_subtitle_style", "clean-white");
+  const [showSubtitleSelector, setShowSubtitleSelector] = useState(false);
+  const [audioMixSettings, setAudioMixSettings] = usePersistedState<AudioMixSettings>("prompts_audio_mix", DEFAULT_AUDIO_MIX);
+  const [showAudioSettings, setShowAudioSettings] = useState(false);
   
   // FFmpeg hook
   const { generateVideo, downloadVideo, isGenerating: isGeneratingVideo, progress: videoProgress } = useFFmpegVideoGenerator();
@@ -1267,6 +1279,22 @@ echo "Agora importe o video no CapCut!"
       zip.file("concat.txt", ffmpegConcat);
       zip.file("FFMPEG_COMANDO.bat", ffmpegBat);
       zip.file("FFMPEG_COMANDO.sh", ffmpegSh);
+      
+      // Criar pastas de áudio com READMEs
+      const audioFolders = generateAudioFolderStructure();
+      for (const folder of audioFolders) {
+        const audioFolder = zip.folder(folder.path.replace(/\/$/, ''));
+        if (audioFolder) {
+          audioFolder.file("LEIA-ME.txt", folder.readme);
+        }
+      }
+      
+      // Adicionar guia de mixagem de áudio
+      zip.file("AUDIO_MIXAGEM.txt", generateAudioMixReadme(audioMixSettings));
+      
+      // Adicionar instruções de estilo de legenda
+      const selectedStyle = SUBTITLE_STYLES.find(s => s.id === selectedSubtitleStyle) || SUBTITLE_STYLES[0];
+      zip.file("LEGENDA_ESTILO.txt", generateSubtitleInstructions(selectedStyle));
 
       // Baixar ZIP
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -1281,8 +1309,8 @@ echo "Agora importe o video no CapCut!"
       URL.revokeObjectURL(url);
 
       toast({ 
-        title: "✅ Imagens para CapCut baixadas!", 
-        description: "Importe as imagens da pasta Resources/ diretamente no CapCut. Leia README_CAPCUT.txt" 
+        title: "✅ Pacote de Produção baixado!", 
+        description: "Inclui pastas de áudio, legendas e imagens. Leia README_CAPCUT.txt" 
       });
     } catch (error) {
       console.error("Erro ZIP:", error);
@@ -3177,6 +3205,232 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                       template={CAPCUT_TEMPLATES.find(t => t.id === selectedTemplate) || CAPCUT_TEMPLATES[0]}
                       isActive={true}
                     />
+                  </div>
+                )}
+              </div>
+              
+              {/* Seletor de Estilo de Legenda */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium flex items-center gap-1.5">
+                    <Type className="w-3 h-3 text-cyan-400" />
+                    Estilo de Legenda
+                  </Label>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setShowSubtitleSelector(!showSubtitleSelector)}
+                    className="h-6 text-[10px] px-2"
+                  >
+                    {showSubtitleSelector ? 'Ocultar' : 'Ver Todos'}
+                  </Button>
+                </div>
+                
+                <Select value={selectedSubtitleStyle} onValueChange={setSelectedSubtitleStyle}>
+                  <SelectTrigger className="h-8 bg-secondary/50 text-xs">
+                    <SelectValue placeholder="Selecione um estilo" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {SUBTITLE_STYLES.map((style) => (
+                      <SelectItem key={style.id} value={style.id} className="text-xs">
+                        <span className="flex items-center gap-2">
+                          <span 
+                            className="w-4 h-4 rounded text-[8px] flex items-center justify-center font-bold"
+                            style={{ 
+                              backgroundColor: style.preview.bgColor === 'transparent' ? '#1a1a2e' : style.preview.bgColor,
+                              color: style.preview.textColor === 'transparent' ? '#fff' : style.preview.textColor,
+                              textShadow: style.preview.textShadow
+                            }}
+                          >
+                            A
+                          </span>
+                          <span>{style.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Preview de legenda expandido */}
+                {showSubtitleSelector && (
+                  <div className="grid grid-cols-2 gap-2 p-2 bg-secondary/30 rounded-lg border border-border">
+                    {SUBTITLE_STYLES.map((style) => (
+                      <button
+                        key={style.id}
+                        onClick={() => setSelectedSubtitleStyle(style.id)}
+                        className={cn(
+                          "relative p-3 rounded-lg border-2 transition-all text-left",
+                          selectedSubtitleStyle === style.id 
+                            ? "border-cyan-400 bg-cyan-400/10" 
+                            : "border-border hover:border-cyan-400/50"
+                        )}
+                      >
+                        <div 
+                          className="relative h-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded flex items-center justify-center overflow-hidden"
+                        >
+                          <span 
+                            className={cn(
+                              "text-xs font-medium px-2 py-0.5",
+                              style.preview.fontSize,
+                              style.preview.fontWeight,
+                              style.preview.borderRadius,
+                              style.preview.padding
+                            )}
+                            style={{ 
+                              backgroundColor: style.preview.bgColor,
+                              color: style.preview.textColor === 'transparent' ? '#fff' : style.preview.textColor,
+                              textShadow: style.preview.textShadow,
+                              WebkitTextStroke: style.preview.border ? '1px white' : undefined
+                            }}
+                          >
+                            Exemplo
+                          </span>
+                        </div>
+                        <p className="text-[10px] font-medium mt-1.5">{style.name}</p>
+                        <p className="text-[9px] text-muted-foreground line-clamp-1">{style.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Configurações de Áudio */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium flex items-center gap-1.5">
+                    <Music className="w-3 h-3 text-green-400" />
+                    Áudio & Mixagem
+                  </Label>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setShowAudioSettings(!showAudioSettings)}
+                    className="h-6 text-[10px] px-2"
+                  >
+                    {showAudioSettings ? 'Ocultar' : 'Configurar'}
+                  </Button>
+                </div>
+                
+                <div className="p-2 bg-secondary/30 rounded-lg border border-border">
+                  <p className="text-[10px] text-muted-foreground mb-2">
+                    O pacote inclui pastas para você adicionar seus áudios:
+                  </p>
+                  <div className="grid grid-cols-2 gap-1 text-[9px]">
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <span className="text-green-400">📁</span> Narração
+                    </div>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <span className="text-yellow-400">📁</span> Música Intro
+                    </div>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <span className="text-blue-400">📁</span> Background
+                    </div>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <span className="text-purple-400">📁</span> Outro / SFX
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Configurações de volume expandidas */}
+                {showAudioSettings && (
+                  <div className="space-y-3 p-3 bg-secondary/30 rounded-lg border border-border">
+                    <p className="text-[10px] text-muted-foreground">
+                      Configure os volumes recomendados para a mixagem:
+                    </p>
+                    
+                    {/* Narração */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] flex items-center gap-1">
+                          <Volume2 className="w-3 h-3 text-green-400" />
+                          Narração
+                        </span>
+                        <span className="text-[10px] font-mono text-green-400">{audioMixSettings.narrationVolume}%</span>
+                      </div>
+                      <Slider
+                        value={[audioMixSettings.narrationVolume]}
+                        onValueChange={([v]) => setAudioMixSettings({...audioMixSettings, narrationVolume: v})}
+                        max={100}
+                        step={5}
+                        className="h-1"
+                      />
+                    </div>
+                    
+                    {/* Intro */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] flex items-center gap-1">
+                          <Music className="w-3 h-3 text-yellow-400" />
+                          Música Intro
+                        </span>
+                        <span className="text-[10px] font-mono text-yellow-400">{audioMixSettings.introVolume}%</span>
+                      </div>
+                      <Slider
+                        value={[audioMixSettings.introVolume]}
+                        onValueChange={([v]) => setAudioMixSettings({...audioMixSettings, introVolume: v})}
+                        max={100}
+                        step={5}
+                        className="h-1"
+                      />
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] text-muted-foreground">Duração antes de fade:</span>
+                        <Input
+                          type="number"
+                          value={audioMixSettings.introDuration}
+                          onChange={(e) => setAudioMixSettings({...audioMixSettings, introDuration: parseInt(e.target.value) || 5})}
+                          className="h-5 w-14 text-[10px] text-center"
+                          min={1}
+                          max={30}
+                        />
+                        <span className="text-[9px] text-muted-foreground">segundos</span>
+                      </div>
+                    </div>
+                    
+                    {/* Background */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] flex items-center gap-1">
+                          <Music className="w-3 h-3 text-blue-400" />
+                          Background
+                        </span>
+                        <span className="text-[10px] font-mono text-blue-400">{audioMixSettings.backgroundVolume}%</span>
+                      </div>
+                      <Slider
+                        value={[audioMixSettings.backgroundVolume]}
+                        onValueChange={([v]) => setAudioMixSettings({...audioMixSettings, backgroundVolume: v})}
+                        max={100}
+                        step={5}
+                        className="h-1"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Checkbox 
+                          id="ducking"
+                          checked={audioMixSettings.backgroundDucking}
+                          onCheckedChange={(c) => setAudioMixSettings({...audioMixSettings, backgroundDucking: !!c})}
+                        />
+                        <label htmlFor="ducking" className="text-[9px] text-muted-foreground">
+                          Ativar Ducking (reduz para {audioMixSettings.backgroundDuckingLevel}% durante narração)
+                        </label>
+                      </div>
+                    </div>
+                    
+                    {/* Outro */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] flex items-center gap-1">
+                          <Music className="w-3 h-3 text-purple-400" />
+                          Música Outro
+                        </span>
+                        <span className="text-[10px] font-mono text-purple-400">{audioMixSettings.outroVolume}%</span>
+                      </div>
+                      <Slider
+                        value={[audioMixSettings.outroVolume]}
+                        onValueChange={([v]) => setAudioMixSettings({...audioMixSettings, outroVolume: v})}
+                        max={100}
+                        step={5}
+                        className="h-1"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
