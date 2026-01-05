@@ -74,10 +74,8 @@ const defaultNavItems: NavItem[] = [
   { id: "history", icon: History, label: "Histórico de Análises", href: "/history", category: "analise" },
   // Criação
   { id: "agents", icon: Bot, label: "Agentes Virais", href: "/agents", category: "criacao" },
-  { id: "thumbnails", icon: Image, label: "Gerador de Thumbnails", href: "/thumbnails", category: "criacao" },
   { id: "scenes", icon: Film, label: "Gerador de Cenas", href: "/scenes", category: "criacao" },
   { id: "prompts", icon: Image, label: "Prompts e Imagens", href: "/prompts", category: "criacao" },
-  { id: "batch-images", icon: Images, label: "Imagens em Lote", href: "/batch-images", category: "criacao" },
   // Produção
   { id: "voice", icon: Mic, label: "Gerador de Voz", href: "/voice", category: "producao" },
   { id: "video-gen", icon: Film, label: "Gerador de Vídeo", href: "/video-gen", category: "producao" },
