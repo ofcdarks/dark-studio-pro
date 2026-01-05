@@ -5,6 +5,7 @@ import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
 import { generateCapcutDraftContentWithTemplate, generateCapcutDraftMetaInfoWithTemplate, CAPCUT_TEMPLATES, CapcutTemplate } from "@/lib/capcutTemplates";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
+import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -2157,6 +2158,16 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                   </div>
                 ))}
               </RadioGroup>
+
+              {/* Preview visual do template selecionado */}
+              {selectedTemplate && (
+                <div className="mt-4">
+                  <TemplatePreview 
+                    template={CAPCUT_TEMPLATES.find(t => t.id === selectedTemplate) || CAPCUT_TEMPLATES[0]}
+                    isActive={true}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Info sobre SRT */}
