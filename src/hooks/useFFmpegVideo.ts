@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { fetchFile } from '@ffmpeg/util';
 
 interface SceneForVideo {
   imageUrl: string;
@@ -38,6 +38,10 @@ export function useFFmpegVideo() {
   const abortRef = useRef(false);
   const startTimeRef = useRef<number>(0);
 
+  // Controla fetches durante o carregamento do FFmpeg (para permitir cancelamento)
+  const loadAbortControllerRef = useRef<AbortController | null>(null);
+  const loadPromiseRef = useRef<Promise<FFmpeg> | null>(null);
+
   // Formatar tempo em formato legível
   const formatTimeRemaining = (ms: number): string => {
     if (ms <= 0) return "Calculando...";
@@ -48,28 +52,70 @@ export function useFFmpegVideo() {
     return seconds > 0 ? `~${minutes}m ${seconds}s` : `~${minutes}m`;
   };
 
+  const toBlobURLWithSignal = async (
+    url: string,
+    mimeType: string,
+    signal: AbortSignal
+  ): Promise<string> => {
+    const res = await fetch(url, { signal, cache: 'force-cache' });
+    if (!res.ok) {
+      throw new Error(`Falha ao baixar FFmpeg (${res.status})`);
+    }
+    const blob = await res.blob();
+    return URL.createObjectURL(new Blob([blob], { type: mimeType }));
+  };
+
+  const withTimeout = async <T,>(
+    promise: Promise<T>,
+    ms: number,
+    timeoutMessage: string
+  ): Promise<T> => {
+    let timeoutId: number | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = window.setTimeout(() => reject(new Error(timeoutMessage)), ms);
+    });
+
+    try {
+      return await Promise.race([promise, timeoutPromise]);
+    } finally {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    }
+  };
+
   const loadFFmpeg = async (mode: ProcessingMode) => {
     // Determinar modo efetivo
     const useMultiThread = mode === 'multi' || (mode === 'auto' && supportsMultiThread());
-    const effectiveMode = useMultiThread ? 'multi' : 'single';
-    
+    const effectiveMode: ProcessingMode = useMultiThread ? 'multi' : 'single';
+
     // Se já carregou com o mesmo modo, reutilizar
     if (ffmpegRef.current?.loaded && loadedModeRef.current === effectiveMode) {
       return ffmpegRef.current;
     }
 
+    // Se já está carregando, reutilizar a promessa
+    if (loadPromiseRef.current) {
+      return loadPromiseRef.current;
+    }
+
+    // Cancelar qualquer carregamento anterior
+    loadAbortControllerRef.current?.abort();
+    loadAbortControllerRef.current = new AbortController();
+
     // Se mudou de modo, recriar
     if (ffmpegRef.current) {
       try {
         ffmpegRef.current.terminate();
-      } catch (e) {
+      } catch {
         // Ignorar
       }
       ffmpegRef.current = null;
     }
 
     const ffmpeg = new FFmpeg();
-    
+    // Disponibilizar o instance cedo para o cancelamento conseguir terminar o worker
+    ffmpegRef.current = ffmpeg;
+    loadedModeRef.current = null;
+
     ffmpeg.on('log', ({ message }) => {
       console.log('[FFmpeg]', message);
     });
@@ -78,14 +124,18 @@ export function useFFmpegVideo() {
       const elapsed = Date.now() - startTimeRef.current;
       const estimatedTotal = progress > 0 ? elapsed / progress : 0;
       const remaining = estimatedTotal - elapsed;
-      
-      setVideoProgress(prev => prev ? {
-        ...prev,
-        progress: Math.min(50 + Math.round(progress * 50), 99),
-        message: `Codificando vídeo... ${Math.min(50 + Math.round(progress * 50), 99)}%`,
-        elapsedTime: elapsed,
-        estimatedTimeRemaining: progress > 0.05 ? formatTimeRemaining(remaining) : "Calculando..."
-      } : null);
+
+      setVideoProgress((prev) =>
+        prev
+          ? {
+              ...prev,
+              progress: Math.min(50 + Math.round(progress * 50), 99),
+              message: `Codificando vídeo... ${Math.min(50 + Math.round(progress * 50), 99)}%`,
+              elapsedTime: elapsed,
+              estimatedTimeRemaining: progress > 0.05 ? formatTimeRemaining(remaining) : 'Calculando...'
+            }
+          : null
+      );
     });
 
     const modeLabel = useMultiThread ? 'Multi-thread (CPU rápido)' : 'Single-thread (compatível)';
@@ -95,55 +145,109 @@ export function useFFmpegVideo() {
       message: `Carregando FFmpeg ${modeLabel}...`
     });
 
-    try {
-      if (useMultiThread) {
-        // Versão multi-thread (mais rápida, usa múltiplos cores)
-        const baseURL = 'https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm';
-        
-        await ffmpeg.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-          workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
-        });
-      } else {
-        // Versão single-thread (compatibilidade máxima)
-        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
-        
-        await ffmpeg.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        });
-      }
+    const signal = loadAbortControllerRef.current.signal;
 
-      ffmpegRef.current = ffmpeg;
-      loadedModeRef.current = effectiveMode;
-      return ffmpeg;
-    } catch (error) {
-      console.error('[FFmpeg] Load error:', error);
-      
-      // Se multi-thread falhou, tentar single-thread como fallback
-      if (useMultiThread) {
-        console.log('[FFmpeg] Multi-thread failed, falling back to single-thread');
-        setVideoProgress({
-          phase: 'loading',
-          progress: 0,
-          message: 'Multi-thread não suportado, usando single-thread...'
-        });
-        
-        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
-        
-        await ffmpeg.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        });
-        
-        ffmpegRef.current = ffmpeg;
-        loadedModeRef.current = 'single';
-        return ffmpeg;
+    const attemptLoad = async (baseURL: string, includeWorker: boolean) => {
+      const coreURL = await toBlobURLWithSignal(`${baseURL}/ffmpeg-core.js`, 'text/javascript', signal);
+      const wasmURL = await toBlobURLWithSignal(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm', signal);
+
+      const loadOptions: Parameters<FFmpeg['load']>[0] = includeWorker
+        ? {
+            coreURL,
+            wasmURL,
+            workerURL: await toBlobURLWithSignal(
+              `${baseURL}/ffmpeg-core.worker.js`,
+              'text/javascript',
+              signal
+            )
+          }
+        : { coreURL, wasmURL };
+
+      await withTimeout(ffmpeg.load(loadOptions), 90_000, 'Tempo limite ao carregar FFmpeg');
+    };
+
+    const loadPromise = (async () => {
+      try {
+        if (useMultiThread) {
+          // Versão multi-thread (mais rápida)
+          const candidates = [
+            'https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm',
+            'https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm'
+          ];
+
+          let lastError: unknown = null;
+          for (const baseURL of candidates) {
+            if (abortRef.current || signal.aborted) throw new DOMException('Aborted', 'AbortError');
+            try {
+              await attemptLoad(baseURL, true);
+              loadedModeRef.current = 'multi';
+              return ffmpeg;
+            } catch (e) {
+              lastError = e;
+            }
+          }
+
+          // fallback para single-thread se o multi falhar
+          console.log('[FFmpeg] Multi-thread failed, falling back to single-thread');
+          setVideoProgress({
+            phase: 'loading',
+            progress: 0,
+            message: 'Multi-thread não suportado, usando single-thread...'
+          });
+
+          const candidatesSingle = [
+            'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm',
+            'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm'
+          ];
+
+          for (const baseURL of candidatesSingle) {
+            if (abortRef.current || signal.aborted) throw new DOMException('Aborted', 'AbortError');
+            try {
+              await attemptLoad(baseURL, true);
+              loadedModeRef.current = 'single';
+              return ffmpeg;
+            } catch (e) {
+              lastError = e;
+            }
+          }
+
+          throw lastError ?? new Error('Falha ao carregar FFmpeg');
+        }
+
+        // Versão single-thread (compatibilidade máxima)
+        const candidatesSingle = [
+          'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm',
+          'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm'
+        ];
+
+        let lastError: unknown = null;
+        for (const baseURL of candidatesSingle) {
+          if (abortRef.current || signal.aborted) throw new DOMException('Aborted', 'AbortError');
+          try {
+            await attemptLoad(baseURL, true);
+            loadedModeRef.current = 'single';
+            return ffmpeg;
+          } catch (e) {
+            lastError = e;
+          }
+        }
+
+        throw lastError ?? new Error('Falha ao carregar FFmpeg');
+      } catch (error) {
+        // Se foi cancelado, não transformar em erro visível
+        if (abortRef.current || signal.aborted) {
+          return ffmpeg;
+        }
+
+        console.error('[FFmpeg] Load error:', error);
+        throw error;
+      } finally {
+        loadPromiseRef.current = null;
       }
-      
-      throw error;
-    }
+    })();
+
+    loadPromiseRef.current = loadPromise;
+    return loadPromise;
   };
 
   const generateVideo = useCallback(async (
@@ -279,6 +383,11 @@ export function useFFmpegVideo() {
       return videoBlob;
 
     } catch (error) {
+      // Se foi cancelado, não exibir erro
+      if (abortRef.current) {
+        return null;
+      }
+
       console.error('[FFmpeg Video] Error:', error);
       setVideoProgress({
         phase: 'error',
@@ -293,6 +402,22 @@ export function useFFmpegVideo() {
 
   const cancelGeneration = useCallback(() => {
     abortRef.current = true;
+
+    // Abortar downloads do core/wasm durante o load
+    loadAbortControllerRef.current?.abort();
+    loadAbortControllerRef.current = null;
+
+    // Tentar encerrar worker imediatamente (inclusive durante load)
+    try {
+      ffmpegRef.current?.terminate();
+    } catch {
+      // Ignorar
+    }
+
+    ffmpegRef.current = null;
+    loadedModeRef.current = null;
+    loadPromiseRef.current = null;
+
     setIsGenerating(false);
     setVideoProgress(null);
   }, []);
