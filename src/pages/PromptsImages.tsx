@@ -32,6 +32,7 @@ import {
   Edit3,
   Check,
   X,
+  XCircle,
   DownloadCloud,
   Video,
   RotateCcw,
@@ -218,7 +219,8 @@ const PromptsImages = () => {
     currentMode: videoProcessingMode,
     supportsMultiThread: browserSupportsMultiThread,
     generateVideo, 
-    downloadVideo 
+    downloadVideo,
+    cancelGeneration: cancelVideoGeneration
   } = useFFmpegVideo();
   
   // Modo de processamento de vídeo selecionado pelo usuário
@@ -2940,6 +2942,18 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                     {videoProgress.phase === 'encoding' && "Codificando vídeo - isso pode levar alguns minutos"}
                     {videoProgress.phase === 'loading' && "Preparando FFmpeg..."}
                   </p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      cancelVideoGeneration();
+                      toast({ title: "Geração cancelada", description: "A geração do vídeo foi interrompida." });
+                    }}
+                    className="w-full mt-2"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Cancelar Geração
+                  </Button>
                 </div>
               )}
 
