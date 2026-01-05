@@ -327,6 +327,8 @@ const PromptsImages = () => {
 
     setGenerating(true);
     setGeneratedScenes([]);
+    setDetectedCharacters([]); // Limpar personagens anteriores - dinâmico por roteiro
+    setBgCharacters([]); // Limpar personagens do background também
     setProgress(0);
     
     const wordCount = script.split(/\s+/).filter(Boolean).length;
