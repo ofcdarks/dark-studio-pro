@@ -354,7 +354,11 @@ const PromptsImages = () => {
     setProgress(0);
     
     const wordCount = script.split(/\s+/).filter(Boolean).length;
-    const MAX_WORDS_PER_CHUNK = 2000;
+    const wordsPerSceneNum = parseInt(wordsPerScene) || 80;
+
+    // Para evitar timeouts quando há 100+ cenas, limitamos o tamanho por "cenas estimadas" e por palavras
+    const MAX_ESTIMATED_SCENES_PER_CHUNK = 45; // ~4-5 batches (mais seguro)
+    const MAX_WORDS_PER_CHUNK = Math.min(2000, wordsPerSceneNum * MAX_ESTIMATED_SCENES_PER_CHUNK);
     
     // Dividir roteiro em partes se necessário
     const scriptChunks = splitScriptIntoChunks(script, MAX_WORDS_PER_CHUNK);
@@ -376,6 +380,20 @@ const PromptsImages = () => {
       let allCharacters: CharacterDescription[] = [];
       let totalCreditsUsed = 0;
       let globalSceneNumber = 1;
+
+      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+      const invokeGenerateScenesWithRetry = async (body: any) => {
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            return await supabase.functions.invoke("generate-scenes", { body });
+          } catch (err: any) {
+            const msg = err?.message || String(err);
+            const retryable = msg.includes("Failed to fetch") || msg.includes("Failed to send") || msg.includes("timeout");
+            if (attempt === 2 || !retryable) throw err;
+            await sleep(1500 * attempt);
+          }
+        }
+      };
 
       for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
         const chunk = scriptChunks[chunkIndex];
@@ -404,18 +422,16 @@ const PromptsImages = () => {
           }
         }, 600);
         
-        const response = await supabase.functions.invoke("generate-scenes", {
-          body: { 
-            script: chunk,
-            model,
-            style,
-            wordsPerScene: parseInt(wordsPerScene) || 80,
-            maxScenes: 500,
-            wpm: currentWpm,
-            // Passar contexto de personagens já detectados para consistência
-            existingCharacters: allCharacters.length > 0 ? allCharacters : undefined,
-            startSceneNumber: globalSceneNumber
-          },
+        const response = await invokeGenerateScenesWithRetry({
+          script: chunk,
+          model,
+          style,
+          wordsPerScene: parseInt(wordsPerScene) || 80,
+          maxScenes: 500,
+          wpm: currentWpm,
+          // Passar contexto de personagens já detectados para consistência
+          existingCharacters: allCharacters.length > 0 ? allCharacters : undefined,
+          startSceneNumber: globalSceneNumber
         });
 
         clearInterval(progressInterval);
@@ -443,6 +459,7 @@ const PromptsImages = () => {
         
         globalSceneNumber += scenes.length;
         allScenes = [...allScenes, ...adjustedScenes];
+        setChunkProgress({ current: chunkIndex + 1, total: totalChunks, scenesProcessed: allScenes.length });
         totalCreditsUsed += creditsUsed || 0;
         
         // Mesclar personagens únicos
@@ -3644,10 +3661,10 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
         <DialogContent className="max-w-md bg-card border-primary/50 rounded-xl shadow-xl" hideCloseButton>
           <div className="flex flex-col items-center justify-center py-8 space-y-6">
             {/* Logo com efeito de pulso */}
-            <div className="relative w-20 h-20">
+            <div className="relative w-28 h-28">
               <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
               <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
-              <div className="relative w-20 h-20 rounded-full border-2 border-primary/50 overflow-hidden">
+              <div className="relative w-28 h-28 rounded-full border-2 border-primary/50 overflow-hidden">
                 <img 
                   src={logoGif} 
                   alt="Loading" 
@@ -3666,9 +3683,9 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                       className={cn(
                         "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300",
                         idx < chunkProgress.current
-                          ? "bg-green-500 text-white scale-100"
+                          ? "bg-primary text-primary-foreground scale-100"
                           : idx === chunkProgress.current - 1
-                            ? "bg-primary text-primary-foreground animate-pulse scale-110"
+                            ? "bg-primary/15 text-primary border border-primary/40 animate-pulse scale-110"
                             : "bg-secondary text-muted-foreground scale-90"
                       )}
                     >
