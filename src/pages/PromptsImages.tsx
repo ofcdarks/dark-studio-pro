@@ -35,7 +35,8 @@ import {
   Video,
   RotateCcw,
   Layout,
-  FolderSearch
+  FolderSearch,
+  Timer
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -184,6 +185,8 @@ const PromptsImages = () => {
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [projectName, setProjectName] = usePersistedState("prompts_project_name", "Meu Projeto");
   const [narrationSpeed, setNarrationSpeed] = usePersistedState("prompts_narration_speed", "140");
+  const [audioDurationInput, setAudioDurationInput] = useState("");
+  const [showDurationModal, setShowDurationModal] = useState(false);
   const [generationStartTime, setGenerationStartTime] = useState<number | null>(null);
   const cancelGenerationRef = useRef(false);
   
@@ -192,6 +195,9 @@ const PromptsImages = () => {
   
   // Função para converter palavras em segundos usando o WPM atual
   const wordCountToSeconds = (wordCount: number): number => (wordCount / currentWpm) * 60;
+  
+  // Calcular total de palavras das cenas geradas
+  const totalWords = generatedScenes.reduce((acc, scene) => acc + scene.wordCount, 0);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -1590,6 +1596,66 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
     toast({ title: "Timecodes recalculados", description: `Usando ${currentWpm} palavras/minuto` });
   };
 
+  // Calcular WPM baseado na duração real do áudio (input: "MM:SS" ou segundos)
+  const handleCalculateFromDuration = () => {
+    if (!audioDurationInput.trim() || totalWords === 0) {
+      toast({ title: "Erro", description: "Insira a duração do áudio e tenha cenas geradas", variant: "destructive" });
+      return;
+    }
+    
+    let durationSeconds = 0;
+    
+    // Parse input: aceita "MM:SS" ou apenas segundos
+    if (audioDurationInput.includes(":")) {
+      const parts = audioDurationInput.split(":");
+      const mins = parseInt(parts[0]) || 0;
+      const secs = parseInt(parts[1]) || 0;
+      durationSeconds = mins * 60 + secs;
+    } else {
+      durationSeconds = parseFloat(audioDurationInput) || 0;
+    }
+    
+    if (durationSeconds <= 0) {
+      toast({ title: "Erro", description: "Duração inválida. Use formato MM:SS ou segundos", variant: "destructive" });
+      return;
+    }
+    
+    // Calcular WPM: palavras / (duração em minutos)
+    const calculatedWpm = Math.round(totalWords / (durationSeconds / 60));
+    
+    // Limitar a faixa razoável
+    const clampedWpm = Math.max(80, Math.min(250, calculatedWpm));
+    
+    // Atualizar o WPM
+    setNarrationSpeed(clampedWpm.toString());
+    setShowDurationModal(false);
+    setAudioDurationInput("");
+    
+    // Recalcular timecodes com o novo WPM
+    let cumulativeSeconds = 0;
+    const recalculatedScenes: ScenePrompt[] = generatedScenes.map((scene) => {
+      const startSeconds = cumulativeSeconds;
+      const sceneDuration = (scene.wordCount / clampedWpm) * 60;
+      const endSeconds = startSeconds + sceneDuration;
+      cumulativeSeconds = endSeconds;
+
+      return {
+        ...scene,
+        estimatedTime: calculateEstimatedTimeWithWpm(scene.wordCount, clampedWpm),
+        timecode: formatTimecode(startSeconds),
+        endTimecode: formatTimecode(endSeconds),
+      };
+    });
+    
+    setGeneratedScenes(recalculatedScenes);
+    setPersistedScenes(recalculatedScenes.map(({ generatedImage, generatingImage, ...rest }) => rest));
+    
+    toast({ 
+      title: "✅ WPM calculado!", 
+      description: `${totalWords} palavras em ${Math.floor(durationSeconds/60)}:${String(durationSeconds%60).padStart(2,'0')} = ${clampedWpm} WPM`
+    });
+  };
+
   return (
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
@@ -1755,6 +1821,16 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                           </h3>
                         </div>
                         <div className="flex flex-wrap gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setShowDurationModal(true)}
+                            title="Sincronizar com duração real do áudio"
+                            className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                          >
+                            <Timer className="w-4 h-4 mr-2" />
+                            Sincronizar Áudio
+                          </Button>
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -2779,6 +2855,105 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                   Exportar Agora
                 </Button>
               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Sincronização com Áudio */}
+      <Dialog open={showDurationModal} onOpenChange={setShowDurationModal}>
+        <DialogContent className="max-w-md bg-card border-primary/50 rounded-xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Timer className="w-5 h-5 text-amber-500" />
+              Sincronizar com Áudio do CapCut
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Informe a duração real do áudio gerado no CapCut para calcular o WPM correto
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Info das palavras */}
+            <div className="p-3 bg-secondary/50 rounded-lg border border-border">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Total de palavras no roteiro:</span>
+                <span className="font-bold text-foreground">{totalWords} palavras</span>
+              </div>
+              <div className="flex items-center justify-between text-sm mt-1">
+                <span className="text-muted-foreground">WPM atual:</span>
+                <span className="font-bold text-primary">{currentWpm} WPM</span>
+              </div>
+            </div>
+
+            {/* Input de duração */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Duração do áudio (MM:SS ou segundos)
+              </Label>
+              <Input
+                placeholder="Ex: 3:45 ou 225"
+                value={audioDurationInput}
+                onChange={(e) => setAudioDurationInput(e.target.value)}
+                className="bg-secondary/50 text-lg font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                Gere o áudio no CapCut → Veja a duração total → Digite aqui
+              </p>
+            </div>
+
+            {/* Preview do cálculo */}
+            {audioDurationInput.trim() && (() => {
+              let durationSeconds = 0;
+              if (audioDurationInput.includes(":")) {
+                const parts = audioDurationInput.split(":");
+                const mins = parseInt(parts[0]) || 0;
+                const secs = parseInt(parts[1]) || 0;
+                durationSeconds = mins * 60 + secs;
+              } else {
+                durationSeconds = parseFloat(audioDurationInput) || 0;
+              }
+              
+              if (durationSeconds > 0 && totalWords > 0) {
+                const previewWpm = Math.round(totalWords / (durationSeconds / 60));
+                const clampedWpm = Math.max(80, Math.min(250, previewWpm));
+                
+                return (
+                  <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/30">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">WPM calculado:</span>
+                      <span className="font-bold text-amber-500 text-lg">{clampedWpm} WPM</span>
+                    </div>
+                    {previewWpm !== clampedWpm && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        (Ajustado de {previewWpm} para faixa válida 80-250)
+                      </p>
+                    )}
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDurationModal(false);
+                  setAudioDurationInput("");
+                }}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCalculateFromDuration}
+                className="flex-1 bg-amber-500 text-white hover:bg-amber-600"
+                disabled={!audioDurationInput.trim() || totalWords === 0}
+              >
+                <Timer className="w-4 h-4 mr-2" />
+                Calcular e Aplicar
+              </Button>
             </div>
           </div>
         </DialogContent>
