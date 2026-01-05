@@ -1048,25 +1048,95 @@ const PromptsImages = () => {
         "3) Escolha a transição desejada e arraste",
         "",
         "═══════════════════════════════════════════════════════════════",
+        "",
+        "═══════════════════════════════════════════════════════════════",
+        "          🎬 MÉTODO AUTOMÁTICO: GERAR VÍDEO COM FFMPEG",
+        "═══════════════════════════════════════════════════════════════",
+        "",
+        "Se você tem FFmpeg instalado, use o arquivo FFMPEG_COMANDO.bat (Windows)",
+        "ou FFMPEG_COMANDO.sh (Mac/Linux) para gerar um vídeo MP4 automaticamente",
+        "com todas as imagens nas durações corretas!",
+        "",
+        "Depois é só importar o vídeo no CapCut - SEM AJUSTES MANUAIS!",
+        "",
+        "═══════════════════════════════════════════════════════════════",
       ].join("\n");
 
-      // Gerar dados para o JSON do CapCut (usando JPG)
-      const scenesForCapcut = scenesWithDurations.map(s => ({
-        number: s.number,
-        fileName: `cena_${String(s.number).padStart(3, "0")}.jpg`,
-        durationSeconds: s.durationSeconds,
-        startSeconds: s.startSeconds,
-        text: s.text
-      }));
+      // Gerar arquivo concat.txt para FFmpeg (formato de lista de arquivos)
+      const ffmpegConcat = scenesWithDurations.map(s => {
+        const fileName = `cena_${String(s.number).padStart(3, "0")}.jpg`;
+        return `file 'Resources/${fileName}'\nduration ${s.durationSeconds.toFixed(2)}`;
+      }).join("\n") + `\nfile 'Resources/cena_${String(scenesWithDurations.length).padStart(3, "0")}.jpg'`; // Última imagem precisa repetir
 
-      // Arquivos de documentação (método simplificado que FUNCIONA)
+      // Script BAT para Windows
+      const ffmpegBat = `@echo off
+echo ========================================
+echo   Gerando video com FFmpeg...
+echo ========================================
+echo.
+
+REM Verificar se FFmpeg esta instalado
+where ffmpeg >nul 2>nul
+if %ERRORLEVEL% neq 0 (
+    echo [ERRO] FFmpeg nao encontrado!
+    echo.
+    echo Instale o FFmpeg: https://ffmpeg.org/download.html
+    echo Ou use: winget install FFmpeg
+    echo.
+    pause
+    exit /b 1
+)
+
+REM Gerar video
+ffmpeg -f concat -safe 0 -i concat.txt -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1" -c:v libx264 -preset medium -crf 23 -pix_fmt yuv420p -r 30 "${projectName.trim() || 'video'}_montado.mp4"
+
+echo.
+echo ========================================
+echo   Video gerado com sucesso!
+echo   Arquivo: ${projectName.trim() || 'video'}_montado.mp4
+echo ========================================
+echo.
+echo Agora importe o video no CapCut!
+pause
+`;
+
+      // Script SH para Mac/Linux
+      const ffmpegSh = `#!/bin/bash
+echo "========================================"
+echo "  Gerando video com FFmpeg..."
+echo "========================================"
+echo
+
+# Verificar se FFmpeg esta instalado
+if ! command -v ffmpeg &> /dev/null; then
+    echo "[ERRO] FFmpeg nao encontrado!"
+    echo
+    echo "Instale o FFmpeg:"
+    echo "  Mac: brew install ffmpeg"
+    echo "  Linux: sudo apt install ffmpeg"
+    echo
+    exit 1
+fi
+
+# Gerar video
+ffmpeg -f concat -safe 0 -i concat.txt -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1" -c:v libx264 -preset medium -crf 23 -pix_fmt yuv420p -r 30 "${projectName.trim() || 'video'}_montado.mp4"
+
+echo
+echo "========================================"
+echo "  Video gerado com sucesso!"
+echo "  Arquivo: ${projectName.trim() || 'video'}_montado.mp4"
+echo "========================================"
+echo
+echo "Agora importe o video no CapCut!"
+`;
+
+      // Arquivos de documentação + FFmpeg
       zip.file("DURACOES.txt", durationsTxt);
       zip.file("NARRACOES.srt", srtContent);
       zip.file("README_CAPCUT.txt", readme);
-      
-      // Nota: NÃO incluímos mais os arquivos JSON do CapCut
-      // pois o CapCut precisa IMPORTAR as imagens e gerar seus próprios IDs
-      // O método correto é: importar imagens da pasta Resources/ diretamente no CapCut
+      zip.file("concat.txt", ffmpegConcat);
+      zip.file("FFMPEG_COMANDO.bat", ffmpegBat);
+      zip.file("FFMPEG_COMANDO.sh", ffmpegSh);
 
       // Baixar ZIP
       const zipBlob = await zip.generateAsync({ type: "blob" });
