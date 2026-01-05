@@ -322,6 +322,20 @@ const PromptsImages = () => {
     enabled: !!user,
   });
 
+  // Função auxiliar para dividir texto em partes de até maxWords palavras
+  const splitScriptIntoChunks = (text: string, maxWords: number): string[] => {
+    const words = text.split(/\s+/).filter(Boolean);
+    if (words.length <= maxWords) {
+      return [text];
+    }
+    
+    const chunks: string[] = [];
+    for (let i = 0; i < words.length; i += maxWords) {
+      chunks.push(words.slice(i, i + maxWords).join(' '));
+    }
+    return chunks;
+  };
+
   const handleGenerate = async () => {
     if (!script.trim()) {
       toast({
@@ -334,79 +348,138 @@ const PromptsImages = () => {
 
     setGenerating(true);
     setGeneratedScenes([]);
-    setDetectedCharacters([]); // Limpar personagens anteriores - dinâmico por roteiro
-    setBgCharacters([]); // Limpar personagens do background também
+    setDetectedCharacters([]);
+    setBgCharacters([]);
     setProgress(0);
     
     const wordCount = script.split(/\s+/).filter(Boolean).length;
-    const estimatedScenes = Math.ceil(wordCount / (parseInt(wordsPerScene) || 80));
-    const totalBatches = Math.ceil(estimatedScenes / 10);
+    const MAX_WORDS_PER_CHUNK = 2000;
     
-    setLoadingMessage(`Analisando ${wordCount} palavras...`);
-    setProgress(10);
+    // Dividir roteiro em partes se necessário
+    const scriptChunks = splitScriptIntoChunks(script, MAX_WORDS_PER_CHUNK);
+    const totalChunks = scriptChunks.length;
+    
+    if (totalChunks > 1) {
+      toast({
+        title: `Roteiro grande detectado (${wordCount} palavras)`,
+        description: `Dividindo em ${totalChunks} partes para processamento...`,
+      });
+    }
+    
+    setLoadingMessage(`Analisando ${wordCount} palavras${totalChunks > 1 ? ` em ${totalChunks} partes` : ''}...`);
+    setProgress(5);
 
     try {
-      // Simular progresso gradual dos prompts
-      let simulatedPrompt = 1;
-      const progressInterval = setInterval(() => {
-        if (simulatedPrompt < estimatedScenes) {
-          simulatedPrompt++;
-          setLoadingMessage(`Gerando prompt ${simulatedPrompt} de ~${estimatedScenes}...`);
-          // Progresso vai de 20% a 80% durante a simulação
-          const progressPercent = 20 + Math.min(60, (simulatedPrompt / estimatedScenes) * 60);
-          setProgress(Math.round(progressPercent));
+      let allScenes: ScenePrompt[] = [];
+      let allCharacters: CharacterDescription[] = [];
+      let totalCreditsUsed = 0;
+      let globalSceneNumber = 1;
+
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        const chunk = scriptChunks[chunkIndex];
+        const chunkWordCount = chunk.split(/\s+/).filter(Boolean).length;
+        const estimatedScenesInChunk = Math.ceil(chunkWordCount / (parseInt(wordsPerScene) || 80));
+        
+        // Atualizar progresso
+        const baseProgress = 10 + (chunkIndex / totalChunks) * 70;
+        setProgress(Math.round(baseProgress));
+        setLoadingMessage(
+          totalChunks > 1 
+            ? `Parte ${chunkIndex + 1}/${totalChunks}: Gerando ~${estimatedScenesInChunk} cenas...`
+            : `Gerando ~${estimatedScenesInChunk} cenas...`
+        );
+        
+        // Simular progresso gradual dentro do chunk
+        let simulatedPrompt = 0;
+        const progressInterval = setInterval(() => {
+          if (simulatedPrompt < estimatedScenesInChunk) {
+            simulatedPrompt++;
+            const chunkProgress = baseProgress + ((simulatedPrompt / estimatedScenesInChunk) * (70 / totalChunks));
+            setProgress(Math.min(85, Math.round(chunkProgress)));
+          }
+        }, 600);
+        
+        const response = await supabase.functions.invoke("generate-scenes", {
+          body: { 
+            script: chunk,
+            model,
+            style,
+            wordsPerScene: parseInt(wordsPerScene) || 80,
+            maxScenes: 500,
+            wpm: currentWpm,
+            // Passar contexto de personagens já detectados para consistência
+            existingCharacters: allCharacters.length > 0 ? allCharacters : undefined,
+            startSceneNumber: globalSceneNumber
+          },
+        });
+
+        clearInterval(progressInterval);
+
+        if (response.error) {
+          throw new Error(response.error.message || `Erro na parte ${chunkIndex + 1}`);
         }
-      }, 800); // Atualiza a cada 800ms
-      
-      setLoadingMessage(`Gerando prompt 1 de ~${estimatedScenes}...`);
-      setProgress(20);
-      
-      const response = await supabase.functions.invoke("generate-scenes", {
-        body: { 
-          script,
-          model,
-          style,
-          wordsPerScene: parseInt(wordsPerScene) || 80,
-          maxScenes: 500,
-          wpm: currentWpm // Passar velocidade de narração para sincronização precisa
-        },
-      });
 
-      clearInterval(progressInterval);
-      setLoadingMessage(`Finalizando ${estimatedScenes} prompts...`);
+        if (response.data?.error) {
+          throw new Error(response.data.error);
+        }
+
+        const { scenes, creditsUsed, characters } = response.data;
+        
+        if (!scenes || scenes.length === 0) {
+          console.warn(`Parte ${chunkIndex + 1}: Nenhuma cena gerada`);
+          continue;
+        }
+        
+        // Ajustar números das cenas para sequência global
+        const adjustedScenes = scenes.map((scene: ScenePrompt, idx: number) => ({
+          ...scene,
+          number: globalSceneNumber + idx
+        }));
+        
+        globalSceneNumber += scenes.length;
+        allScenes = [...allScenes, ...adjustedScenes];
+        totalCreditsUsed += creditsUsed || 0;
+        
+        // Mesclar personagens únicos
+        if (characters && characters.length > 0) {
+          for (const char of characters) {
+            if (!allCharacters.some(c => c.name.toLowerCase() === char.name.toLowerCase())) {
+              allCharacters.push(char);
+            }
+          }
+        }
+        
+        // Toast de progresso para cada parte concluída
+        if (totalChunks > 1) {
+          toast({
+            title: `Parte ${chunkIndex + 1}/${totalChunks} concluída`,
+            description: `${scenes.length} cenas geradas`,
+          });
+        }
+      }
+
       setProgress(90);
+      setLoadingMessage(`Finalizando ${allScenes.length} cenas...`);
 
-      // Check for errors in response
-      if (response.error) {
-        throw new Error(response.error.message || "Erro na função");
-      }
-
-      // Check for error in data
-      if (response.data?.error) {
-        throw new Error(response.data.error);
-      }
-
-      const { scenes, totalScenes, creditsUsed, characters } = response.data;
-      
       // Armazenar personagens detectados
-      if (characters && characters.length > 0) {
-        setDetectedCharacters(characters);
-        setBgCharacters(characters);
+      if (allCharacters.length > 0) {
+        setDetectedCharacters(allCharacters);
+        setBgCharacters(allCharacters);
         toast({
-          title: `${characters.length} personagem(ns) detectado(s)`,
-          description: characters.map((c: CharacterDescription) => c.name).join(", "),
+          title: `${allCharacters.length} personagem(ns) detectado(s)`,
+          description: allCharacters.map((c: CharacterDescription) => c.name).join(", "),
         });
       } else {
         setDetectedCharacters([]);
       }
       
-      if (!scenes || scenes.length === 0) {
+      if (allScenes.length === 0) {
         throw new Error("Nenhuma cena foi gerada. Tente novamente.");
       }
       
       // Enriquecer cenas com tempo e timecode
       let cumulativeSeconds = 0;
-      const enrichedScenes: ScenePrompt[] = scenes.map((scene: ScenePrompt) => {
+      const enrichedScenes: ScenePrompt[] = allScenes.map((scene: ScenePrompt) => {
         const startSeconds = cumulativeSeconds;
         const durationSeconds = wordCountToSeconds(scene.wordCount);
         const endSeconds = startSeconds + durationSeconds;
@@ -433,13 +506,13 @@ const PromptsImages = () => {
           user_id: user.id,
           title: `Roteiro ${new Date().toLocaleDateString('pt-BR')}`,
           script,
-          total_scenes: totalScenes,
+          total_scenes: enrichedScenes.length,
           total_words: totalWords,
           estimated_duration: estimatedDuration,
           model_used: model,
           style,
           scenes: JSON.parse(JSON.stringify(enrichedScenes)),
-          credits_used: creditsUsed
+          credits_used: totalCreditsUsed
         }]);
       }
 
@@ -448,34 +521,20 @@ const PromptsImages = () => {
       // Log activity
       await logActivity({
         action: 'scene_generated',
-        description: `${totalScenes} cenas geradas a partir do roteiro`,
+        description: `${enrichedScenes.length} cenas geradas a partir do roteiro${totalChunks > 1 ? ` (${totalChunks} partes)` : ''}`,
       });
 
       toast({
         title: "Prompts gerados!",
-        description: `${totalScenes} cenas analisadas. Créditos: ${creditsUsed}`,
+        description: `${enrichedScenes.length} cenas analisadas${totalChunks > 1 ? ` em ${totalChunks} partes` : ''}. Créditos: ${totalCreditsUsed}`,
       });
     } catch (error: any) {
       console.error("Error generating scenes:", error);
-      
-      // Verificar se é erro de timeout/rede para roteiros muito grandes
-      const isTimeoutError = error.message?.includes('Failed to send') || 
-                             error.message?.includes('Failed to fetch') ||
-                             error.message?.includes('timeout');
-      
-      if (isTimeoutError && wordCount > 2000) {
-        toast({
-          title: "Roteiro muito grande",
-          description: `${wordCount} palavras pode demorar demais. Tente dividir em partes menores (até 2000 palavras).`,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Erro",
-          description: error.message || "Não foi possível gerar os prompts",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível gerar os prompts",
+        variant: "destructive",
+      });
     } finally {
       setGenerating(false);
     }
