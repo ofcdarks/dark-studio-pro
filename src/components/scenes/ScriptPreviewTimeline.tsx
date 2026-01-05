@@ -33,6 +33,7 @@ interface PreviewScene {
   durationSeconds: number;
   startTime: number;
   endTime: number;
+  generatedImage?: string;
 }
 
 const formatTime = (seconds: number): string => {
@@ -90,10 +91,29 @@ export function ScriptPreviewTimeline({
   const [showDetails, setShowDetails] = useState(false);
   const [audioDuration, setAudioDuration] = useState("");
   
-  const previewScenes = useMemo(() => 
-    estimateScenes(script, wordsPerScene, wpm), 
-    [script, wordsPerScene, wpm]
-  );
+  // Se há cenas geradas, usa elas (com timecodes corretos)
+  // Senão, estima baseado em palavras por cena
+  const previewScenes = useMemo(() => {
+    if (generatedScenes.length > 0) {
+      // Usar as cenas geradas com seus timecodes reais
+      let currentTime = 0;
+      return generatedScenes.map((scene, index) => {
+        const startTime = currentTime;
+        const endTime = currentTime + scene.durationSeconds;
+        currentTime = endTime;
+        return {
+          number: scene.number,
+          text: scene.text,
+          wordCount: scene.wordCount,
+          durationSeconds: scene.durationSeconds,
+          startTime,
+          endTime,
+          generatedImage: scene.generatedImage
+        };
+      });
+    }
+    return estimateScenes(script, wordsPerScene, wpm);
+  }, [script, wordsPerScene, wpm, generatedScenes]);
   
   const totalDuration = useMemo(() => 
     previewScenes.reduce((acc, scene) => acc + scene.durationSeconds, 0), 
@@ -124,13 +144,7 @@ export function ScriptPreviewTimeline({
     return markers;
   }, [totalDuration]);
 
-  // Mapear imagens geradas para as cenas do preview
-  const scenesWithImages = useMemo(() => {
-    return previewScenes.map((scene, index) => ({
-      ...scene,
-      generatedImage: generatedScenes[index]?.generatedImage || undefined
-    }));
-  }, [previewScenes, generatedScenes]);
+  // As imagens já estão incluídas no previewScenes quando há cenas geradas
 
   // Formatar input de tempo enquanto digita (máscara MM:SS) e sincronizar automaticamente
   const handleDurationChange = (value: string) => {
@@ -282,7 +296,7 @@ export function ScriptPreviewTimeline({
           <TooltipProvider delayDuration={100}>
             <div className={`flex rounded-lg overflow-hidden border border-border/50 bg-background/30 ${isExpanded ? 'h-24' : 'h-14'}`}>
               {timelineData.map((scene, index) => {
-                const sceneImage = scenesWithImages[index]?.generatedImage;
+                const sceneImage = previewScenes[index]?.generatedImage;
                 const colors = [
                   'from-primary/60 to-primary/40',
                   'from-blue-500/60 to-blue-500/40',
@@ -387,7 +401,7 @@ export function ScriptPreviewTimeline({
       {showDetails && (
         <div className="mt-3 pt-3 border-t border-border/50 max-h-60 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
-            {scenesWithImages.map((scene) => (
+            {previewScenes.map((scene) => (
               <div 
                 key={scene.number}
                 className="flex items-center gap-2 p-2 rounded bg-secondary/30"
