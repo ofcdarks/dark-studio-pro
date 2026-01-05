@@ -3139,19 +3139,38 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               </div>
             </div>
 
-            {/* Input de duração */}
+            {/* Input de duração com formatação automática */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">
-                Duração do áudio (MM:SS ou segundos)
+                Duração do áudio (MM:SS)
               </Label>
               <Input
-                placeholder="Ex: 3:45 ou 225"
+                placeholder="Ex: 3:45"
                 value={audioDurationInput}
-                onChange={(e) => setAudioDurationInput(e.target.value)}
-                className="bg-secondary/50 text-lg font-mono"
+                onChange={(e) => {
+                  // Remover tudo que não é dígito
+                  let digits = e.target.value.replace(/\D/g, "");
+                  
+                  // Limitar a 4 dígitos (99:59 máximo)
+                  digits = digits.slice(0, 4);
+                  
+                  // Formatar automaticamente com ":"
+                  if (digits.length >= 3) {
+                    // Separar minutos e segundos
+                    const secs = digits.slice(-2);
+                    const mins = digits.slice(0, -2);
+                    setAudioDurationInput(`${mins}:${secs}`);
+                  } else if (digits.length > 0) {
+                    setAudioDurationInput(digits);
+                  } else {
+                    setAudioDurationInput("");
+                  }
+                }}
+                className="bg-secondary/50 text-lg font-mono text-center"
+                maxLength={5}
               />
               <p className="text-xs text-muted-foreground">
-                Gere o áudio no CapCut → Veja a duração total → Digite aqui
+                Digite apenas números (ex: 345 → 3:45)
               </p>
             </div>
 
