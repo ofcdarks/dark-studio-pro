@@ -500,27 +500,29 @@ export function ScriptPreviewTimeline({
       )}
 
       {/* Stats + Score de Retenção */}
-      <div className="flex flex-wrap items-center gap-4 mb-3 text-xs">
-        <div className="flex items-center gap-1.5">
-          <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="text-muted-foreground">{totalWords} palavras</span>
+      <div className="flex flex-wrap items-center gap-6 mb-4 py-2 px-3 bg-secondary/50 rounded-lg border border-border/30">
+        <div className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium text-foreground">{totalWords}</span>
+          <span className="text-sm text-muted-foreground">palavras</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <Scissors className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="text-muted-foreground">~{previewScenes.length} cenas</span>
+        <div className="flex items-center gap-2">
+          <Scissors className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium text-foreground">~{previewScenes.length}</span>
+          <span className="text-sm text-muted-foreground">cenas</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="text-primary font-medium">{formatTime(totalDuration)}</span>
-          <span className="text-muted-foreground">@ {wpm} WPM</span>
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-primary" />
+          <span className="text-sm font-bold text-primary">{formatTime(totalDuration)}</span>
+          <span className="text-sm text-muted-foreground">@ {wpm} WPM</span>
         </div>
         
         {/* Score de Retenção */}
         {retentionAnalysis && generatedScenes.length > 0 && (
-          <div className="flex items-center gap-2 ml-auto">
-            <span className="text-muted-foreground">Retenção:</span>
+          <div className="flex items-center gap-3 ml-auto">
+            <span className="text-sm text-muted-foreground">Retenção:</span>
             <Badge 
-              className={`text-xs font-bold ${
+              className={`text-sm font-bold px-3 py-1 ${
                 retentionAnalysis.score >= 80 
                   ? 'bg-green-500/20 text-green-400 border-green-500/30' 
                   : retentionAnalysis.score >= 60 
@@ -528,9 +530,9 @@ export function ScriptPreviewTimeline({
                     : 'bg-red-500/20 text-red-400 border-red-500/30'
               }`}
             >
-              {retentionAnalysis.score >= 80 ? <CheckCircle2 className="w-3 h-3 mr-1" /> : 
-               retentionAnalysis.score >= 60 ? <AlertTriangle className="w-3 h-3 mr-1" /> :
-               <TrendingDown className="w-3 h-3 mr-1" />}
+              {retentionAnalysis.score >= 80 ? <CheckCircle2 className="w-4 h-4 mr-1" /> : 
+               retentionAnalysis.score >= 60 ? <AlertTriangle className="w-4 h-4 mr-1" /> :
+               <TrendingDown className="w-4 h-4 mr-1" />}
               {retentionAnalysis.score}%
             </Badge>
             <TooltipProvider>
@@ -679,10 +681,10 @@ export function ScriptPreviewTimeline({
 
       {/* Timeline visual */}
       <ScrollArea className="w-full">
-        <div className="min-w-[400px] pb-2">
+        <div className="min-w-[400px] pb-3">
           {/* Barra de cenas com preview de imagens */}
           <TooltipProvider delayDuration={100}>
-            <div className={`flex rounded-lg overflow-hidden border border-border/50 bg-background/30 ${isExpanded ? 'h-28' : 'h-16'}`}>
+            <div className={`flex rounded-xl overflow-hidden border-2 border-border/50 bg-background/30 shadow-lg ${isExpanded ? 'h-32' : 'h-20'}`}>
               {timelineData.map((scene, index) => {
                 const sceneImage = previewScenes[index]?.generatedImage;
                 const sceneEmotion = previewScenes[index]?.emotion;
@@ -726,7 +728,7 @@ export function ScriptPreviewTimeline({
                           cursor-pointer hover:brightness-125 transition-all
                           overflow-hidden
                         `}
-                        style={{ width: `${scene.widthPercent}%`, minWidth: '24px' }}
+                        style={{ width: `${scene.widthPercent}%`, minWidth: '32px' }}
                       >
                         {/* Imagem de fundo se existir */}
                         {sceneImage && (
@@ -740,28 +742,35 @@ export function ScriptPreviewTimeline({
                         {/* Badge de emoção no topo */}
                         {sceneEmotion && isExpanded && (
                           <div className={`absolute top-0.5 left-0.5 right-0.5 z-20 flex justify-center`}>
-                            <span className={`text-[8px] px-1 py-0.5 rounded ${emotionStyle.bg} ${emotionStyle.text} font-medium truncate`}>
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded ${emotionStyle.bg} ${emotionStyle.text} font-medium truncate`}>
                               {emotionStyle.icon}
                             </span>
                           </div>
                         )}
                         
+                        {/* Indicador de imagem faltando */}
+                        {!sceneImage && (
+                          <div className="absolute top-1 right-1 z-20">
+                            <ImagePlus className="w-3 h-3 text-white/60" />
+                          </div>
+                        )}
+                        
                         {/* Overlay com info */}
-                        <div className={`relative z-10 w-full text-center px-0.5 pb-1 ${sceneImage ? 'bg-gradient-to-t from-black/80 to-transparent pt-6' : ''}`}>
-                          <span className={`font-bold text-white drop-shadow-md ${isExpanded ? 'text-sm' : 'text-[10px]'}`}>
+                        <div className={`relative z-10 w-full text-center px-1 pb-1.5 ${sceneImage ? 'bg-gradient-to-t from-black/85 to-transparent pt-8' : ''}`}>
+                          <span className={`font-bold text-white drop-shadow-lg ${isExpanded ? 'text-base' : 'text-xs'}`}>
                             {scene.number}
                           </span>
-                          <span className={`block text-white/90 drop-shadow ${isExpanded ? 'text-[10px]' : 'text-[8px]'}`}>
+                          <span className={`block text-white/95 font-medium drop-shadow-md ${isExpanded ? 'text-xs' : 'text-[10px]'}`}>
                             {formatTime(scene.durationSeconds)}
                           </span>
                           {isExpanded && (
                             <>
-                              <span className="block text-[8px] text-white/80 drop-shadow">
+                              <span className="block text-[10px] text-white/85 drop-shadow font-mono">
                                 {formatTimecode(scene.startTime)}
                               </span>
                               {/* Badge de gatilho de retenção */}
                               {sceneTrigger && (
-                                <span className={`inline-block mt-0.5 text-[7px] px-1 py-0.5 rounded ${triggerStyle.bg} ${triggerStyle.text}`}>
+                                <span className={`inline-block mt-0.5 text-[8px] px-1.5 py-0.5 rounded ${triggerStyle.bg} ${triggerStyle.text} font-medium`}>
                                   {triggerStyle.label}
                                 </span>
                               )}
