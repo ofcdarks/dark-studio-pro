@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
-import { generateCapcutDraftContentWithTemplate, generateCapcutDraftMetaInfoWithTemplate, CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
+import { generateCapcutDraftContentWithTemplate, generateCapcutDraftMetaInfoWithTemplate, generateCapcutDraftInfoWithTemplate, CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { Input } from "@/components/ui/input";
@@ -947,21 +947,23 @@ const PromptsImages = () => {
       const projectName = `Projeto_${template.id}_${new Date().toISOString().split("T")[0]}`;
       const draftContentJson = generateCapcutDraftContentWithTemplate(scenesForCapcut, template, projectName);
       const draftMetaInfoJson = generateCapcutDraftMetaInfoWithTemplate(scenesForCapcut, projectName);
+      const draftInfoJson = generateCapcutDraftInfoWithTemplate(projectName);
       
       // Arquivos de documentação
       zip.file("DURACOES.txt", durationsTxt);
       zip.file("NARRACOES.srt", srtContent);
       zip.file("README_CAPCUT.txt", readme);
       
-      // Arquivos do projeto CapCut
+      // Arquivos do projeto CapCut (TODOS OBRIGATÓRIOS)
       zip.file("draft_content.json", draftContentJson);
       zip.file("draft_meta_info.json", draftMetaInfoJson);
+      zip.file("draft_info.json", draftInfoJson);
       
-      // Arquivos auxiliares que o CapCut espera (podem ser vazios/padrão)
+      // Arquivos auxiliares que o CapCut espera
       zip.file("draft_agency_config.json", "{}");
       zip.file("draft_biz_config.json", "{}");
-      zip.file("draft_settings", "");
-      zip.file(".locked", "");
+      zip.file("draft_settings.json", "{}");
+      zip.file(".lock", "");
       
       // Pastas vazias que o CapCut cria
       zip.folder("adjust_mask");
