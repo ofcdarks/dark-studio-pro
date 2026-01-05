@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
-import { generateCapcutDraftContentWithTemplate, generateCapcutDraftMetaInfoWithTemplate, generateCapcutDraftInfoWithTemplate, CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
+import { generateCapcutDraftContentWithTemplate, generateCapcutDraftMetaInfoWithTemplate, CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { Input } from "@/components/ui/input";
@@ -947,25 +947,31 @@ const PromptsImages = () => {
       const projectName = `Projeto_${template.id}_${new Date().toISOString().split("T")[0]}`;
       const draftContentJson = generateCapcutDraftContentWithTemplate(scenesForCapcut, template, projectName);
       const draftMetaInfoJson = generateCapcutDraftMetaInfoWithTemplate(scenesForCapcut, projectName);
-      const draftInfoJson = generateCapcutDraftInfoWithTemplate(projectName);
       
       // Arquivos de documentação
       zip.file("DURACOES.txt", durationsTxt);
       zip.file("NARRACOES.srt", srtContent);
       zip.file("README_CAPCUT.txt", readme);
       
-      // Arquivos do projeto CapCut (TODOS OBRIGATÓRIOS)
+      // Arquivos do projeto CapCut (estrutura exata igual projeto real)
       zip.file("draft_content.json", draftContentJson);
       zip.file("draft_meta_info.json", draftMetaInfoJson);
-      zip.file("draft_info.json", draftInfoJson);
       
-      // Arquivos auxiliares que o CapCut espera
+      // Arquivos auxiliares obrigatórios (estrutura real do CapCut)
       zip.file("draft_agency_config.json", "{}");
       zip.file("draft_biz_config.json", "{}");
-      zip.file("draft_settings.json", "{}");
-      zip.file(".lock", "");
+      zip.file("draft_settings", "");
+      zip.file("attachment_editing.json", "{}");
+      zip.file("attachment_pc_common.json", "{}");
+      zip.file("performance_opt_info.json", "{}");
+      zip.file("template.tmp", "");
+      zip.file("template-2.tmp", "");
       
-      // Pastas vazias que o CapCut cria
+      // Imagem de capa placeholder (1x1 pixel transparente em base64)
+      const draftCoverBase64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBEQCEAwEPwAB//9k=";
+      zip.file("draft_cover.jpg", draftCoverBase64, { base64: true });
+      
+      // Pastas vazias (estrutura exata do CapCut)
       zip.folder("adjust_mask");
       zip.folder("common_attachment");
       zip.folder("matting");
