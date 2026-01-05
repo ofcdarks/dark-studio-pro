@@ -5,9 +5,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Clock, FileText, Scissors, Timer } from "lucide-react";
+import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface GeneratedScene {
   number: number;
@@ -198,6 +199,115 @@ export function ScriptPreviewTimeline({
     return markers;
   }, [totalDuration]);
 
+  // ANÁLISE DE RETENÇÃO - Detectar problemas
+  const retentionAnalysis = useMemo(() => {
+    if (previewScenes.length === 0) return null;
+    
+    const issues: Array<{
+      type: 'warning' | 'danger';
+      message: string;
+      scenes: number[];
+    }> = [];
+    
+    // Detectar cenas sem emoção ou com emoção neutral consecutivas
+    let neutralStreak: number[] = [];
+    previewScenes.forEach((scene, index) => {
+      const emotion = scene.emotion?.toLowerCase().trim();
+      const isNeutral = !emotion || emotion === 'neutral' || emotion === '';
+      
+      if (isNeutral) {
+        neutralStreak.push(scene.number);
+      } else {
+        if (neutralStreak.length >= 2) {
+          issues.push({
+            type: neutralStreak.length >= 3 ? 'danger' : 'warning',
+            message: `${neutralStreak.length} cenas consecutivas sem emoção definida podem causar queda de retenção`,
+            scenes: [...neutralStreak]
+          });
+        }
+        neutralStreak = [];
+      }
+    });
+    // Verificar streak final
+    if (neutralStreak.length >= 2) {
+      issues.push({
+        type: neutralStreak.length >= 3 ? 'danger' : 'warning',
+        message: `${neutralStreak.length} cenas consecutivas sem emoção no final do vídeo`,
+        scenes: [...neutralStreak]
+      });
+    }
+    
+    // Detectar cenas sem gatilho de retenção consecutivas
+    let noTriggerStreak: number[] = [];
+    previewScenes.forEach((scene, index) => {
+      const trigger = scene.retentionTrigger?.toLowerCase().trim();
+      const hasTrigger = trigger && trigger !== 'continuity' && trigger !== '';
+      
+      if (!hasTrigger) {
+        noTriggerStreak.push(scene.number);
+      } else {
+        if (noTriggerStreak.length >= 3) {
+          issues.push({
+            type: 'warning',
+            message: `${noTriggerStreak.length} cenas sem gatilhos de retenção podem perder audiência`,
+            scenes: [...noTriggerStreak]
+          });
+        }
+        noTriggerStreak = [];
+      }
+    });
+    if (noTriggerStreak.length >= 3) {
+      issues.push({
+        type: 'warning',
+        message: `${noTriggerStreak.length} cenas finais sem gatilhos de retenção`,
+        scenes: [...noTriggerStreak]
+      });
+    }
+    
+    // Detectar cenas muito longas (>10s)
+    const longScenes = previewScenes.filter(s => s.durationSeconds > 10);
+    if (longScenes.length > 0) {
+      issues.push({
+        type: 'warning',
+        message: `${longScenes.length} cena(s) com mais de 10 segundos podem causar perda de atenção`,
+        scenes: longScenes.map(s => s.number)
+      });
+    }
+    
+    // Detectar introdução sem impacto (primeiras 3 cenas sem emoção forte)
+    const first3Scenes = previewScenes.slice(0, 3);
+    const strongEmotions = ['tensão', 'tension', 'choque', 'shock', 'surpresa', 'surprise', 'curiosidade', 'curiosity'];
+    const hasStrongHook = first3Scenes.some(s => 
+      s.emotion && strongEmotions.includes(s.emotion.toLowerCase().trim())
+    );
+    if (!hasStrongHook && previewScenes.length >= 3) {
+      issues.push({
+        type: 'danger',
+        message: 'As 3 primeiras cenas não têm emoção de impacto - risco de perda imediata de audiência',
+        scenes: [1, 2, 3]
+      });
+    }
+    
+    // Calcular score de retenção estimado
+    const scenesWithEmotion = previewScenes.filter(s => s.emotion && s.emotion !== 'neutral').length;
+    const scenesWithTrigger = previewScenes.filter(s => s.retentionTrigger && s.retentionTrigger !== 'continuity').length;
+    const scenesInGoodDuration = previewScenes.filter(s => s.durationSeconds >= 3 && s.durationSeconds <= 8).length;
+    
+    const emotionScore = (scenesWithEmotion / previewScenes.length) * 40;
+    const triggerScore = (scenesWithTrigger / previewScenes.length) * 35;
+    const durationScore = (scenesInGoodDuration / previewScenes.length) * 25;
+    const totalScore = Math.round(emotionScore + triggerScore + durationScore);
+    
+    return {
+      issues,
+      score: totalScore,
+      scenesWithEmotion,
+      scenesWithTrigger,
+      scenesInGoodDuration,
+      totalScenes: previewScenes.length
+    };
+  }, [previewScenes]);
+
   // As imagens já estão incluídas no previewScenes quando há cenas geradas
 
   // Formatar input de tempo enquanto digita (máscara MM:SS) e sincronizar automaticamente
@@ -326,8 +436,8 @@ export function ScriptPreviewTimeline({
         </div>
       )}
 
-      {/* Stats */}
-      <div className="flex flex-wrap gap-4 mb-3 text-xs">
+      {/* Stats + Score de Retenção */}
+      <div className="flex flex-wrap items-center gap-4 mb-3 text-xs">
         <div className="flex items-center gap-1.5">
           <FileText className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="text-muted-foreground">{totalWords} palavras</span>
@@ -341,7 +451,74 @@ export function ScriptPreviewTimeline({
           <span className="text-primary font-medium">{formatTime(totalDuration)}</span>
           <span className="text-muted-foreground">@ {wpm} WPM</span>
         </div>
+        
+        {/* Score de Retenção */}
+        {retentionAnalysis && generatedScenes.length > 0 && (
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-muted-foreground">Retenção:</span>
+            <Badge 
+              className={`text-xs font-bold ${
+                retentionAnalysis.score >= 80 
+                  ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                  : retentionAnalysis.score >= 60 
+                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                    : 'bg-red-500/20 text-red-400 border-red-500/30'
+              }`}
+            >
+              {retentionAnalysis.score >= 80 ? <CheckCircle2 className="w-3 h-3 mr-1" /> : 
+               retentionAnalysis.score >= 60 ? <AlertTriangle className="w-3 h-3 mr-1" /> :
+               <TrendingDown className="w-3 h-3 mr-1" />}
+              {retentionAnalysis.score}%
+            </Badge>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-muted-foreground cursor-help">ⓘ</span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="font-medium mb-1">Análise de Retenção</p>
+                  <ul className="text-xs space-y-0.5">
+                    <li>✓ {retentionAnalysis.scenesWithEmotion}/{retentionAnalysis.totalScenes} cenas com emoção</li>
+                    <li>✓ {retentionAnalysis.scenesWithTrigger}/{retentionAnalysis.totalScenes} cenas com gatilho</li>
+                    <li>✓ {retentionAnalysis.scenesInGoodDuration}/{retentionAnalysis.totalScenes} cenas com duração ideal (3-8s)</li>
+                  </ul>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
       </div>
+
+      {/* Alertas de Retenção */}
+      {retentionAnalysis && retentionAnalysis.issues.length > 0 && generatedScenes.length > 0 && (
+        <div className="mb-3 space-y-2">
+          {retentionAnalysis.issues.slice(0, 3).map((issue, index) => (
+            <Alert 
+              key={index} 
+              className={`py-2 ${
+                issue.type === 'danger' 
+                  ? 'border-red-500/50 bg-red-500/10' 
+                  : 'border-amber-500/50 bg-amber-500/10'
+              }`}
+            >
+              <AlertTriangle className={`w-4 h-4 ${issue.type === 'danger' ? 'text-red-400' : 'text-amber-400'}`} />
+              <AlertDescription className="text-xs ml-2">
+                <span className={issue.type === 'danger' ? 'text-red-300' : 'text-amber-300'}>
+                  {issue.message}
+                </span>
+                <span className="text-muted-foreground ml-2">
+                  (Cenas {issue.scenes.join(', ')})
+                </span>
+              </AlertDescription>
+            </Alert>
+          ))}
+          {retentionAnalysis.issues.length > 3 && (
+            <p className="text-[10px] text-muted-foreground">
+              +{retentionAnalysis.issues.length - 3} outros alertas...
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Timeline visual */}
       <ScrollArea className="w-full">
