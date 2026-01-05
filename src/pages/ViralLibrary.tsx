@@ -36,14 +36,22 @@ import { useSearchParams } from "react-router-dom";
 import { GenerateScriptModal } from "@/components/library/GenerateScriptModal";
 import { usePersistedState } from "@/hooks/usePersistedState";
 
-interface ViralVideo {
+interface ViralTitle {
   id: string;
-  title: string | null;
-  video_url: string;
-  views: string | null;
-  likes: string | null;
-  duration: string | null;
-  notes: string | null;
+  title_text: string;
+  formula: string | null;
+  explicacao: string | null;
+  pontuacao: number | null;
+  is_favorite: boolean;
+  model_used: string | null;
+  created_at: string;
+  video_analysis_id: string | null;
+  analyzed_video?: {
+    original_title: string | null;
+    original_views: number | null;
+    detected_niche: string | null;
+    detected_subniche: string | null;
+  } | null;
 }
 
 interface ScriptAgent {
@@ -71,17 +79,15 @@ interface GeneratedScript {
   agent_id: string | null;
 }
 
-interface ViralThumbnail {
+interface ReferenceThumbnail {
   id: string;
   image_url: string;
-  video_title: string;
-  headline: string | null;
-  seo_description: string | null;
-  seo_tags: string | null;
-  prompt: string | null;
-  style: string | null;
+  description: string | null;
+  channel_name: string | null;
   niche: string | null;
   sub_niche: string | null;
+  extracted_prompt: string | null;
+  style_analysis: any;
   created_at: string;
 }
 
@@ -97,24 +103,21 @@ const ViralLibrary = () => {
   
   // Non-persisted states
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "titles");
-  const [videos, setVideos] = useState<ViralVideo[]>([]);
+  const [titles, setTitles] = useState<ViralTitle[]>([]);
   const [agents, setAgents] = useState<ScriptAgent[]>([]);
   const [scripts, setScripts] = useState<GeneratedScript[]>([]);
-  const [viralThumbnails, setViralThumbnails] = useState<ViralThumbnail[]>([]);
+  const [thumbnails, setThumbnails] = useState<ReferenceThumbnail[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newVideo, setNewVideo] = useState({ title: '', video_url: '', notes: '' });
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<ScriptAgent | null>(null);
 
   useEffect(() => {
     if (user) {
-      fetchVideos();
+      fetchTitles();
       fetchAgents();
       fetchScripts();
-      fetchViralThumbnails();
+      fetchThumbnails();
     }
   }, [user]);
 
@@ -139,31 +142,39 @@ const ViralLibrary = () => {
     }
   };
 
-  const fetchViralThumbnails = async () => {
+  const fetchThumbnails = async () => {
     try {
       const { data, error } = await supabase
-        .from('viral_thumbnails')
+        .from('reference_thumbnails')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setViralThumbnails(data || []);
+      setThumbnails(data || []);
     } catch (error) {
-      console.error('Error fetching viral thumbnails:', error);
+      console.error('Error fetching thumbnails:', error);
     }
   };
 
-  const fetchVideos = async () => {
+  const fetchTitles = async () => {
     try {
-      const { data, error } = await supabase
-        .from('viral_library')
-        .select('*')
+      // Fetch titles that are favorited from the video analyzer
+      const { data: titlesData, error: titlesError } = await supabase
+        .from('generated_titles')
+        .select('*, analyzed_videos!generated_titles_video_analysis_id_fkey(original_title, original_views, detected_niche, detected_subniche)')
+        .eq('is_favorite', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setVideos(data || []);
+      if (titlesError) throw titlesError;
+      
+      const formattedTitles: ViralTitle[] = (titlesData || []).map(t => ({
+        ...t,
+        analyzed_video: t.analyzed_videos as ViralTitle['analyzed_video']
+      }));
+      
+      setTitles(formattedTitles);
     } catch (error) {
-      console.error('Error fetching videos:', error);
+      console.error('Error fetching titles:', error);
     } finally {
       setLoading(false);
     }
@@ -183,49 +194,35 @@ const ViralLibrary = () => {
     }
   };
 
-  const handleAddVideo = async () => {
-    if (!user || !newVideo.video_url.trim()) {
-      toast.error('URL do vídeo é obrigatória');
-      return;
-    }
-
-    setSaving(true);
+  const handleDeleteTitle = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('viral_library')
-        .insert({
-          user_id: user.id,
-          title: newVideo.title || 'Vídeo sem título',
-          video_url: newVideo.video_url,
-          notes: newVideo.notes
-        });
+        .from('generated_titles')
+        .update({ is_favorite: false })
+        .eq('id', id);
 
       if (error) throw error;
-      toast.success('Vídeo adicionado à biblioteca!');
-      setNewVideo({ title: '', video_url: '', notes: '' });
-      setDialogOpen(false);
-      fetchVideos();
+      toast.success('Título removido da biblioteca!');
+      setTitles(titles.filter(t => t.id !== id));
     } catch (error) {
-      console.error('Error adding video:', error);
-      toast.error('Erro ao adicionar vídeo');
-    } finally {
-      setSaving(false);
+      console.error('Error removing title:', error);
+      toast.error('Erro ao remover título');
     }
   };
 
-  const handleDeleteVideo = async (id: string) => {
+  const handleDeleteThumbnail = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('viral_library')
+        .from('reference_thumbnails')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
-      toast.success('Vídeo removido!');
-      setVideos(videos.filter(v => v.id !== id));
+      toast.success('Thumbnail removida!');
+      setThumbnails(thumbnails.filter(t => t.id !== id));
     } catch (error) {
-      console.error('Error deleting video:', error);
-      toast.error('Erro ao remover vídeo');
+      console.error('Error deleting thumbnail:', error);
+      toast.error('Erro ao remover thumbnail');
     }
   };
 
@@ -245,21 +242,16 @@ const ViralLibrary = () => {
     }
   };
 
-  const handleAnalyzeVideo = async (video: ViralVideo) => {
-    toast.info('Redirecionando para análise...');
-    window.location.href = `/viral-analysis?url=${encodeURIComponent(video.video_url)}`;
-  };
-
   const handleUseAgent = (agent: ScriptAgent) => {
     setSelectedAgent(agent);
     setGenerateModalOpen(true);
   };
 
-  const handleCopyFormula = async (id: string, formula: string) => {
-    await navigator.clipboard.writeText(formula);
+  const handleCopyTitle = async (id: string, text: string) => {
+    await navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
-    toast.success("Fórmula copiada!");
+    toast.success("Título copiado!");
   };
 
   const handleTabChange = (value: string) => {
@@ -267,9 +259,26 @@ const ViralLibrary = () => {
     setSearchParams({ tab: value });
   };
 
-  const filteredVideos = videos.filter(v => 
-    v.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+  const formatViews = (views: number | null | undefined) => {
+    if (!views) return "N/A";
+    if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M`;
+    if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
+    return views.toString();
+  };
+
+  const filteredTitles = titles.filter(t => {
+    const matchesSearch = t.title_text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.formula?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesFavorites = !showFavorites || t.is_favorite;
+    
+    return matchesSearch && matchesFavorites;
+  });
+
+  const filteredThumbnails = thumbnails.filter(t =>
+    t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.channel_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.niche?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredAgents = agents.filter(a =>
@@ -376,53 +385,66 @@ const ViralLibrary = () => {
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
-              ) : filteredVideos.length === 0 ? (
+              ) : filteredTitles.length === 0 ? (
                 <Card className="p-12 text-center border-border/50">
                   <Library className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-foreground mb-2">Biblioteca de títulos vazia</h3>
                   <p className="text-lg text-muted-foreground">
-                    Analise vídeos para adicionar títulos à biblioteca
+                    Favorite títulos no Analisador de Vídeos para vê-los aqui
                   </p>
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredVideos.map((video) => (
-                    <Card key={video.id} className="p-6 border-border/50 hover:border-primary/50 transition-colors">
+                  {filteredTitles.map((title) => (
+                    <Card key={title.id} className="p-6 border-border/50 hover:border-primary/50 transition-colors">
                       <div className="flex items-start justify-between mb-4">
-                        <h3 className="font-bold text-lg text-foreground line-clamp-2 flex-1">{video.title}</h3>
-                        <Button variant="ghost" size="icon" className="shrink-0">
-                          <Heart className="w-5 h-5" />
+                        <h3 className="font-bold text-lg text-foreground line-clamp-2 flex-1">{title.title_text}</h3>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="shrink-0"
+                          onClick={() => handleDeleteTitle(title.id)}
+                        >
+                          <Heart className="w-5 h-5 fill-primary text-primary" />
                         </Button>
                       </div>
                       
-                      <div className="flex gap-2 mb-4">
-                        <Badge className="bg-primary/20 text-primary border-0">História</Badge>
-                        <Badge variant="outline">Mistérios</Badge>
+                      <div className="flex gap-2 mb-4 flex-wrap">
+                        {title.analyzed_video?.detected_niche && (
+                          <Badge className="bg-primary/20 text-primary border-0">
+                            {title.analyzed_video.detected_niche}
+                          </Badge>
+                        )}
+                        {title.analyzed_video?.detected_subniche && (
+                          <Badge variant="outline">{title.analyzed_video.detected_subniche}</Badge>
+                        )}
                       </div>
 
                       <div className="flex gap-4 mb-4">
                         <div className="bg-secondary/50 px-4 py-2 rounded-lg flex-1">
                           <p className="text-xs text-muted-foreground">Views Originais</p>
-                          <p className="text-lg font-bold text-foreground">{video.views || "1.3K"}</p>
+                          <p className="text-lg font-bold text-foreground">
+                            {formatViews(title.analyzed_video?.original_views)}
+                          </p>
                         </div>
                         <div className="bg-secondary/50 px-4 py-2 rounded-lg flex-1">
-                          <p className="text-xs text-muted-foreground">Score Viral em Potencial</p>
-                          <p className="text-lg font-bold text-primary">0/10</p>
+                          <p className="text-xs text-muted-foreground">Score</p>
+                          <p className="text-lg font-bold text-primary">{title.pontuacao || 0}/10</p>
                         </div>
                       </div>
 
-                      {video.notes && (
+                      {title.formula && (
                         <div className="mb-4">
                           <p className="text-sm text-muted-foreground">Fórmula</p>
-                          <p className="text-sm text-foreground">{video.notes}</p>
+                          <p className="text-sm text-foreground line-clamp-2">{title.formula}</p>
                         </div>
                       )}
 
                       <Button 
                         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11 text-base"
-                        onClick={() => handleCopyFormula(video.id, video.notes || video.title || "")}
+                        onClick={() => handleCopyTitle(title.id, title.title_text)}
                       >
-                        {copiedId === video.id ? (
+                        {copiedId === title.id ? (
                           <>
                             <Check className="w-5 h-5 mr-2" />
                             Copiado!
@@ -430,7 +452,7 @@ const ViralLibrary = () => {
                         ) : (
                           <>
                             <Copy className="w-5 h-5 mr-2" />
-                            Copiar
+                            Copiar Título
                           </>
                         )}
                       </Button>
@@ -446,40 +468,36 @@ const ViralLibrary = () => {
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
-              ) : viralThumbnails.length === 0 ? (
+              ) : filteredThumbnails.length === 0 ? (
                 <Card className="p-12 text-center border-border/50">
                   <Image className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-foreground mb-2">Biblioteca de thumbnails vazia</h3>
                   <p className="text-lg text-muted-foreground">
-                    Gere thumbnails e clique em "Salvar" para adicioná-las à biblioteca
+                    Salve thumbnails no Analisador de Vídeos para vê-las aqui
                   </p>
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {viralThumbnails.filter(t => 
-                    t.video_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    t.headline?.toLowerCase().includes(searchTerm.toLowerCase())
-                  ).map((thumb) => (
+                  {filteredThumbnails.map((thumb) => (
                     <Card key={thumb.id} className="border-border/50 hover:border-primary/50 transition-colors overflow-hidden">
                       {/* Thumbnail Image */}
                       <div className="aspect-video bg-secondary">
                         <img 
                           src={thumb.image_url} 
-                          alt={thumb.video_title}
+                          alt={thumb.description || "Thumbnail"}
                           className="w-full h-full object-cover"
                         />
                       </div>
                       
                       <div className="p-4 space-y-3">
-                        {/* Title */}
-                        <h3 className="font-bold text-foreground line-clamp-2">{thumb.video_title}</h3>
+                        {/* Channel Name */}
+                        {thumb.channel_name && (
+                          <h3 className="font-bold text-foreground line-clamp-2">{thumb.channel_name}</h3>
+                        )}
                         
-                        {/* Headline */}
-                        {thumb.headline && (
-                          <div>
-                            <p className="text-xs text-primary font-semibold mb-1">★ Headline</p>
-                            <p className="text-sm text-muted-foreground">{thumb.headline}</p>
-                          </div>
+                        {/* Description */}
+                        {thumb.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">{thumb.description}</p>
                         )}
                         
                         {/* Niche badges */}
@@ -506,11 +524,7 @@ const ViralLibrary = () => {
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={async () => {
-                              await supabase.from('viral_thumbnails').delete().eq('id', thumb.id);
-                              fetchViralThumbnails();
-                              toast.success('Thumbnail removida!');
-                            }}
+                            onClick={() => handleDeleteThumbnail(thumb.id)}
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
