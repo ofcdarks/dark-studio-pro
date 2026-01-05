@@ -4388,22 +4388,36 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
           {srtPreviewData && (
             <div className="space-y-4">
               {/* Estatísticas */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-cyan-500">{srtPreviewData.blocks.length}</p>
-                  <p className="text-xs text-muted-foreground">Blocos</p>
-                </div>
-                <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-primary">{currentWpm}</p>
-                  <p className="text-xs text-muted-foreground">WPM</p>
-                </div>
-                <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-green-500">
-                    {srtPreviewData.blocks.length > 0 ? srtPreviewData.blocks[srtPreviewData.blocks.length - 1].end.split(',')[0] : '00:00:00'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Duração</p>
-                </div>
-              </div>
+              {(() => {
+                const fullText = srtPreviewData.blocks.map(b => b.text).join(' ');
+                const totalWords = fullText.split(/\s+/).filter(Boolean).length;
+                const totalChars = fullText.length;
+                const lastEnd = srtPreviewData.blocks.length > 0 ? srtPreviewData.blocks[srtPreviewData.blocks.length - 1].end.split(',')[0] : '00:00:00';
+                return (
+                  <div className="grid grid-cols-5 gap-2">
+                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                      <p className="text-xl font-bold text-cyan-500">{srtPreviewData.blocks.length}</p>
+                      <p className="text-xs text-muted-foreground">Blocos</p>
+                    </div>
+                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                      <p className="text-xl font-bold text-purple-500">{totalWords.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Palavras</p>
+                    </div>
+                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                      <p className="text-xl font-bold text-amber-500">{totalChars.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Caracteres</p>
+                    </div>
+                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                      <p className="text-xl font-bold text-primary">{currentWpm}</p>
+                      <p className="text-xs text-muted-foreground">WPM</p>
+                    </div>
+                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                      <p className="text-xl font-bold text-green-500">{lastEnd}</p>
+                      <p className="text-xs text-muted-foreground">Duração</p>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Lista de blocos */}
               <ScrollArea className="h-[45vh] pr-4">
