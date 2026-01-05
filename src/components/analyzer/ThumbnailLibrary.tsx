@@ -100,7 +100,7 @@ export function ThumbnailLibrary({
   
   // Analysis states
   const [analyzing, setAnalyzing] = useState(false);
-  const [analysisModel, setAnalysisModel] = useState("gemini-2.5-flash");
+  const [analysisModel, setAnalysisModel] = useState("gpt-4o");
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisMessage, setAnalysisMessage] = useState("");
   
@@ -772,9 +772,9 @@ export function ThumbnailLibrary({
                     <SelectValue placeholder="Escolher modelo..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                    <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
-                    <SelectItem value="gpt-5">GPT-5</SelectItem>
+                    <SelectItem value="gpt-4o">GPT-4o (2025)</SelectItem>
+                    <SelectItem value="claude-4-sonnet">Claude 4 Sonnet</SelectItem>
+                    <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro (2025)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
