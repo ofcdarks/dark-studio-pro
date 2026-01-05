@@ -1943,7 +1943,7 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                               onClick={() => setFilterPending(!filterPending)}
                               className="h-7 text-xs"
                             >
-                              {filterPending ? "Ver Todas" : "Só Pendentes"}
+                              {filterPending ? "Ver Geradas" : "Só Pendentes"}
                             </Button>
                             
                             {/* Botão para regenerar apenas mídias perdidas */}
@@ -1969,7 +1969,13 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                           {generatedScenes
                             .map((scene, index) => ({ scene, index }))
-                            .filter(({ scene }) => !filterPending || !scene.generatedImage)
+                            .filter(({ scene }) => {
+                              // Filtro: mostrar apenas com imagem, ou se estiver gerando, ou se filterPending está ativo
+                              if (filterPending) return !scene.generatedImage;
+                              // Por padrão, ocultar "Mídia perdida" (sem imagem e não gerando)
+                              if (!scene.generatedImage && !generatingImages) return false;
+                              return true;
+                            })
                             .map(({ scene, index }) => {
                             // Verificar se este card está na fila de processamento
                             const isPending = !scene.generatedImage && generatingImages;
