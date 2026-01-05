@@ -2129,31 +2129,72 @@ const Analytics = () => {
                   const healthScore = calculateHealthScore();
                   
                   // ============================================
-                  // DYNAMIC VIRAL TITLE SUGGESTIONS
+                  // DYNAMIC VIRAL TITLE SUGGESTIONS (Based on TOP videos)
                   // ============================================
                   const generateViralTitles = (): string[] => {
                     const titles: string[] = [];
-                    const kw = nicheKeyword.toUpperCase();
-                    const kw2 = secondaryKeyword.toUpperCase();
                     
-                    // Number-based titles (proven to increase CTR)
-                    titles.push(`7 Segredos de ${kw} Que NINGUÉM Te Conta`);
-                    titles.push(`${kw}: 5 Erros FATAIS Que Você Está Cometendo`);
-                    titles.push(`3 Técnicas de ${kw} Para EXPLODIR Seus Resultados`);
+                    // Analyze actual successful titles from this channel
+                    if (topVideoTitles.length > 0) {
+                      // Get the most viewed video title as reference
+                      const bestTitle = topVideoTitles[0] || '';
+                      const secondBestTitle = topVideoTitles[1] || '';
+                      const thirdBestTitle = topVideoTitles[2] || '';
+                      
+                      // Extract core topic from best performing titles
+                      const extractCoreTopic = (title: string): string => {
+                        // Remove common prefixes, numbers, special chars
+                        return title
+                          .replace(/^\d+[\s\-\.:]+/g, '') // Remove leading numbers
+                          .replace(/[\|\-\–\—]/g, ' ') // Replace separators
+                          .replace(/[#@]/g, '') // Remove hashtags
+                          .replace(/\s+/g, ' ')
+                          .trim()
+                          .split(' ')
+                          .slice(0, 4)
+                          .join(' ');
+                      };
+                      
+                      const coreTopic1 = extractCoreTopic(bestTitle);
+                      const coreTopic2 = extractCoreTopic(secondBestTitle);
+                      
+                      // Generate variations based on actual successful content
+                      if (coreTopic1) {
+                        titles.push(`${coreTopic1} - O Guia DEFINITIVO`);
+                        titles.push(`Por Que ${coreTopic1} Está MUDANDO Tudo`);
+                        titles.push(`${coreTopic1}: 5 Coisas Que Você PRECISA Saber`);
+                      }
+                      
+                      if (coreTopic2) {
+                        titles.push(`${coreTopic2} - Como Fazer do Jeito CERTO`);
+                        titles.push(`A VERDADE Sobre ${coreTopic2}`);
+                      }
+                      
+                      // Analyze patterns in top titles and replicate
+                      const hasNumbers = topVideoTitles.some(t => /\d+/.test(t));
+                      const hasQuestions = topVideoTitles.some(t => /\?/.test(t));
+                      const hasCaps = topVideoTitles.some(t => /[A-Z]{2,}/.test(t));
+                      
+                      if (hasNumbers && coreTopic1) {
+                        titles.push(`7 Segredos de ${coreTopic1} Que NINGUÉM Conta`);
+                        titles.push(`TOP 5 ${coreTopic1} de 2025`);
+                      }
+                      
+                      if (hasQuestions && coreTopic1) {
+                        titles.push(`${coreTopic1} Funciona? Minha Experiência REAL`);
+                        titles.push(`Qual o Melhor ${coreTopic1}? Teste Completo`);
+                      }
+                      
+                      // Use actual channel name for authority
+                      titles.push(`${channelName} Explica: ${coreTopic1}`);
+                      
+                    } else {
+                      // Fallback if no videos available
+                      titles.push(`Bem-vindo ao ${channelName} - Conheça o Canal`);
+                      titles.push(`Primeiro Vídeo: O Que Esperar do ${channelName}`);
+                    }
                     
-                    // Question/Curiosity titles
-                    titles.push(`Por Que ${kw} Vai MUDAR Tudo em 2025?`);
-                    titles.push(`${kw} Funciona? A VERDADE Que Ninguém Fala`);
-                    
-                    // Tutorial/Value titles
-                    titles.push(`Como Dominar ${kw} em 30 Dias (Guia COMPLETO)`);
-                    titles.push(`${kw} Para Iniciantes: Do ZERO ao AVANÇADO`);
-                    
-                    // Emotional/Urgency titles
-                    titles.push(`PARE de Fazer ${kw} ERRADO! (Veja o Certo)`);
-                    titles.push(`${kw}: O Que ${subs > 1000 ? 'Milhares' : 'Poucos'} Sabem e Você NÃO`);
-                    
-                    return titles;
+                    return titles.slice(0, 8);
                   };
                   
                   const viralTitleSuggestions = generateViralTitles();
@@ -2226,29 +2267,89 @@ const Analytics = () => {
                   const optimalSchedule = getOptimalSchedule();
                   
                   // ============================================
-                  // TAGS & HASHTAGS (Viral Expert Level)
+                  // TAGS & HASHTAGS (Based on Channel's TOP Videos)
                   // ============================================
-                  const suggestedTagsRaw = keywords.slice(0, 10);
-                  const suggestedTags = suggestedTagsRaw.map(k => k);
                   
-                  // Hashtags with trending format
-                  const suggestedHashtags = [
-                    `#${nicheKeyword.charAt(0).toUpperCase() + nicheKeyword.slice(1)}`,
-                    `#${secondaryKeyword.charAt(0).toUpperCase() + secondaryKeyword.slice(1)}`,
-                    '#Shorts',
-                    '#YouTube',
-                    `#${nicheKeyword}2025`
-                  ].slice(0, 5);
+                  // Extract meaningful tags from actual top performing titles
+                  const generateChannelTags = (): string[] => {
+                    const tags: string[] = [];
+                    
+                    // Add channel name as tag
+                    if (channelName) {
+                      tags.push(channelName.toLowerCase().replace(/\s+/g, ''));
+                    }
+                    
+                    // Extract unique meaningful words from top video titles
+                    const allTitleWords: Record<string, number> = {};
+                    topVideoTitles.forEach(title => {
+                      const words = title.toLowerCase()
+                        .replace(/[^\w\sáàãâéêíóôõúç]/g, ' ')
+                        .split(/\s+/)
+                        .filter(w => w.length > 3);
+                      
+                      words.forEach(word => {
+                        if (!['para', 'como', 'mais', 'muito', 'esse', 'essa', 'isso', 'aqui', 'você', 'voce', 'veja', 'sobre', 'with', 'this', 'that', 'from', 'your', 'have', 'will', 'what', 'when', 'where', 'which'].includes(word)) {
+                          allTitleWords[word] = (allTitleWords[word] || 0) + 1;
+                        }
+                      });
+                    });
+                    
+                    // Get most frequent words from titles
+                    const sortedWords = Object.entries(allTitleWords)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 12)
+                      .map(([word]) => word);
+                    
+                    tags.push(...sortedWords);
+                    
+                    return [...new Set(tags)].slice(0, 15);
+                  };
                   
-                  // Long-tail tags for SEO
-                  const longTailTags = [
-                    `${nicheKeyword} para iniciantes`,
-                    `como fazer ${nicheKeyword}`,
-                    `${nicheKeyword} tutorial`,
-                    `${nicheKeyword} dicas`,
-                    `melhor ${nicheKeyword}`,
-                    `${nicheKeyword} 2025`
-                  ];
+                  const suggestedTags = generateChannelTags();
+                  
+                  // Generate hashtags based on top video topics
+                  const generateChannelHashtags = (): string[] => {
+                    const hashtags: string[] = [];
+                    
+                    // Use top 3 keywords from channel's videos
+                    suggestedTags.slice(0, 3).forEach(tag => {
+                      hashtags.push(`#${tag.charAt(0).toUpperCase() + tag.slice(1)}`);
+                    });
+                    
+                    // Add channel name as hashtag
+                    if (channelName) {
+                      const cleanName = channelName.replace(/\s+/g, '');
+                      hashtags.push(`#${cleanName}`);
+                    }
+                    
+                    return hashtags.slice(0, 5);
+                  };
+                  
+                  const suggestedHashtags = generateChannelHashtags();
+                  
+                  // Generate long-tail tags based on actual content themes
+                  const generateLongTailTags = (): string[] => {
+                    const longTail: string[] = [];
+                    const mainTopic = suggestedTags[0] || '';
+                    const secondTopic = suggestedTags[1] || '';
+                    
+                    if (mainTopic) {
+                      longTail.push(`${mainTopic} tutorial`);
+                      longTail.push(`${mainTopic} dicas`);
+                      longTail.push(`como fazer ${mainTopic}`);
+                      longTail.push(`${mainTopic} para iniciantes`);
+                      longTail.push(`melhor ${mainTopic} 2025`);
+                    }
+                    
+                    if (secondTopic) {
+                      longTail.push(`${secondTopic} completo`);
+                      longTail.push(`${secondTopic} passo a passo`);
+                    }
+                    
+                    return longTail;
+                  };
+                  
+                  const longTailTags = generateLongTailTags();
                   
                   // Copy functions
                   const copyTags = () => {
@@ -2303,48 +2404,55 @@ Gerado por Viral Analytics Expert`;
                   };
                   
                   // ============================================
-                  // DYNAMIC CHECKLIST ITEMS (Expert Level)
+                  // DYNAMIC CHECKLIST ITEMS (Based on Channel Data)
                   // ============================================
+                  
+                  // Get main topic from channel's top videos
+                  const mainTopic = suggestedTags[0] || 'seu conteúdo';
+                  const secondTopic = suggestedTags[1] || '';
+                  const topVideoTitle = topVideoTitles[0] || '';
                   
                   const seoTasks = [
                     { 
                       id: "seo_1", 
-                      label: "Otimizar títulos com gatilhos mentais", 
+                      label: "Otimizar títulos baseados nos seus SUCESSOS", 
                       desc: healthScore.issues.includes('views_low') 
-                        ? `⚠️ PRIORIDADE: Seus títulos não estão convertendo. Views/vídeo: ${formatNumber(avgViews)}`
-                        : `Use números, perguntas e palavras de poder`,
-                      expanded: `🎯 TÍTULOS VIRAIS PARA SEU CANAL:\n\n${viralTitleSuggestions.slice(0, 5).map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\n📝 FÓRMULAS QUE FUNCIONAM:\n• [NÚMERO] + [BENEFÍCIO] + [URGÊNCIA]\n• [PERGUNTA] + [PROMESSA]\n• [ERRO] + [SOLUÇÃO]`,
+                        ? `⚠️ PRIORIDADE: Views/vídeo: ${formatNumber(avgViews)} - Títulos precisam melhorar`
+                        : `Seu melhor: "${topVideoTitle.slice(0, 40)}..."`,
+                      expanded: `🎯 TÍTULOS BASEADOS NO SEU CANAL "${channelName}":\n\n${viralTitleSuggestions.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\n📊 ANÁLISE DOS SEUS TOP VÍDEOS:\n${topVideoTitles.slice(0, 3).map((t, i) => `✅ ${i + 1}. "${t}"`).join('\n')}\n\n💡 PADRÃO IDENTIFICADO: Seus títulos de sucesso ${viralPatterns[0]?.type === 'numbers' ? 'usam NÚMEROS' : viralPatterns[0]?.type === 'questions' ? 'fazem PERGUNTAS' : viralPatterns[0]?.type === 'tutorial' ? 'são TUTORIAIS' : 'são DIRETOS'}`,
                       copyText: viralTitleSuggestions.join('\n'),
                       copyLabel: 'Copiar Títulos'
                     },
                     { 
                       id: "seo_2", 
-                      label: "Usar tags long-tail para SEO", 
-                      desc: `${suggestedTags.length + longTailTags.length} tags específicas para ${nicheKeyword}`,
-                      expanded: `🏷️ TAGS PRINCIPAIS:\n${suggestedTags.join(', ')}\n\n🔍 TAGS LONG-TAIL (Alta conversão):\n${longTailTags.join('\n')}\n\n💡 DICA: Use 8-12 tags por vídeo, misturando gerais e específicas`,
+                      label: `Tags específicas para "${mainTopic}"`, 
+                      desc: `${suggestedTags.length} tags extraídas dos seus vídeos de sucesso`,
+                      expanded: `🏷️ TAGS DO SEU CANAL (extraídas dos top vídeos):\n${suggestedTags.join(', ')}\n\n🔍 TAGS LONG-TAIL PARA "${mainTopic.toUpperCase()}":\n${longTailTags.join('\n')}\n\n💡 Use estas tags - são específicas para o conteúdo que JÁ FUNCIONA no seu canal!`,
                       copyText: [...suggestedTags, ...longTailTags].join(', '),
                       copyLabel: 'Copiar Tags'
                     },
                     { 
                       id: "seo_3", 
-                      label: "Otimizar descrição (primeiras 150 chars)", 
-                      desc: `Modelo viral com ${nicheKeyword} + CTA`,
-                      expanded: `📝 MODELO DE DESCRIÇÃO:\n\n🔥 ${channelName} te ensina [BENEFÍCIO] sobre ${nicheKeyword}! Neste vídeo você vai descobrir [PROMESSA].\n\n⏱️ TIMESTAMPS:\n0:00 - Introdução\n[...]\n\n🔗 LINKS:\n• Instagram: @${channelName.toLowerCase().replace(/\s/g, '')}\n• TikTok: @${channelName.toLowerCase().replace(/\s/g, '')}\n\n${suggestedHashtags.join(' ')}\n\n📌 Tags: ${suggestedTags.slice(0, 5).join(', ')}`,
-                      copyText: `🔥 ${channelName} te ensina [BENEFÍCIO] sobre ${nicheKeyword}! Neste vídeo você vai descobrir [PROMESSA].\n\n⏱️ TIMESTAMPS:\n0:00 - Introdução\n\n${suggestedHashtags.join(' ')}`,
+                      label: `Descrição otimizada para ${channelName}`, 
+                      desc: `Modelo pronto com suas palavras-chave`,
+                      expanded: `📝 MODELO DE DESCRIÇÃO PARA "${channelName}":\n\n🔥 Neste vídeo de ${channelName}, você vai descobrir tudo sobre ${mainTopic}${secondTopic ? ` e ${secondTopic}` : ''}!\n\n⏱️ TIMESTAMPS:\n0:00 - Introdução\n[adicione seus timestamps]\n\n🔗 ME SIGA:\n• Instagram: @${channelName.toLowerCase().replace(/\s/g, '')}\n\n${suggestedHashtags.join(' ')}\n\n📌 Tags: ${suggestedTags.slice(0, 5).join(', ')}`,
+                      copyText: `🔥 Neste vídeo de ${channelName}, você vai descobrir tudo sobre ${mainTopic}!\n\n⏱️ TIMESTAMPS:\n0:00 - Introdução\n\n${suggestedHashtags.join(' ')}`,
                       copyLabel: 'Copiar Modelo'
                     },
                     { 
                       id: "seo_4", 
                       label: `Thumbnails: ${thumbnailStrategy.priority}`, 
-                      desc: thumbnailStrategy.tips[0],
-                      expanded: `🖼️ ESTRATÉGIA DE THUMBNAIL (${thumbnailStrategy.priority}):\n\n${thumbnailStrategy.tips.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\n🎨 PALETA DE CORES VIRAL:\n• Amarelo #FFD700 + Preto #000000\n• Vermelho #FF0000 + Branco #FFFFFF\n• Azul #0066FF + Amarelo #FFD700\n\n📏 CHECKLIST:\n☐ Rosto com emoção forte\n☐ Texto em 3-4 palavras máximo\n☐ Contraste extremo\n☐ Elemento de curiosidade`,
+                      desc: avgViews < 1000 
+                        ? `⚠️ Com ${formatNumber(avgViews)} views/vídeo, thumbnails são CRÍTICAS`
+                        : thumbnailStrategy.tips[0],
+                      expanded: `🖼️ ESTRATÉGIA DE THUMBNAIL PARA ${channelName}:\n\n${thumbnailStrategy.tips.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\n🎨 TEXTO SUGERIDO PARA THUMBNAIL:\n• "${mainTopic.toUpperCase()}"\n• "${secondTopic ? secondTopic.toUpperCase() : 'VEJA ISSO'}"\n\n📏 CHECKLIST:\n☐ Rosto com emoção forte\n☐ Máximo 3-4 palavras\n☐ Cores contrastantes`,
                       priority: thumbnailStrategy.color
                     },
                     { 
                       id: "seo_5", 
-                      label: "Hashtags estratégicas (máx 3-5)", 
+                      label: `Hashtags para ${mainTopic}`, 
                       desc: suggestedHashtags.join(' '),
-                      expanded: `#️⃣ HASHTAGS RECOMENDADAS:\n${suggestedHashtags.join('\n')}\n\n📍 ONDE COLOCAR:\n• Final da descrição\n• Primeira linha (para Shorts)\n\n⚠️ EVITE:\n• Mais de 5 hashtags\n• Hashtags genéricas como #youtube\n• Hashtags não relacionadas`,
+                      expanded: `#️⃣ HASHTAGS BASEADAS NO SEU CONTEÚDO:\n${suggestedHashtags.join('\n')}\n\n📍 ONDE COLOCAR:\n• Final da descrição para vídeos longos\n• Primeira linha para Shorts\n\n💡 Estas hashtags são específicas para "${mainTopic}" - o tema dos seus vídeos de sucesso!`,
                       copyText: suggestedHashtags.join(' '),
                       copyLabel: 'Copiar Hashtags'
                     },
@@ -2354,59 +2462,57 @@ Gerado por Viral Analytics Expert`;
                     { 
                       id: "eng_1", 
                       label: avgEngagement < 3 ? "⚠️ URGENTE: Aumentar engajamento" : "Otimizar CTAs para engajamento", 
-                      desc: `Taxa atual: ${avgEngagement.toFixed(1)}% | Meta: >5%`,
-                      expanded: `📊 ANÁLISE DE ENGAJAMENTO:\n• Atual: ${avgEngagement.toFixed(1)}%\n• Média do nicho: 4-6%\n• Sua meta: ${(avgEngagement * 1.5).toFixed(1)}%\n\n🎯 SCRIPTS DE CTA QUE CONVERTEM:\n\n0-30s: "Se você quer [BENEFÍCIO], deixa o like agora!"\n\n50%: "Tá curtindo? Então se inscreve e ativa o sininho!"\n\nFinal: "Comenta aqui qual [TEMA] você quer ver no próximo!"\n\n💡 DICA: CTAs nos primeiros 30s têm 3x mais conversão`,
+                      desc: `Taxa atual: ${avgEngagement.toFixed(1)}% | Meta: >5% | Likes/vídeo: ${formatNumber(avgLikes)}`,
+                      expanded: `📊 ANÁLISE DE ENGAJAMENTO DE "${channelName}":\n• Engajamento: ${avgEngagement.toFixed(1)}%\n• Média de likes: ${formatNumber(avgLikes)}\n• Média de comentários: ${formatNumber(avgComments)}\n• Sua meta: ${(avgEngagement * 1.5).toFixed(1)}%\n\n🎯 SCRIPTS DE CTA PARA ${channelName}:\n\n0-30s: "Se você curte ${mainTopic}, deixa o like!"\n\n50%: "Gostando? Se inscreve no ${channelName}!"\n\nFinal: "Comenta qual ${mainTopic} você quer ver!"`,
                       priority: avgEngagement < 3 ? 'red' : undefined
                     },
                     { 
                       id: "eng_2", 
-                      label: "Perguntas virais para comentários", 
-                      desc: `Exemplos específicos para ${nicheKeyword}`,
-                      expanded: `💬 PERGUNTAS QUE GERAM COMENTÁRIOS:\n\n1. "Vocês preferem [A] ou [B]? Comenta!"\n\n2. "Qual ${nicheKeyword} vocês querem que eu faça próximo?"\n\n3. "Quem mais já passou por isso? 🙋"\n\n4. "Concordam? Discordam? Comenta aí!"\n\n5. "Deixa nos comentários sua maior dúvida sobre ${nicheKeyword}"\n\n📌 DICA: Fixe o melhor comentário para incentivar mais interação`
+                      label: `Perguntas para gerar comentários sobre ${mainTopic}`, 
+                      desc: `Média atual: ${formatNumber(avgComments)} comentários/vídeo`,
+                      expanded: `💬 PERGUNTAS PARA ${channelName}:\n\n1. "Vocês preferem ${mainTopic} ou ${secondTopic || 'outra opção'}? Comenta!"\n\n2. "Qual ${mainTopic} vocês querem que eu traga próximo?"\n\n3. "Quem mais curte ${mainTopic}? 🙋"\n\n4. "O que acham de ${topVideoTitle.slice(0, 30)}...?"\n\n5. "Deixa sua dúvida sobre ${mainTopic}!"\n\n📌 DICA: Fixe o melhor comentário para incentivar mais interação`
                     },
                     { 
                       id: "eng_3", 
                       label: subs < 1000 ? "CRÍTICO: Responder 100% dos comentários" : "Responder nas primeiras 2h", 
                       desc: subs < 1000 
                         ? `Com ${formatNumber(subs)} subs, cada comentário vale ouro`
-                        : `Algoritmo favorece vídeos com respostas rápidas`,
-                      expanded: `⚡ ESTRATÉGIA DE RESPOSTAS:\n\n📍 PRIMEIRAS 2 HORAS:\n• Responda TODOS os comentários\n• Use emojis para parecer amigável\n• Faça perguntas para continuar conversa\n\n📍 APÓS 24 HORAS:\n• Responda os mais relevantes\n• Fixe comentário de destaque\n\n💡 TEMPLATES DE RESPOSTA:\n• "Boa pergunta! [resposta]"\n• "Exatamente! Você pegou o ponto 🎯"\n• "Vou fazer um vídeo sobre isso! Se inscreve!"`,
+                        : `${formatNumber(avgComments)} comentários/vídeo para responder`,
+                      expanded: `⚡ ESTRATÉGIA DE RESPOSTAS PARA ${channelName}:\n\n📍 PRIMEIRAS 2 HORAS:\n• Responda TODOS os comentários\n• Use emojis 🎯✅🔥\n• Faça perguntas de volta\n\n📍 APÓS 24 HORAS:\n• Responda os mais relevantes\n• Fixe o melhor comentário\n\n💡 TEMPLATES:\n• "Boa pergunta sobre ${mainTopic}! [resposta]"\n• "Exatamente! 🎯"\n• "Vou fazer um vídeo sobre isso!"`,
                       priority: subs < 1000 ? 'red' : undefined
                     },
                     { 
                       id: "eng_4", 
                       label: "Cards e telas finais otimizados", 
-                      desc: `Promova: "${topVideoTitles[0]?.slice(0, 35) || 'seu melhor vídeo'}..."`,
-                      expanded: `📺 CONFIGURAÇÃO IDEAL:\n\n🎴 CARDS (durante o vídeo):\n• 25% do vídeo: Card para playlist relacionada\n• 50% do vídeo: Card para vídeo popular\n• Após menção: Card para vídeo mencionado\n\n🔚 TELA FINAL (últimos 20s):\n• Elemento 1: "Inscreva-se" (esquerda)\n• Elemento 2: Melhor vídeo (centro)\n• Elemento 3: Upload mais recente (direita)\n\n📊 TOP VÍDEOS PARA PROMOVER:\n${topVideoTitles.slice(0, 3).map((t, i) => `${i + 1}. ${t.slice(0, 40)}...`).join('\n')}`
+                      desc: topVideoTitles[0] ? `Promova: "${topVideoTitles[0].slice(0, 30)}..."` : 'Configure cards e telas finais',
+                      expanded: `📺 CONFIGURAÇÃO PARA ${channelName}:\n\n🎴 CARDS (durante o vídeo):\n• 25%: Playlist de ${mainTopic}\n• 50%: Seu vídeo mais popular\n\n🔚 TELA FINAL:\n• Inscrição + 2 melhores vídeos\n\n📊 SEUS TOP VÍDEOS PARA PROMOVER:\n${topVideoTitles.slice(0, 3).map((t, i) => `${i + 1}. ${t}`).join('\n')}`
                     },
                   ];
 
                   const contentTasks = [
                     { 
                       id: "cnt_1", 
-                      label: "Gancho nos primeiros 5 segundos", 
-                      desc: `Modelo: "Você sabia que ${nicheKeyword}..."`,
-                      expanded: `⚡ GANCHOS VIRAIS PARA SEU NICHO:\n\n1. CURIOSIDADE:\n"Você NÃO vai acreditar o que ${nicheKeyword} pode fazer..."\n\n2. PROMESSA:\n"Em 5 minutos você vai dominar ${nicheKeyword}"\n\n3. CHOQUE:\n"90% das pessoas fazem ${nicheKeyword} ERRADO"\n\n4. RESULTADO:\n[Mostra resultado incrível primeiro]\n"Quer saber como eu fiz isso?"\n\n5. POLÊMICA:\n"Vou te contar a verdade sobre ${nicheKeyword} que ninguém fala"\n\n⏱️ REGRA: Capture atenção em 3 segundos ou perde o viewer`
+                      label: "Gancho baseado nos seus SUCESSOS", 
+                      desc: topVideoTitle ? `Seu top: "${topVideoTitle.slice(0, 35)}..."` : 'Crie ganchos fortes',
+                      expanded: `⚡ GANCHOS BASEADOS EM "${channelName}":\n\n📊 SEU VÍDEO MAIS VISTO:\n"${topVideoTitle}"\n\n🎯 MODELOS DE GANCHO:\n\n1. CURIOSIDADE:\n"Você NÃO vai acreditar ${mainTopic}..."\n\n2. PROMESSA:\n"Em 5 minutos você vai entender ${mainTopic}"\n\n3. CHOQUE:\n"90% fazem ${mainTopic} ERRADO"\n\n4. RESULTADO:\n[Mostra resultado primeiro]\n"Quer saber como?"\n\n⏱️ REGRA: 3 segundos para capturar atenção!`
                     },
                     { 
                       id: "cnt_2", 
-                      label: `Duração ideal: ${subs < 5000 ? '5-8 min' : '10-15 min'}`, 
-                      desc: subs < 5000 
-                        ? "Audiência nova: Vídeos curtos retêm melhor"
-                        : "Audiência engajada: Pode aprofundar mais",
-                      expanded: `📊 ESTRATÉGIA DE DURAÇÃO:\n\nPara ${formatNumber(subs)} inscritos:\n\n📹 VÍDEOS LONGOS:\n• Duração: ${subs < 5000 ? '5-8 min' : '10-15 min'}\n• Corte pausas e "uhms"\n• Jump cuts a cada 3-5s\n• Retenção meta: >40%\n\n📱 SHORTS:\n• Duração: 30-60s\n• Gancho em 1s\n• Loop no final\n• CTA: "Segue para mais!"\n\n🎯 ANÁLISE DO SEU CANAL:\n• Avg views: ${formatNumber(avgViews)}\n• Faça vídeos que as pessoas terminem!`
+                      label: `Duração ideal para ${formatNumber(subs)} subs: ${subs < 5000 ? '5-8 min' : '10-15 min'}`, 
+                      desc: `Avg views: ${formatNumber(avgViews)} | Foque em retenção`,
+                      expanded: `📊 ESTRATÉGIA DE DURAÇÃO PARA ${channelName}:\n\nCom ${formatNumber(subs)} inscritos:\n\n📹 VÍDEOS LONGOS:\n• Duração: ${subs < 5000 ? '5-8 min' : '10-15 min'}\n• Corte pausas\n• Jump cuts\n• Meta retenção: >40%\n\n📱 SHORTS:\n• 30-60s\n• Gancho em 1s\n• CTA no final\n\n🎯 MÉTRICAS:\n• Views/vídeo: ${formatNumber(avgViews)}\n• Likes/vídeo: ${formatNumber(avgLikes)}`
                     },
                     { 
                       id: "cnt_3", 
-                      label: "Criar série viral", 
-                      desc: `"${nicheKeyword.toUpperCase()} - Episódio [N]"`,
-                      expanded: `📚 IDEIAS DE SÉRIE PARA ${nicheKeyword.toUpperCase()}:\n\n1. SÉRIE TUTORIAL:\n"${nicheKeyword} do ZERO - Parte [1,2,3...]"\n\n2. SÉRIE TOP:\n"Top 10 ${nicheKeyword} - Parte [1,2...]"\n\n3. SÉRIE DESAFIO:\n"30 Dias de ${nicheKeyword} - Dia [N]"\n\n4. SÉRIE REAÇÃO:\n"Reagindo a ${nicheKeyword} - Ep [N]"\n\n💡 POR QUE FUNCIONA:\n• Aumenta Watch Time total\n• Cria expectativa\n• Algoritmo promove séries\n• Viewers ficam "viciados"`
+                      label: `Criar série sobre ${mainTopic}`, 
+                      desc: `"${mainTopic.toUpperCase()} - Parte [N]"`,
+                      expanded: `📚 IDEIAS DE SÉRIE PARA ${channelName}:\n\n1. SÉRIE TUTORIAL:\n"${mainTopic} do ZERO - Parte [1,2,3...]"\n\n2. SÉRIE TOP:\n"Top 10 ${mainTopic} - Parte [1,2...]"\n\n3. SÉRIE DESAFIO:\n"30 Dias de ${mainTopic} - Dia [N]"\n\n4. CONTINUAÇÃO:\n"${topVideoTitle?.slice(0, 25)}... - PARTE 2"\n\n💡 POR QUE FUNCIONA:\n• Aumenta Watch Time\n• Cria expectativa\n• Algoritmo promove séries`
                     },
                     { 
                       id: "cnt_4", 
                       label: subs < 1000 ? "🔥 PRIORIDADE: Shorts para crescer" : "Shorts complementares", 
                       desc: `Meta: ${optimalSchedule.shorts}`,
-                      expanded: `📱 ESTRATÉGIA DE SHORTS:\n\n📊 PARA ${formatNumber(subs)} INSCRITOS:\n• Frequência: ${optimalSchedule.shorts}\n• Duração ideal: 30-45s\n\n🎬 TIPOS QUE VIRALIZAM:\n1. Recorte do melhor momento do vídeo longo\n2. Dica rápida de 30s sobre ${nicheKeyword}\n3. Tendência + seu nicho\n4. "Resposta a comentário" (Stories style)\n\n⚡ ESTRUTURA VIRAL:\n• 1s: Gancho visual forte\n• 2-5s: Promessa/problema\n• 6-25s: Conteúdo\n• 26-30s: CTA + Loop\n\n#️⃣ HASHTAGS PARA SHORTS:\n#Shorts #${nicheKeyword} #Viral`,
+                      expanded: `📱 SHORTS PARA ${channelName}:\n\n📊 Com ${formatNumber(subs)} subs:\n• Frequência: ${optimalSchedule.shorts}\n• Duração: 30-45s\n\n🎬 IDEIAS BASEADAS NO SEU CONTEÚDO:\n1. Recorte de "${topVideoTitle?.slice(0, 25)}..."\n2. Dica rápida de ${mainTopic}\n3. "Você sabia que ${mainTopic}...?"\n4. Resposta a comentário\n\n⚡ ESTRUTURA:\n• 1s: Gancho\n• 2-25s: Conteúdo\n• 26-30s: CTA + Loop\n\n${suggestedHashtags.slice(0, 3).join(' ')} #Shorts`,
                       priority: subs < 1000 ? 'amber' : undefined
                     },
                   ];
@@ -2414,34 +2520,34 @@ Gerado por Viral Analytics Expert`;
                   const growthTasks = [
                     { 
                       id: "grw_1", 
-                      label: "Cronograma de postagem otimizado", 
+                      label: `Cronograma ideal para ${channelName}`, 
                       desc: `${optimalSchedule.frequency} | ${optimalSchedule.bestDays}`,
-                      expanded: `📅 CRONOGRAMA IDEAL PARA ${formatNumber(subs)} INSCRITOS:\n\n📹 VÍDEOS LONGOS:\n• Frequência: ${optimalSchedule.frequency}\n• Dias: ${optimalSchedule.bestDays}\n• Horário: ${optimalSchedule.bestTime}\n\n📱 SHORTS:\n• ${optimalSchedule.shorts}\n• Qualquer horário (alcance global)\n\n💡 ${optimalSchedule.reason}\n\n⏰ DICA PRO:\n• Agende no YouTube Studio\n• Anuncie 24h antes nos Community Posts\n• Seja CONSISTENTE (mesmo horário sempre)`
+                      expanded: `📅 CRONOGRAMA PARA ${channelName} (${formatNumber(subs)} subs):\n\n📹 VÍDEOS LONGOS:\n• Frequência: ${optimalSchedule.frequency}\n• Dias: ${optimalSchedule.bestDays}\n• Horário: ${optimalSchedule.bestTime}\n\n📱 SHORTS:\n• ${optimalSchedule.shorts}\n\n💡 ${optimalSchedule.reason}\n\n⏰ DICA:\n• Agende no YouTube Studio\n• Seja CONSISTENTE`
                     },
                     { 
                       id: "grw_2", 
-                      label: `Analisar métricas semanalmente`, 
-                      desc: `Score atual: ${healthScore.score}/100 | ${healthScore.issues.length > 0 ? `Problemas: ${healthScore.issues.length}` : 'Saudável!'}`,
-                      expanded: `📊 DIAGNÓSTICO DO CANAL:\n\n🏆 SCORE: ${healthScore.score}/100\n\n✅ MÉTRICAS A MONITORAR:\n• CTR: Meta >5% (verifique no Studio)\n• Retenção: Meta >40%\n• Engajamento: Atual ${avgEngagement.toFixed(1)}%\n• Views/vídeo: Atual ${formatNumber(avgViews)}\n\n${healthScore.issues.length > 0 ? `⚠️ PROBLEMAS DETECTADOS:\n${healthScore.issues.map(i => {
-                        if (i === 'engagement_low') return '• Engajamento baixo - Melhore CTAs';
-                        if (i === 'views_low') return '• Views baixas - Otimize títulos/thumbnails';
-                        if (i === 'sub_conversion_low') return '• Conversão de subs baixa - Mais CTAs de inscrição';
-                        if (i === 'content_low') return '• Pouco conteúdo - Aumente frequência';
+                      label: `Score do canal: ${healthScore.score}/100`, 
+                      desc: healthScore.issues.length > 0 ? `⚠️ ${healthScore.issues.length} problema(s) detectado(s)` : '✅ Canal saudável!',
+                      expanded: `📊 DIAGNÓSTICO DE ${channelName}:\n\n🏆 SCORE: ${healthScore.score}/100\n\n📈 MÉTRICAS:\n• Inscritos: ${formatNumber(subs)}\n• Views/vídeo: ${formatNumber(avgViews)}\n• Engajamento: ${avgEngagement.toFixed(1)}%\n• Likes/vídeo: ${formatNumber(avgLikes)}\n• Comentários/vídeo: ${formatNumber(avgComments)}\n\n${healthScore.issues.length > 0 ? `⚠️ PROBLEMAS:\n${healthScore.issues.map(i => {
+                        if (i === 'engagement_low') return `• Engajamento ${avgEngagement.toFixed(1)}% (meta: >5%)`;
+                        if (i === 'views_low') return `• Views ${formatNumber(avgViews)} (baixo para ${formatNumber(subs)} subs)`;
+                        if (i === 'sub_conversion_low') return '• Conversão de subs baixa';
+                        if (i === 'content_low') return `• Apenas ${totalVideos} vídeos (meta: >50)`;
                         return `• ${i}`;
-                      }).join('\n')}` : '✅ CANAL SAUDÁVEL! Mantenha a consistência.'}`,
+                      }).join('\n')}` : '✅ CANAL SAUDÁVEL!'}`,
                       priority: healthScore.issues.length > 2 ? 'red' : healthScore.issues.length > 0 ? 'amber' : undefined
                     },
                     { 
                       id: "grw_3", 
                       label: "Colaborações estratégicas", 
-                      desc: `Busque canais de ${formatNumber(Math.round(subs * 0.5))}-${formatNumber(subs * 2)} subs`,
-                      expanded: `🤝 ESTRATÉGIA DE COLABORAÇÃO:\n\n🎯 CANAIS IDEAIS:\n• Tamanho: ${formatNumber(Math.round(subs * 0.5))} a ${formatNumber(subs * 2)} inscritos\n• Nicho: ${nicheKeyword} ou complementar\n• Engajamento similar ou maior\n\n📝 TEMPLATE DE PROPOSTA:\n"Olá [NOME]! Sou do canal ${channelName} e adoro seu conteúdo sobre [TEMA DELES]. Tenho uma ideia de collab que beneficiaria ambos: [PROPOSTA]. O que acha?"\n\n💡 TIPOS DE COLLAB:\n1. Participação cruzada (você no canal dele e vice-versa)\n2. Vídeo conjunto\n3. Menção mútua\n4. Desafio conjunto`
+                      desc: `Canais de ${formatNumber(Math.round(subs * 0.5))}-${formatNumber(subs * 2)} subs sobre ${mainTopic}`,
+                      expanded: `🤝 COLABORAÇÕES PARA ${channelName}:\n\n🎯 CANAIS IDEAIS:\n• Tamanho: ${formatNumber(Math.round(subs * 0.5))} a ${formatNumber(subs * 2)} subs\n• Tema: ${mainTopic}, ${secondTopic || 'temas relacionados'}\n\n📝 PROPOSTA:\n"Olá! Sou do ${channelName} e adoro seu conteúdo sobre [tema]. Que tal uma collab?"\n\n💡 TIPOS:\n1. Participação cruzada\n2. Vídeo conjunto\n3. Menção mútua`
                     },
                     { 
                       id: "grw_4", 
-                      label: "Cross-posting em outras redes", 
-                      desc: `TikTok, Instagram, Twitter sobre ${nicheKeyword}`,
-                      expanded: `📱 ESTRATÉGIA MULTIPLATAFORMA:\n\n🎵 TIKTOK:\n• Reposte seus Shorts\n• Use áudios trending\n• Bio: "Vídeos completos no YouTube ⬇️"\n\n📸 INSTAGRAM:\n• Reels: Mesmos Shorts\n• Stories: Bastidores\n• Feed: Thumbnails/Quotes\n\n🐦 TWITTER/X:\n• Discussões sobre ${nicheKeyword}\n• Threads explicativas\n• Anuncie novos vídeos\n\n⚡ REGRA DE OURO:\n• Crie conteúdo nativo para cada rede\n• Sempre redirecione para YouTube\n• Link na bio: YouTube primeiro`
+                      label: `Cross-posting: ${mainTopic} em outras redes`, 
+                      desc: `TikTok, Instagram, Twitter sobre ${mainTopic}`,
+                      expanded: `📱 ESTRATÉGIA MULTI-PLATAFORMA PARA ${channelName}:\n\n🎵 TIKTOK:\n• Reposte Shorts sobre ${mainTopic}\n• Bio: "Vídeos completos no YouTube ⬇️"\n\n📸 INSTAGRAM:\n• Reels: Shorts de ${mainTopic}\n• Stories: Bastidores\n\n🐦 TWITTER/X:\n• Discussões sobre ${mainTopic}\n• Anuncie novos vídeos\n\n⚡ REGRA: Sempre leve de volta ao ${channelName}!`
                     },
                   ];
 
