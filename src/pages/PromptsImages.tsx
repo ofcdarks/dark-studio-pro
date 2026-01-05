@@ -4424,36 +4424,49 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               <ScrollArea className="h-[45vh] pr-4">
                 <div className="space-y-2">
                   {srtPreviewData.blocks.map((block, idx) => (
-                    <div 
-                      key={idx} 
-                      className={cn(
-                        "p-3 rounded-lg border transition-colors",
-                        block.charCount > 499 
-                          ? "bg-red-500/10 border-red-500/30" 
-                          : block.charCount > 400 
-                            ? "bg-amber-500/10 border-amber-500/30"
-                            : "bg-secondary/50 border-border"
-                      )}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs font-mono">
-                            #{block.index}
+                    <div key={idx}>
+                      <div 
+                        className={cn(
+                          "p-3 rounded-lg border transition-colors",
+                          block.charCount > 499 
+                            ? "bg-red-500/10 border-red-500/30" 
+                            : block.charCount > 400 
+                              ? "bg-amber-500/10 border-amber-500/30"
+                              : "bg-secondary/50 border-border"
+                        )}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs font-mono">
+                              #{block.index}
+                            </Badge>
+                            <span className="text-xs font-mono text-muted-foreground">
+                              {block.start.split(',')[0]} → {block.end.split(',')[0]}
+                            </span>
+                          </div>
+                          <Badge 
+                            variant={block.charCount > 499 ? "destructive" : block.charCount > 400 ? "outline" : "secondary"}
+                            className="text-xs"
+                          >
+                            {block.charCount} chars
                           </Badge>
-                          <span className="text-xs font-mono text-muted-foreground">
-                            {block.start.split(',')[0]} → {block.end.split(',')[0]}
-                          </span>
                         </div>
-                        <Badge 
-                          variant={block.charCount > 499 ? "destructive" : block.charCount > 400 ? "outline" : "secondary"}
-                          className="text-xs"
-                        >
-                          {block.charCount} chars
-                        </Badge>
+                        <p className="text-sm text-foreground leading-relaxed">
+                          {block.text}
+                        </p>
                       </div>
-                      <p className="text-sm text-foreground leading-relaxed">
-                        {block.text}
-                      </p>
+                      
+                      {/* Separador visual de 10s entre blocos */}
+                      {idx < srtPreviewData.blocks.length - 1 && (
+                        <div className="flex items-center gap-2 py-2">
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                            <Timer className="w-3 h-3 text-primary" />
+                            <span className="text-[10px] font-mono text-primary">+10s</span>
+                          </div>
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
