@@ -59,6 +59,7 @@ import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES } from "@/lib/thumbnailSty
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import logoGif from "@/assets/logo.gif";
+import { SceneTimeline } from "@/components/scenes/SceneTimeline";
 
 interface ScenePrompt {
   number: number;
@@ -2900,6 +2901,20 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                   }
                 </p>
               </div>
+
+              {/* Timeline Visual */}
+              {generatedScenes.length > 0 && (
+                <SceneTimeline
+                  scenes={generatedScenes.map(scene => ({
+                    number: scene.number,
+                    text: scene.text,
+                    wordCount: scene.wordCount,
+                    durationSeconds: Math.max(1, wordCountToSeconds(scene.wordCount)),
+                    generatedImage: scene.generatedImage
+                  }))}
+                  className="p-3 bg-secondary/30 rounded-lg border border-border"
+                />
+              )}
 
               {/* Botão de GERAR VÍDEO (automático) */}
               <Button
