@@ -131,7 +131,7 @@ const createVideoMaterial = (
   media_path: "",
   object_locked: null,
   origin_material_id: "",
-  path: fileName, // Path relativo ao projeto
+  path: `Resources/${fileName}`, // Path relativo à pasta Resources do projeto
   picture_from: "none",
   picture_set_category_id: "",
   picture_set_category_name: "",
@@ -397,7 +397,7 @@ export const generateCapcutDraftMetaInfo = (
     create_time: nowSeconds,
     duration: secondsToMicroseconds(scene.durationSeconds),
     extra_info: "",
-    file_Path: scene.fileName,
+    file_Path: `Resources/${scene.fileName}`,
     height: 1080,
     id: generateId(),
     import_time: nowSeconds,
