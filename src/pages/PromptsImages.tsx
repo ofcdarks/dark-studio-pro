@@ -1667,33 +1667,32 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
     });
   };
 
-  // Baixar SRT com mesma configuração do gerador de roteiros (150 WPM, 499 chars, 10s gap)
+  // Baixar SRT sincronizado com o WPM atual (cenas contíguas, sem gaps)
   const downloadSrt = () => {
     if (generatedScenes.length === 0) {
       toast({ title: "Nenhuma cena para exportar", variant: "destructive" });
       return;
     }
 
-    // Calcular timecodes baseados no WPM atual
-    const scenesWithDurations = generatedScenes.map((scene) => {
-      const startSeconds = scene.timecode ? 
-        parseInt(scene.timecode.split(":")[0]) * 60 + parseInt(scene.timecode.split(":")[1]) : 0;
-      const endSeconds = scene.endTimecode ? 
-        parseInt(scene.endTimecode.split(":")[0]) * 60 + parseInt(scene.endTimecode.split(":")[1]) : startSeconds;
-      return { ...scene, startSeconds, endSeconds };
+    // Calcular tempos reais baseados no WPM atual (cenas são contíguas)
+    let currentTime = 0;
+    const scenesForSrt = generatedScenes.map((scene) => {
+      const durationSeconds = (scene.wordCount / currentWpm) * 60;
+      const startSeconds = currentTime;
+      const endSeconds = currentTime + durationSeconds;
+      currentTime = endSeconds;
+      return {
+        number: scene.number,
+        text: scene.text,
+        startSeconds,
+        endSeconds
+      };
     });
 
-    const scenesForSrt = scenesWithDurations.map(s => ({
-      number: s.number,
-      text: s.text,
-      startSeconds: s.startSeconds,
-      endSeconds: s.endSeconds
-    }));
-
-    // Usar a mesma configuração do srtGenerator (499 chars, 10s gap)
+    // Cenas são contíguas - sem gap entre elas (gapBetweenScenes: 0)
     const srtContent = generateNarrationSrt(scenesForSrt, {
       maxCharsPerBlock: 499,
-      gapBetweenScenes: 10
+      gapBetweenScenes: 0
     });
 
     const blob = new Blob([srtContent], { type: "text/plain;charset=utf-8" });
@@ -1707,9 +1706,10 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
     URL.revokeObjectURL(url);
 
     const blockCount = srtContent.split('\n\n').filter(b => b.trim()).length;
+    const totalDuration = Math.floor(currentTime / 60) + ":" + String(Math.floor(currentTime % 60)).padStart(2, '0');
     toast({
       title: "SRT gerado!",
-      description: `${blockCount} blocos de legenda (máx 499 chars)`,
+      description: `${blockCount} blocos | ${currentWpm} WPM | Duração: ${totalDuration}`,
     });
   };
 
