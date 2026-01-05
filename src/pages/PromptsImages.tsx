@@ -226,6 +226,7 @@ const PromptsImages = () => {
   const [regeneratingPreview, setRegeneratingPreview] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
   const [progress, setProgress] = useState(0);
+  const [chunkProgress, setChunkProgress] = useState<{ current: number; total: number; scenesProcessed: number }>({ current: 0, total: 0, scenesProcessed: 0 });
   const [editingPromptIndex, setEditingPromptIndex] = useState<number | null>(null);
   const [editingPromptText, setEditingPromptText] = useState("");
   const [downloadingAll, setDownloadingAll] = useState(false);
@@ -368,6 +369,7 @@ const PromptsImages = () => {
     
     setLoadingMessage(`Analisando ${wordCount} palavras${totalChunks > 1 ? ` em ${totalChunks} partes` : ''}...`);
     setProgress(5);
+    setChunkProgress({ current: 0, total: totalChunks, scenesProcessed: 0 });
 
     try {
       let allScenes: ScenePrompt[] = [];
@@ -380,12 +382,15 @@ const PromptsImages = () => {
         const chunkWordCount = chunk.split(/\s+/).filter(Boolean).length;
         const estimatedScenesInChunk = Math.ceil(chunkWordCount / (parseInt(wordsPerScene) || 80));
         
+        // Atualizar progresso de chunks
+        setChunkProgress({ current: chunkIndex + 1, total: totalChunks, scenesProcessed: allScenes.length });
+        
         // Atualizar progresso
         const baseProgress = 10 + (chunkIndex / totalChunks) * 70;
         setProgress(Math.round(baseProgress));
         setLoadingMessage(
           totalChunks > 1 
-            ? `Parte ${chunkIndex + 1}/${totalChunks}: Gerando ~${estimatedScenesInChunk} cenas...`
+            ? `Gerando ~${estimatedScenesInChunk} cenas...`
             : `Gerando ~${estimatedScenesInChunk} cenas...`
         );
         
@@ -3651,10 +3656,45 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               </div>
             </div>
             
+            {/* Contador de partes (se houver mais de 1) */}
+            {chunkProgress.total > 1 && (
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center gap-3">
+                  {Array.from({ length: chunkProgress.total }).map((_, idx) => (
+                    <div 
+                      key={idx}
+                      className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300",
+                        idx < chunkProgress.current
+                          ? "bg-green-500 text-white scale-100"
+                          : idx === chunkProgress.current - 1
+                            ? "bg-primary text-primary-foreground animate-pulse scale-110"
+                            : "bg-secondary text-muted-foreground scale-90"
+                      )}
+                    >
+                      {idx < chunkProgress.current ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        idx + 1
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm font-medium text-primary">
+                  Parte {chunkProgress.current} de {chunkProgress.total}
+                </p>
+                {chunkProgress.scenesProcessed > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {chunkProgress.scenesProcessed} cenas processadas
+                  </p>
+                )}
+              </div>
+            )}
+            
             {/* Mensagem de progresso */}
             <div className="text-center space-y-2">
               <h3 className="text-lg font-semibold text-foreground">
-                Analisando Roteiro
+                {chunkProgress.total > 1 ? 'Processando Roteiro Grande' : 'Analisando Roteiro'}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {loadingMessage}
@@ -3666,7 +3706,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               <Progress value={progress} className="h-2 bg-secondary" />
               <div className="flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">
-                  Processando com IA
+                  {chunkProgress.total > 1 ? `Parte ${chunkProgress.current}/${chunkProgress.total}` : 'Processando com IA'}
                 </span>
                 <span className="text-xs font-medium text-primary">
                   {progress}%
