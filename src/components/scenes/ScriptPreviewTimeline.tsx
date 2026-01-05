@@ -15,6 +15,8 @@ interface GeneratedScene {
   wordCount: number;
   durationSeconds: number;
   generatedImage?: string;
+  emotion?: string;
+  retentionTrigger?: string;
 }
 
 interface ScriptPreviewTimelineProps {
@@ -34,7 +36,53 @@ interface PreviewScene {
   startTime: number;
   endTime: number;
   generatedImage?: string;
+  emotion?: string;
+  retentionTrigger?: string;
 }
+
+// Mapeamento de emoções para cores
+const EMOTION_COLORS: Record<string, { bg: string; text: string; icon: string }> = {
+  tensão: { bg: 'bg-red-500/20', text: 'text-red-400', icon: '🔥' },
+  tension: { bg: 'bg-red-500/20', text: 'text-red-400', icon: '🔥' },
+  surpresa: { bg: 'bg-amber-500/20', text: 'text-amber-400', icon: '😲' },
+  surprise: { bg: 'bg-amber-500/20', text: 'text-amber-400', icon: '😲' },
+  medo: { bg: 'bg-purple-500/20', text: 'text-purple-400', icon: '😨' },
+  fear: { bg: 'bg-purple-500/20', text: 'text-purple-400', icon: '😨' },
+  admiração: { bg: 'bg-blue-500/20', text: 'text-blue-400', icon: '✨' },
+  admiration: { bg: 'bg-blue-500/20', text: 'text-blue-400', icon: '✨' },
+  choque: { bg: 'bg-rose-500/20', text: 'text-rose-400', icon: '⚡' },
+  shock: { bg: 'bg-rose-500/20', text: 'text-rose-400', icon: '⚡' },
+  curiosidade: { bg: 'bg-cyan-500/20', text: 'text-cyan-400', icon: '🔍' },
+  curiosity: { bg: 'bg-cyan-500/20', text: 'text-cyan-400', icon: '🔍' },
+  neutral: { bg: 'bg-gray-500/20', text: 'text-gray-400', icon: '○' },
+};
+
+// Mapeamento de gatilhos de retenção para cores
+const TRIGGER_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+  curiosidade: { bg: 'bg-cyan-500/30', text: 'text-cyan-300', label: 'Curiosidade' },
+  curiosity: { bg: 'bg-cyan-500/30', text: 'text-cyan-300', label: 'Curiosidade' },
+  quebra_padrão: { bg: 'bg-amber-500/30', text: 'text-amber-300', label: 'Quebra' },
+  pattern_break: { bg: 'bg-amber-500/30', text: 'text-amber-300', label: 'Quebra' },
+  antecipação: { bg: 'bg-purple-500/30', text: 'text-purple-300', label: 'Antecipação' },
+  anticipation: { bg: 'bg-purple-500/30', text: 'text-purple-300', label: 'Antecipação' },
+  revelação: { bg: 'bg-rose-500/30', text: 'text-rose-300', label: 'Revelação' },
+  revelation: { bg: 'bg-rose-500/30', text: 'text-rose-300', label: 'Revelação' },
+  mistério: { bg: 'bg-indigo-500/30', text: 'text-indigo-300', label: 'Mistério' },
+  mystery: { bg: 'bg-indigo-500/30', text: 'text-indigo-300', label: 'Mistério' },
+  continuity: { bg: 'bg-gray-500/30', text: 'text-gray-300', label: 'Continua' },
+};
+
+const getEmotionStyle = (emotion?: string) => {
+  if (!emotion) return EMOTION_COLORS.neutral;
+  const key = emotion.toLowerCase().trim();
+  return EMOTION_COLORS[key] || EMOTION_COLORS.neutral;
+};
+
+const getTriggerStyle = (trigger?: string) => {
+  if (!trigger) return TRIGGER_COLORS.continuity;
+  const key = trigger.toLowerCase().trim().replace(/ /g, '_');
+  return TRIGGER_COLORS[key] || TRIGGER_COLORS.continuity;
+};
 
 const formatTime = (seconds: number): string => {
   // Mostra mais precisão em cenas curtas para evitar que tudo pareça igual
@@ -112,7 +160,9 @@ export function ScriptPreviewTimeline({
           durationSeconds: scene.durationSeconds,
           startTime,
           endTime,
-          generatedImage: scene.generatedImage
+          generatedImage: scene.generatedImage,
+          emotion: scene.emotion,
+          retentionTrigger: scene.retentionTrigger
         };
       });
     }
@@ -298,17 +348,38 @@ export function ScriptPreviewTimeline({
         <div className="min-w-[400px] pb-2">
           {/* Barra de cenas com preview de imagens */}
           <TooltipProvider delayDuration={100}>
-            <div className={`flex rounded-lg overflow-hidden border border-border/50 bg-background/30 ${isExpanded ? 'h-24' : 'h-14'}`}>
+            <div className={`flex rounded-lg overflow-hidden border border-border/50 bg-background/30 ${isExpanded ? 'h-28' : 'h-16'}`}>
               {timelineData.map((scene, index) => {
                 const sceneImage = previewScenes[index]?.generatedImage;
-                const colors = [
+                const sceneEmotion = previewScenes[index]?.emotion;
+                const sceneTrigger = previewScenes[index]?.retentionTrigger;
+                const emotionStyle = getEmotionStyle(sceneEmotion);
+                const triggerStyle = getTriggerStyle(sceneTrigger);
+                
+                // Cores baseadas na emoção se não houver imagem
+                const emotionGradients: Record<string, string> = {
+                  tensão: 'from-red-500/60 to-red-600/40',
+                  tension: 'from-red-500/60 to-red-600/40',
+                  surpresa: 'from-amber-500/60 to-amber-600/40',
+                  surprise: 'from-amber-500/60 to-amber-600/40',
+                  medo: 'from-purple-500/60 to-purple-600/40',
+                  fear: 'from-purple-500/60 to-purple-600/40',
+                  admiração: 'from-blue-500/60 to-blue-600/40',
+                  admiration: 'from-blue-500/60 to-blue-600/40',
+                  choque: 'from-rose-500/60 to-rose-600/40',
+                  shock: 'from-rose-500/60 to-rose-600/40',
+                  curiosidade: 'from-cyan-500/60 to-cyan-600/40',
+                  curiosity: 'from-cyan-500/60 to-cyan-600/40',
+                };
+                
+                const emotionKey = sceneEmotion?.toLowerCase().trim() || '';
+                const colorClass = emotionGradients[emotionKey] || [
                   'from-primary/60 to-primary/40',
                   'from-blue-500/60 to-blue-500/40',
                   'from-green-500/60 to-green-500/40',
                   'from-amber-500/60 to-amber-500/40',
                   'from-purple-500/60 to-purple-500/40',
-                ];
-                const colorClass = colors[index % colors.length];
+                ][index % 5];
                 
                 return (
                   <Tooltip key={scene.number}>
@@ -321,7 +392,7 @@ export function ScriptPreviewTimeline({
                           cursor-pointer hover:brightness-125 transition-all
                           overflow-hidden
                         `}
-                        style={{ width: `${scene.widthPercent}%`, minWidth: '20px' }}
+                        style={{ width: `${scene.widthPercent}%`, minWidth: '24px' }}
                       >
                         {/* Imagem de fundo se existir */}
                         {sceneImage && (
@@ -332,8 +403,17 @@ export function ScriptPreviewTimeline({
                           />
                         )}
                         
+                        {/* Badge de emoção no topo */}
+                        {sceneEmotion && isExpanded && (
+                          <div className={`absolute top-0.5 left-0.5 right-0.5 z-20 flex justify-center`}>
+                            <span className={`text-[8px] px-1 py-0.5 rounded ${emotionStyle.bg} ${emotionStyle.text} font-medium truncate`}>
+                              {emotionStyle.icon}
+                            </span>
+                          </div>
+                        )}
+                        
                         {/* Overlay com info */}
-                        <div className={`relative z-10 w-full text-center px-0.5 pb-1 ${sceneImage ? 'bg-gradient-to-t from-black/80 to-transparent pt-4' : ''}`}>
+                        <div className={`relative z-10 w-full text-center px-0.5 pb-1 ${sceneImage ? 'bg-gradient-to-t from-black/80 to-transparent pt-6' : ''}`}>
                           <span className={`font-bold text-white drop-shadow-md ${isExpanded ? 'text-sm' : 'text-[10px]'}`}>
                             {scene.number}
                           </span>
@@ -341,9 +421,17 @@ export function ScriptPreviewTimeline({
                             {formatTime(scene.durationSeconds)}
                           </span>
                           {isExpanded && (
-                            <span className="block text-[9px] text-white/80 drop-shadow">
-                              {formatTimecode(scene.startTime)} → {formatTimecode(scene.endTime)}
-                            </span>
+                            <>
+                              <span className="block text-[8px] text-white/80 drop-shadow">
+                                {formatTimecode(scene.startTime)}
+                              </span>
+                              {/* Badge de gatilho de retenção */}
+                              {sceneTrigger && (
+                                <span className={`inline-block mt-0.5 text-[7px] px-1 py-0.5 rounded ${triggerStyle.bg} ${triggerStyle.text}`}>
+                                  {triggerStyle.label}
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
@@ -355,11 +443,18 @@ export function ScriptPreviewTimeline({
                           <img 
                             src={sceneImage} 
                             alt={`Cena ${scene.number}`}
-                            className="w-32 h-20 object-cover"
+                            className="w-32 h-24 object-cover"
                           />
                         )}
-                        <div className="p-2 space-y-1">
-                          <p className="font-bold">Cena {scene.number}</p>
+                        <div className="p-2 space-y-1 min-w-[180px]">
+                          <p className="font-bold flex items-center gap-2">
+                            Cena {scene.number}
+                            {sceneEmotion && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${emotionStyle.bg} ${emotionStyle.text}`}>
+                                {emotionStyle.icon} {sceneEmotion}
+                              </span>
+                            )}
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             {formatTimecode(scene.startTime)} → {formatTimecode(scene.endTime)}
                           </p>
@@ -368,6 +463,15 @@ export function ScriptPreviewTimeline({
                             {" • "}
                             <span className="text-muted-foreground">{scene.wordCount} palavras</span>
                           </p>
+                          {/* Gatilho de retenção */}
+                          {sceneTrigger && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] text-muted-foreground">Gatilho:</span>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${triggerStyle.bg} ${triggerStyle.text} font-medium`}>
+                                🔁 {triggerStyle.label}
+                              </span>
+                            </div>
+                          )}
                           <p className="text-[10px] text-muted-foreground line-clamp-2 border-t pt-1 mt-1 max-w-[200px]">
                             "{scene.text.substring(0, 80)}..."
                           </p>
@@ -406,40 +510,69 @@ export function ScriptPreviewTimeline({
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
 
-      {/* Detalhes expandidos - mostra duração e imagem de cada cena */}
+      {/* Detalhes expandidos - mostra duração, emoção e gatilho de cada cena */}
       {showDetails && (
-        <div className="mt-3 pt-3 border-t border-border/50 max-h-60 overflow-y-auto">
+        <div className="mt-3 pt-3 border-t border-border/50 max-h-72 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
-            {previewScenes.map((scene) => (
-              <div 
-                key={scene.number}
-                className="flex items-center gap-2 p-2 rounded bg-secondary/30"
-              >
-                {/* Mini preview da imagem */}
-                {scene.generatedImage ? (
-                  <img 
-                    src={scene.generatedImage} 
-                    alt={`Cena ${scene.number}`}
-                    className="w-12 h-8 object-cover rounded"
-                  />
-                ) : (
-                  <div className="w-12 h-8 bg-muted/50 rounded flex items-center justify-center">
-                    <span className="text-lg font-bold text-primary">{scene.number}</span>
+            {previewScenes.map((scene) => {
+              const emotionStyle = getEmotionStyle(scene.emotion);
+              const triggerStyle = getTriggerStyle(scene.retentionTrigger);
+              
+              return (
+                <div 
+                  key={scene.number}
+                  className="flex items-start gap-2 p-2 rounded bg-secondary/30 border border-border/30"
+                >
+                  {/* Mini preview da imagem */}
+                  <div className="relative flex-shrink-0">
+                    {scene.generatedImage ? (
+                      <img 
+                        src={scene.generatedImage} 
+                        alt={`Cena ${scene.number}`}
+                        className="w-14 h-10 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-14 h-10 bg-muted/50 rounded flex items-center justify-center">
+                        <span className="text-lg font-bold text-primary">{scene.number}</span>
+                      </div>
+                    )}
+                    {/* Badge de emoção sobreposto */}
+                    {scene.emotion && (
+                      <span className={`absolute -top-1 -right-1 text-[9px] px-1 py-0.5 rounded ${emotionStyle.bg} border border-background`}>
+                        {emotionStyle.icon}
+                      </span>
+                    )}
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                      {formatTimecode(scene.startTime)} → {formatTimecode(scene.endTime)}
-                    </Badge>
-                    <span className="text-primary font-medium">{formatTime(scene.durationSeconds)}</span>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-foreground">#{scene.number}</span>
+                      <Badge variant="outline" className="text-[9px] px-1 py-0">
+                        {formatTimecode(scene.startTime)}
+                      </Badge>
+                      <span className="text-primary font-medium text-[10px]">{formatTime(scene.durationSeconds)}</span>
+                    </div>
+                    
+                    {/* Badges de emoção e gatilho */}
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {scene.emotion && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded ${emotionStyle.bg} ${emotionStyle.text}`}>
+                          {emotionStyle.icon} {scene.emotion}
+                        </span>
+                      )}
+                      {scene.retentionTrigger && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded ${triggerStyle.bg} ${triggerStyle.text}`}>
+                          🔁 {triggerStyle.label}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <p className="text-muted-foreground line-clamp-1 text-[10px]">
+                      {scene.wordCount}w • {scene.text.substring(0, 40)}...
+                    </p>
                   </div>
-                  <p className="text-muted-foreground line-clamp-1 text-[10px] mt-0.5">
-                    {scene.wordCount}w • {scene.text.substring(0, 30)}...
-                  </p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
