@@ -3568,12 +3568,28 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
             {/* Progress */}
             {isGeneratingVideo && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{videoProgress.message}</span>
                   <span className="font-mono text-purple-400">{Math.round(videoProgress.progress)}%</span>
                 </div>
                 <Progress value={videoProgress.progress} className="h-2" />
+                
+                {/* Detalhes de download */}
+                {videoProgress.stage === "loading" && videoProgress.downloadedMB !== undefined && videoProgress.totalMB !== undefined && videoProgress.totalMB > 0 && (
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground bg-background/50 rounded-lg p-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                      <span className="font-medium">{videoProgress.downloadedMB.toFixed(1)}MB</span>
+                      <span>/</span>
+                      <span>{videoProgress.totalMB.toFixed(1)}MB</span>
+                    </div>
+                    <span className="text-muted-foreground/60">•</span>
+                    <span className="text-muted-foreground/80">
+                      {Math.round((videoProgress.downloadedMB / videoProgress.totalMB) * 100)}% baixado
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
