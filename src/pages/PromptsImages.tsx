@@ -2061,6 +2061,13 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                       wordsPerScene={parseInt(wordsPerScene) || 80}
                       wpm={currentWpm}
                       onSyncAudio={(newWpm) => setNarrationSpeed(newWpm.toString())}
+                      generatedScenes={generatedScenes.map((scene, index) => ({
+                        number: index + 1,
+                        text: scene.text,
+                        wordCount: scene.wordCount,
+                        durationSeconds: (scene.wordCount / currentWpm) * 60,
+                        generatedImage: scene.generatedImage
+                      }))}
                     />
                   )}
 

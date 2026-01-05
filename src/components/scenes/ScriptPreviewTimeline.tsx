@@ -9,12 +9,21 @@ import { Eye, EyeOff, Clock, FileText, Scissors, Timer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
+interface GeneratedScene {
+  number: number;
+  text: string;
+  wordCount: number;
+  durationSeconds: number;
+  generatedImage?: string;
+}
+
 interface ScriptPreviewTimelineProps {
   script: string;
   wordsPerScene: number;
   wpm: number;
   className?: string;
   onSyncAudio?: (newWpm: number) => void;
+  generatedScenes?: GeneratedScene[];
 }
 
 interface PreviewScene {
@@ -74,11 +83,11 @@ export function ScriptPreviewTimeline({
   wordsPerScene, 
   wpm, 
   className = "",
-  onSyncAudio
+  onSyncAudio,
+  generatedScenes = []
 }: ScriptPreviewTimelineProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const [showSyncInput, setShowSyncInput] = useState(false);
   const [audioDuration, setAudioDuration] = useState("");
   
   const previewScenes = useMemo(() => 
@@ -115,23 +124,45 @@ export function ScriptPreviewTimeline({
     return markers;
   }, [totalDuration]);
 
-  // Formatar input de tempo enquanto digita (máscara MM:SS)
+  // Mapear imagens geradas para as cenas do preview
+  const scenesWithImages = useMemo(() => {
+    return previewScenes.map((scene, index) => ({
+      ...scene,
+      generatedImage: generatedScenes[index]?.generatedImage || undefined
+    }));
+  }, [previewScenes, generatedScenes]);
+
+  // Formatar input de tempo enquanto digita (máscara MM:SS) e sincronizar automaticamente
   const handleDurationChange = (value: string) => {
     // Remove tudo que não for número
     const numbersOnly = value.replace(/\D/g, '');
     
-    if (numbersOnly.length <= 2) {
-      setAudioDuration(numbersOnly);
-    } else {
+    let formattedValue = numbersOnly;
+    if (numbersOnly.length > 2) {
       // Formata como MM:SS
       const mins = numbersOnly.slice(0, -2) || '0';
       const secs = numbersOnly.slice(-2);
-      setAudioDuration(`${mins}:${secs}`);
+      formattedValue = `${mins}:${secs}`;
+    }
+    
+    setAudioDuration(formattedValue);
+    
+    // Auto-sincronizar se tiver formato válido (pelo menos 3 dígitos = M:SS)
+    if (numbersOnly.length >= 3 && onSyncAudio) {
+      const mins = parseInt(numbersOnly.slice(0, -2)) || 0;
+      const secs = parseInt(numbersOnly.slice(-2)) || 0;
+      const durationSeconds = mins * 60 + secs;
+      
+      if (durationSeconds > 0 && totalWords > 0) {
+        const calculatedWpm = Math.round(totalWords / (durationSeconds / 60));
+        const clampedWpm = Math.max(80, Math.min(250, calculatedWpm));
+        onSyncAudio(clampedWpm);
+      }
     }
   };
 
-  // Sincronizar com duração do áudio
-  const handleSyncAudio = () => {
+  // Limpar e mostrar toast de confirmação
+  const handleApplySync = () => {
     if (!audioDuration.trim()) {
       toast.error("Insira a duração do áudio");
       return;
@@ -153,17 +184,10 @@ export function ScriptPreviewTimeline({
       return;
     }
     
-    // Calcular WPM baseado na duração real
     const calculatedWpm = Math.round(totalWords / (durationSeconds / 60));
     const clampedWpm = Math.max(80, Math.min(250, calculatedWpm));
     
-    if (onSyncAudio) {
-      onSyncAudio(clampedWpm);
-      toast.success(`WPM ajustado para ${clampedWpm} (${totalWords} palavras em ${formatTimecode(durationSeconds)})`);
-    }
-    
-    setShowSyncInput(false);
-    setAudioDuration("");
+    toast.success(`WPM sincronizado: ${clampedWpm} (${totalWords} palavras em ${formatTimecode(durationSeconds)})`);
   };
 
   if (!script.trim() || previewScenes.length === 0) {
@@ -172,27 +196,16 @@ export function ScriptPreviewTimeline({
 
   return (
     <Card className={`p-4 border-dashed border-primary/30 bg-primary/5 ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      {/* Header com Sync integrado */}
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Scissors className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium text-foreground">Preview da Timeline</span>
           <Badge variant="outline" className="text-xs">
-            Estimativa
+            {generatedScenes.length > 0 ? `${generatedScenes.filter(s => s.generatedImage).length} imagens` : 'Estimativa'}
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-          {onSyncAudio && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
-              onClick={() => setShowSyncInput(!showSyncInput)}
-            >
-              <Timer className="w-3 h-3 mr-1" />
-              Sincronizar
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="sm"
@@ -213,32 +226,34 @@ export function ScriptPreviewTimeline({
         </div>
       </div>
 
-      {/* Sync Audio Input */}
-      {showSyncInput && onSyncAudio && (
+      {/* Sync Audio Input - sempre visível */}
+      {onSyncAudio && (
         <div className="mb-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
           <div className="flex items-end gap-3">
             <div className="flex-1">
               <Label className="text-xs text-muted-foreground mb-1 block">
-                Duração real do áudio (MM:SS)
+                <Timer className="w-3 h-3 inline mr-1" />
+                Sincronizar com duração do áudio (MM:SS)
               </Label>
               <Input
-                placeholder="Ex: 15:30"
+                placeholder="Ex: 05:30"
                 value={audioDuration}
                 onChange={(e) => handleDurationChange(e.target.value)}
                 className="h-8 text-sm bg-background"
-                onKeyDown={(e) => e.key === 'Enter' && handleSyncAudio()}
+                onKeyDown={(e) => e.key === 'Enter' && handleApplySync()}
               />
             </div>
             <Button
               size="sm"
-              onClick={handleSyncAudio}
+              onClick={handleApplySync}
               className="h-8 bg-amber-500 hover:bg-amber-600 text-black"
+              disabled={!audioDuration.trim()}
             >
-              Aplicar
+              Confirmar
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground mt-2">
-            O WPM será recalculado para sincronizar as cenas com a duração real da narração.
+            Digite a duração e o WPM será recalculado automaticamente para encaixar o roteiro no tempo do áudio.
           </p>
         </div>
       )}
@@ -263,10 +278,11 @@ export function ScriptPreviewTimeline({
       {/* Timeline visual */}
       <ScrollArea className="w-full">
         <div className="min-w-[400px] pb-2">
-          {/* Barra de cenas */}
+          {/* Barra de cenas com preview de imagens */}
           <TooltipProvider delayDuration={100}>
-            <div className={`flex rounded-lg overflow-hidden border border-border/50 bg-background/30 ${isExpanded ? 'h-20' : 'h-10'}`}>
+            <div className={`flex rounded-lg overflow-hidden border border-border/50 bg-background/30 ${isExpanded ? 'h-24' : 'h-14'}`}>
               {timelineData.map((scene, index) => {
+                const sceneImage = scenesWithImages[index]?.generatedImage;
                 const colors = [
                   'from-primary/60 to-primary/40',
                   'from-blue-500/60 to-blue-500/40',
@@ -281,45 +297,58 @@ export function ScriptPreviewTimeline({
                     <TooltipTrigger asChild>
                       <div
                         className={`
-                          relative flex flex-col items-center justify-center
-                          bg-gradient-to-b ${colorClass}
+                          relative flex flex-col items-center justify-end
+                          ${sceneImage ? '' : `bg-gradient-to-b ${colorClass}`}
                           border-r border-background/20 last:border-r-0
                           cursor-pointer hover:brightness-125 transition-all
                           overflow-hidden
                         `}
-                        style={{ width: `${scene.widthPercent}%`, minWidth: '16px' }}
+                        style={{ width: `${scene.widthPercent}%`, minWidth: '20px' }}
                       >
-                        <div className="text-center px-0.5">
-                          <span className={`font-bold text-white drop-shadow-md ${isExpanded ? 'text-sm' : 'text-[9px]'}`}>
+                        {/* Imagem de fundo se existir */}
+                        {sceneImage && (
+                          <img 
+                            src={sceneImage} 
+                            alt={`Cena ${scene.number}`}
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        )}
+                        
+                        {/* Overlay com info */}
+                        <div className={`relative z-10 w-full text-center px-0.5 pb-1 ${sceneImage ? 'bg-gradient-to-t from-black/80 to-transparent pt-4' : ''}`}>
+                          <span className={`font-bold text-white drop-shadow-md ${isExpanded ? 'text-sm' : 'text-[10px]'}`}>
                             {scene.number}
                           </span>
-                          {isExpanded && scene.widthPercent > 5 && (
-                            <>
-                              <span className="block text-[9px] text-white/90 drop-shadow">
-                                {formatTime(scene.durationSeconds)}
-                              </span>
-                              <span className="block text-[8px] text-white/70">
-                                {scene.wordCount}w
-                              </span>
-                            </>
-                          )}
+                          <span className={`block text-white/90 drop-shadow ${isExpanded ? 'text-[10px]' : 'text-[8px]'}`}>
+                            {formatTime(scene.durationSeconds)}
+                          </span>
                         </div>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-sm">
-                      <div className="space-y-1">
-                        <p className="font-bold">Cena {scene.number}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatTimecode(scene.startTime)} → {formatTimecode(scene.endTime)}
-                        </p>
-                        <p className="text-xs">
-                          <span className="text-primary font-medium">{formatTime(scene.durationSeconds)}</span>
-                          {" • "}
-                          <span className="text-muted-foreground">{scene.wordCount} palavras</span>
-                        </p>
-                        <p className="text-[10px] text-muted-foreground line-clamp-3 border-t pt-1 mt-1">
-                          "{scene.text.substring(0, 120)}..."
-                        </p>
+                    <TooltipContent side="top" className="max-w-md p-0 overflow-hidden">
+                      <div className="flex gap-0">
+                        {/* Preview da imagem no tooltip */}
+                        {sceneImage && (
+                          <img 
+                            src={sceneImage} 
+                            alt={`Cena ${scene.number}`}
+                            className="w-32 h-20 object-cover"
+                          />
+                        )}
+                        <div className="p-2 space-y-1">
+                          <p className="font-bold">Cena {scene.number}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatTimecode(scene.startTime)} → {formatTimecode(scene.endTime)}
+                          </p>
+                          <p className="text-xs">
+                            <span className="text-primary font-medium">{formatTime(scene.durationSeconds)}</span>
+                            {" • "}
+                            <span className="text-muted-foreground">{scene.wordCount} palavras</span>
+                          </p>
+                          <p className="text-[10px] text-muted-foreground line-clamp-2 border-t pt-1 mt-1 max-w-[200px]">
+                            "{scene.text.substring(0, 80)}..."
+                          </p>
+                        </div>
                       </div>
                     </TooltipContent>
                   </Tooltip>
@@ -354,16 +383,27 @@ export function ScriptPreviewTimeline({
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
 
-      {/* Detalhes expandidos - mostra duração de cada cena */}
+      {/* Detalhes expandidos - mostra duração e imagem de cada cena */}
       {showDetails && (
-        <div className="mt-3 pt-3 border-t border-border/50 max-h-40 overflow-y-auto">
+        <div className="mt-3 pt-3 border-t border-border/50 max-h-60 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
-            {previewScenes.map((scene) => (
+            {scenesWithImages.map((scene) => (
               <div 
                 key={scene.number}
                 className="flex items-center gap-2 p-2 rounded bg-secondary/30"
               >
-                <span className="font-bold text-primary min-w-[24px] text-center">{scene.number}</span>
+                {/* Mini preview da imagem */}
+                {scene.generatedImage ? (
+                  <img 
+                    src={scene.generatedImage} 
+                    alt={`Cena ${scene.number}`}
+                    className="w-12 h-8 object-cover rounded"
+                  />
+                ) : (
+                  <div className="w-12 h-8 bg-muted/50 rounded flex items-center justify-center">
+                    <span className="text-lg font-bold text-primary">{scene.number}</span>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0">
@@ -372,7 +412,7 @@ export function ScriptPreviewTimeline({
                     <span className="text-primary font-medium">{formatTime(scene.durationSeconds)}</span>
                   </div>
                   <p className="text-muted-foreground line-clamp-1 text-[10px] mt-0.5">
-                    {scene.wordCount}w • {scene.text.substring(0, 40)}...
+                    {scene.wordCount}w • {scene.text.substring(0, 30)}...
                   </p>
                 </div>
               </div>
