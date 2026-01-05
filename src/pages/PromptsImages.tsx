@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
-import { generateCapcutDraftContentWithTemplate, generateCapcutDraftMetaInfoWithTemplate, CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
+import { CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { Input } from "@/components/ui/input";
@@ -960,42 +960,64 @@ const PromptsImages = () => {
         `   ${template.description}`,
         "",
         "📁 CONTEÚDO DO ZIP:",
-        "  • Resources/ - Pasta com as imagens das cenas",
-        "  • draft_content.json - Timeline com durações corretas",
-        "  • draft_meta_info.json - Metadados do projeto",
+        "  • Resources/ - Pasta com as imagens das cenas (cena_001.jpg, cena_002.jpg, etc.)",
         "  • DURACOES.txt - Tempo de cada cena (referência)",
         "  • NARRACOES.srt - Texto para narração",
         "",
         "═══════════════════════════════════════════════════════════════",
-        "          PASSO A PASSO",
+        "          ⚠️  IMPORTANTE: MÉTODO CORRETO DE IMPORTAÇÃO",
         "═══════════════════════════════════════════════════════════════",
         "",
-        "1) Abra o CapCut e crie um NOVO PROJETO (projeto vazio)",
-        "",
-        "2) FECHE o CapCut completamente",
-        "",
-        "3) Localize a pasta do projeto:",
-        "   Windows: C:\\Users\\[Você]\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft\\[ID]",
-        "   (A pasta tem números/letras aleatórios como nome)",
-        "",
-        "4) Extraia TODO o conteúdo deste ZIP para dentro dessa pasta",
-        "   (sobrescreva draft_content.json e draft_meta_info.json)",
-        "",
-        "5) Abra o CapCut - você verá os clipes na timeline com ícones vermelhos",
+        "O CapCut NÃO aceita 'relink' de mídias externas.",
+        "Você precisa IMPORTAR as imagens diretamente no CapCut.",
         "",
         "═══════════════════════════════════════════════════════════════",
-        "          RELINK DAS IMAGENS (IMPORTANTE!)",
+        "          PASSO A PASSO (MÉTODO QUE FUNCIONA 100%)",
         "═══════════════════════════════════════════════════════════════",
         "",
-        "6) Clique com o BOTÃO DIREITO em qualquer clipe vermelho",
+        "1) Extraia este ZIP para uma pasta no seu computador",
         "",
-        "7) Selecione 'Localizar arquivo...' ou 'Relink media'",
+        "2) Abra o CapCut e crie um NOVO PROJETO (16:9, 1080p)",
         "",
-        "8) Quando pedir para selecionar uma pasta, escolha a PASTA DO PROJETO (onde você extraiu o ZIP, NÃO a pasta Resources)",
+        "3) Na aba 'Mídia', clique em 'Importar'",
         "",
-        "9) O CapCut irá vincular automaticamente as outras imagens!",
+        "4) Vá até a pasta Resources/ e selecione TODAS as imagens",
+        "   (Ctrl+A para selecionar todas)",
         "",
-        "10) Pronto! As imagens estarão na timeline com as durações corretas.",
+        "5) Clique em 'Abrir' para importar",
+        "",
+        "6) Selecione todas as imagens importadas (Ctrl+A na biblioteca)",
+        "",
+        "7) Arraste TODAS para a timeline de uma vez",
+        "   (O CapCut as colocará em ordem alfabética = ordem correta!)",
+        "",
+        "8) As imagens ficarão com 5 segundos cada por padrão.",
+        "   Use o arquivo DURACOES.txt para ajustar cada cena",
+        "   (selecione o clipe e arraste a borda para ajustar)",
+        "",
+        "═══════════════════════════════════════════════════════════════",
+        "          DICA: DURAÇÕES CORRETAS",
+        "═══════════════════════════════════════════════════════════════",
+        "",
+        "Consulte DURACOES.txt para ver quanto tempo cada cena deve ter:",
+        "",
+      ].join("\n") + "\n" + scenesWithDurations.map(s => 
+        `  Cena ${String(s.number).padStart(3, "0")}: ${s.durationSeconds.toFixed(1)}s`
+      ).join("\n") + "\n" + [
+        "",
+        "═══════════════════════════════════════════════════════════════",
+        "          DICA: TRANSIÇÕES",
+        "═══════════════════════════════════════════════════════════════",
+        "",
+        `Template: ${template.name}`,
+        template.transitionType !== 'none' 
+          ? `Transição sugerida: ${template.transitionType} (${template.transitionDuration}s)`
+          : "Sem transições (cortes diretos)",
+        "",
+        "Para aplicar transições no CapCut:",
+        "1) Clique entre dois clipes na timeline",
+        "2) Vá em 'Transições' no menu lateral",
+        "3) Escolha a transição desejada e arraste",
         "",
         "═══════════════════════════════════════════════════════════════",
       ].join("\n");
@@ -1009,105 +1031,14 @@ const PromptsImages = () => {
         text: s.text
       }));
 
-      // Gerar JSONs do projeto CapCut COM TEMPLATE
-      const sanitizedProjectName = projectName.trim() || "Meu Projeto";
-      const draftContentJson = generateCapcutDraftContentWithTemplate(scenesForCapcut, template, sanitizedProjectName);
-      const draftMetaInfoJson = generateCapcutDraftMetaInfoWithTemplate(scenesForCapcut, sanitizedProjectName);
-      
-      // Arquivos de documentação
+      // Arquivos de documentação (método simplificado que FUNCIONA)
       zip.file("DURACOES.txt", durationsTxt);
       zip.file("NARRACOES.srt", srtContent);
       zip.file("README_CAPCUT.txt", readme);
       
-      // Arquivos do projeto CapCut (estrutura exata igual projeto real)
-      zip.file("draft_content.json", draftContentJson);
-      zip.file("draft_meta_info.json", draftMetaInfoJson);
-      
-      // Arquivos auxiliares obrigatórios (conteúdo real do CapCut)
-      const draftAgencyConfig = JSON.stringify({
-        is_auto_agency_enabled: false,
-        is_auto_agency_popup: false,
-        is_single_agency_mode: false,
-        marterials: null,
-        use_converter: false,
-        video_resolution: 720
-      });
-      
-      const performanceOptInfo = JSON.stringify({
-        manual_cancle_precombine_segs: null,
-        need_auto_precombine_segs: null
-      });
-      
-      const attachmentEditing = JSON.stringify({
-        editing_draft: {
-          ai_remove_filter_words: { enter_source: "", right_id: "" },
-          ai_shorts_info: { report_params: "", type: 0 },
-          crop_info_extra: { crop_mirror_type: 0, crop_rotate: 0.0, crop_rotate_total: 0.0 },
-          digital_human_template_to_video_info: { has_upload_material: false, template_type: 0 },
-          draft_used_recommend_function: "",
-          edit_type: 0,
-          is_open_expand_player: false,
-          is_use_adjust: false,
-          version: "1.0.0"
-        }
-      });
-      
-      const attachmentPcCommon = JSON.stringify({
-        ai_packaging_infos: [],
-        ai_packaging_report_info: { caption_id_list: [], commercial_material: "", material_source: "", method: "", page_from: "", style: "", task_id: "", text_style: "", tos_id: "", video_category: "" },
-        broll: { ai_packaging_infos: [], ai_packaging_report_info: { caption_id_list: [], commercial_material: "", material_source: "", method: "", page_from: "", style: "", task_id: "", text_style: "", tos_id: "", video_category: "" } },
-        commercial_music_category_ids: [],
-        pc_feature_flag: 0,
-        recognize_tasks: [],
-        reference_lines_config: { horizontal_lines: [], is_lock: false, is_visible: false, vertical_lines: [] },
-        safe_area_type: 0,
-        template_item_infos: [],
-        unlock_template_ids: []
-      });
-      
-      const nowSeconds = Math.floor(Date.now() / 1000);
-      const draftSettings = `[General]\ndraft_create_time=${nowSeconds}\ndraft_last_edit_time=${nowSeconds}\nreal_edit_seconds=0\nreal_edit_keys=0\n`;
-      
-      zip.file("draft_agency_config.json", draftAgencyConfig);
-      zip.file("draft_biz_config.json", "");
-      zip.file("draft_settings", draftSettings);
-      zip.file("attachment_editing.json", attachmentEditing);
-      zip.file("attachment_pc_common.json", attachmentPcCommon);
-      zip.file("performance_opt_info.json", performanceOptInfo);
-      zip.file("template.tmp", "");
-      zip.file("template-2.tmp", "");
-      
-      // Usar a primeira imagem como capa, ou placeholder se não houver
-      if (firstImageBlob) {
-        zip.file("draft_cover.jpg", firstImageBlob);
-      } else {
-        // Fallback: 1x1 pixel transparente em base64
-        const draftCoverBase64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBEQCEAwEPwAB//9k=";
-        zip.file("draft_cover.jpg", draftCoverBase64, { base64: true });
-      }
-      
-      // Pastas vazias (estrutura exata do CapCut)
-      zip.folder("adjust_mask");
-      zip.folder("matting");
-      zip.folder("qr_upload");
-      zip.folder("smart_crop");
-      zip.folder("subdraft");
-      
-      // Subpastas dentro de Resources (imagens já foram adicionadas acima)
-      const resFolder = zip.folder("Resources");
-      if (resFolder) {
-        resFolder.folder("audioAlg");
-        resFolder.folder("digitalHuman");
-        resFolder.folder("videoAlg");
-      }
-      
-      // Arquivos dentro de common_attachment
-      const commonAttachment = zip.folder("common_attachment");
-      if (commonAttachment) {
-        commonAttachment.file("aigc_aigc_generate.json", "{}");
-        commonAttachment.file("attachment_gen_ai_info.json", "{}");
-        commonAttachment.file("attachment_script_video.json", "{}");
-      }
+      // Nota: NÃO incluímos mais os arquivos JSON do CapCut
+      // pois o CapCut precisa IMPORTAR as imagens e gerar seus próprios IDs
+      // O método correto é: importar imagens da pasta Resources/ diretamente no CapCut
 
       // Baixar ZIP
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -1115,15 +1046,15 @@ const PromptsImages = () => {
       const link = document.createElement("a");
       link.href = url;
       const safeFileName = (projectName.trim() || "Projeto").replace(/[^a-zA-Z0-9_-]/g, "_");
-      link.download = `${safeFileName}_${new Date().toISOString().split("T")[0]}.zip`;
+      link.download = `${safeFileName}_capcut_${new Date().toISOString().split("T")[0]}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
       toast({ 
-        title: "✅ Projeto CapCut baixado!", 
-        description: "Extraia na pasta do projeto CapCut para importar automaticamente. Leia README_CAPCUT.txt" 
+        title: "✅ Imagens para CapCut baixadas!", 
+        description: "Importe as imagens da pasta Resources/ diretamente no CapCut. Leia README_CAPCUT.txt" 
       });
     } catch (error) {
       console.error("Erro ZIP:", error);
@@ -1231,29 +1162,35 @@ const PromptsImages = () => {
   const isMac = typeof navigator !== 'undefined' && (navigator.platform?.toLowerCase().includes('mac') || navigator.userAgent?.toLowerCase().includes('mac'));
 
   // Texto das instruções para copiar
-  const capcutInstructionsText = `COMO EXPORTAR PARA O CAPCUT
+  const capcutInstructionsText = `COMO IMPORTAR NO CAPCUT
 
-=== MÉTODO 1: SELEÇÃO DE PASTA (RECOMENDADO) ===
-Ao clicar em "Exportar Agora", você escolhe uma pasta e os arquivos são salvos diretamente.
+⚠️ IMPORTANTE: O CapCut NÃO aceita "relink" de mídias externas.
+Você precisa IMPORTAR as imagens diretamente no CapCut.
 
-Caminho típico no Windows:
-  C:\\Users\\[SeuUsuário]\\Documents\\CapCut\\User Data\\Projects\\[NomeDoProjeto]
+=== PASSO A PASSO (FUNCIONA 100%) ===
 
-Caminho típico no macOS:
-  ~/Documents/CapCut/User Data/Projects/[NomeDoProjeto]
+1. Extraia o ZIP para uma pasta no seu computador
 
-IMPORTANTE: Escolha uma SUBPASTA do projeto, não a pasta "Documentos" raiz.
+2. Abra o CapCut e crie um NOVO PROJETO (16:9, 1080p)
 
-=== MÉTODO 2: DOWNLOAD ZIP (ALTERNATIVA) ===
-Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
-1. Extraia o ZIP em qualquer pasta
-2. No CapCut, importe as imagens manualmente
-3. Use DURACOES.txt para ajustar a duração de cada cena
+3. Na aba "Mídia", clique em "Importar"
+
+4. Vá até a pasta Resources/ e selecione TODAS as imagens
+   (Ctrl+A para selecionar todas)
+
+5. Clique em "Abrir" para importar
+
+6. Selecione todas as imagens importadas na biblioteca (Ctrl+A)
+
+7. Arraste TODAS para a timeline de uma vez
+   (Elas serão colocadas em ordem alfabética = ordem correta!)
+
+8. Ajuste as durações conforme o arquivo DURACOES.txt
 
 === DICAS ===
-• As imagens são nomeadas em ordem: cena_001.jpg, cena_002.jpg...
-• O arquivo DURACOES.txt contém os tempos de cada cena
-• Após escolher uma pasta, ela será lembrada para próximas exportações
+• As imagens são nomeadas: cena_001.jpg, cena_002.jpg...
+• Use DURACOES.txt para ver quanto tempo cada cena deve ter
+• Aplique transições manualmente: clique entre dois clipes → Transições
 • Use "Importar Imagens de Pasta" para carregar imagens já baixadas`;
 
 
