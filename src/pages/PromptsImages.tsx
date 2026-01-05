@@ -2008,7 +2008,7 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                           const avgPerImage = imageBatchDone > 0 ? `${(avgTimePerImage / 1000).toFixed(1)}s/img` : "";
                           
                           return (
-                            <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+                            <div className="sticky bottom-4 z-40 flex justify-center pointer-events-none mt-4">
                               <div className="bg-card border-2 border-primary/60 rounded-2xl shadow-2xl shadow-primary/20 px-6 py-5 min-w-[420px] max-w-lg pointer-events-auto">
                                 <div className="flex items-center gap-5">
                                   {/* Logo maior */}
