@@ -1948,7 +1948,10 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
       'floresta', 'forest', 'tempestade', 'storm', 'chuva', 'rain'
     ];
 
-    const shouldRecommendMotion = (text: string, emotion?: string): boolean => {
+    const shouldRecommendMotion = (text: string, emotion?: string, durationSeconds?: number): boolean => {
+      // Só recomendar movimento para cenas de até 5 segundos
+      if (durationSeconds !== undefined && durationSeconds > 5) return false;
+      
       const lowerText = text.toLowerCase();
       const hasMotionKeyword = MOTION_KEYWORDS.some(kw => lowerText.includes(kw));
       const hasActionEmotion = emotion && ['tension', 'tensão', 'shock', 'choque', 'surprise', 'surpresa'].includes(emotion.toLowerCase());
@@ -1968,8 +1971,13 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
       return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     };
 
-    // Identificar cenas com movimento recomendado
-    const motionScenes = generatedScenes.filter(s => shouldRecommendMotion(s.text + ' ' + s.imagePrompt, s.emotion));
+    // Identificar cenas com movimento recomendado (apenas cenas de até 5s)
+    const motionScenes = generatedScenes.filter(s => {
+      const startSec = s.timecode ? parseInt(s.timecode.split(":")[0]) * 60 + parseInt(s.timecode.split(":")[1]) : 0;
+      const endSec = s.endTimecode ? parseInt(s.endTimecode.split(":")[0]) * 60 + parseInt(s.endTimecode.split(":")[1]) : startSec;
+      const duration = endSec - startSec;
+      return shouldRecommendMotion(s.text + ' ' + s.imagePrompt, s.emotion, duration);
+    });
 
     // Agrupar cenas por intervalos de ~30 segundos ou ~1 minuto
     const groups: { start: number; end: number; scenes: typeof generatedScenes }[] = [];
@@ -2035,7 +2043,10 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
 │ 
 │ DETALHES:
 ${group.scenes.map(s => {
-  const hasMotion = shouldRecommendMotion(s.text + ' ' + s.imagePrompt, s.emotion);
+  const startSec = s.timecode ? parseInt(s.timecode.split(":")[0]) * 60 + parseInt(s.timecode.split(":")[1]) : 0;
+  const endSec = s.endTimecode ? parseInt(s.endTimecode.split(":")[0]) * 60 + parseInt(s.endTimecode.split(":")[1]) : startSec;
+  const duration = endSec - startSec;
+  const hasMotion = shouldRecommendMotion(s.text + ' ' + s.imagePrompt, s.emotion, duration);
   return `│   • Cena ${String(s.number).padStart(2, " ")}: ${s.timecode} → ${s.endTimecode} (${s.estimatedTime}) - ${s.wordCount}w${hasMotion ? " 🎬" : ""}`;
 }).join("\n")}
 └──────────────────────────────────────────────────────────────────────────────┘`;
@@ -2068,7 +2079,10 @@ ${motionScenes.map(s => `CENA ${String(s.number).padStart(2, "0")} | ${s.timecod
 ================================================================================
 
 ${generatedScenes.map(s => {
-  const hasMotion = shouldRecommendMotion(s.text + ' ' + s.imagePrompt, s.emotion);
+  const startSec = s.timecode ? parseInt(s.timecode.split(":")[0]) * 60 + parseInt(s.timecode.split(":")[1]) : 0;
+  const endSec = s.endTimecode ? parseInt(s.endTimecode.split(":")[0]) * 60 + parseInt(s.endTimecode.split(":")[1]) : startSec;
+  const duration = endSec - startSec;
+  const hasMotion = shouldRecommendMotion(s.text + ' ' + s.imagePrompt, s.emotion, duration);
   return `
 CENA ${String(s.number).padStart(2, "0")} | ${s.timecode} → ${s.endTimecode} | ${s.estimatedTime} | ${s.wordCount} palavras${hasMotion ? " | 🎬 MOVIMENTO" : ""}
 ${"─".repeat(78)}
