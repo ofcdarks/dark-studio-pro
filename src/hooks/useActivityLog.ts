@@ -9,6 +9,7 @@ export type ActivityAction =
   | 'image_generated'
   | 'tts_generated'
   | 'scene_generated'
+  | 'scenes_improved'
   | 'thumbnail_generated'
   | 'channel_analysis'
   | 'title_generated'

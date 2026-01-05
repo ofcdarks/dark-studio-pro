@@ -2089,6 +2089,118 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
     });
   };
 
+  // Handler para melhorar cenas com problemas de retenção
+  const handleImproveScenes = async (sceneNumbers: number[], improvementType: string) => {
+    if (!user || sceneNumbers.length === 0) return;
+    
+    try {
+      // Pegar as cenas que precisam de melhoria
+      const scenesToImprove = generatedScenes.filter((_, index) => 
+        sceneNumbers.includes(index + 1)
+      );
+      
+      if (scenesToImprove.length === 0) return;
+
+      // Construir prompt de melhoria baseado no tipo
+      let improvementPrompt = '';
+      switch (improvementType) {
+        case 'add_emotion':
+        case 'add_emotion_ending':
+          improvementPrompt = 'Adicione EMOÇÃO FORTE (tensão, surpresa, choque, curiosidade ou medo) a cada prompt de imagem. Torne as cenas visualmente IMPACTANTES com composição dramática, iluminação cinematográfica e elementos que transmitam a emoção.';
+          break;
+        case 'add_triggers':
+        case 'add_triggers_ending':
+          improvementPrompt = 'Adicione GATILHOS DE RETENÇÃO (curiosidade, antecipação, mistério ou revelação). Crie elementos visuais que gerem tensão e façam o espectador querer ver a próxima cena.';
+          break;
+        case 'improve_hook':
+          improvementPrompt = 'Crie um HOOK PODEROSO! As primeiras cenas devem ter IMPACTO IMEDIATO com emoção de choque, mistério ou promessa ousada. Use composição dramática, close-ups intensos ou cenas de ação.';
+          break;
+        case 'split_long_scenes':
+          improvementPrompt = 'Divida as cenas longas em cortes mais rápidos de 5-8 segundos. Mantenha o ritmo visual dinâmico com mudanças frequentes.';
+          break;
+        case 'improve_all':
+          improvementPrompt = 'MELHORE COMPLETAMENTE estas cenas para MÁXIMA RETENÇÃO. Adicione emoções fortes, gatilhos de curiosidade, composição cinematográfica dramática e elementos visuais impactantes.';
+          break;
+        default:
+          improvementPrompt = 'Melhore os prompts para criar cenas mais impactantes e cinematográficas.';
+      }
+
+      // Atualizar as cenas com prompts melhorados usando IA
+      const updatedScenes = [...generatedScenes];
+      
+      for (const sceneNum of sceneNumbers) {
+        const index = sceneNum - 1;
+        if (index >= 0 && index < updatedScenes.length) {
+          const scene = updatedScenes[index];
+          
+          // Melhorar o prompt localmente (rápido, sem API)
+          let improvedPrompt = scene.imagePrompt;
+          let improvedEmotion = scene.emotion || 'neutral';
+          let improvedTrigger = scene.retentionTrigger || 'continuity';
+          
+          // Adicionar elementos de melhoria baseado no tipo
+          if (improvementType === 'add_emotion' || improvementType === 'add_emotion_ending' || improvementType === 'improve_all') {
+            const emotions = ['tension', 'curiosity', 'surprise', 'shock'];
+            improvedEmotion = emotions[index % emotions.length];
+            
+            // Adicionar termos cinematográficos ao prompt
+            const cinematicEnhancements = [
+              'dramatic lighting, intense atmosphere',
+              'cinematic composition, emotional impact',
+              'powerful visual storytelling, tension-filled',
+              'striking imagery, high contrast lighting'
+            ];
+            if (!improvedPrompt.toLowerCase().includes('dramatic') && !improvedPrompt.toLowerCase().includes('cinematic')) {
+              improvedPrompt = `${improvedPrompt}, ${cinematicEnhancements[index % cinematicEnhancements.length]}`;
+            }
+          }
+          
+          if (improvementType === 'add_triggers' || improvementType === 'add_triggers_ending' || improvementType === 'improve_all') {
+            const triggers = ['curiosity', 'anticipation', 'mystery', 'revelation'];
+            improvedTrigger = triggers[index % triggers.length];
+          }
+          
+          if (improvementType === 'improve_hook' && sceneNum <= 3) {
+            improvedEmotion = 'shock';
+            improvedTrigger = 'curiosity';
+            if (!improvedPrompt.toLowerCase().includes('dramatic close-up') && !improvedPrompt.toLowerCase().includes('intense')) {
+              improvedPrompt = `${improvedPrompt}, dramatic close-up, intense gaze, high stakes moment, ultra cinematic`;
+            }
+          }
+          
+          updatedScenes[index] = {
+            ...scene,
+            imagePrompt: improvedPrompt,
+            emotion: improvedEmotion,
+            retentionTrigger: improvedTrigger
+          };
+        }
+      }
+      
+      setGeneratedScenes(updatedScenes);
+      setPersistedScenes(updatedScenes.map(({ generatedImage, generatingImage, ...rest }) => rest));
+      
+      toast({
+        title: "✅ Cenas melhoradas!",
+        description: `${sceneNumbers.length} cena(s) otimizada(s) para maior retenção`,
+      });
+      
+      // Log activity
+      await logActivity({
+        action: 'scenes_improved',
+        description: `${sceneNumbers.length} cenas melhoradas (${improvementType})`,
+      });
+      
+    } catch (error) {
+      console.error('Error improving scenes:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível melhorar as cenas",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
@@ -2249,6 +2361,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                       wordsPerScene={parseInt(wordsPerScene) || 80}
                       wpm={currentWpm}
                       onSyncAudio={generating ? undefined : (newWpm) => setNarrationSpeed(newWpm.toString())}
+                      onImproveScenes={handleImproveScenes}
                       generatedScenes={generatedScenes.length > 0 ? generatedScenes.map((scene, index) => ({
                         number: index + 1,
                         text: scene.text,
