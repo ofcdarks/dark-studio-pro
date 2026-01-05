@@ -253,6 +253,7 @@ const PromptsImages = () => {
   const [showSubtitleSelector, setShowSubtitleSelector] = useState(false);
   const [audioMixSettings, setAudioMixSettings] = usePersistedState<AudioMixSettings>("prompts_audio_mix", DEFAULT_AUDIO_MIX);
   const [showAudioSettings, setShowAudioSettings] = useState(false);
+  const [editingCharacterIndex, setEditingCharacterIndex] = useState<number | null>(null);
   
   // FFmpeg hook
   const { generateVideo, downloadVideo, isGenerating: isGeneratingVideo, progress: videoProgress } = useFFmpegVideoGenerator();
@@ -2281,20 +2282,103 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                           Limpar
                         </Button>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="space-y-2">
                         {detectedCharacters.map((char, idx) => (
                           <div 
                             key={idx}
-                            className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-1.5 text-xs"
-                            title={char.description}
+                            className="flex items-start gap-2 bg-secondary rounded-lg p-3 text-xs"
                           >
-                            <span className="font-medium text-foreground">{char.name}</span>
-                            <span className="text-muted-foreground">seed: {char.seed}</span>
+                            {editingCharacterIndex === idx ? (
+                              // Modo edição
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={char.name}
+                                    onChange={(e) => {
+                                      const updated = [...detectedCharacters];
+                                      updated[idx] = { ...updated[idx], name: e.target.value };
+                                      setDetectedCharacters(updated);
+                                      setBgCharacters(updated);
+                                    }}
+                                    className="h-7 text-xs font-medium"
+                                    placeholder="Nome"
+                                  />
+                                  <Input
+                                    type="number"
+                                    value={char.seed}
+                                    onChange={(e) => {
+                                      const updated = [...detectedCharacters];
+                                      updated[idx] = { ...updated[idx], seed: parseInt(e.target.value) || 0 };
+                                      setDetectedCharacters(updated);
+                                      setBgCharacters(updated);
+                                    }}
+                                    className="h-7 w-32 text-xs font-mono"
+                                    placeholder="Seed"
+                                  />
+                                </div>
+                                <Textarea
+                                  value={char.description}
+                                  onChange={(e) => {
+                                    const updated = [...detectedCharacters];
+                                    updated[idx] = { ...updated[idx], description: e.target.value };
+                                    setDetectedCharacters(updated);
+                                    setBgCharacters(updated);
+                                  }}
+                                  className="text-xs min-h-[60px]"
+                                  placeholder="Descrição visual do personagem em inglês..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setEditingCharacterIndex(null)}
+                                    className="h-6 text-xs"
+                                  >
+                                    <Check className="w-3 h-3 mr-1" />
+                                    Salvar
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const updated = detectedCharacters.filter((_, i) => i !== idx);
+                                      setDetectedCharacters(updated);
+                                      setBgCharacters(updated);
+                                      setEditingCharacterIndex(null);
+                                      toast({ title: "Personagem removido" });
+                                    }}
+                                    className="h-6 text-xs text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="w-3 h-3 mr-1" />
+                                    Remover
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              // Modo visualização
+                              <>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-medium text-foreground">{char.name}</span>
+                                    <span className="text-muted-foreground font-mono">seed: {char.seed}</span>
+                                  </div>
+                                  <p className="text-muted-foreground line-clamp-2">{char.description}</p>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditingCharacterIndex(idx)}
+                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         ))}
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Imagens de cenas com esses personagens usarão seed fixa para manter consistência visual.
+                        Clique no ícone de edição para ajustar nome, descrição ou seed de cada personagem.
                       </p>
                     </Card>
                   )}
