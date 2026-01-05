@@ -214,7 +214,7 @@ const PromptsImages = () => {
   const [editingPromptText, setEditingPromptText] = useState("");
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [selectedImages, setSelectedImages] = useState<Set<number>>(() => new Set());
-  const [savedCapcutFolder, setSavedCapcutFolder] = useState<string | null>(null);
+  
   const [showCapcutInstructions, setShowCapcutInstructions] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("clean");
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
@@ -281,20 +281,6 @@ const PromptsImages = () => {
     enabled: !!user,
   });
 
-  // Carregar nome da pasta CapCut salva
-  useEffect(() => {
-    const loadSavedFolder = async () => {
-      try {
-        const handle = await getCapcutDirHandle();
-        if (handle) {
-          setSavedCapcutFolder(handle.name);
-        }
-      } catch {
-        setSavedCapcutFolder(null);
-      }
-    };
-    loadSavedFolder();
-  }, []);
   const handleGenerate = async () => {
     if (!script.trim()) {
       toast({
@@ -841,12 +827,10 @@ const PromptsImages = () => {
       await instructionsWritable.write(instructions);
       await instructionsWritable.close();
 
-      // Atualizar estado da pasta salva
-      setSavedCapcutFolder(dirHandle.name);
 
       toast({
         title: "✅ Arquivos salvos com sucesso!",
-        description: `${savedCount} imagens + DURACOES.txt salvos em "${dirHandle.name}". Pasta será lembrada para próxima vez!`,
+        description: `${savedCount} imagens + DURACOES.txt salvos em "${dirHandle.name}".`,
       });
 
     } catch (error: any) {
@@ -1869,38 +1853,16 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                             )}
                             Imagens ({generatedScenes.filter(s => s.generatedImage).length})
                           </Button>
-                          <div className="flex items-center gap-1">
-                            <Button 
-                              variant="outline"
-                              size="sm" 
-                              onClick={handleExportForCapcut}
-                              disabled={!generatedScenes.some(s => s.generatedImage)}
-                              className="border-primary/50 text-primary hover:bg-primary/10"
-                              title={savedCapcutFolder ? `Salvar em: ${savedCapcutFolder}` : "Escolher pasta do CapCut"}
-                            >
-                              <Video className="w-4 h-4 mr-2" />
-                              CapCut
-                              {savedCapcutFolder && (
-                                <span className="ml-1 text-xs opacity-70 max-w-[80px] truncate">
-                                  ({savedCapcutFolder})
-                                </span>
-                              )}
-                            </Button>
-                            <Button 
-                              variant="ghost"
-                              size="sm" 
-                              onClick={async () => {
-                                await clearCapcutDirHandle();
-                                setSavedCapcutFolder(null);
-                                toast({ title: "Pasta resetada", description: "Na próxima exportação você poderá escolher uma nova pasta." });
-                              }}
-                              disabled={!savedCapcutFolder}
-                              className="text-muted-foreground hover:text-destructive px-2"
-                              title="Esquecer pasta CapCut salva"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </Button>
-                          </div>
+                          <Button 
+                            variant="outline"
+                            size="sm" 
+                            onClick={handleExportForCapcut}
+                            disabled={!generatedScenes.some(s => s.generatedImage)}
+                            className="border-primary/50 text-primary hover:bg-primary/10"
+                          >
+                            <Video className="w-4 h-4 mr-2" />
+                            CapCut
+                          </Button>
                           <Button 
                             size="sm" 
                             onClick={handleGenerateAllImages}
