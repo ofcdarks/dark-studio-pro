@@ -362,7 +362,7 @@ export function ScriptPreviewTimeline({
     }
   };
 
-  // Limpar e mostrar toast de confirmação
+  // Limpar e mostrar toast de confirmação - ATUALIZA O WPM
   const handleApplySync = () => {
     if (!audioDuration.trim()) {
       toast.error("Insira a duração do áudio");
@@ -388,7 +388,12 @@ export function ScriptPreviewTimeline({
     const calculatedWpm = Math.round(totalWords / (durationSeconds / 60));
     const clampedWpm = Math.max(80, Math.min(250, calculatedWpm));
     
-    toast.success(`WPM sincronizado: ${clampedWpm} (${totalWords} palavras em ${formatTimecode(durationSeconds)})`);
+    // ATUALIZAR O WPM GLOBALMENTE
+    if (onSyncAudio) {
+      onSyncAudio(clampedWpm);
+    }
+    
+    toast.success(`✅ Sincronizado! WPM: ${clampedWpm} | Duração: ${formatTimecode(durationSeconds)} | ${totalWords} palavras`);
   };
 
   if (!script.trim() || previewScenes.length === 0) {
