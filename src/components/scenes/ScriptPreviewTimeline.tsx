@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Sparkles, Loader2, RefreshCw, ImagePlus } from "lucide-react";
+import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Sparkles, Loader2, RefreshCw, ImagePlus, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -220,6 +220,11 @@ export function ScriptPreviewTimeline({
       widthPercent: Math.max((scene.durationSeconds / totalDuration) * 100, 2),
     }));
   }, [previewScenes, totalDuration]);
+
+  // Contador de cenas com movimento recomendado
+  const motionScenesCount = useMemo(() => {
+    return previewScenes.filter(s => s.motionRecommended).length;
+  }, [previewScenes]);
 
   // Gerar marcadores de tempo
   const timeMarkers = useMemo(() => {
@@ -547,6 +552,27 @@ export function ScriptPreviewTimeline({
           <span className="text-sm text-muted-foreground">@ {wpm} WPM</span>
         </div>
         
+        {/* Contador de cenas para animar */}
+        {motionScenesCount > 0 && generatedScenes.length > 0 && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 px-2 py-1 bg-emerald-500/15 border border-emerald-500/30 rounded-md cursor-help">
+                  <Video className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm font-medium text-emerald-400">{motionScenesCount}</span>
+                  <span className="text-sm text-emerald-400/80">para animar</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs">
+                <p className="font-medium mb-1">🎬 Movimento Recomendado</p>
+                <p className="text-xs text-muted-foreground">
+                  {motionScenesCount} cenas contêm ação, emoção intensa ou elementos naturais que se beneficiam de animação (até 5s).
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
         {/* Score de Retenção */}
         {retentionAnalysis && generatedScenes.length > 0 && (
           <div className="flex items-center gap-3 ml-auto">
