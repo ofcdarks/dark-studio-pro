@@ -192,39 +192,46 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
       if (cancelRef.current) break;
 
       try {
-        const results = await Promise.allSettled(
-          batchIndexes.map(idx => generateSingleImage(idx, scenesRef.current, style))
-        );
-
-        if (cancelRef.current) break;
-
-        for (const result of results) {
-          if (result.status === "fulfilled" && result.value.success && result.value.imageUrl) {
-            const { index, imageUrl } = result.value;
-            processed++;
+        // Iniciar todas as 5 requisições em paralelo
+        const promises = batchIndexes.map(idx => generateSingleImage(idx, scenesRef.current, style));
+        
+        // Processar resultados conforme vão chegando (exibição sequencial)
+        for (let i = 0; i < promises.length; i++) {
+          if (cancelRef.current) break;
+          
+          try {
+            const result = await promises[i];
             
-            // Atualizar estado global
-            setState(prev => {
-              const updatedScenes = [...prev.scenes];
-              updatedScenes[index] = { ...updatedScenes[index], generatedImage: imageUrl };
-              scenesRef.current = updatedScenes;
+            if (result.success && result.imageUrl) {
+              const { index, imageUrl } = result;
+              processed++;
               
-              return {
-                ...prev,
-                scenes: updatedScenes,
-                completedImages: processed,
-                currentSceneIndex: batchIndexes[batchIndexes.length - 1] ?? null,
-                currentPrompt: prev.scenes[batchIndexes[batchIndexes.length - 1]]?.imagePrompt ?? null,
-              };
-            });
-          } else if (result.status === "rejected" && result.reason?.message === "AUTH_ERROR") {
-            toast({
-              title: "Erro de autenticação",
-              description: "Atualize os cookies do ImageFX nas configurações.",
-              variant: "destructive",
-            });
-            errorOccurred = true;
-            break;
+              // Atualizar estado imediatamente quando cada imagem fica pronta
+              setState(prev => {
+                const updatedScenes = [...prev.scenes];
+                updatedScenes[index] = { ...updatedScenes[index], generatedImage: imageUrl };
+                scenesRef.current = updatedScenes;
+                
+                return {
+                  ...prev,
+                  scenes: updatedScenes,
+                  completedImages: processed,
+                  currentSceneIndex: index,
+                  currentPrompt: prev.scenes[index]?.imagePrompt ?? null,
+                };
+              });
+            }
+          } catch (error: any) {
+            if (error.message === "AUTH_ERROR") {
+              toast({
+                title: "Erro de autenticação",
+                description: "Atualize os cookies do ImageFX nas configurações.",
+                variant: "destructive",
+              });
+              errorOccurred = true;
+              break;
+            }
+            // Continuar com outras imagens do batch
           }
         }
       } catch (error: any) {

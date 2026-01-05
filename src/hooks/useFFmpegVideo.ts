@@ -14,6 +14,8 @@ interface VideoProgress {
   message: string;
   currentScene?: number;
   totalScenes?: number;
+  estimatedTimeRemaining?: string;
+  elapsedTime?: number;
 }
 
 export type ProcessingMode = 'single' | 'multi' | 'auto';
@@ -34,6 +36,17 @@ export function useFFmpegVideo() {
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const loadedModeRef = useRef<ProcessingMode | null>(null);
   const abortRef = useRef(false);
+  const startTimeRef = useRef<number>(0);
+
+  // Formatar tempo em formato legível
+  const formatTimeRemaining = (ms: number): string => {
+    if (ms <= 0) return "Calculando...";
+    const totalSeconds = Math.ceil(ms / 1000);
+    if (totalSeconds < 60) return `~${totalSeconds}s`;
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return seconds > 0 ? `~${minutes}m ${seconds}s` : `~${minutes}m`;
+  };
 
   const loadFFmpeg = async (mode: ProcessingMode) => {
     // Determinar modo efetivo
@@ -62,10 +75,16 @@ export function useFFmpegVideo() {
     });
 
     ffmpeg.on('progress', ({ progress }) => {
+      const elapsed = Date.now() - startTimeRef.current;
+      const estimatedTotal = progress > 0 ? elapsed / progress : 0;
+      const remaining = estimatedTotal - elapsed;
+      
       setVideoProgress(prev => prev ? {
         ...prev,
         progress: Math.min(50 + Math.round(progress * 50), 99),
-        message: `Codificando vídeo... ${Math.min(50 + Math.round(progress * 50), 99)}%`
+        message: `Codificando vídeo... ${Math.min(50 + Math.round(progress * 50), 99)}%`,
+        elapsedTime: elapsed,
+        estimatedTimeRemaining: progress > 0.05 ? formatTimeRemaining(remaining) : "Calculando..."
       } : null);
     });
 
@@ -138,6 +157,7 @@ export function useFFmpegVideo() {
     setIsGenerating(true);
     setCurrentMode(mode);
     abortRef.current = false;
+    startTimeRef.current = Date.now();
 
     try {
       const ffmpeg = await loadFFmpeg(mode);

@@ -2920,13 +2920,25 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
               
               {/* Barra de progresso do vídeo */}
               {isGeneratingVideo && videoProgress && (
-                <div className="space-y-1">
+                <div className="space-y-2 p-3 bg-secondary/50 rounded-lg border border-border">
                   <Progress value={videoProgress.progress} className="h-2" />
-                  <p className="text-xs text-muted-foreground text-center">
-                    {videoProgress.currentScene && videoProgress.totalScenes 
-                      ? `Cena ${videoProgress.currentScene}/${videoProgress.totalScenes}`
-                      : videoProgress.message
-                    }
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">
+                      {videoProgress.currentScene && videoProgress.totalScenes 
+                        ? `Cena ${videoProgress.currentScene}/${videoProgress.totalScenes}`
+                        : videoProgress.message
+                      }
+                    </span>
+                    {videoProgress.estimatedTimeRemaining && (
+                      <span className="text-primary font-medium">
+                        ⏱️ {videoProgress.estimatedTimeRemaining}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    {videoProgress.phase === 'processing' && "Carregando imagens..."}
+                    {videoProgress.phase === 'encoding' && "Codificando vídeo - isso pode levar alguns minutos"}
+                    {videoProgress.phase === 'loading' && "Preparando FFmpeg..."}
                   </p>
                 </div>
               )}
