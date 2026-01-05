@@ -79,15 +79,17 @@ interface GeneratedScript {
   agent_id: string | null;
 }
 
-interface ReferenceThumbnail {
+interface ViralThumbnail {
   id: string;
   image_url: string;
-  description: string | null;
-  channel_name: string | null;
+  video_title: string;
+  headline: string | null;
+  seo_description: string | null;
+  seo_tags: string | null;
+  prompt: string | null;
+  style: string | null;
   niche: string | null;
   sub_niche: string | null;
-  extracted_prompt: string | null;
-  style_analysis: any;
   created_at: string;
 }
 
@@ -106,7 +108,7 @@ const ViralLibrary = () => {
   const [titles, setTitles] = useState<ViralTitle[]>([]);
   const [agents, setAgents] = useState<ScriptAgent[]>([]);
   const [scripts, setScripts] = useState<GeneratedScript[]>([]);
-  const [thumbnails, setThumbnails] = useState<ReferenceThumbnail[]>([]);
+  const [thumbnails, setThumbnails] = useState<ViralThumbnail[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
@@ -145,7 +147,7 @@ const ViralLibrary = () => {
   const fetchThumbnails = async () => {
     try {
       const { data, error } = await supabase
-        .from('reference_thumbnails')
+        .from('viral_thumbnails')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -213,7 +215,7 @@ const ViralLibrary = () => {
   const handleDeleteThumbnail = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('reference_thumbnails')
+        .from('viral_thumbnails')
         .delete()
         .eq('id', id);
 
@@ -276,8 +278,8 @@ const ViralLibrary = () => {
   });
 
   const filteredThumbnails = thumbnails.filter(t =>
-    t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.channel_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.video_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.headline?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.niche?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -484,24 +486,28 @@ const ViralLibrary = () => {
                       <div className="aspect-video bg-secondary">
                         <img 
                           src={thumb.image_url} 
-                          alt={thumb.description || "Thumbnail"}
+                          alt={thumb.video_title || "Thumbnail"}
                           className="w-full h-full object-cover"
                         />
                       </div>
                       
                       <div className="p-4 space-y-3">
-                        {/* Channel Name */}
-                        {thumb.channel_name && (
-                          <h3 className="font-bold text-foreground line-clamp-2">{thumb.channel_name}</h3>
+                        {/* Video Title */}
+                        <h3 className="font-bold text-foreground line-clamp-2">{thumb.video_title}</h3>
+                        
+                        {/* Headline */}
+                        {thumb.headline && (
+                          <div className="bg-primary/10 px-3 py-2 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">Headline</p>
+                            <p className="text-sm font-semibold text-primary">{thumb.headline}</p>
+                          </div>
                         )}
                         
-                        {/* Description */}
-                        {thumb.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">{thumb.description}</p>
-                        )}
-                        
-                        {/* Niche badges */}
+                        {/* Style and Niche badges */}
                         <div className="flex gap-2 flex-wrap">
+                          {thumb.style && (
+                            <Badge className="bg-secondary text-foreground text-xs">{thumb.style}</Badge>
+                          )}
                           {thumb.niche && (
                             <Badge variant="outline" className="text-xs">{thumb.niche}</Badge>
                           )}
@@ -509,6 +515,11 @@ const ViralLibrary = () => {
                             <Badge variant="outline" className="text-xs text-primary border-primary">{thumb.sub_niche}</Badge>
                           )}
                         </div>
+                        
+                        {/* SEO Description */}
+                        {thumb.seo_description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">{thumb.seo_description}</p>
+                        )}
                         
                         {/* Actions */}
                         <div className="flex gap-2">
