@@ -1923,12 +1923,18 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                                 </div>
                               ) : (
                                 <button 
-                                  className="w-full h-full flex flex-col items-center justify-center gap-1 hover:bg-secondary/80 transition-colors"
+                                  className="w-full h-full flex flex-col items-center justify-center gap-0.5 bg-destructive/20 border-2 border-destructive/50 hover:bg-destructive/30 transition-colors"
                                   onClick={() => handleRegenerateImage(index)}
                                   disabled={generatingImages}
+                                  title="Clique para gerar ou use 'Importar Imagens de Pasta (Relink)'"
                                 >
-                                  <ImagePlus className="w-5 h-5 text-muted-foreground/50" />
-                                  <span className="text-[10px] text-muted-foreground">Gerar</span>
+                                  <div className="absolute top-0 left-0 right-0 bg-destructive text-destructive-foreground text-[7px] font-bold py-0.5 px-1 flex justify-between items-center">
+                                    <span>cena_{String(scene.number).padStart(3, '0')}.jpg</span>
+                                    <span>{scene.timecode || "00:00:00"}</span>
+                                  </div>
+                                  <X className="w-6 h-6 text-destructive" />
+                                  <span className="text-[10px] text-destructive font-semibold">Mídia perdida</span>
+                                  <span className="text-[9px] text-destructive/80">Media Not Found</span>
                                 </button>
                               )}
                               <div className={cn(
