@@ -324,11 +324,11 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto bg-card border-primary/30">
-        {/* Loading Overlay */}
+        {/* Loading Overlay - PADRONIZADO */}
         {generating && (
-          <div className="absolute inset-0 bg-background/98 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-lg p-6">
-            {/* Logo com efeito de pulso */}
-            <div className="relative w-24 h-24 mb-4">
+          <div className="absolute inset-0 bg-background/98 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-lg p-8">
+            {/* Logo com efeito de pulso - PADRONIZADO w-24 */}
+            <div className="relative w-24 h-24 mb-6">
               <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
               <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
               <div className="relative w-24 h-24 rounded-full border-2 border-primary/50 overflow-hidden">
@@ -342,28 +342,36 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
             
             <h3 className="text-lg font-bold text-foreground mb-1">Gerando Roteiro</h3>
             
-            {/* Indicador de partes */}
-            {totalParts > 1 && (
-              <p className="text-sm font-medium text-primary mb-2">
-                Parte {currentPart} de {totalParts}
-              </p>
-            )}
-            
             <p className="text-sm text-muted-foreground mb-4 text-center">
               {loadingMessages[loadingMessageIndex]}...
             </p>
+
+            {/* Indicador de partes */}
+            {totalParts > 1 && (
+              <div className="flex items-center gap-2 mb-4">
+                {Array.from({ length: totalParts }, (_, i) => (
+                  <div
+                    key={i}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300 ${
+                      i < currentPart
+                        ? "bg-primary text-primary-foreground"
+                        : i === currentPart - 1
+                        ? "bg-primary/80 text-primary-foreground animate-pulse"
+                        : "bg-muted-foreground/20 text-muted-foreground"
+                    }`}
+                  >
+                    {i + 1}
+                  </div>
+                ))}
+              </div>
+            )}
             
             {/* Barra de progresso */}
             <div className="w-full space-y-2">
-              <Progress value={progress} className="h-2 bg-secondary" />
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">
-                  {totalParts > 1 ? `Parte ${currentPart}/${totalParts}` : 'Processando'}
-                </span>
-                <span className="text-xs font-medium text-primary">
-                  {progress}%
-                </span>
-              </div>
+              <Progress value={progress} className="h-1.5 bg-secondary" />
+              <p className="text-xs text-center text-muted-foreground">
+                {progress}%
+              </p>
             </div>
           </div>
         )}
