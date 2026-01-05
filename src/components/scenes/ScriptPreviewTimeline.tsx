@@ -37,9 +37,13 @@ interface PreviewScene {
 }
 
 const formatTime = (seconds: number): string => {
+  // Mostra mais precisão em cenas curtas para evitar que tudo pareça igual
+  if (seconds < 60) {
+    return `${seconds.toFixed(1)}s`;
+  }
   const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return mins > 0 ? `${mins}m${secs}s` : `${secs}s`;
+  const secs = Math.round(seconds % 60);
+  return `${mins}m${String(secs).padStart(2, "0")}s`;
 };
 
 const formatTimecode = (seconds: number): string => {
@@ -336,6 +340,11 @@ export function ScriptPreviewTimeline({
                           <span className={`block text-white/90 drop-shadow ${isExpanded ? 'text-[10px]' : 'text-[8px]'}`}>
                             {formatTime(scene.durationSeconds)}
                           </span>
+                          {isExpanded && (
+                            <span className="block text-[9px] text-white/80 drop-shadow">
+                              {formatTimecode(scene.startTime)} → {formatTimecode(scene.endTime)}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </TooltipTrigger>
