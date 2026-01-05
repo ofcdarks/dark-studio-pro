@@ -100,7 +100,7 @@ export function ThumbnailLibrary({
   
   // Analysis states
   const [analyzing, setAnalyzing] = useState(false);
-  const [analysisModel, setAnalysisModel] = useState("auto");
+  const [analysisModel, setAnalysisModel] = useState("gemini-2.5-flash");
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisMessage, setAnalysisMessage] = useState("");
   
@@ -295,36 +295,21 @@ export function ThumbnailLibrary({
     }, 600);
     
     try {
-      // Call AI to analyze thumbnails and extract prompts
+      // Call AI to analyze thumbnails and generate 3 adapted prompts
       const response = await supabase.functions.invoke("ai-assistant", {
         body: {
           type: "analyze_thumbnails",
-          thumbnails: savedThumbnails.slice(0, 5).map(t => ({
-            url: t.image_url,
-            niche: t.niche,
-            subNiche: t.sub_niche,
-          })),
-          prompt: `Analise estas thumbnails de referência e extraia o padrão visual/estilo usado.
-          Para cada thumbnail, crie um prompt detalhado que poderia ser usado para gerar uma thumbnail similar.
-          O prompt deve incluir detalhes sobre:
-          - Estilo visual e composição
-          - Paleta de cores e iluminação
-          - Posição e estilo de headline/texto se houver
-          - Elementos visuais principais
-          
-          Retorne um JSON com:
-          - prompts: array de prompts (um para cada thumbnail)
-          - commonStyle: descrição do estilo comum entre as thumbnails
-          - colorPalette: cores predominantes (ex: "preto, dourado, laranja vibrante")
-          - composition: descrição da composição típica
-          - headlineStyle: descrição DETALHADA do estilo de headline usado, incluindo:
-            * Posição na imagem (ex: "canto superior direito", "centro", "terço inferior")
-            * Cor do texto (ex: "branco com contorno preto", "amarelo vibrante")
-            * Estilo de fonte (ex: "sans-serif bold", "impacto", "condensada")
-            * Tamanho relativo (ex: "grande ocupando 1/3 da imagem", "médio")
-            * Efeitos (ex: "sombra preta", "outline duplo", "glow", "gradiente")
-            * Ângulo/Rotação (ex: "levemente inclinado", "horizontal")
-            * Qualquer outro detalhe visual importante do texto`,
+          model: analysisModel,
+          niche: niche || "",
+          subNiche: subNiche || "",
+          agentData: {
+            thumbnails: savedThumbnails.slice(0, 5).map(t => ({
+              url: t.image_url,
+              niche: t.niche,
+              subNiche: t.sub_niche,
+            })),
+            videoTitle: videoTitle || "",
+          },
         },
       });
 
@@ -333,12 +318,18 @@ export function ThumbnailLibrary({
       // Update thumbnails with extracted prompts
       const result = response.data?.result;
       if (result?.prompts && Array.isArray(result.prompts)) {
+        // Store the 3 prompts - each prompt object contains prompt text and focus
         for (let i = 0; i < Math.min(result.prompts.length, savedThumbnails.length); i++) {
+          const promptData = result.prompts[i];
+          const promptText = typeof promptData === 'string' ? promptData : promptData.prompt;
           await supabase
             .from("reference_thumbnails")
             .update({
-              extracted_prompt: result.prompts[i],
-              style_analysis: result,
+              extracted_prompt: promptText,
+              style_analysis: {
+                ...result,
+                promptFocus: promptData.focus || null,
+              },
             })
             .eq("id", savedThumbnails[i].id);
         }
@@ -346,7 +337,7 @@ export function ThumbnailLibrary({
 
       clearInterval(progressInterval);
       setAnalysisProgress(100);
-      toast({ title: "Análise concluída!", description: "Prompts padrão extraídos das thumbnails" });
+      toast({ title: "Análise concluída!", description: `${result?.prompts?.length || 0} prompts padrão gerados` });
       queryClient.invalidateQueries({ queryKey: ["reference-thumbnails"] });
     } catch (error) {
       console.error("Analysis error:", error);
@@ -778,12 +769,12 @@ export function ThumbnailLibrary({
                 <label className="text-xs text-muted-foreground block mb-1">Modelo de IA para Análise:</label>
                 <Select value={analysisModel} onValueChange={setAnalysisModel}>
                   <SelectTrigger className="w-48 bg-secondary border-border h-9">
-                    <SelectValue placeholder="Escolher Automaticamente" />
+                    <SelectValue placeholder="Escolher modelo..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="auto">Escolher Automaticamente</SelectItem>
-                    <SelectItem value="gemini">Gemini 2.5 Flash</SelectItem>
-                    <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                    <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                    <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                    <SelectItem value="gpt-5">GPT-5</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -1164,6 +1164,70 @@ serve(async (req) => {
         }
         break;
 
+      case "analyze_thumbnails":
+        // Análise de thumbnails de referência para criar 3 prompts padrão adaptados ao título
+        const thumbnailsData = agentData?.thumbnails || [];
+        const userVideoTitle = niche ? (agentData?.videoTitle || "") : (agentData?.videoTitle || "");
+        const userNiche = niche || "";
+        const userSubNiche = subNiche || "";
+        
+        systemPrompt = `Você é um especialista em análise visual de thumbnails do YouTube e geração de prompts para IA.
+        
+        TAREFA: Analisar o estilo visual das thumbnails de referência e criar 3 PROMPTS PADRÃO que mantenham o mesmo estilo, mas ADAPTADOS ao novo título/tema.
+        
+        THUMBNAILS DE REFERÊNCIA:
+        ${thumbnailsData.map((t: any, i: number) => `${i + 1}. URL: ${t.url} | Nicho: ${t.niche || 'N/A'} | Subnicho: ${t.subNiche || 'N/A'}`).join('\n')}
+        
+        NOVO CONTEXTO PARA ADAPTAR:
+        - Título do Vídeo: "${userVideoTitle || 'Não especificado'}"
+        - Nicho: "${userNiche || 'Não especificado'}"
+        - Subnicho: "${userSubNiche || 'Não especificado'}"
+        
+        INSTRUÇÕES CRÍTICAS:
+        1. Analise o ESTILO VISUAL das thumbnails de referência (cores, composição, iluminação, tipografia)
+        2. Crie 3 prompts que MANTENHAM o mesmo estilo visual, MAS adaptando:
+           - AMBIENTAÇÃO: cenário adequado ao novo título
+           - PERSONAGEM/POVO: pessoas/figuras relevantes ao tema do título
+           - ÉPOCA/TEMPO: elementos temporais que combinem com o título
+           - CORES: manter a paleta da referência mas com elementos do novo tema
+           - ELEMENTOS VISUAIS: objetos e símbolos relevantes ao título
+        
+        FORMATO DE SAÍDA (JSON):
+        {
+          "commonStyle": "Descrição do estilo visual comum das thumbnails de referência",
+          "colorPalette": "Cores predominantes identificadas (ex: preto, dourado, laranja vibrante)",
+          "composition": "Descrição da composição típica usada",
+          "headlineStyle": "Descrição do estilo de headline: posição, cor, fonte, efeitos",
+          "prompts": [
+            {
+              "promptNumber": 1,
+              "prompt": "Prompt completo e detalhado para gerar thumbnail mantendo estilo da referência mas adaptado ao título. Incluir: estilo artístico, composição, iluminação, cores, elementos visuais específicos do tema, personagem/figura central, cenário/ambientação, atmosfera.",
+              "focus": "Qual aspecto do título este prompt destaca (ex: drama histórico, mistério, revelação)"
+            },
+            {
+              "promptNumber": 2,
+              "prompt": "Segundo prompt com variação de ângulo/composição mantendo o estilo...",
+              "focus": "..."
+            },
+            {
+              "promptNumber": 3,
+              "prompt": "Terceiro prompt com outra interpretação visual do título...",
+              "focus": "..."
+            }
+          ]
+        }
+        
+        REGRAS:
+        - Os 3 prompts devem ser DIFERENTES entre si, oferecendo variações
+        - Cada prompt deve ter no mínimo 100 palavras
+        - Incluir detalhes técnicos: iluminação, profundidade de campo, estilo artístico
+        - Se houver headline, descrever posicionamento, estilo e efeitos
+        - Adaptar elementos culturais/históricos/temáticos ao título fornecido
+        
+        Responda APENAS com o JSON válido.`;
+        userPrompt = `Analise estas ${thumbnailsData.length} thumbnails de referência e crie 3 prompts adaptados ao título "${userVideoTitle}"`;
+        break;
+
       default:
         systemPrompt = "Você é um assistente especializado em criação de conteúdo para YouTube. Responda em português brasileiro de forma clara e útil.";
     }
