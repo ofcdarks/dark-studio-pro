@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -52,7 +53,9 @@ export const GenerateScriptModal = ({
   const { user } = useAuth();
   const { logActivity } = useActivityLog();
   const [generating, setGenerating] = useState(false);
-  
+  const [progress, setProgress] = useState(0);
+  const [currentPart, setCurrentPart] = useState(0);
+  const [totalParts, setTotalParts] = useState(0);
   // Form state
   const [videoTitle, setVideoTitle] = useState("");
   const [duration, setDuration] = useState("5");
@@ -111,6 +114,12 @@ export const GenerateScriptModal = ({
 
     setGenerating(true);
     setGeneratedScript(null);
+    setProgress(0);
+    
+    // Determinar se precisa dividir em partes (mais de 5 minutos = dividir)
+    const MINUTES_PER_PART = 5;
+    const numParts = Math.max(1, Math.ceil(targetDuration / MINUTES_PER_PART));
+    setTotalParts(numParts);
     
     try {
       // Build the CTA instructions conforme documentação
@@ -119,85 +128,117 @@ export const GenerateScriptModal = ({
       if (ctaMeio) ctaPositions.push("meio (metade do vídeo)");
       if (ctaFinal) ctaPositions.push("final (últimos 30 segundos)");
 
-      // Construir prompt com duração exata - Passo 4: Geração de Roteiros
-      const prompt = `
-Gere um roteiro completo para um vídeo com o título: "${videoTitle}"
+      let fullScript = "";
+      let totalCreditsUsed = 0;
 
-📏 ESPECIFICAÇÕES CRÍTICAS DE DURAÇÃO:
+      for (let partIndex = 0; partIndex < numParts; partIndex++) {
+        setCurrentPart(partIndex + 1);
+        setProgress(Math.round((partIndex / numParts) * 80) + 10);
+
+        const partMinutes = Math.ceil(targetDuration / numParts);
+        const partWords = partMinutes * wordsPerMinute;
+        const isFirstPart = partIndex === 0;
+        const isLastPart = partIndex === numParts - 1;
+
+        // Construir prompt específico para esta parte
+        const partPrompt = `
+Gere ${numParts > 1 ? `a PARTE ${partIndex + 1} de ${numParts} de` : ''} um roteiro para um vídeo com o título: "${videoTitle}"
+
+${numParts > 1 ? `
+📍 CONTEXTO DESTA PARTE (${partIndex + 1}/${numParts}):
+${isFirstPart ? '- Esta é a PRIMEIRA parte: inclua um HOOK poderoso para prender a atenção nos primeiros 30 segundos' : ''}
+${!isFirstPart ? `- Roteiro anterior (resumo): Continue de onde parou, mantendo a narrativa fluida` : ''}
+${isLastPart ? '- Esta é a ÚLTIMA parte: inclua uma conclusão impactante e CTA' : ''}
+${!isLastPart ? '- NÃO conclua ainda - deixe um gancho para a continuação' : ''}
+
+📏 ESPECIFICAÇÕES DESTA PARTE:
+- Duração desta parte: ~${partMinutes} minutos (~${partWords} palavras)
+` : `
+📏 ESPECIFICAÇÕES DE DURAÇÃO:
 - Duração MÍNIMA OBRIGATÓRIA: ${minDuration} minutos
 - Duração ALVO: ${targetDuration} minutos (~${estimatedWords} palavras)
 - Duração MÁXIMA PERMITIDA: ${maxDuration} minutos
 - Palavras por minuto de narração: ${wordsPerMinute}
+`}
 
-⚠️ REGRA DE OURO: O roteiro NUNCA pode ter menos de ${minDuration} minutos. É MELHOR passar um pouco do que faltar conteúdo!
+⚠️ REGRA DE OURO: O roteiro NUNCA pode ter menos que o mínimo. É MELHOR passar um pouco do que faltar conteúdo!
 
-- Partes: ${estimatedParts} partes de ~${Math.ceil(targetDuration / estimatedParts)} minutos cada
 - Idioma: ${language === "pt-BR" ? "Português (Brasil)" : language === "en-US" ? "English (US)" : "Español"}
-- Incluir CTA em: ${ctaPositions.length > 0 ? ctaPositions.join(", ") : "final do vídeo"}
+${isFirstPart && ctaInicio ? '- Incluir CTA no início' : ''}
+${numParts === 1 && ctaMeio ? '- Incluir CTA no meio' : ''}
+${isLastPart && ctaFinal ? '- Incluir CTA no final' : ''}
 
 ${additionalContext ? `CONTEXTO ADICIONAL:\n${additionalContext}` : ""}
 
-Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado para engajamento viral.
-      `.trim();
+${!isFirstPart && fullScript ? `TEXTO ANTERIOR (para manter continuidade):\n...${fullScript.slice(-500)}` : ''}
 
-      // Enviar dados do agente conforme documentação
-      const { data, error } = await supabase.functions.invoke("ai-assistant", {
-        body: {
-          type: "generate_script_with_formula",
-          prompt,
-          model: aiModel,
-          duration: targetDuration,
-          minDuration: minDuration,
-          maxDuration: maxDuration,
-          language,
-          userId: user.id,
-          // Dados do agente conforme estrutura da documentação
-          agentData: {
-            name: agent.name,
-            niche: agent.niche,
-            sub_niche: agent.sub_niche,
-            formula: agent.formula,
-            formula_structure: agent.formula_structure,
-            mental_triggers: agent.mental_triggers,
+Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajamento viral.
+        `.trim();
+
+        const { data, error } = await supabase.functions.invoke("ai-assistant", {
+          body: {
+            type: "generate_script_with_formula",
+            prompt: partPrompt,
+            model: aiModel,
+            duration: partMinutes,
+            minDuration: partMinutes,
+            maxDuration: partMinutes + 1,
+            language,
+            userId: user.id,
+            agentData: {
+              name: agent.name,
+              niche: agent.niche,
+              sub_niche: agent.sub_niche,
+              formula: agent.formula,
+              formula_structure: agent.formula_structure,
+              mental_triggers: agent.mental_triggers,
+            },
           },
-        },
-      });
+        });
 
-      if (error) {
-        console.error("[GenerateScript] Error:", error);
-        throw error;
+        if (error) {
+          console.error(`[GenerateScript] Error part ${partIndex + 1}:`, error);
+          throw error;
+        }
+
+        if (data?.error) {
+          toast.error(data.error);
+          return;
+        }
+
+        const partContent = typeof data?.result === 'string' ? data.result : JSON.stringify(data?.result, null, 2);
+        fullScript += (fullScript ? "\n\n" : "") + partContent;
+        totalCreditsUsed += data?.creditsUsed || 0;
+
+        // Toast de progresso para cada parte
+        if (numParts > 1) {
+          toast.success(`Parte ${partIndex + 1}/${numParts} concluída`);
+        }
       }
 
-      // Verificar erros de créditos (402) ou rate limit (429)
-      if (data?.error) {
-        toast.error(data.error);
-        return;
-      }
+      setProgress(90);
+      setGeneratedScript(fullScript);
 
-      const scriptContent = typeof data?.result === 'string' ? data.result : JSON.stringify(data?.result, null, 2);
-      setGeneratedScript(scriptContent);
-
-      // Salvar roteiro na tabela generated_scripts conforme documentação
+      // Salvar roteiro na tabela generated_scripts
       const { error: saveError } = await supabase
         .from('generated_scripts')
         .insert({
           user_id: user.id,
           agent_id: agent.id,
           title: videoTitle,
-          content: scriptContent,
+          content: fullScript,
           duration: targetDuration,
           language,
           model_used: aiModel,
-          credits_used: data?.creditsUsed || estimatedCredits
+          credits_used: totalCreditsUsed || estimatedCredits
         });
 
       if (saveError) {
         console.error("[GenerateScript] Error saving script:", saveError);
-        toast.error("Roteiro gerado mas erro ao salvar");
       }
 
-      // Update agent usage count conforme documentação
-      const { error: updateError } = await supabase
+      // Update agent usage count
+      await supabase
         .from("script_agents")
         .update({ 
           times_used: (agent.times_used || 0) + 1,
@@ -205,23 +246,22 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
         })
         .eq("id", agent.id);
 
-      if (updateError) {
-        console.error("[GenerateScript] Error updating agent:", updateError);
-      }
-
-      // Log activity
       await logActivity({
         action: 'script_generated',
         description: `Roteiro "${videoTitle}" (${targetDuration} min) gerado com ${agent.name}`,
       });
 
-      toast.success(`Roteiro gerado com sucesso! (${data?.creditsUsed || estimatedCredits} créditos)`);
+      setProgress(100);
+      toast.success(`Roteiro completo gerado! (${totalCreditsUsed || estimatedCredits} créditos)`);
       
     } catch (error) {
       console.error("[GenerateScript] Error generating script:", error);
       toast.error("Erro ao gerar roteiro. Tente novamente.");
     } finally {
       setGenerating(false);
+      setCurrentPart(0);
+      setTotalParts(0);
+      setProgress(0);
     }
   };
 
@@ -283,15 +323,15 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-card border-primary/30">
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto bg-card border-primary/30">
         {/* Loading Overlay */}
         {generating && (
-          <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-lg">
+          <div className="absolute inset-0 bg-background/98 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-lg p-6">
             {/* Logo com efeito de pulso */}
-            <div className="relative w-20 h-20 mb-6">
+            <div className="relative w-24 h-24 mb-4">
               <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
               <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
-              <div className="relative w-20 h-20 rounded-full border-2 border-primary/50 overflow-hidden">
+              <div className="relative w-24 h-24 rounded-full border-2 border-primary/50 overflow-hidden">
                 <img 
                   src={logoGif} 
                   alt="Logo" 
@@ -300,13 +340,31 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
               </div>
             </div>
             
-            <h3 className="text-lg font-bold text-foreground mb-2">Gerando Roteiro</h3>
-            <p className="text-sm text-muted-foreground mb-3 animate-pulse">
+            <h3 className="text-lg font-bold text-foreground mb-1">Gerando Roteiro</h3>
+            
+            {/* Indicador de partes */}
+            {totalParts > 1 && (
+              <p className="text-sm font-medium text-primary mb-2">
+                Parte {currentPart} de {totalParts}
+              </p>
+            )}
+            
+            <p className="text-sm text-muted-foreground mb-4 text-center">
               {loadingMessages[loadingMessageIndex]}...
             </p>
-            <p className="text-xs text-muted-foreground/70">
-              Aguarde, isso pode levar até 2 minutos
-            </p>
+            
+            {/* Barra de progresso */}
+            <div className="w-full space-y-2">
+              <Progress value={progress} className="h-2 bg-secondary" />
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">
+                  {totalParts > 1 ? `Parte ${currentPart}/${totalParts}` : 'Processando'}
+                </span>
+                <span className="text-xs font-medium text-primary">
+                  {progress}%
+                </span>
+              </div>
+            </div>
           </div>
         )}
 
