@@ -3,7 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
-import { generateCapcutDraftContent, generateCapcutDraftMetaInfo } from "@/lib/capcutProject";
+import { generateCapcutDraftContentWithTemplate, generateCapcutDraftMetaInfoWithTemplate, CAPCUT_TEMPLATES, CapcutTemplate } from "@/lib/capcutTemplates";
+import { generateNarrationSrt } from "@/lib/srtGenerator";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -31,7 +32,8 @@ import {
   X,
   DownloadCloud,
   Video,
-  RotateCcw
+  RotateCcw,
+  Layout
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,9 +46,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES } from "@/lib/thumbnailStyles";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import logoGif from "@/assets/logo.gif";
 
 interface ScenePrompt {
@@ -160,6 +164,8 @@ const PromptsImages = () => {
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [savedCapcutFolder, setSavedCapcutFolder] = useState<string | null>(null);
   const [showCapcutInstructions, setShowCapcutInstructions] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("clean");
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const cancelGenerationRef = useRef(false);
   
   const { user } = useAuth();
@@ -860,32 +866,35 @@ const PromptsImages = () => {
           `Cena ${String(s.number).padStart(2, "0")}: ${s.durationSeconds}s (${s.timecode} → ${s.endTimecode})`
         ).join("\n");
 
-      // Gerar arquivo SRT para narração
-      const formatSrtTime = (seconds: number): string => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = Math.floor(seconds % 60);
-        const ms = Math.round((seconds % 1) * 1000);
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
-      };
+      // Gerar SRT inteligente (max 499 chars, sem cortar palavras, 10s gap)
+      const scenesForSrt = scenesWithDurations.map(s => ({
+        number: s.number,
+        text: s.text,
+        startSeconds: s.startSeconds,
+        endSeconds: s.endSeconds
+      }));
+      const srtContent = generateNarrationSrt(scenesForSrt, {
+        maxCharsPerBlock: 499,
+        gapBetweenScenes: 10
+      });
 
-      const srtContent = scenesWithDurations.map((scene, idx) => {
-        const startSrt = formatSrtTime(scene.startSeconds);
-        const endSrt = formatSrtTime(scene.endSeconds);
-        return `${idx + 1}\n${startSrt} --> ${endSrt}\n${scene.text}\n`;
-      }).join("\n");
+      // Obter template selecionado
+      const template = CAPCUT_TEMPLATES.find(t => t.id === selectedTemplate) || CAPCUT_TEMPLATES[0];
 
       const readme = [
         "═══════════════════════════════════════════════════════════════",
         "          PROJETO CAPCUT - GUIA DE IMPORTAÇÃO",
         "═══════════════════════════════════════════════════════════════",
         "",
+        `📋 TEMPLATE USADO: ${template.name}`,
+        `   ${template.description}`,
+        "",
         "📁 CONTEÚDO DO ZIP:",
-        "  • cena_001.png, cena_002.png... - Imagens das cenas",
-        "  • draft_content.json - Timeline do projeto (PRINCIPAL!)",
+        "  • Resources/ - Pasta com as imagens das cenas",
+        "  • draft_content.json - Timeline do projeto (com transições!)",
         "  • draft_meta_info.json - Metadados do projeto",
         "  • DURACOES.txt - Tempo de cada cena (referência)",
-        "  • NARRACOES.srt - Texto para narração com timecodes",
+        "  • NARRACOES.srt - Texto para narração (max 499 chars/bloco)",
         "",
         "═══════════════════════════════════════════════════════════════",
         "          MÉTODO AUTOMÁTICO (RECOMENDADO)",
@@ -905,17 +914,18 @@ const PromptsImages = () => {
         "   (sobrescreva se perguntado)",
         "",
         "6) Abra o CapCut novamente - o projeto terá todas as imagens",
-        "   JÁ NA TIMELINE com os tempos corretos!",
+        "   JÁ NA TIMELINE com os tempos e transições corretos!",
         "",
         "═══════════════════════════════════════════════════════════════",
-        "          MÉTODO MANUAL (ALTERNATIVO)",
+        "          SOBRE O SRT PARA NARRAÇÃO",
         "═══════════════════════════════════════════════════════════════",
         "",
-        "Se o método automático não funcionar:",
+        "O arquivo NARRACOES.srt foi gerado com:",
+        "  • Máximo de 499 caracteres por bloco",
+        "  • Palavras nunca são cortadas",
+        "  • 10 segundos de intervalo entre cenas",
         "",
-        "1) Abra o CapCut e importe as imagens manualmente",
-        "2) Use DURACOES.txt para ajustar o tempo de cada cena",
-        "3) Use NARRACOES.srt para adicionar legendas/narração",
+        "Importe o SRT como legenda ou use como guia para gravar narração.",
         "",
         "═══════════════════════════════════════════════════════════════",
       ].join("\n");
@@ -929,9 +939,10 @@ const PromptsImages = () => {
         text: s.text
       }));
 
-      // Gerar JSONs do projeto CapCut
-      const draftContentJson = generateCapcutDraftContent(scenesForCapcut, `Projeto_${new Date().toISOString().split("T")[0]}`);
-      const draftMetaInfoJson = generateCapcutDraftMetaInfo(scenesForCapcut, `Projeto_${new Date().toISOString().split("T")[0]}`);
+      // Gerar JSONs do projeto CapCut COM TEMPLATE
+      const projectName = `Projeto_${template.id}_${new Date().toISOString().split("T")[0]}`;
+      const draftContentJson = generateCapcutDraftContentWithTemplate(scenesForCapcut, template, projectName);
+      const draftMetaInfoJson = generateCapcutDraftMetaInfoWithTemplate(scenesForCapcut, projectName);
       
       // Arquivos de documentação
       zip.file("DURACOES.txt", durationsTxt);
@@ -2084,15 +2095,82 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
 
       {/* Modal de Instruções CapCut */}
       <Dialog open={showCapcutInstructions} onOpenChange={setShowCapcutInstructions}>
-        <DialogContent className="max-w-lg bg-card border-primary/50 rounded-xl shadow-xl">
+        <DialogContent className="max-w-xl bg-card border-primary/50 rounded-xl shadow-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
               <Video className="w-5 h-5 text-primary" />
               Exportar para CapCut
             </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Escolha um template com transições pré-configuradas
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
+            {/* Seletor de Templates */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Layout className="w-4 h-4 text-primary" />
+                Template do Projeto
+              </Label>
+              <RadioGroup 
+                value={selectedTemplate} 
+                onValueChange={setSelectedTemplate}
+                className="grid grid-cols-2 gap-3"
+              >
+                {CAPCUT_TEMPLATES.map((template) => (
+                  <div key={template.id}>
+                    <RadioGroupItem
+                      value={template.id}
+                      id={`template-${template.id}`}
+                      className="peer sr-only"
+                    />
+                    <Label
+                      htmlFor={`template-${template.id}`}
+                      className={cn(
+                        "flex flex-col items-start gap-1 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                        "hover:border-primary/50 hover:bg-primary/5",
+                        selectedTemplate === template.id
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-secondary/30"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{template.preview}</span>
+                        <span className="font-semibold text-foreground text-sm">{template.name}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{template.description}</p>
+                      {template.transitionType !== 'none' && (
+                        <div className="flex gap-1 mt-1">
+                          {template.hasKenBurns && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">Ken Burns</Badge>
+                          )}
+                          {template.hasVignette && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">Vinheta</Badge>
+                          )}
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            {template.transitionDuration}s
+                          </Badge>
+                        </div>
+                      )}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+
+            {/* Info sobre SRT */}
+            <div className="p-3 bg-secondary/50 rounded-lg border border-border">
+              <h4 className="font-semibold text-foreground text-sm mb-1 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
+                SRT para Narração
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                O arquivo SRT será gerado com blocos de no máximo <strong>499 caracteres</strong>, 
+                sem cortar palavras, e com <strong>10 segundos</strong> de intervalo entre cenas.
+              </p>
+            </div>
+
             {/* Método 1 */}
             <div className="p-4 bg-secondary/50 rounded-lg border border-border">
               <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
