@@ -36,6 +36,8 @@ interface SceneResult {
   imagePrompt: string;
   wordCount: number;
   characterName?: string; // Nome do personagem principal nesta cena
+  emotion?: string; // Emoção dominante: tensão, surpresa, medo, admiração, choque, curiosidade
+  retentionTrigger?: string; // Gatilho de retenção: curiosidade, quebra_padrão, antecipação, revelação, mistério
 }
 
 // Função para dividir texto em partes
@@ -130,7 +132,7 @@ function hashCode(str: string): number {
   return hash;
 }
 
-// Função para gerar prompts de um lote
+// Função para gerar prompts de um lote - ESPECIALISTA DE ELITE EM RETENÇÃO VIRAL
 async function generateBatchPrompts(
   chunk: string,
   batchNumber: number,
@@ -154,41 +156,63 @@ ${characters.map(c => `- ${c.name}: ${c.description}`).join('\n')}`
 - Adicione "characterName" com o nome do personagem principal da cena (ou null se não houver)`
     : '';
 
-  const systemPrompt = `Você é um DIRETOR DE PRODUÇÃO AUDIOVISUAL com 40 anos de experiência em sincronização de vídeos narrados. Sua especialidade é fazer imagens "casarem" perfeitamente com a narração falada.
+  // SISTEMA DE ELITE EM VÍDEOS VIRAIS
+  const systemPrompt = `Você é um ESPECIALISTA DE ELITE em vídeos virais para YouTube com PROFUNDO DOMÍNIO em:
+- Psicologia da atenção e retenção de audiência (Watch Time)
+- Storytelling cinematográfico e neurocopywriting
+- Ritmo narrativo audiovisual e sincronização perfeita
+- Criar vídeos com RETENÇÃO ACIMA DE 65%
 
 CONTEXTO TÉCNICO:
 - Velocidade de narração: ${wpm} palavras por minuto
-- Cada palavra leva aproximadamente ${(60/wpm).toFixed(2)} segundos para ser falada
-- O objetivo é que CADA IMAGEM apareça exatamente no momento em que aquele trecho está sendo narrado
+- Cada palavra leva aproximadamente ${(60/wpm).toFixed(2)} segundos
+- O objetivo é MÁXIMA RETENÇÃO do espectador
 ${characterContext}
 
-SUA MISSÃO:
-Analise este trecho de roteiro e divida em aproximadamente ${scenesInBatch} CORTES VISUAIS, identificando:
+🎬 REGRAS ABSOLUTAS DE ALTA RETENÇÃO:
 
-1. **TRANSIÇÕES NARRATIVAS NATURAIS**: Onde o assunto muda, onde há uma pausa dramática, onde a cena mental do espectador precisa mudar
+1. NUNCA escreva cenas genéricas ou neutras
+2. Cada trecho deve ter IMPACTO VISUAL e EMOCIONAL poderoso
+3. A cada 5-8 segundos (${Math.round(wpm * 0.08)}-${Math.round(wpm * 0.13)} palavras) deve existir mudança visual/emocional
+4. Elimine trechos explicativos demais - MOSTRE, não conte
+5. Use linguagem EMOCIONAL, CONCRETA e IMAGÉTICA
+6. Gere CURIOSIDADE antes de entregar a resposta
+7. Utilize MICRO-CLIFFHANGERS contínuos entre cenas
 
-2. **SINCRONIZAÇÃO FALA-IMAGEM**: A imagem deve ilustrar EXATAMENTE o que está sendo dito naquele momento. Se o narrador fala "imagine uma praia deserta", a imagem deve aparecer NESSE EXATO SEGUNDO
+📊 ESTRUTURA DE CADA CENA (obrigatório):
+- ⏱️ wordCount: Contagem EXATA de palavras (3-8 segundos de fala ideal)
+- 🎙️ text: Trecho EXATO do roteiro (não resumo)
+- 🎬 imagePrompt: Descrição visual CINEMATOGRÁFICA e IMPACTANTE
+- 🧠 emotion: Emoção dominante (tensão/surpresa/medo/admiração/choque/curiosidade)
+- 🔁 retentionTrigger: Gatilho usado (curiosidade/quebra_padrão/antecipação/revelação/mistério)
 
-3. **RITMO VISUAL**: Cenas muito longas entediam. Cenas muito curtas confundem. O ideal é entre 3-8 segundos por cena (${Math.round(wpm * 0.05)}-${Math.round(wpm * 0.13)} palavras)
+🎥 REGRAS DE CORTE PARA MÁXIMA RETENÇÃO:
+- Corte em MUDANÇAS de assunto ou conceito
+- Corte em TRANSIÇÕES EMOCIONAIS (problema→solução, dúvida→certeza)
+- Corte antes de REVELAÇÕES importantes (crie antecipação)
+- Corte em LISTAS (cada item = uma cena visual diferente)
+- NUNCA corte no meio de uma ideia - complete o pensamento
+- A imagem deve ILUSTRAR EXATAMENTE o que está sendo dito
 
-4. **WORDCOUNT PRECISO**: Conte EXATAMENTE quantas palavras estão no trecho de cada cena. Este número é CRÍTICO para o timecode
+📍 RITMO VISUAL IDEAL:
+- Cenas de 3-5s: Momentos de IMPACTO, transições rápidas
+- Cenas de 5-8s: Desenvolvimento de ideias, explicações visuais
+- Cenas de 8-10s: Apenas para clímax ou revelações importantes
+- NUNCA cenas acima de 10s (perda de retenção)
 
-REGRAS DE CORTE (experiência de 40 anos):
-- Corte quando o ASSUNTO muda (novo conceito, nova ideia)
-- Corte quando há TRANSIÇÃO EMOCIONAL (de problema para solução, de dúvida para certeza)
-- Corte em LISTAS (cada item = uma cena)
-- Corte em EXEMPLOS (cada exemplo visual = uma cena)
-- NÃO corte no meio de uma frase ou ideia incompleta
-- O "text" deve conter o TRECHO EXATO do roteiro (não resumo)${characterInstruction}
+🎨 FORMATO DO PROMPT DE IMAGEM (imagePrompt):
+- Sempre em INGLÊS, 50-80 palavras
+- Composição cinematográfica com ÂNGULO específico
+- Iluminação dramática que reforce a EMOÇÃO
+- Elementos visuais CONCRETOS e ESPECÍFICOS
+- Estilo: ${style}
+- Deve criar IMPACTO VISUAL imediato
+${characterInstruction}
 
-FORMATO DO PROMPT DE IMAGEM:
-- Sempre em INGLÊS
-- 40-60 palavras
-- Inclua: composição, elementos visuais, iluminação, estilo ${style}
-- A imagem deve representar VISUALMENTE o que está sendo DITO naquele momento
+Retorne APENAS JSON válido (numere a partir de ${startSceneNumber}):
+{"scenes":[{"number":${startSceneNumber},"text":"TRECHO EXATO DO ROTEIRO","imagePrompt":"cinematic english prompt with dramatic composition and lighting","wordCount":NÚMERO_EXATO,"emotion":"emoção_dominante","retentionTrigger":"gatilho_usado"${characters.length > 0 ? ',"characterName":"Nome ou null"' : ''}}]}
 
-Retorne APENAS JSON (numere a partir de ${startSceneNumber}):
-{"scenes":[{"number":${startSceneNumber},"text":"TRECHO EXATO DO ROTEIRO DESTA CENA","imagePrompt":"detailed english prompt","wordCount":NÚMERO_EXATO_DE_PALAVRAS${characters.length > 0 ? ',"characterName":"Nome ou null"' : ''}}]}`;
+LEMBRE-SE: Seu objetivo é criar um vídeo que mantenha o espectador PRESO do primeiro ao último segundo. Cada cena deve ter PROPÓSITO e IMPACTO.`;
 
   const response = await fetch(apiUrl, {
     method: "POST",
@@ -200,10 +224,10 @@ Retorne APENAS JSON (numere a partir de ${startSceneNumber}):
       model: apiModel,
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `LOTE ${batchNumber} - Gere prompts:\n\n${chunk}` }
+        { role: "user", content: `LOTE ${batchNumber} - Analise este trecho e divida em cenas de ALTA RETENÇÃO:\n\n${chunk}` }
       ],
       max_tokens: 4000,
-      temperature: 0.5
+      temperature: 0.6 // Ligeiramente mais criativo para prompts impactantes
     }),
   });
 
@@ -225,7 +249,18 @@ Retorne APENAS JSON (numere a partir de ${startSceneNumber}):
 
   try {
     const parsed = JSON.parse(jsonContent);
-    return parsed.scenes || [];
+    const scenes = parsed.scenes || [];
+    
+    // Validar e enriquecer cenas
+    return scenes.map((scene: any) => ({
+      number: scene.number,
+      text: scene.text,
+      imagePrompt: scene.imagePrompt,
+      wordCount: scene.wordCount || scene.text?.split(/\s+/).filter(Boolean).length || 0,
+      characterName: scene.characterName || null,
+      emotion: scene.emotion || 'neutral',
+      retentionTrigger: scene.retentionTrigger || 'continuity'
+    }));
   } catch (e) {
     console.error(`[Batch ${batchNumber}] Parse error:`, jsonContent.substring(0, 200));
     return [];
