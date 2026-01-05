@@ -1795,6 +1795,22 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                               <Check className="w-3.5 h-3.5 mr-1.5" />
                               Selecionar todas
                             </Button>
+                            {/* Selecionar apenas mídias perdidas */}
+                            {generatedScenes.some(s => !s.generatedImage) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const lost = generatedScenes.filter(s => !s.generatedImage).map(s => s.number);
+                                  setSelectedImages(new Set(lost));
+                                  toast({ title: `${lost.length} mídias perdidas selecionadas` });
+                                }}
+                                className="h-7 text-xs border-destructive/50 text-destructive hover:bg-destructive/10"
+                              >
+                                <X className="w-3.5 h-3.5 mr-1.5" />
+                                Selecionar perdidas ({generatedScenes.filter(s => !s.generatedImage).length})
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
