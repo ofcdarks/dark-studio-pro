@@ -44,6 +44,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { useBackgroundImageGeneration } from "@/hooks/useBackgroundImageGeneration";
 import { SessionIndicator } from "@/components/ui/session-indicator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -133,6 +134,15 @@ const calculateTimecodeWithWpm = (scenes: ScenePrompt[], currentIndex: number, w
 const wordCountToSecondsWithWpm = (wordCount: number, wpm: number): number => (wordCount / wpm) * 60;
 
 const PromptsImages = () => {
+  // Background image generation hook
+  const { 
+    state: bgState, 
+    startGeneration: startBgGeneration, 
+    cancelGeneration: cancelBgGeneration,
+    getUpdatedScenes,
+    syncScenes 
+  } = useBackgroundImageGeneration();
+
   // Persisted states (sem imagens - muito grandes para localStorage)
   const [script, setScript] = usePersistedState("prompts_script", "");
   const [style, setStyle] = usePersistedState("prompts_style", "cinematic");
@@ -151,12 +161,28 @@ const PromptsImages = () => {
       setGeneratedScenes(persistedScenes.map(s => ({ ...s })));
     }
   }, [persistedScenes]);
+
+  // Sincronizar com o estado do background quando estiver gerando ou quando voltar para a página
+  useEffect(() => {
+    if (bgState.isGenerating || bgState.scenes.length > 0) {
+      // Atualizar cenas locais com as do background (que contém as imagens geradas)
+      if (bgState.scenes.length > 0) {
+        setGeneratedScenes(bgState.scenes);
+        // Persistir metadados
+        setPersistedScenes(bgState.scenes.map(({ generatedImage, generatingImage, ...rest }) => rest));
+      }
+    }
+  }, [bgState.scenes, bgState.isGenerating]);
   
   // Atualizar persistedScenes quando generatedScenes mudar (sem imagens)
   const updateScenes = (scenes: ScenePrompt[]) => {
     setGeneratedScenes(scenes);
     // Persistir apenas metadados (sem imagens base64)
     setPersistedScenes(scenes.map(({ generatedImage, generatingImage, ...rest }) => rest));
+    // Sincronizar com background se não estiver gerando
+    if (!bgState.isGenerating) {
+      syncScenes(scenes);
+    }
   };
   
   // Non-persisted states
@@ -165,10 +191,6 @@ const PromptsImages = () => {
   const [expandedScene, setExpandedScene] = useState<number | null>(null);
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
   const [filterPending, setFilterPending] = useState(false);
-  const [generatingImages, setGeneratingImages] = useState(false);
-  const [currentGeneratingIndex, setCurrentGeneratingIndex] = useState<number | null>(null);
-  const [imageBatchTotal, setImageBatchTotal] = useState(0);
-  const [imageBatchDone, setImageBatchDone] = useState(0);
   const [previewScene, setPreviewScene] = useState<ScenePrompt | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number>(0);
   const [previewEditPrompt, setPreviewEditPrompt] = useState<string>("");
@@ -187,8 +209,13 @@ const PromptsImages = () => {
   const [narrationSpeed, setNarrationSpeed] = usePersistedState("prompts_narration_speed", "140");
   const [audioDurationInput, setAudioDurationInput] = useState("");
   const [showDurationModal, setShowDurationModal] = useState(false);
-  const [generationStartTime, setGenerationStartTime] = useState<number | null>(null);
-  const cancelGenerationRef = useRef(false);
+  
+  // Derivar estados de geração do background
+  const generatingImages = bgState.isGenerating;
+  const currentGeneratingIndex = bgState.currentSceneIndex;
+  const imageBatchTotal = bgState.totalImages;
+  const imageBatchDone = bgState.completedImages;
+  const generationStartTime = bgState.startTime;
   
   // WPM atual baseado na velocidade selecionada
   const currentWpm = parseInt(narrationSpeed) || 140;
@@ -378,7 +405,7 @@ const PromptsImages = () => {
     }
   };
 
-  // Gerar TODAS as imagens pendentes em PARALELO (lotes de 5)
+  // Gerar TODAS as imagens pendentes em BACKGROUND (continua mesmo ao navegar)
   const handleGenerateAllImages = async () => {
     if (generatedScenes.length === 0) return;
 
@@ -392,187 +419,17 @@ const PromptsImages = () => {
       return;
     }
 
-    cancelGenerationRef.current = false; // Reset cancel flag
-    setGeneratingImages(true);
-    setImageBatchTotal(pendingIndexes.length);
-    setImageBatchDone(0);
-    setGenerationStartTime(Date.now()); // Iniciar contagem de tempo
-
-    const BATCH_SIZE = 3; // Processar 3 imagens por vez para evitar rate limit
-    let processed = 0;
-    let errorOccurred = false;
-
-    // Função para gerar uma única imagem - backend já tem retry e reescrita automática
-    const generateSingleImage = async (sceneIndex: number): Promise<{ index: number; success: boolean }> => {
-      const maxRetries = 3;
-      let retries = 0;
-      let lastError = "";
-
-      while (retries <= maxRetries) {
-        // Se foi cancelado, sair imediatamente
-        if (cancelGenerationRef.current) {
-          return { index: sceneIndex, success: false };
-        }
-
-        try {
-          const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
-          const fullPrompt = stylePrefix
-            ? `${stylePrefix} ${generatedScenes[sceneIndex].imagePrompt}`
-            : generatedScenes[sceneIndex].imagePrompt;
-
-          const { data, error } = await supabase.functions.invoke("generate-imagefx", {
-            body: {
-              prompt: fullPrompt,
-              aspectRatio: "LANDSCAPE",
-              numberOfImages: 1,
-            },
-          });
-
-          if (error) {
-            const bodyText = (error as any)?.context?.body;
-            let errMsg = error.message;
-            if (bodyText) {
-              try {
-                const parsed = JSON.parse(bodyText);
-                errMsg = parsed?.error || error.message;
-              } catch {}
-            }
-            
-            lastError = errMsg;
-            
-            // Erros de autenticação não devem ser retentados
-            if (errMsg.includes("autenticação") || errMsg.includes("cookies")) {
-              throw new Error("AUTH_ERROR");
-            }
-            
-            // Rate limit - aguardar mais tempo antes de retry
-            if (errMsg.includes("Limite de requisições") || errMsg.includes("429")) {
-              const waitTime = 5000 + retries * 3000; // 5s, 8s, 11s
-              console.log(`[Scene ${sceneIndex}] Rate limit, waiting ${waitTime}ms...`);
-              await new Promise(resolve => setTimeout(resolve, waitTime));
-              retries++;
-              continue;
-            }
-            
-            // Outros erros - retry com delay menor
-            const waitTime = 2000 + retries * 1000;
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            retries++;
-            continue;
-          }
-
-          if ((data as any)?.error) {
-            const errMsg = (data as any).error;
-            lastError = errMsg;
-            
-            if (errMsg.includes("autenticação") || errMsg.includes("cookies")) {
-              throw new Error("AUTH_ERROR");
-            }
-            
-            // Rate limit no response data
-            if (errMsg.includes("Limite de requisições")) {
-              const waitTime = 5000 + retries * 3000;
-              console.log(`[Scene ${sceneIndex}] Rate limit in data, waiting ${waitTime}ms...`);
-              await new Promise(resolve => setTimeout(resolve, waitTime));
-              retries++;
-              continue;
-            }
-            
-            retries++;
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            continue;
-          }
-
-          const url = (data as any)?.images?.[0]?.url;
-          if (url) {
-            // Atualizar UI IMEDIATAMENTE quando a imagem é gerada
-            setGeneratedScenes(prev => {
-              const updated = [...prev];
-              updated[sceneIndex] = { ...updated[sceneIndex], generatedImage: url };
-              return updated;
-            });
-            processed++;
-            setImageBatchDone(processed);
-            setCurrentGeneratingIndex(sceneIndex);
-            return { index: sceneIndex, success: true };
-          }
-          
-          retries++;
-          await new Promise(resolve => setTimeout(resolve, 1500));
-        } catch (error: any) {
-          if (error.message === "AUTH_ERROR") throw error;
-          lastError = error.message;
-          retries++;
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-      }
-      
-      console.warn(`[Scene ${sceneIndex}] Failed after ${maxRetries} retries: ${lastError}`);
-      return { index: sceneIndex, success: false };
-    };
-
-    // Processar em lotes de 5
-    for (let batchStart = 0; batchStart < pendingIndexes.length && !errorOccurred && !cancelGenerationRef.current; batchStart += BATCH_SIZE) {
-      const batchIndexes = pendingIndexes.slice(batchStart, batchStart + BATCH_SIZE);
-
-      // Verificar cancelamento antes de iniciar o lote
-      if (cancelGenerationRef.current) break;
-
-      try {
-        // Executar 5 requisições em paralelo - cada uma atualiza UI ao terminar
-        const results = await Promise.allSettled(
-          batchIndexes.map(idx => generateSingleImage(idx))
-        );
-
-        // Verificar cancelamento após o lote
-        if (cancelGenerationRef.current) break;
-
-        // Verificar erros de autenticação
-        for (const result of results) {
-          if (result.status === "rejected" && result.reason?.message === "AUTH_ERROR") {
-            toast({
-              title: "Erro de autenticação",
-              description: "Atualize os cookies do ImageFX nas configurações.",
-              variant: "destructive",
-            });
-            errorOccurred = true;
-            break;
-          }
-        }
-      } catch (error: any) {
-        if (error.message === "AUTH_ERROR") {
-          toast({
-            title: "Erro de autenticação",
-            description: "Atualize os cookies do ImageFX nas configurações.",
-            variant: "destructive",
-          });
-          errorOccurred = true;
-        }
-      }
-    }
-
-    setCurrentGeneratingIndex(null);
-    setGeneratingImages(false);
-    setGenerationStartTime(null); // Reset tempo
-
-    if (cancelGenerationRef.current) {
-      toast({
-        title: "Geração cancelada",
-        description: `${processed} imagens foram geradas antes do cancelamento`,
-      });
-    } else {
-      toast({
-        title: processed === pendingIndexes.length ? "Todas as imagens geradas!" : "Geração concluída",
-        description: `${processed}/${pendingIndexes.length} imagens criadas`,
-      });
-    }
+    // Usar o sistema de background para geração
+    startBgGeneration(generatedScenes, style, pendingIndexes);
   };
 
   // Cancelar geração
   const handleCancelGeneration = () => {
-    cancelGenerationRef.current = true;
-    toast({ title: "Cancelando...", description: "Aguarde o lote atual finalizar" });
+    cancelBgGeneration();
   };
+
+  // Estado local para regeneração individual
+  const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
 
   const downloadScenesAsZip = async (scenes: ScenePrompt[], zipFileName: string) => {
     const zip = new JSZip();
@@ -1432,7 +1289,7 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
     const scene = generatedScenes[index];
     if (!scene) return;
 
-    setCurrentGeneratingIndex(index);
+    setRegeneratingIndex(index);
     
     try {
       const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
@@ -1472,7 +1329,7 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
           ...updatedScenes[index],
           generatedImage: url
         };
-        setGeneratedScenes(updatedScenes);
+        updateScenes(updatedScenes);
         
         toast({
           title: "Imagem regenerada!",
@@ -1487,7 +1344,7 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
         variant: "destructive",
       });
     } finally {
-      setCurrentGeneratingIndex(null);
+      setRegeneratingIndex(null);
     }
   };
 
@@ -2041,9 +1898,9 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                                       e.stopPropagation();
                                       handleRegenerateImage(index);
                                     }}
-                                    disabled={currentGeneratingIndex === index}
+                                    disabled={regeneratingIndex === index || currentGeneratingIndex === index}
                                   >
-                                    {currentGeneratingIndex === index ? (
+                                    {regeneratingIndex === index ? (
                                       <Loader2 className="w-3 h-3 animate-spin" />
                                     ) : (
                                       <RefreshCw className="w-3 h-3" />
@@ -2145,10 +2002,10 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                                     size="icon"
                                     className="h-8 w-8"
                                     onClick={() => handleRegenerateImage(index)}
-                                    disabled={currentGeneratingIndex === index}
+                                    disabled={regeneratingIndex === index || currentGeneratingIndex === index}
                                     title="Regenerar imagem"
                                   >
-                                    {currentGeneratingIndex === index ? (
+                                    {regeneratingIndex === index ? (
                                       <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
                                       <RefreshCw className="w-4 h-4" />
