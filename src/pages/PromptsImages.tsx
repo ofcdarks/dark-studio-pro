@@ -835,13 +835,14 @@ const PromptsImages = () => {
         return { ...scene, startSeconds, endSeconds, durationSeconds };
       });
 
-      // Adicionar imagens
+      // Criar pasta Resources e adicionar imagens dentro dela
+      const resourcesFolder = zip.folder("Resources");
       for (const scene of scenesWithImages) {
-        if (scene.generatedImage) {
+        if (scene.generatedImage && resourcesFolder) {
           try {
             const response = await fetch(scene.generatedImage);
             const blob = await response.blob();
-            zip.file(`cena_${String(scene.number).padStart(3, "0")}.png`, blob);
+            resourcesFolder.file(`cena_${String(scene.number).padStart(3, "0")}.png`, blob);
           } catch (err) {
             console.warn(`Erro cena ${scene.number}`, err);
           }
@@ -932,11 +933,28 @@ const PromptsImages = () => {
       const draftContentJson = generateCapcutDraftContent(scenesForCapcut, `Projeto_${new Date().toISOString().split("T")[0]}`);
       const draftMetaInfoJson = generateCapcutDraftMetaInfo(scenesForCapcut, `Projeto_${new Date().toISOString().split("T")[0]}`);
       
+      // Arquivos de documentação
       zip.file("DURACOES.txt", durationsTxt);
       zip.file("NARRACOES.srt", srtContent);
       zip.file("README_CAPCUT.txt", readme);
+      
+      // Arquivos do projeto CapCut
       zip.file("draft_content.json", draftContentJson);
       zip.file("draft_meta_info.json", draftMetaInfoJson);
+      
+      // Arquivos auxiliares que o CapCut espera (podem ser vazios/padrão)
+      zip.file("draft_agency_config.json", "{}");
+      zip.file("draft_biz_config.json", "{}");
+      zip.file("draft_settings", "");
+      zip.file(".locked", "");
+      
+      // Pastas vazias que o CapCut cria
+      zip.folder("adjust_mask");
+      zip.folder("common_attachment");
+      zip.folder("matting");
+      zip.folder("qr_upload");
+      zip.folder("smart_crop");
+      zip.folder("subdraft");
 
       // Baixar ZIP
       const zipBlob = await zip.generateAsync({ type: "blob" });
