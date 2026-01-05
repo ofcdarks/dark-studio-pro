@@ -1673,27 +1673,29 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
 
   // Preparar e mostrar preview do SRT
   const openSrtPreview = () => {
-    if (generatedScenes.length === 0) {
-      toast({ title: "Nenhuma cena para exportar", variant: "destructive" });
+    // Usar o roteiro completo da "Análise de Roteiro" se disponível
+    const fullScript = script.trim();
+    
+    if (!fullScript && generatedScenes.length === 0) {
+      toast({ title: "Nenhum roteiro para exportar", variant: "destructive" });
       return;
     }
 
-    // Calcular tempos reais baseados no WPM atual (cenas são contíguas)
-    let currentTime = 0;
-    const scenesForSrt = generatedScenes.map((scene) => {
-      const durationSeconds = (scene.wordCount / currentWpm) * 60;
-      const startSeconds = currentTime;
-      const endSeconds = currentTime + durationSeconds;
-      currentTime = endSeconds;
-      return {
-        number: scene.number,
-        text: scene.text,
-        startSeconds,
-        endSeconds
-      };
-    });
+    // Se temos o roteiro completo, usá-lo diretamente
+    // Caso contrário, concatenar os textos das cenas
+    const textToUse = fullScript || generatedScenes.map(s => s.text).join(' ');
+    const totalWords = textToUse.split(/\s+/).filter(Boolean).length;
+    const totalDurationSeconds = (totalWords / currentWpm) * 60;
 
-    // Cenas são contíguas - sem gap entre elas (gapBetweenScenes: 0)
+    // Criar uma única "cena" com o roteiro completo para o SRT
+    const scenesForSrt = [{
+      number: 1,
+      text: textToUse,
+      startSeconds: 0,
+      endSeconds: totalDurationSeconds
+    }];
+
+    // Gerar SRT com o roteiro completo (será dividido em blocos de até 499 chars)
     const srtContent = generateNarrationSrt(scenesForSrt, {
       maxCharsPerBlock: 499,
       gapBetweenScenes: 0
