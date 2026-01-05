@@ -2,13 +2,15 @@ import { useBackgroundImageGeneration } from "@/hooks/useBackgroundImageGenerati
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { X, Image, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export const BackgroundGenerationIndicator = () => {
   const { state, cancelGeneration } = useBackgroundImageGeneration();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  if (!state.isGenerating) return null;
+  // Não mostrar na página /prompts - lá já tem o progresso na interface
+  if (!state.isGenerating || location.pathname === '/prompts') return null;
 
   const percentage = state.totalImages > 0 
     ? Math.round((state.completedImages / state.totalImages) * 100) 
