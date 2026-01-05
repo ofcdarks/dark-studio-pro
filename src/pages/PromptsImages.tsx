@@ -372,16 +372,22 @@ const PromptsImages = () => {
     setImageBatchDone(0);
     setGenerationStartTime(Date.now()); // Iniciar contagem de tempo
 
-    const BATCH_SIZE = 5; // Processar 5 imagens por vez
+    const BATCH_SIZE = 3; // Processar 3 imagens por vez para evitar rate limit
     let processed = 0;
     let errorOccurred = false;
 
-    // Função para gerar uma única imagem com retry - atualiza UI imediatamente
+    // Função para gerar uma única imagem - backend já tem retry e reescrita automática
     const generateSingleImage = async (sceneIndex: number): Promise<{ index: number; success: boolean }> => {
-      const maxRetries = 2;
+      const maxRetries = 3;
       let retries = 0;
+      let lastError = "";
 
       while (retries <= maxRetries) {
+        // Se foi cancelado, sair imediatamente
+        if (cancelGenerationRef.current) {
+          return { index: sceneIndex, success: false };
+        }
+
         try {
           const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
           const fullPrompt = stylePrefix
@@ -406,20 +412,48 @@ const PromptsImages = () => {
               } catch {}
             }
             
+            lastError = errMsg;
+            
+            // Erros de autenticação não devem ser retentados
             if (errMsg.includes("autenticação") || errMsg.includes("cookies")) {
               throw new Error("AUTH_ERROR");
             }
             
+            // Rate limit - aguardar mais tempo antes de retry
+            if (errMsg.includes("Limite de requisições") || errMsg.includes("429")) {
+              const waitTime = 5000 + retries * 3000; // 5s, 8s, 11s
+              console.log(`[Scene ${sceneIndex}] Rate limit, waiting ${waitTime}ms...`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              retries++;
+              continue;
+            }
+            
+            // Outros erros - retry com delay menor
+            const waitTime = 2000 + retries * 1000;
+            await new Promise(resolve => setTimeout(resolve, waitTime));
             retries++;
             continue;
           }
 
           if ((data as any)?.error) {
             const errMsg = (data as any).error;
+            lastError = errMsg;
+            
             if (errMsg.includes("autenticação") || errMsg.includes("cookies")) {
               throw new Error("AUTH_ERROR");
             }
+            
+            // Rate limit no response data
+            if (errMsg.includes("Limite de requisições")) {
+              const waitTime = 5000 + retries * 3000;
+              console.log(`[Scene ${sceneIndex}] Rate limit in data, waiting ${waitTime}ms...`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              retries++;
+              continue;
+            }
+            
             retries++;
+            await new Promise(resolve => setTimeout(resolve, 2000));
             continue;
           }
 
@@ -433,15 +467,21 @@ const PromptsImages = () => {
             });
             processed++;
             setImageBatchDone(processed);
-            setCurrentGeneratingIndex(sceneIndex); // Mostrar qual cena acabou
+            setCurrentGeneratingIndex(sceneIndex);
             return { index: sceneIndex, success: true };
           }
+          
           retries++;
+          await new Promise(resolve => setTimeout(resolve, 1500));
         } catch (error: any) {
           if (error.message === "AUTH_ERROR") throw error;
+          lastError = error.message;
           retries++;
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
+      
+      console.warn(`[Scene ${sceneIndex}] Failed after ${maxRetries} retries: ${lastError}`);
       return { index: sceneIndex, success: false };
     };
 

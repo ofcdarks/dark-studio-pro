@@ -245,8 +245,9 @@ async function generateWithImageFX(
     seed?: number;
     model?: string;
   },
-  retries = 2,
-  allowPromptRewrite = true
+  retries = 3,
+  allowPromptRewrite = true,
+  rewriteAttempts = 0
 ): Promise<any[]> {
   const headers = await getAuthHeaders(cookie, userId);
   const payload = buildPromptPayload(options);
@@ -254,6 +255,7 @@ async function generateWithImageFX(
   console.log('[ImageFX] Generating image with prompt:', options.prompt.substring(0, 100) + '...');
   console.log('[ImageFX] Aspect ratio:', options.aspectRatio);
   console.log('[ImageFX] Model:', options.model || 'IMAGEN_3_5');
+  console.log('[ImageFX] Retries left:', retries, '| Rewrite attempts:', rewriteAttempts);
 
   try {
     const res = await fetch("https://aisandbox-pa.googleapis.com/v1:runImageFx", {
@@ -272,26 +274,39 @@ async function generateWithImageFX(
         throw new Error(`Erro de autenticação: ${msg}. Atualize os cookies do ImageFX nas configurações.`);
       }
       
-      // Check if prompt was blocked for safety
+      // Check if rate limited - wait longer and retry
+      const isRateLimited = msg.includes("Limite de requisições") || res.status === 429;
+      if (isRateLimited && retries > 0) {
+        const waitTime = 3000 + (3 - retries) * 2000; // 3s, 5s, 7s
+        console.log(`[ImageFX] Rate limited, waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        return generateWithImageFX(cookie, userId, options, retries - 1, allowPromptRewrite, rewriteAttempts);
+      }
+      
+      // Check if prompt was blocked for safety - try rewriting up to 2 times
       const isUnsafeContent = msg.includes("inseguro") || msg.includes("bloqueado");
       
-      if (isUnsafeContent && allowPromptRewrite) {
-        console.log('[ImageFX] Prompt blocked, attempting to rewrite...');
+      if (isUnsafeContent && allowPromptRewrite && rewriteAttempts < 2) {
+        console.log(`[ImageFX] Prompt blocked (attempt ${rewriteAttempts + 1}), attempting to rewrite...`);
         
         try {
           const rewrittenPrompt = await rewritePromptForSafety(options.prompt);
           
-          // Retry with rewritten prompt (disable further rewrites to prevent loops)
+          // Add a small delay to avoid rate limits
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Retry with rewritten prompt
           return await generateWithImageFX(
             cookie,
             userId,
             { ...options, prompt: rewrittenPrompt },
             retries,
-            false // Don't allow another rewrite
+            rewriteAttempts < 1, // Allow one more rewrite if this is the first
+            rewriteAttempts + 1
           );
         } catch (rewriteError) {
           console.error('[ImageFX] Failed to rewrite prompt:', rewriteError);
-          throw new Error(msg);
+          // Continue to retry logic below
         }
       }
       
@@ -313,15 +328,34 @@ async function generateWithImageFX(
       prompt: options.prompt,
       seed: img.seed,
       mediaId: img.mediaGenerationId,
-      model: img.modelNameType || options.model || 'IMAGEN_3_5'
+      model: img.modelNameType || options.model || 'IMAGEN_3_5',
+      wasRewritten: rewriteAttempts > 0
     }));
 
   } catch (err) {
-    if (retries > 0 && !(err as Error).message.includes('autenticação')) {
-      console.warn(`[ImageFX] Failed, retrying... (${retries} left)`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return generateWithImageFX(cookie, userId, options, retries - 1, allowPromptRewrite);
+    const errorMsg = (err as Error).message;
+    
+    // Don't retry auth errors
+    if (errorMsg.includes('autenticação')) {
+      throw err;
     }
+    
+    // Check if it's a rate limit that slipped through
+    if (errorMsg.includes('Limite de requisições') && retries > 0) {
+      const waitTime = 3000 + (3 - retries) * 2000;
+      console.log(`[ImageFX] Rate limit error, waiting ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      return generateWithImageFX(cookie, userId, options, retries - 1, allowPromptRewrite, rewriteAttempts);
+    }
+    
+    // General retry with delay
+    if (retries > 0) {
+      const waitTime = 2000 + (3 - retries) * 1000;
+      console.warn(`[ImageFX] Failed, waiting ${waitTime}ms before retry... (${retries} left)`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      return generateWithImageFX(cookie, userId, options, retries - 1, allowPromptRewrite, rewriteAttempts);
+    }
+    
     throw err;
   }
 }
