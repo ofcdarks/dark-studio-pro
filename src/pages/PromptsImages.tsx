@@ -1642,6 +1642,105 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
     });
   };
 
+  // Estado para modal de marcadores do YouTube
+  const [showYouTubeChapters, setShowYouTubeChapters] = useState(false);
+  const [youtubeChapters, setYoutubeChapters] = useState("");
+
+  // Gerar marcadores de capítulo para YouTube
+  const generateYouTubeChapters = () => {
+    if (generatedScenes.length === 0) return;
+
+    // Calcular duração total
+    const totalDurationSeconds = generatedScenes.reduce((acc, s) => {
+      const startSec = s.timecode ? parseInt(s.timecode.split(":")[0]) * 60 + parseInt(s.timecode.split(":")[1]) : 0;
+      const endSec = s.endTimecode ? parseInt(s.endTimecode.split(":")[0]) * 60 + parseInt(s.endTimecode.split(":")[1]) : startSec;
+      return acc + (endSec - startSec);
+    }, 0);
+
+    // Determinar intervalo de capítulos baseado na duração
+    // YouTube requer mínimo 10 segundos entre capítulos
+    let CHAPTER_INTERVAL: number;
+    if (totalDurationSeconds <= 60) {
+      CHAPTER_INTERVAL = 15; // 15s para vídeos curtos
+    } else if (totalDurationSeconds <= 180) {
+      CHAPTER_INTERVAL = 30; // 30s para vídeos médios
+    } else if (totalDurationSeconds <= 600) {
+      CHAPTER_INTERVAL = 60; // 1min para vídeos longos
+    } else {
+      CHAPTER_INTERVAL = 120; // 2min para vídeos muito longos
+    }
+
+    // Agrupar cenas em capítulos
+    const chapters: { time: string; title: string; scenes: number[] }[] = [];
+    let currentChapter: typeof chapters[0] | null = null;
+    let currentChapterEndSec = CHAPTER_INTERVAL;
+
+    // Sempre começar com 00:00
+    chapters.push({ time: "00:00", title: "Início", scenes: [] });
+
+    generatedScenes.forEach((scene) => {
+      const startSec = scene.timecode 
+        ? parseInt(scene.timecode.split(":")[0]) * 60 + parseInt(scene.timecode.split(":")[1]) 
+        : 0;
+
+      // Se passou do intervalo, criar novo capítulo
+      if (startSec >= currentChapterEndSec) {
+        const chapterStartSec = Math.floor(startSec / CHAPTER_INTERVAL) * CHAPTER_INTERVAL;
+        currentChapterEndSec = chapterStartSec + CHAPTER_INTERVAL;
+        
+        // Formatar timecode
+        const mins = Math.floor(chapterStartSec / 60);
+        const secs = chapterStartSec % 60;
+        const timeStr = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+        
+        // Extrair título do primeiro trecho significativo da cena
+        const sceneText = scene.text.trim();
+        let chapterTitle = sceneText.split(/[.!?]/)[0].trim();
+        if (chapterTitle.length > 50) {
+          chapterTitle = chapterTitle.substring(0, 47) + "...";
+        }
+        if (!chapterTitle) {
+          chapterTitle = `Parte ${chapters.length}`;
+        }
+        
+        currentChapter = { time: timeStr, title: chapterTitle, scenes: [scene.number] };
+        chapters.push(currentChapter);
+      } else if (currentChapter) {
+        currentChapter.scenes.push(scene.number);
+      } else {
+        chapters[0].scenes.push(scene.number);
+      }
+    });
+
+    // Atualizar título do primeiro capítulo baseado nas cenas
+    if (chapters[0].scenes.length > 0) {
+      const firstScene = generatedScenes.find(s => s.number === chapters[0].scenes[0]);
+      if (firstScene) {
+        const firstText = firstScene.text.trim().split(/[.!?]/)[0].trim();
+        if (firstText && firstText.length < 50) {
+          chapters[0].title = firstText;
+        }
+      }
+    }
+
+    // Gerar texto formatado para YouTube
+    const chaptersText = chapters
+      .map(ch => `${ch.time} ${ch.title}`)
+      .join("\n");
+
+    setYoutubeChapters(chaptersText);
+    setShowYouTubeChapters(true);
+  };
+
+  // Copiar marcadores do YouTube
+  const copyYouTubeChapters = () => {
+    navigator.clipboard.writeText(youtubeChapters);
+    toast({
+      title: "Copiado!",
+      description: "Marcadores de capítulo copiados para a área de transferência",
+    });
+  };
+
   // Carregar histórico
   const loadFromHistory = (history: SceneHistory) => {
     setScript(history.script);
@@ -2015,6 +2114,16 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                               <DownloadCloud className="w-4 h-4 mr-2" />
                             )}
                             Imagens ({generatedScenes.filter(s => s.generatedImage).length})
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            size="sm" 
+                            onClick={generateYouTubeChapters}
+                            title="Gerar marcadores de capítulo para descrição do YouTube"
+                            className="border-red-500/50 text-red-500 hover:bg-red-500/10"
+                          >
+                            <Film className="w-4 h-4 mr-2" />
+                            YouTube
                           </Button>
                           <Button 
                             variant="outline"
@@ -3097,6 +3206,53 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               >
                 <Timer className="w-4 h-4 mr-2" />
                 Calcular e Aplicar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Marcadores do YouTube */}
+      <Dialog open={showYouTubeChapters} onOpenChange={setShowYouTubeChapters}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Film className="w-5 h-5 text-red-500" />
+              Marcadores de Capítulo
+            </DialogTitle>
+            <DialogDescription>
+              Cole na descrição do seu vídeo no YouTube
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-secondary/50 rounded-lg p-4 max-h-64 overflow-y-auto">
+              <pre className="text-sm text-foreground whitespace-pre-wrap font-mono">
+                {youtubeChapters}
+              </pre>
+            </div>
+            
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                <strong>💡 Dica:</strong> O YouTube exige que o primeiro capítulo comece em 00:00 
+                e que cada capítulo tenha no mínimo 10 segundos.
+              </p>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowYouTubeChapters(false)}
+                className="flex-1"
+              >
+                Fechar
+              </Button>
+              <Button
+                onClick={copyYouTubeChapters}
+                className="flex-1 bg-red-500 text-white hover:bg-red-600"
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Copiar Marcadores
               </Button>
             </div>
           </div>
