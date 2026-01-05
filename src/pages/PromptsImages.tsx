@@ -2240,20 +2240,20 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                     </div>
                   </Card>
 
-                  {/* Preview de Timeline */}
-                  {script.trim() && !generating && (
+                  {/* Preview de Timeline - Sempre visível e atualiza em tempo real */}
+                  {script.trim() && (
                     <ScriptPreviewTimeline
                       script={script}
                       wordsPerScene={parseInt(wordsPerScene) || 80}
                       wpm={currentWpm}
-                      onSyncAudio={(newWpm) => setNarrationSpeed(newWpm.toString())}
-                      generatedScenes={generatedScenes.map((scene, index) => ({
+                      onSyncAudio={generating ? undefined : (newWpm) => setNarrationSpeed(newWpm.toString())}
+                      generatedScenes={generatedScenes.length > 0 ? generatedScenes.map((scene, index) => ({
                         number: index + 1,
                         text: scene.text,
                         wordCount: scene.wordCount,
                         durationSeconds: (scene.wordCount / currentWpm) * 60,
                         generatedImage: scene.generatedImage
-                      }))}
+                      })) : []}
                     />
                   )}
 
