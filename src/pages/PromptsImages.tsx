@@ -2422,6 +2422,24 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                       wpm={currentWpm}
                       onSyncAudio={generating ? undefined : (newWpm) => setNarrationSpeed(newWpm.toString())}
                       onImproveScenes={handleImproveScenes}
+                      onGenerateMissingImages={(sceneNumbers) => {
+                        // Marcar cenas como gerando e converter para índices 0-based
+                        const pendingIndexes = sceneNumbers.map(num => num - 1);
+                        const updatedScenes = generatedScenes.map((scene, idx) => {
+                          if (pendingIndexes.includes(idx)) {
+                            return { ...scene, generatingImage: true, generatedImage: undefined };
+                          }
+                          return scene;
+                        });
+                        setGeneratedScenes(updatedScenes);
+                        
+                        // Sincronizar e iniciar geração em background
+                        syncScenes(updatedScenes);
+                        startBgGeneration(updatedScenes, style, pendingIndexes, detectedCharacters);
+                        
+                        logActivity({ action: 'image_generated', description: `Gerando ${sceneNumbers.length} imagens faltantes (100%)` });
+                      }}
+                      isGeneratingImages={bgState.isGenerating || generatedScenes.some(s => s.generatingImage)}
                       generatedScenes={generatedScenes.length > 0 ? generatedScenes.map((scene, index) => ({
                         number: index + 1,
                         text: scene.text,

@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Sparkles, Loader2, RefreshCw } from "lucide-react";
+import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Sparkles, Loader2, RefreshCw, ImagePlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -29,6 +29,8 @@ interface ScriptPreviewTimelineProps {
   onSyncAudio?: (newWpm: number) => void;
   generatedScenes?: GeneratedScene[];
   onImproveScenes?: (sceneNumbers: number[], improvementType: string, regenerateImages?: boolean) => void;
+  onGenerateMissingImages?: (sceneNumbers: number[]) => void;
+  isGeneratingImages?: boolean;
 }
 
 interface PreviewScene {
@@ -141,7 +143,9 @@ export function ScriptPreviewTimeline({
   className = "",
   onSyncAudio,
   generatedScenes = [],
-  onImproveScenes
+  onImproveScenes,
+  onGenerateMissingImages,
+  isGeneratingImages = false
 }: ScriptPreviewTimelineProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -391,6 +395,17 @@ export function ScriptPreviewTimeline({
     return null;
   }
 
+  // Calcular cenas sem imagem
+  const missingScenesCount = useMemo(() => {
+    if (generatedScenes.length === 0) return 0;
+    return generatedScenes.filter(s => !s.generatedImage).length;
+  }, [generatedScenes]);
+
+  const missingSceneNumbers = useMemo(() => {
+    if (generatedScenes.length === 0) return [];
+    return generatedScenes.filter(s => !s.generatedImage).map(s => s.number);
+  }, [generatedScenes]);
+
   return (
     <Card className={`p-4 border-dashed border-primary/30 bg-primary/5 ${className}`}>
       {/* Header com Sync integrado */}
@@ -399,10 +414,39 @@ export function ScriptPreviewTimeline({
           <Scissors className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium text-foreground">Preview da Timeline</span>
           <Badge variant="outline" className="text-xs">
-            {generatedScenes.length > 0 ? `${generatedScenes.filter(s => s.generatedImage).length} imagens` : 'Estimativa'}
+            {generatedScenes.length > 0 ? `${generatedScenes.filter(s => s.generatedImage).length}/${generatedScenes.length} imagens` : 'Estimativa'}
           </Badge>
+          {missingScenesCount > 0 && (
+            <Badge variant="outline" className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/40">
+              {missingScenesCount} faltando
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Botão Gerar 100% */}
+          {missingScenesCount > 0 && onGenerateMissingImages && (
+            <Button
+              size="sm"
+              className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
+              disabled={isGeneratingImages}
+              onClick={() => {
+                onGenerateMissingImages(missingSceneNumbers);
+                toast.success(`Gerando ${missingScenesCount} imagens faltantes para completar 100%...`);
+              }}
+            >
+              {isGeneratingImages ? (
+                <>
+                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  Gerando...
+                </>
+              ) : (
+                <>
+                  <ImagePlus className="w-3 h-3 mr-1" />
+                  Gerar 100%
+                </>
+              )}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
