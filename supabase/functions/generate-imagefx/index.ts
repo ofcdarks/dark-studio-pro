@@ -11,6 +11,10 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+// Lovable AI Gateway for prompt rewriting
+const LOVABLE_AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
 const DefaultHeader = {
   "Origin": "https://labs.google",
   "Content-Type": "application/json",
@@ -28,6 +32,71 @@ const AspectRatio = {
   LANDSCAPE: "IMAGE_ASPECT_RATIO_LANDSCAPE",
   THUMBNAIL: "IMAGE_ASPECT_RATIO_LANDSCAPE" // 16:9 for thumbnails
 } as const;
+
+// Rewrite prompt using AI to make it safe
+async function rewritePromptForSafety(originalPrompt: string): Promise<string> {
+  if (!LOVABLE_API_KEY) {
+    console.log('[ImageFX] No Lovable API key, cannot rewrite prompt');
+    throw new Error("Não foi possível reescrever o prompt bloqueado.");
+  }
+
+  console.log('[ImageFX] Rewriting blocked prompt...');
+
+  try {
+    const response = await fetch(LOVABLE_AI_GATEWAY, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          {
+            role: "system",
+            content: `You are a prompt rewriter. Your job is to take image generation prompts that were blocked for safety reasons and rewrite them to be safe while maintaining the same visual intent and style.
+
+Rules:
+- Keep the same artistic style, lighting, composition
+- Remove or replace any potentially violent, explicit, or unsafe content
+- Replace weapons with harmless alternatives (e.g., sword -> wand, gun -> camera)
+- Replace violent actions with peaceful ones (e.g., fighting -> dancing, attacking -> celebrating)
+- Keep the same mood but make it family-friendly
+- Maintain technical photography/art terms (cinematic, dramatic lighting, etc.)
+- Output ONLY the rewritten prompt, nothing else
+- Keep the prompt in the same language as the original`
+          },
+          {
+            role: "user",
+            content: `Rewrite this blocked prompt to be safe for image generation:\n\n${originalPrompt}`
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      console.error('[ImageFX] AI rewrite failed:', response.status);
+      throw new Error("Falha ao reescrever prompt");
+    }
+
+    const data = await response.json();
+    const rewrittenPrompt = data.choices?.[0]?.message?.content?.trim();
+
+    if (!rewrittenPrompt) {
+      throw new Error("AI não retornou prompt reescrito");
+    }
+
+    console.log('[ImageFX] Prompt rewritten successfully');
+    console.log('[ImageFX] New prompt:', rewrittenPrompt.substring(0, 100) + '...');
+
+    return rewrittenPrompt;
+  } catch (error) {
+    console.error('[ImageFX] Error rewriting prompt:', error);
+    throw new Error("Não foi possível reescrever o prompt bloqueado.");
+  }
+}
 
 // Session cache to avoid re-fetching every request
 const sessionCache = new Map<string, { token: string; expires: Date; user: any }>();
@@ -173,7 +242,8 @@ async function generateWithImageFX(
     seed?: number;
     model?: string;
   },
-  retries = 2
+  retries = 2,
+  allowPromptRewrite = true
 ): Promise<any[]> {
   const headers = await getAuthHeaders(cookie, userId);
   const payload = buildPromptPayload(options);
@@ -197,6 +267,29 @@ async function generateWithImageFX(
       if ([401, 403].includes(res.status)) {
         sessionCache.delete(userId);
         throw new Error(`Erro de autenticação: ${msg}. Atualize os cookies do ImageFX nas configurações.`);
+      }
+      
+      // Check if prompt was blocked for safety
+      const isUnsafeContent = msg.includes("inseguro") || msg.includes("bloqueado");
+      
+      if (isUnsafeContent && allowPromptRewrite) {
+        console.log('[ImageFX] Prompt blocked, attempting to rewrite...');
+        
+        try {
+          const rewrittenPrompt = await rewritePromptForSafety(options.prompt);
+          
+          // Retry with rewritten prompt (disable further rewrites to prevent loops)
+          return await generateWithImageFX(
+            cookie,
+            userId,
+            { ...options, prompt: rewrittenPrompt },
+            retries,
+            false // Don't allow another rewrite
+          );
+        } catch (rewriteError) {
+          console.error('[ImageFX] Failed to rewrite prompt:', rewriteError);
+          throw new Error(msg);
+        }
       }
       
       throw new Error(msg);
@@ -224,7 +317,7 @@ async function generateWithImageFX(
     if (retries > 0 && !(err as Error).message.includes('autenticação')) {
       console.warn(`[ImageFX] Failed, retrying... (${retries} left)`);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      return generateWithImageFX(cookie, userId, options, retries - 1);
+      return generateWithImageFX(cookie, userId, options, retries - 1, allowPromptRewrite);
     }
     throw err;
   }
