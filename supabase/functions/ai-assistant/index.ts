@@ -309,7 +309,8 @@ serve(async (req) => {
       minDuration,
       maxDuration,
       agentData,
-      userId: bodyUserId
+      userId: bodyUserId,
+      stats // For dashboard_insight
     } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -511,6 +512,48 @@ serve(async (req) => {
     let userPrompt = prompt || "";
 
     switch (type) {
+      case "dashboard_insight":
+        // Dashboard insight - FREE, no credits, quick response
+        const s = stats || { totalVideos: 0, totalViews: 0, scriptsGenerated: 0, imagesGenerated: 0, audiosGenerated: 0, titlesGenerated: 0, viralVideos: 0 };
+        
+        systemPrompt = `Você é um consultor especialista em canais Dark do YouTube. Analise as estatísticas do usuário e forneça UMA dica específica, prática e acionável para melhorar os resultados do canal.
+
+REGRAS:
+1. Seja direto e específico - máximo 2 frases
+2. Foque em ações concretas que o usuário pode fazer AGORA
+3. Relacione a dica com os dados fornecidos
+4. Use linguagem persuasiva e motivacional
+5. Foque em viralização e algoritmo do YouTube
+
+Responda APENAS em JSON válido:
+{
+  "title": "Título curto da dica (máximo 5 palavras)",
+  "tip": "Dica detalhada e acionável (máximo 2 frases)",
+  "icon": "target" | "brain" | "zap" | "trending" | "rocket"
+}
+
+Escolha o ícone baseado no tipo de dica:
+- target: metas, objetivos, análise inicial
+- brain: roteiros, criatividade, conteúdo
+- zap: produção, áudio, otimização
+- trending: algoritmo, CTR, thumbnails
+- rocket: escala, consistência, sucesso`;
+        
+        userPrompt = `Estatísticas do usuário:
+- Vídeos analisados: ${s.totalVideos}
+- Views totais analisados: ${s.totalViews}
+- Roteiros gerados: ${s.scriptsGenerated}
+- Imagens geradas: ${s.imagesGenerated}
+- Áudios gerados: ${s.audiosGenerated}
+- Títulos gerados: ${s.titlesGenerated}
+- Vídeos virais (100K+): ${s.viralVideos}
+
+Forneça uma dica personalizada baseada nessas estatísticas.`;
+        
+        // Dashboard insights are FREE - no credits
+        shouldDebitCredits = false;
+        break;
+
       case "analyze_video":
         systemPrompt = `Você é um especialista em análise de vídeos virais do YouTube. 
         Analise o conteúdo fornecido e forneça insights sobre:
@@ -1388,6 +1431,34 @@ serve(async (req) => {
         // If JSON parsing fails, return as string
         result = content;
       }
+    }
+
+    // For dashboard_insight, return directive format
+    if (type === "dashboard_insight") {
+      type IconType = 'target' | 'brain' | 'zap' | 'trending' | 'rocket';
+      let directive: { title: string; tip: string; icon: IconType } = { 
+        title: "Dica do Especialista", 
+        tip: "Continue analisando vídeos para descobrir padrões virais.", 
+        icon: "rocket" 
+      };
+      try {
+        if (result && typeof result === 'object') {
+          const parsed = result as { title?: string; tip?: string; icon?: string };
+          if (parsed.title && parsed.tip) {
+            const validIcons: IconType[] = ['target', 'brain', 'zap', 'trending', 'rocket'];
+            const iconValue = validIcons.includes(parsed.icon as IconType) ? parsed.icon as IconType : 'rocket';
+            directive = {
+              title: String(parsed.title),
+              tip: String(parsed.tip),
+              icon: iconValue
+            };
+          }
+        }
+      } catch {}
+      return new Response(
+        JSON.stringify({ directive }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // For agent_chat, return simple response format
