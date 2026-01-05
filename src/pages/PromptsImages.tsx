@@ -1934,6 +1934,27 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
   const downloadProductionPlan = () => {
     if (generatedScenes.length === 0) return;
 
+    // Palavras-chave que indicam ação/movimento na cena
+    const MOTION_KEYWORDS = [
+      'caminha', 'corre', 'anda', 'move', 'dirige', 'voa', 'nada', 'pula', 'salta',
+      'walks', 'runs', 'moves', 'drives', 'flies', 'swims', 'jumps',
+      'pan', 'zoom', 'dolly', 'tracking', 'movimento', 'motion',
+      'água', 'water', 'fogo', 'fire', 'vento', 'wind', 'nuvens', 'clouds',
+      'carro', 'car', 'veículo', 'vehicle', 'trem', 'train', 'avião', 'plane',
+      'multidão', 'crowd', 'pessoas', 'people', 'animais', 'animals',
+      'explosão', 'explosion', 'queda', 'fall', 'subida', 'rise',
+      'dança', 'dance', 'luta', 'fight', 'perseguição', 'chase',
+      'oceano', 'ocean', 'rio', 'river', 'cachoeira', 'waterfall',
+      'floresta', 'forest', 'tempestade', 'storm', 'chuva', 'rain'
+    ];
+
+    const shouldRecommendMotion = (text: string, emotion?: string): boolean => {
+      const lowerText = text.toLowerCase();
+      const hasMotionKeyword = MOTION_KEYWORDS.some(kw => lowerText.includes(kw));
+      const hasActionEmotion = emotion && ['tension', 'tensão', 'shock', 'choque', 'surprise', 'surpresa'].includes(emotion.toLowerCase());
+      return hasMotionKeyword || !!hasActionEmotion;
+    };
+
     // Calcular duração total
     const totalDurationSeconds = generatedScenes.reduce((acc, s) => {
       const startSec = s.timecode ? parseInt(s.timecode.split(":")[0]) * 60 + parseInt(s.timecode.split(":")[1]) : 0;
@@ -1946,6 +1967,9 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
       const s = Math.floor(sec % 60);
       return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     };
+
+    // Identificar cenas com movimento recomendado
+    const motionScenes = generatedScenes.filter(s => shouldRecommendMotion(s.text + ' ' + s.imagePrompt, s.emotion));
 
     // Agrupar cenas por intervalos de ~30 segundos ou ~1 minuto
     const groups: { start: number; end: number; scenes: typeof generatedScenes }[] = [];
@@ -1978,6 +2002,7 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
 🎬 Total de Cenas: ${generatedScenes.length}
 📝 Total de Palavras: ${totalWords}
 🎙️ Velocidade de Narração: ${currentWpm} WPM
+🎥 Cenas para Animar: ${motionScenes.length} (recomendado movimento até 5s)
 
 ================================================================================
                          INSTRUÇÕES PARA O CAPCUT
@@ -2009,9 +2034,32 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
 │ 📍 Posicione em: ${formatDuration(group.start)} na timeline
 │ 
 │ DETALHES:
-${group.scenes.map(s => `│   • Cena ${String(s.number).padStart(2, " ")}: ${s.timecode} → ${s.endTimecode} (${s.estimatedTime}) - ${s.wordCount}w`).join("\n")}
+${group.scenes.map(s => {
+  const hasMotion = shouldRecommendMotion(s.text + ' ' + s.imagePrompt, s.emotion);
+  return `│   • Cena ${String(s.number).padStart(2, " ")}: ${s.timecode} → ${s.endTimecode} (${s.estimatedTime}) - ${s.wordCount}w${hasMotion ? " 🎬" : ""}`;
+}).join("\n")}
 └──────────────────────────────────────────────────────────────────────────────┘`;
     }).join("\n");
+
+    // Seção de cenas com movimento recomendado
+    const motionSection = motionScenes.length > 0 ? `
+
+================================================================================
+                    🎬 CENAS PARA ADICIONAR MOVIMENTO (até 5s)
+================================================================================
+
+As cenas abaixo contêm elementos de ação, emoção intensa ou elementos naturais
+que se beneficiam de animação. Use efeitos como:
+  • Ken Burns (zoom lento 5-10%)
+  • Pan horizontal/vertical suave
+  • Parallax em camadas
+  • Movimento de partículas/água/fogo
+
+${motionScenes.map(s => `CENA ${String(s.number).padStart(2, "0")} | ${s.timecode} → ${s.endTimecode}
+   Motivo: ${s.emotion ? `Emoção ${s.emotion}` : 'Elemento de ação detectado'}
+   Prompt: ${s.imagePrompt.substring(0, 80)}...
+`).join("\n")}
+` : "";
 
     const scenesDetail = `
 
@@ -2019,13 +2067,16 @@ ${group.scenes.map(s => `│   • Cena ${String(s.number).padStart(2, " ")}: ${
                          LISTA COMPLETA DE CENAS
 ================================================================================
 
-${generatedScenes.map(s => `
-CENA ${String(s.number).padStart(2, "0")} | ${s.timecode} → ${s.endTimecode} | ${s.estimatedTime} | ${s.wordCount} palavras
+${generatedScenes.map(s => {
+  const hasMotion = shouldRecommendMotion(s.text + ' ' + s.imagePrompt, s.emotion);
+  return `
+CENA ${String(s.number).padStart(2, "0")} | ${s.timecode} → ${s.endTimecode} | ${s.estimatedTime} | ${s.wordCount} palavras${hasMotion ? " | 🎬 MOVIMENTO" : ""}
 ${"─".repeat(78)}
 📝 Texto: ${s.text.substring(0, 150)}${s.text.length > 150 ? "..." : ""}
 🎨 Prompt: ${s.imagePrompt.substring(0, 120)}${s.imagePrompt.length > 120 ? "..." : ""}
 ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
-`).join("\n")}
+`;
+}).join("\n")}
 `;
 
     const tips = `
@@ -2042,8 +2093,9 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
    - Use Cross Dissolve (0.3s) entre cenas do mesmo assunto
    - Use corte seco para mudanças bruscas de assunto
 
-💡 KEN BURNS:
-   - Adicione zoom lento (5-10%) em cenas estáticas para dar vida
+💡 KEN BURNS (para cenas marcadas com 🎬):
+   - Adicione zoom lento (5-10%) em cenas com movimento recomendado
+   - Limite a 5 segundos de animação para não distrair
 
 💡 VERIFICAÇÃO:
    - Assista o vídeo 1x e anote dessincronia
@@ -2054,7 +2106,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 ================================================================================
 `;
 
-    const fullContent = header + groupsText + scenesDetail + tips;
+    const fullContent = header + groupsText + motionSection + scenesDetail + tips;
     
     const blob = new Blob([fullContent], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
