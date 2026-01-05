@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useRef, useCallback, useEff
 import { supabase } from "@/integrations/supabase/client";
 import { THUMBNAIL_STYLES } from "@/lib/thumbnailStyles";
 import { useToast } from "@/hooks/use-toast";
+import { saveImageToCache } from "@/lib/imageCache";
 
 interface CharacterDescription {
   name: string;
@@ -243,6 +244,14 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
             if (result.success && result.imageUrl) {
               const { index, imageUrl } = result;
               processed++;
+
+              // Salvar no IndexedDB para persistência
+              const scene = scenesRef.current[index];
+              if (scene) {
+                saveImageToCache(scene.number, imageUrl, scene.imagePrompt || '').catch(err => {
+                  console.warn('Falha ao salvar imagem no cache:', err);
+                });
+              }
 
               // Atualizar estado imediatamente quando cada imagem fica pronta
               setState(prev => {

@@ -71,6 +71,7 @@ import { ScriptPreviewTimeline } from "@/components/scenes/ScriptPreviewTimeline
 import { SUBTITLE_STYLES, SubtitleStyle, generateSubtitleInstructions } from "@/lib/subtitleStyles";
 import { DEFAULT_AUDIO_MIX, AudioMixSettings, generateAudioFolderStructure, generateAudioMixReadme } from "@/lib/audioMixConfig";
 import { Slider } from "@/components/ui/slider";
+import { getAllCachedImages, getCacheStats } from "@/lib/imageCache";
 
 interface CharacterDescription {
   name: string;
@@ -261,6 +262,7 @@ const PromptsImages = () => {
   const [showAudioSettings, setShowAudioSettings] = useState(false);
   const [editingCharacterIndex, setEditingCharacterIndex] = useState<number | null>(null);
   const [timecodesUpdated, setTimecodesUpdated] = useState(false);
+  const [recoveringFromCache, setRecoveringFromCache] = useState(false);
   
   // SRT Preview Modal
   const [showSrtPreview, setShowSrtPreview] = useState(false);
@@ -605,6 +607,64 @@ const PromptsImages = () => {
   // Cancelar geração
   const handleCancelGeneration = () => {
     cancelBgGeneration();
+  };
+
+  // Recuperar imagens do cache IndexedDB
+  const handleRecoverFromCache = async () => {
+    if (generatedScenes.length === 0) {
+      toast({ title: "Nenhuma cena para recuperar", description: "Gere as cenas primeiro" });
+      return;
+    }
+
+    setRecoveringFromCache(true);
+    
+    try {
+      const cacheStats = await getCacheStats();
+      
+      if (cacheStats.count === 0) {
+        toast({ 
+          title: "Cache vazio", 
+          description: "Nenhuma imagem encontrada no cache do navegador",
+          variant: "destructive" 
+        });
+        setRecoveringFromCache(false);
+        return;
+      }
+
+      const cachedImages = await getAllCachedImages();
+      let recoveredCount = 0;
+
+      const updatedScenes = generatedScenes.map(scene => {
+        // Só recuperar se a cena não tem imagem
+        if (!scene.generatedImage && cachedImages.has(scene.number)) {
+          recoveredCount++;
+          return { ...scene, generatedImage: cachedImages.get(scene.number) };
+        }
+        return scene;
+      });
+
+      if (recoveredCount > 0) {
+        updateScenes(updatedScenes);
+        toast({ 
+          title: "Imagens recuperadas!", 
+          description: `${recoveredCount} imagem(ns) recuperada(s) do cache` 
+        });
+      } else {
+        toast({ 
+          title: "Nenhuma imagem recuperável", 
+          description: `Cache tem ${cacheStats.count} imagens, mas nenhuma corresponde às cenas sem imagem`,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao recuperar do cache:", error);
+      toast({ 
+        title: "Erro ao recuperar", 
+        description: "Não foi possível acessar o cache do navegador",
+        variant: "destructive" 
+      });
+    } finally {
+      setRecoveringFromCache(false);
+    }
   };
 
   // Estado local para regeneração individual
@@ -3009,6 +3069,25 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                             >
                               {filterPending ? "Ver Geradas" : "Só Pendentes"}
                             </Button>
+                            
+                            {/* Botão para recuperar imagens do cache */}
+                            {generatedScenes.some(s => !s.generatedImage) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleRecoverFromCache}
+                                disabled={recoveringFromCache || generatingImages}
+                                className="h-7 text-xs border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                                title="Tenta recuperar imagens da sessão anterior do cache do navegador"
+                              >
+                                {recoveringFromCache ? (
+                                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                                ) : (
+                                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                                )}
+                                Recuperar Cache
+                              </Button>
+                            )}
                             
                             {/* Botão para regenerar apenas mídias perdidas */}
                             {generatedScenes.some(s => !s.generatedImage) && (
