@@ -2132,16 +2132,6 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => setShowDurationModal(true)}
-                            title="Sincronizar com duração real do áudio"
-                            className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
-                          >
-                            <Timer className="w-4 h-4 mr-2" />
-                            Sincronizar Áudio
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
                             onClick={recalculateTimecodes}
                             title={`Recalcular com ${currentWpm} WPM`}
                           >
