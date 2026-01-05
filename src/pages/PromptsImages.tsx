@@ -930,11 +930,39 @@ const PromptsImages = () => {
         ? scenesWithDurations[scenesWithDurations.length - 1].endTimecode 
         : "00:00";
 
-      const durationsTxt = `DURAÇÕES DAS CENAS - ${totalDuration} total\n` +
-        `Gerado em: ${new Date().toLocaleString('pt-BR')}\n\n` +
-        scenesWithDurations.map(s => 
-          `Cena ${String(s.number).padStart(2, "0")}: ${s.durationSeconds}s (${s.timecode} → ${s.endTimecode})`
-        ).join("\n");
+      // DURACOES.txt melhorado com formato visual para consulta rápida
+      const durationsTxt = [
+        "═══════════════════════════════════════════════════════════════",
+        "          DURAÇÕES DAS CENAS - GUIA PARA CAPCUT",
+        "═══════════════════════════════════════════════════════════════",
+        "",
+        `⏱️  Duração Total: ${totalDuration}`,
+        `📅 Gerado em: ${new Date().toLocaleString('pt-BR')}`,
+        `🎬 Total de cenas: ${scenesWithDurations.length}`,
+        "",
+        "═══════════════════════════════════════════════════════════════",
+        "   ARQUIVO    │ DURAÇÃO │  INÍCIO  →   FIM   │ TIMECODE",
+        "═══════════════════════════════════════════════════════════════",
+        ...scenesWithDurations.map(s => {
+          const fileName = `cena_${String(s.number).padStart(3, "0")}.jpg`;
+          const duration = `${s.durationSeconds.toFixed(1)}s`.padStart(6);
+          const timecode = `${s.timecode} → ${s.endTimecode}`;
+          return `   ${fileName} │ ${duration} │ ${timecode.padEnd(18)} │ ${s.timecode}`;
+        }),
+        "═══════════════════════════════════════════════════════════════",
+        "",
+        "💡 COMO AJUSTAR DURAÇÕES NO CAPCUT:",
+        "",
+        "1. Clique no clipe na timeline",
+        "2. Olhe o nome do arquivo (cena_001.jpg, cena_002.jpg...)",
+        "3. Consulte esta tabela para ver a duração correta",
+        "4. Arraste a borda direita do clipe para ajustar",
+        "",
+        "📌 DICA: O CapCut mostra o timecode no canto. Use a coluna",
+        "   'INÍCIO' para posicionar cada cena corretamente.",
+        "",
+        "═══════════════════════════════════════════════════════════════",
+      ].join("\n");
 
       // Gerar SRT inteligente (max 499 chars, sem cortar palavras, 10s gap)
       const scenesForSrt = scenesWithDurations.map(s => ({
