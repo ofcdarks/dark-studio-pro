@@ -751,25 +751,25 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
 
   return (
     <>
-      {/* Loading Modal durante geração */}
+      {/* Loading Modal durante geração - PADRONIZADO */}
       <Dialog open={isGeneratingScript} onOpenChange={() => {}}>
-        <DialogContent className="bg-card border-primary/50 rounded-2xl max-w-xs text-center p-6" onPointerDownOutside={(e) => e.preventDefault()}>
-          <div className="flex flex-col items-center gap-4">
-            {/* Logo com efeito de pulso */}
-            <div className="relative w-16 h-16">
+        <DialogContent className="bg-card border-primary/50 rounded-2xl max-w-sm text-center p-8" onPointerDownOutside={(e) => e.preventDefault()}>
+          <div className="flex flex-col items-center gap-6">
+            {/* Logo com efeito de pulso - PADRONIZADO w-24 */}
+            <div className="relative w-24 h-24">
               <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
               <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
-              <div className="relative w-16 h-16 rounded-full border-2 border-primary/50 overflow-hidden">
+              <div className="relative w-24 h-24 rounded-full border-2 border-primary/50 overflow-hidden">
                 <img src={logoGif} alt="Logo" className="w-full h-full object-cover scale-110" />
               </div>
             </div>
 
             {/* Title */}
             <div className="space-y-1">
-              <h3 className="text-base font-semibold text-foreground">
+              <h3 className="text-lg font-semibold text-foreground">
                 Gerando Roteiro Viral
               </h3>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {generationStatus || loadingSteps[currentStep]}
               </p>
             </div>
@@ -780,7 +780,7 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
                 {Array.from({ length: totalParts }, (_, i) => (
                   <div
                     key={i}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300 ${
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300 ${
                       i < currentPart
                         ? "bg-primary text-primary-foreground"
                         : i === currentPart - 1
@@ -795,7 +795,7 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
             )}
 
             {/* Progress Bar */}
-            <div className="w-full space-y-1.5">
+            <div className="w-full space-y-2">
               <Progress value={generationProgress > 0 ? generationProgress : progress} className="h-1.5" />
               <p className="text-xs text-muted-foreground">
                 {Math.round(generationProgress > 0 ? generationProgress : progress)}%
@@ -807,7 +807,7 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
               {loadingSteps.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`w-1 h-1 rounded-full transition-all duration-300 ${
+                  className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
                     idx <= currentStep 
                       ? "bg-primary" 
                       : "bg-muted-foreground/20"

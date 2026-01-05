@@ -120,6 +120,7 @@ const NARRATION_SPEEDS = [
   { value: "150", label: "Padrão SRT (150 WPM)", description: "Velocidade padrão para legendas" },
   { value: "160", label: "Rápida (160 WPM)", description: "Narração dinâmica" },
   { value: "180", label: "Muito Rápida (180 WPM)", description: "Locução acelerada" },
+  { value: "custom", label: "Personalizado", description: "Definir WPM manualmente" },
 ];
 
 // Calcular tempo estimado baseado em palavras e WPM configurável
@@ -237,6 +238,7 @@ const PromptsImages = () => {
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [projectName, setProjectName] = usePersistedState("prompts_project_name", "Meu Projeto");
   const [narrationSpeed, setNarrationSpeed] = usePersistedState("prompts_narration_speed", "150");
+  const [customWpm, setCustomWpm] = usePersistedState("prompts_custom_wpm", "");
   const [audioDurationInput, setAudioDurationInput] = useState("");
   const [showDurationModal, setShowDurationModal] = useState(false);
   const [edlFps, setEdlFps] = usePersistedState("prompts_edl_fps", "24");
@@ -272,8 +274,10 @@ const PromptsImages = () => {
   const imageBatchDone = bgState.completedImages;
   const generationStartTime = bgState.startTime;
   
-  // WPM atual baseado na velocidade selecionada
-  const currentWpm = parseInt(narrationSpeed) || 140;
+  // WPM atual baseado na velocidade selecionada ou valor personalizado
+  const currentWpm = narrationSpeed === "custom" 
+    ? (parseInt(customWpm) || 150) 
+    : (parseInt(narrationSpeed) || 150);
   
   // Função para converter palavras em segundos usando o WPM atual
   const wordCountToSeconds = (wordCount: number): number => (wordCount / currentWpm) * 60;
@@ -2585,7 +2589,12 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                         max={200}
                       />
 
-                      <Select value={narrationSpeed} onValueChange={setNarrationSpeed}>
+                      <Select value={narrationSpeed} onValueChange={(val) => {
+                        setNarrationSpeed(val);
+                        if (val !== "custom") {
+                          setCustomWpm(""); // Limpar WPM personalizado quando usar preset
+                        }
+                      }}>
                         <SelectTrigger className="bg-secondary border-border">
                           <SelectValue placeholder="Velocidade" />
                         </SelectTrigger>
@@ -2599,6 +2608,19 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                           ))}
                         </SelectContent>
                       </Select>
+
+                      {/* Input manual de WPM quando personalizado */}
+                      {narrationSpeed === "custom" && (
+                        <Input
+                          type="number"
+                          placeholder="WPM"
+                          value={customWpm}
+                          onChange={(e) => setCustomWpm(e.target.value)}
+                          className="bg-secondary border-border w-20"
+                          min={80}
+                          max={250}
+                        />
+                      )}
 
                       <Button 
                         onClick={handleGenerate}
@@ -3658,13 +3680,13 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
       {/* Modal de Loading - Análise de Roteiro */}
       <Dialog open={generating} onOpenChange={() => {}}>
-        <DialogContent className="max-w-md bg-card border-primary/50 rounded-xl shadow-xl" hideCloseButton>
-          <div className="flex flex-col items-center justify-center py-8 space-y-6">
-            {/* Logo com efeito de pulso */}
-            <div className="relative w-28 h-28">
+        <DialogContent className="max-w-sm bg-card border-primary/50 rounded-2xl shadow-xl" hideCloseButton>
+          <div className="flex flex-col items-center justify-center py-10 space-y-6">
+            {/* Logo com efeito de pulso - PADRONIZADO */}
+            <div className="relative w-24 h-24">
               <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
               <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
-              <div className="relative w-28 h-28 rounded-full border-2 border-primary/50 overflow-hidden">
+              <div className="relative w-24 h-24 rounded-full border-2 border-primary/50 overflow-hidden">
                 <img 
                   src={logoGif} 
                   alt="Loading" 
@@ -3673,62 +3695,47 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               </div>
             </div>
             
-            {/* Contador de partes (se houver mais de 1) */}
-            {chunkProgress.total > 1 && (
-              <div className="flex flex-col items-center gap-2">
-                <div className="flex items-center gap-3">
-                  {Array.from({ length: chunkProgress.total }).map((_, idx) => (
-                    <div 
-                      key={idx}
-                      className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300",
-                        idx < chunkProgress.current
-                          ? "bg-primary text-primary-foreground scale-100"
-                          : idx === chunkProgress.current - 1
-                            ? "bg-primary/15 text-primary border border-primary/40 animate-pulse scale-110"
-                            : "bg-secondary text-muted-foreground scale-90"
-                      )}
-                    >
-                      {idx < chunkProgress.current ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        idx + 1
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <p className="text-sm font-medium text-primary">
-                  Parte {chunkProgress.current} de {chunkProgress.total}
-                </p>
-                {chunkProgress.scenesProcessed > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {chunkProgress.scenesProcessed} cenas processadas
-                  </p>
-                )}
-              </div>
-            )}
-            
             {/* Mensagem de progresso */}
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-1">
               <h3 className="text-lg font-semibold text-foreground">
-                {chunkProgress.total > 1 ? 'Processando Roteiro Grande' : 'Analisando Roteiro'}
+                {chunkProgress.total > 1 ? 'Processando Roteiro' : 'Analisando Roteiro'}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {loadingMessage}
               </p>
             </div>
 
+            {/* Contador de partes (se houver mais de 1) */}
+            {chunkProgress.total > 1 && (
+              <div className="flex items-center gap-2">
+                {Array.from({ length: chunkProgress.total }).map((_, idx) => (
+                  <div 
+                    key={idx}
+                    className={cn(
+                      "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300",
+                      idx < chunkProgress.current
+                        ? "bg-primary text-primary-foreground"
+                        : idx === chunkProgress.current - 1
+                          ? "bg-primary/80 text-primary-foreground animate-pulse"
+                          : "bg-muted-foreground/20 text-muted-foreground"
+                    )}
+                  >
+                    {idx < chunkProgress.current ? (
+                      <Check className="w-3 h-3" />
+                    ) : (
+                      idx + 1
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Barra de progresso */}
             <div className="w-full space-y-2">
-              <Progress value={progress} className="h-2 bg-secondary" />
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">
-                  {chunkProgress.total > 1 ? `Parte ${chunkProgress.current}/${chunkProgress.total}` : 'Processando com IA'}
-                </span>
-                <span className="text-xs font-medium text-primary">
-                  {progress}%
-                </span>
-              </div>
+              <Progress value={progress} className="h-1.5 bg-secondary" />
+              <p className="text-xs text-center text-muted-foreground">
+                {progress}%
+              </p>
             </div>
           </div>
         </DialogContent>
