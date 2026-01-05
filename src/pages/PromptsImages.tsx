@@ -973,11 +973,26 @@ const PromptsImages = () => {
       
       // Pastas vazias (estrutura exata do CapCut)
       zip.folder("adjust_mask");
-      zip.folder("common_attachment");
       zip.folder("matting");
       zip.folder("qr_upload");
       zip.folder("smart_crop");
       zip.folder("subdraft");
+      
+      // Subpastas dentro de Resources (imagens já foram adicionadas acima)
+      const resFolder = zip.folder("Resources");
+      if (resFolder) {
+        resFolder.folder("audioAlg");
+        resFolder.folder("digitalHuman");
+        resFolder.folder("videoAlg");
+      }
+      
+      // Arquivos dentro de common_attachment
+      const commonAttachment = zip.folder("common_attachment");
+      if (commonAttachment) {
+        commonAttachment.file("aigc_aigc_generate.json", "{}");
+        commonAttachment.file("attachment_gen_ai_info.json", "{}");
+        commonAttachment.file("attachment_script_video.json", "{}");
+      }
 
       // Baixar ZIP
       const zipBlob = await zip.generateAsync({ type: "blob" });
