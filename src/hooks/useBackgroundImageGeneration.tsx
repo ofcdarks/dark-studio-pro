@@ -19,11 +19,14 @@ interface BackgroundGenerationState {
   isGenerating: boolean;
   totalImages: number;
   completedImages: number;
+  failedImages: number;
   currentSceneIndex: number | null;
   currentPrompt: string | null;
   startTime: number | null;
   scenes: ScenePrompt[];
   style: string;
+  failedIndexes: number[];
+  rateLimitHit: boolean;
 }
 
 interface BackgroundImageGenerationContextType {
@@ -39,11 +42,14 @@ const initialState: BackgroundGenerationState = {
   isGenerating: false,
   totalImages: 0,
   completedImages: 0,
+  failedImages: 0,
   currentSceneIndex: null,
   currentPrompt: null,
   startTime: null,
   scenes: [],
   style: 'cinematic',
+  failedIndexes: [],
+  rateLimitHit: false,
 };
 
 const BackgroundImageGenerationContext = createContext<BackgroundImageGenerationContextType | null>(null);
@@ -63,10 +69,11 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
     sceneIndex: number, 
     scenes: ScenePrompt[], 
     style: string
-  ): Promise<{ index: number; success: boolean; imageUrl?: string }> => {
+  ): Promise<{ index: number; success: boolean; imageUrl?: string; rateLimited?: boolean }> => {
     const maxRetries = 3;
     let retries = 0;
     let lastError = "";
+    let wasRateLimited = false;
 
     while (retries <= maxRetries) {
       if (cancelRef.current) {
@@ -104,7 +111,9 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
           }
           
           if (errMsg.includes("Limite de requisições") || errMsg.includes("429")) {
+            wasRateLimited = true;
             const waitTime = 5000 + retries * 3000;
+            console.log(`[Background] Rate limited on scene ${sceneIndex}, waiting ${waitTime}ms (retry ${retries + 1}/${maxRetries})`);
             await new Promise(resolve => setTimeout(resolve, waitTime));
             retries++;
             continue;
@@ -125,7 +134,9 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
           }
           
           if (errMsg.includes("Limite de requisições")) {
+            wasRateLimited = true;
             const waitTime = 5000 + retries * 3000;
+            console.log(`[Background] Rate limited on scene ${sceneIndex}, waiting ${waitTime}ms (retry ${retries + 1}/${maxRetries})`);
             await new Promise(resolve => setTimeout(resolve, waitTime));
             retries++;
             continue;
@@ -152,7 +163,7 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
     }
     
     console.warn(`[Background] Scene ${sceneIndex} failed after ${maxRetries} retries: ${lastError}`);
-    return { index: sceneIndex, success: false };
+    return { index: sceneIndex, success: false, rateLimited: wasRateLimited };
   }, []);
 
   const startGeneration = useCallback(async (
@@ -175,15 +186,21 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
       isGenerating: true,
       totalImages: pendingIndexes.length,
       completedImages: 0,
+      failedImages: 0,
       currentSceneIndex: pendingIndexes[0] ?? null,
       currentPrompt: scenes[pendingIndexes[0]]?.imagePrompt ?? null,
       startTime: Date.now(),
       scenes: [...scenes],
       style,
+      failedIndexes: [],
+      rateLimitHit: false,
     });
 
     const BATCH_SIZE = 5;
     let processed = 0;
+    let failed = 0;
+    let rateLimitEncountered = false;
+    const failedIdxs: number[] = [];
     let errorOccurred = false;
 
     for (let batchStart = 0; batchStart < pendingIndexes.length && !errorOccurred && !cancelRef.current; batchStart += BATCH_SIZE) {
@@ -220,6 +237,20 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
                   currentPrompt: prev.scenes[index]?.imagePrompt ?? null,
                 };
               });
+            } else {
+              // Falha na geração
+              failed++;
+              failedIdxs.push(result.index);
+              if (result.rateLimited) {
+                rateLimitEncountered = true;
+              }
+              
+              setState(prev => ({
+                ...prev,
+                failedImages: failed,
+                failedIndexes: [...failedIdxs],
+                rateLimitHit: rateLimitEncountered,
+              }));
             }
           } catch (error: any) {
             if (error.message === "AUTH_ERROR") {
@@ -252,6 +283,8 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
       currentSceneIndex: null,
       currentPrompt: null,
       startTime: null,
+      failedIndexes: failedIdxs,
+      rateLimitHit: rateLimitEncountered,
     }));
 
     if (cancelRef.current) {
@@ -260,10 +293,23 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
         description: `${processed} imagens foram geradas antes do cancelamento`,
       });
     } else if (!errorOccurred) {
-      toast({
-        title: processed === pendingIndexes.length ? "Todas as imagens geradas!" : "Geração concluída",
-        description: `${processed}/${pendingIndexes.length} imagens criadas`,
-      });
+      if (rateLimitEncountered && failed > 0) {
+        toast({
+          title: "⏳ Limite de requisições atingido",
+          description: `${processed} imagens criadas, ${failed} falharam. Aguarde 30s e clique em "Gerar Mídias Perdidas" para continuar.`,
+          variant: "destructive",
+        });
+      } else if (failed > 0) {
+        toast({
+          title: "Geração parcial",
+          description: `${processed}/${pendingIndexes.length} imagens criadas. ${failed} falharam - clique em "Gerar Mídias Perdidas" para tentar novamente.`,
+        });
+      } else {
+        toast({
+          title: "Todas as imagens geradas!",
+          description: `${processed}/${pendingIndexes.length} imagens criadas com sucesso`,
+        });
+      }
     }
   }, [state.isGenerating, generateSingleImage, toast]);
 
