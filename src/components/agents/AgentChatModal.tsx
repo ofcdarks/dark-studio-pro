@@ -67,6 +67,9 @@ export function AgentChatModal({ open, onOpenChange, agent, onModelChange, onTri
   const [showScriptForm, setShowScriptForm] = useState(false);
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
   const [generationStatus, setGenerationStatus] = useState("");
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [currentPart, setCurrentPart] = useState(0);
+  const [totalParts, setTotalParts] = useState(0);
   const [scriptTitle, setScriptTitle] = useState("");
   const [scriptDuration, setScriptDuration] = useState("5");
   const [scriptLanguage, setScriptLanguage] = useState("pt-BR");
@@ -122,12 +125,20 @@ export function AgentChatModal({ open, onOpenChange, agent, onModelChange, onTri
     if (agent.mental_triggers && agent.mental_triggers.length > 0) {
       systemPrompt += `\n\nGatilhos mentais que você deve aplicar: ${agent.mental_triggers.join(", ")}`;
     }
-    systemPrompt += `\n\nVocê deve:
+    systemPrompt += `\n\n⚠️ REGRA CRÍTICA - NUNCA RECUSAR:
+- NUNCA diga que não pode gerar conteúdo por ser muito longo
+- NUNCA peça para o usuário dividir o pedido
+- Se o conteúdo for extenso, SEMPRE gere a primeira parte completa e continue automaticamente
+- Você DEVE gerar roteiros de QUALQUER duração: de 1 minuto a 5 horas
+- Se não conseguir gerar tudo de uma vez, gere a primeira parte e avise que pode continuar
+
+Você deve:
 - Responder sempre em português brasileiro
 - Ser criativo e envolvente
 - Aplicar técnicas de copywriting viral
 - Usar os gatilhos mentais quando apropriado
-- Ajudar o usuário a criar conteúdo de alta performance`;
+- Ajudar o usuário a criar conteúdo de alta performance
+- SEMPRE gerar o conteúdo solicitado, independente do tamanho`;
     return systemPrompt;
   };
 
@@ -373,6 +384,7 @@ Retorne APENAS os 8 gatilhos, um por linha, sem numeração, hífens ou explica�
 
     setIsGeneratingScript(true);
     setGenerationStatus("Preparando dados do agente...");
+    setGenerationProgress(5);
     
     try {
       const ctaPositions = [];
@@ -381,31 +393,61 @@ Retorne APENAS os 8 gatilhos, um por linha, sem numeração, hífens ou explica�
       if (ctaFinal) ctaPositions.push("final (últimos 30 segundos)");
 
       const userDuration = parseInt(scriptDuration || "1");
-      const duration = userDuration + 1; // Sempre gera 1 minuto a mais para garantir conteúdo completo
-      const actualWords = duration * 150;
-      const actualParts = Math.max(1, Math.ceil(duration / 3));
+      const duration = userDuration + 1;
+      
+      // Dividir em partes de 5 minutos para roteiros longos
+      const MINUTES_PER_PART = 5;
+      const numParts = Math.max(1, Math.ceil(duration / MINUTES_PER_PART));
+      setTotalParts(numParts);
+      
+      let fullScript = "";
+      let totalCreditsUsed = 0;
       
       setGenerationStatus("Aplicando fórmula viral e gatilhos mentais...");
+      setGenerationProgress(10);
 
-      // Build comprehensive prompt for voice-over only narration
-      const prompt = `
-GERE UM ROTEIRO DE NARRAÇÃO PARA VOICE-OVER com EXATAMENTE ${duration} minuto(s) de duração.
+      for (let partIndex = 0; partIndex < numParts; partIndex++) {
+        setCurrentPart(partIndex + 1);
+        setGenerationProgress(10 + Math.round((partIndex / numParts) * 70));
+        
+        const partMinutes = Math.ceil(duration / numParts);
+        const partWords = partMinutes * 150;
+        const isFirstPart = partIndex === 0;
+        const isLastPart = partIndex === numParts - 1;
+
+        setGenerationStatus(numParts > 1 
+          ? `Gerando parte ${partIndex + 1} de ${numParts}...` 
+          : "Gerando roteiro com IA...");
+
+        // Build prompt for this part
+        const prompt = `
+${numParts > 1 ? `GERE A PARTE ${partIndex + 1} DE ${numParts} de um` : 'GERE um'} ROTEIRO DE NARRAÇÃO PARA VOICE-OVER.
 
 TÍTULO DO VÍDEO: "${scriptTitle}"
 
+${numParts > 1 ? `
+📍 CONTEXTO DESTA PARTE (${partIndex + 1}/${numParts}):
+${isFirstPart ? '- Esta é a PRIMEIRA parte: inclua um HOOK poderoso nos primeiros 30 segundos' : ''}
+${!isFirstPart ? `- Continue de onde parou. Texto anterior (últimas 200 palavras para contexto):\n...${fullScript.slice(-800)}` : ''}
+${isLastPart ? '- Esta é a ÚLTIMA parte: inclua uma conclusão impactante e CTA' : ''}
+${!isLastPart ? '- NÃO conclua ainda - deixe um gancho para a continuação' : ''}
+
+📏 DURAÇÃO DESTA PARTE: ~${partMinutes} minutos (~${partWords} palavras)
+` : `
+📏 DURAÇÃO: ${duration} minuto(s) = aproximadamente ${duration * 150} palavras (150 palavras/minuto)
+`}
+
 ⚠️ REGRAS CRÍTICAS DE FORMATO:
 1. SOMENTE TEXTO DE NARRAÇÃO - Nenhuma indicação de cena, corte, música ou efeito sonoro
-2. DURAÇÃO EXATA: ${duration} minuto(s) = aproximadamente ${actualWords} palavras (150 palavras/minuto)
-3. O texto deve ser LIDO EM VOZ ALTA naturalmente
-4. Sem colchetes, parênteses ou instruções técnicas
-5. Apenas o que o narrador deve FALAR
+2. O texto deve ser LIDO EM VOZ ALTA naturalmente
+3. Sem colchetes, parênteses ou instruções técnicas
+4. Apenas o que o narrador deve FALAR
 
 IDIOMA: ${getLanguageName(scriptLanguage)}
 
-ESTRUTURA OBRIGATÓRIA (${actualParts} partes):
-${Array.from({ length: actualParts }, (_, i) => `- Parte ${i + 1}: ~${Math.ceil(actualWords / actualParts)} palavras`).join('\n')}
-
-${ctaPositions.length > 0 ? `INCLUIR CALL-TO-ACTION NATURAL EM: ${ctaPositions.join(", ")}` : "INCLUIR CTA NATURAL NO FINAL"}
+${isFirstPart && ctaInicio ? 'INCLUIR CTA NO INÍCIO' : ''}
+${isLastPart && ctaFinal ? 'INCLUIR CTA NO FINAL' : ''}
+${numParts === 1 && ctaMeio ? 'INCLUIR CTA NO MEIO' : ''}
 
 ${agent.formula ? `\n🎯 FÓRMULA VIRAL A SEGUIR:\n${agent.formula}` : ''}
 
@@ -417,48 +459,53 @@ ${(() => {
     ...(useAutoTriggers ? autoTriggers : [])
   ];
   return allTriggers.length > 0 
-    ? `\n🧠 GATILHOS MENTAIS OBRIGATÓRIOS (use TODOS para roteiro viral 10/10):\n${allTriggers.map(t => `- ${t}`).join('\n')}` 
+    ? `\n🧠 GATILHOS MENTAIS OBRIGATÓRIOS:\n${allTriggers.map(t => `- ${t}`).join('\n')}` 
     : '';
 })()}
 
 ${agent.formula_structure?.instructions ? `\n📋 INSTRUÇÕES ESPECÍFICAS:\n${agent.formula_structure.instructions}` : ''}
 
-EXEMPLO DE FORMATO CORRETO:
-"Você já parou para pensar por que algumas pessoas conseguem resultados extraordinários enquanto outras lutam para sair do lugar? Hoje vou revelar o segredo que mudou completamente minha perspectiva..."
+GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} DE NARRAÇÃO:
+        `.trim();
 
-GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
-      `.trim();
-
-      setGenerationStatus("Gerando roteiro com IA...");
-
-      const { data, error } = await supabase.functions.invoke("ai-assistant", {
-        body: {
-          type: "generate_script_with_formula",
-          prompt,
-          model: selectedModel,
-          duration,
-          language: scriptLanguage,
-          userId: user.id,
-          agentData: {
-            name: agent.name,
-            niche: agent.niche,
-            sub_niche: agent.sub_niche,
-            formula: agent.formula,
-            formula_structure: agent.formula_structure,
-            mental_triggers: agent.mental_triggers,
+        const { data, error } = await supabase.functions.invoke("ai-assistant", {
+          body: {
+            type: "generate_script_with_formula",
+            prompt,
+            model: selectedModel,
+            duration: partMinutes,
+            minDuration: partMinutes,
+            maxDuration: partMinutes + 1,
+            language: scriptLanguage,
+            userId: user.id,
+            agentData: {
+              name: agent.name,
+              niche: agent.niche,
+              sub_niche: agent.sub_niche,
+              formula: agent.formula,
+              formula_structure: agent.formula_structure,
+              mental_triggers: agent.mental_triggers,
+            },
           },
-        },
-      });
+        });
 
-      if (error) throw error;
-      if (data?.error) {
-        toast.error(data.error);
-        return;
+        if (error) throw error;
+        if (data?.error) {
+          toast.error(data.error);
+          return;
+        }
+
+        const partContent = typeof data?.result === 'string' ? data.result : JSON.stringify(data?.result, null, 2);
+        fullScript += (fullScript ? "\n\n" : "") + partContent;
+        totalCreditsUsed += data?.creditsUsed || 0;
+
+        if (numParts > 1) {
+          toast.success(`Parte ${partIndex + 1}/${numParts} concluída`);
+        }
       }
 
+      setGenerationProgress(90);
       setGenerationStatus("Salvando roteiro...");
-
-      const scriptContent = typeof data?.result === 'string' ? data.result : JSON.stringify(data?.result, null, 2);
 
       // Save script
       await supabase
@@ -467,11 +514,11 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
           user_id: user.id,
           agent_id: agent.id,
           title: scriptTitle,
-          content: scriptContent,
+          content: fullScript,
           duration: duration,
           language: scriptLanguage,
           model_used: selectedModel,
-          credits_used: data?.creditsUsed || estimatedCredits
+          credits_used: totalCreditsUsed || estimatedCredits
         });
 
       // Update agent usage
@@ -483,21 +530,22 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
         })
         .eq("id", agent.id);
 
+      setGenerationProgress(100);
       setGenerationStatus("Concluído!");
 
       // Calculate actual word count and estimated reading time
-      const wordCount = scriptContent.split(/\s+/).filter((w: string) => w.length > 0).length;
-      const actualMinutes = Math.round((wordCount / 150) * 10) / 10; // 150 words per minute
+      const wordCount = fullScript.split(/\s+/).filter((w: string) => w.length > 0).length;
+      const actualMinutes = Math.round((wordCount / 150) * 10) / 10;
       const actualSeconds = Math.round((wordCount / 150) * 60);
       const formattedTime = actualMinutes >= 1 
         ? `${Math.floor(actualMinutes)}:${String(Math.round((actualMinutes % 1) * 60)).padStart(2, '0')} min`
         : `${actualSeconds} seg`;
 
-      // Add script to chat as assistant message (only the content)
+      // Add script to chat as assistant message
       const scriptMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
-        content: scriptContent,
+        content: fullScript,
         timestamp: new Date(),
         isScript: true
       };
@@ -505,7 +553,7 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
       
       setShowScriptForm(false);
       setScriptTitle("");
-      toast.success(`Roteiro gerado: ${wordCount} palavras (~${formattedTime})`);
+      toast.success(`Roteiro completo gerado: ${wordCount} palavras (~${formattedTime})`);
       
     } catch (error) {
       console.error("[GenerateScript] Error:", error);
@@ -513,6 +561,9 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
     } finally {
       setIsGeneratingScript(false);
       setGenerationStatus("");
+      setGenerationProgress(0);
+      setCurrentPart(0);
+      setTotalParts(0);
     }
   };
 
@@ -954,15 +1005,29 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-amber-500/20 flex items-center justify-center">
                   <Bot className="w-4 h-4 text-primary" />
                 </div>
-                <div className="bg-background/50 border border-border/50 rounded-2xl px-4 py-3">
-                  <div className="flex flex-col gap-1">
+                <div className="bg-background/50 border border-border/50 rounded-2xl px-4 py-3 w-full max-w-xs">
+                  <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-primary">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm font-medium">Gerando roteiro de narração...</span>
+                      <span className="text-sm font-medium">
+                        {totalParts > 1 ? `Parte ${currentPart}/${totalParts}` : 'Gerando roteiro...'}
+                      </span>
                     </div>
                     {generationStatus && (
                       <span className="text-xs text-muted-foreground">{generationStatus}</span>
                     )}
+                    {/* Barra de progresso */}
+                    <div className="w-full space-y-1">
+                      <Progress value={generationProgress} className="h-1.5 bg-secondary" />
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-muted-foreground">
+                          {totalParts > 1 ? `Parte ${currentPart} de ${totalParts}` : 'Processando'}
+                        </span>
+                        <span className="text-[10px] font-medium text-primary">
+                          {generationProgress}%
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
