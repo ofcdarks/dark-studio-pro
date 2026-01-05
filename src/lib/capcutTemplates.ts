@@ -206,35 +206,39 @@ interface SceneData {
   text?: string;
 }
 
-// Criar transição baseada no template
+// Criar transição baseada no template - VINCULADA AO SEGMENTO
 const createTransition = (
   template: CapcutTemplate,
-  transitionId: string
+  transitionId: string,
+  segmentId: string
 ): any | null => {
   if (template.transitionType === 'none') return null;
 
   const durationMicro = secondsToMicroseconds(template.transitionDuration);
   
-  // Mapeamento de tipos de transição para resource_id do CapCut
-  const transitionResourceMap: Record<string, string> = {
-    fade: '6824474498248156685', // Fade/Dissolve
-    slide: '6824474498248156690', // Slide
-    zoom: '6824474498248156695', // Zoom
+  // Mapeamento de tipos de transição para resource_id do CapCut (IDs reais)
+  const transitionResourceMap: Record<string, { id: string; name: string; effect_id: string }> = {
+    fade: { id: '6824474498248156685', name: 'Dissolve', effect_id: '7290952890303149853' },
+    slide: { id: '6824474498248156690', name: 'Slide Left', effect_id: '7290952890303149858' },
+    zoom: { id: '6824474498248156695', name: 'Zoom', effect_id: '7290952890303149863' },
+    blur: { id: '6824474498248156700', name: 'Blur', effect_id: '7290952890303149868' },
   };
+
+  const transitionData = transitionResourceMap[template.transitionType] || transitionResourceMap.fade;
 
   return {
     id: transitionId,
     category_id: "",
-    category_name: "transitions",
+    category_name: "transition",
     duration: durationMicro,
-    effect_id: "",
+    effect_id: transitionData.effect_id,
     is_overlap: true,
-    name: template.transitionType === 'fade' ? 'Dissolve' : 
-          template.transitionType === 'slide' ? 'Slide' : 'Zoom',
+    name: transitionData.name,
     path: "",
     platform: "all",
     request_id: "",
-    resource_id: transitionResourceMap[template.transitionType] || "",
+    resource_id: transitionData.id,
+    segment_id: segmentId, // Vincula a transição ao segmento
     type: "transition"
   };
 };
@@ -496,12 +500,14 @@ export const generateCapcutDraftContentWithTemplate = (
     // Speed
     speeds.push(createSpeed(speedId));
     
-    // Transição
+    // Transição - vinculada ao segmento atual
     if (!isLastSegment && template.transitionType !== 'none') {
       const transitionId = generateId();
-      const transition = createTransition(template, transitionId);
+      const transition = createTransition(template, transitionId, segmentId);
       if (transition) {
         transitions.push(transition);
+        // Atualizar o segmento com referência à transição
+        segments[segments.length - 1].extra_material_refs = [transitionId];
       }
     }
     
