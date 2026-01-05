@@ -2105,106 +2105,166 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
       let updatedScenes = [...generatedScenes];
       const improvedIndexes: number[] = [];
       
-      // CASO ESPECIAL: Cenas longas - ajustar duração automaticamente
+      // CASO ESPECIAL: Cenas longas - DIVIDIR automaticamente em cenas menores
       if (improvementType === 'split_long_scenes') {
-        // Para cenas muito longas, vamos aumentar o WPM para que fiquem no tempo ideal
-        // O ideal é 5-8 segundos por cena
-        const idealDurationMax = 8; // segundos
+        const idealDurationMax = 8; // segundos máximo por cena
+        const idealDurationMin = 5; // segundos mínimo por cena
         
-        // Encontrar o WPM ideal para que as cenas longas fiquem no máximo 8s
-        const longScenes = updatedScenes.filter((s, i) => {
-          const duration = (s.wordCount / currentWpm) * 60;
-          return duration > 10;
-        });
+        // Encontrar cenas longas que precisam ser divididas
+        const longSceneIndexes = updatedScenes
+          .map((s, i) => ({ scene: s, index: i, duration: (s.wordCount / currentWpm) * 60 }))
+          .filter(item => item.duration > 10)
+          .map(item => item.index);
         
-        if (longScenes.length > 0) {
-          // Calcular o maior wordCount entre as cenas longas
-          const maxWords = Math.max(...longScenes.map(s => s.wordCount));
-          // WPM necessário para que maxWords dure no máximo 8s
-          const suggestedWpm = Math.ceil((maxWords / idealDurationMax) * 60);
-          const newWpm = Math.max(currentWpm, Math.min(suggestedWpm, 200)); // Limitar entre atual e 200
+        if (longSceneIndexes.length > 0) {
+          // Criar array de novas cenas
+          const newScenes: ScenePrompt[] = [];
+          let newSceneNumber = 1;
+          let currentTime = 0;
           
-          if (newWpm > currentWpm) {
-            setNarrationSpeed(newWpm.toString());
-            toast({
-              title: "⚡ WPM ajustado automaticamente",
-              description: `Velocidade aumentada de ${currentWpm} para ${newWpm} WPM para otimizar durações`,
-            });
-          }
+          updatedScenes.forEach((scene, originalIndex) => {
+            const duration = (scene.wordCount / currentWpm) * 60;
+            
+            if (duration > 10) {
+              // Dividir esta cena em partes menores
+              const targetDuration = 6; // segundos por parte
+              const numParts = Math.ceil(duration / targetDuration);
+              const wordsPerPart = Math.ceil(scene.wordCount / numParts);
+              const words = scene.text.split(/\s+/);
+              
+              for (let i = 0; i < numParts; i++) {
+                const partWords = words.slice(i * wordsPerPart, (i + 1) * wordsPerPart);
+                const partText = partWords.join(' ');
+                const partWordCount = partWords.length;
+                const partDuration = (partWordCount / currentWpm) * 60;
+                
+                // Gerar prompt adaptado para a parte
+                const partPrompt = `${scene.imagePrompt}, scene ${i + 1} of ${numParts}, dynamic angle variation, ${
+                  i === 0 ? 'establishing shot, wide angle' : 
+                  i === numParts - 1 ? 'closing shot, emotional climax' : 
+                  'medium shot, character focus'
+                }`;
+                
+                const startTimecode = `${String(Math.floor(currentTime / 60)).padStart(2, '0')}:${String(Math.floor(currentTime % 60)).padStart(2, '0')}`;
+                currentTime += partDuration;
+                const endTimecode = `${String(Math.floor(currentTime / 60)).padStart(2, '0')}:${String(Math.floor(currentTime % 60)).padStart(2, '0')}`;
+                
+                newScenes.push({
+                  number: newSceneNumber++,
+                  text: partText,
+                  wordCount: partWordCount,
+                  imagePrompt: partPrompt,
+                  timecode: startTimecode,
+                  endTimecode: endTimecode,
+                  estimatedTime: `${partDuration.toFixed(1)}s`,
+                  emotion: ['tension', 'curiosity', 'surprise', 'shock'][i % 4],
+                  retentionTrigger: ['anticipation', 'curiosity', 'mystery', 'revelation'][i % 4],
+                  generatedImage: undefined,
+                  generatingImage: true,
+                  characterName: scene.characterName
+                });
+                
+                improvedIndexes.push(newSceneNumber - 2);
+              }
+            } else {
+              // Manter cena original mas atualizar número e timecodes
+              const startTimecode = `${String(Math.floor(currentTime / 60)).padStart(2, '0')}:${String(Math.floor(currentTime % 60)).padStart(2, '0')}`;
+              currentTime += duration;
+              const endTimecode = `${String(Math.floor(currentTime / 60)).padStart(2, '0')}:${String(Math.floor(currentTime % 60)).padStart(2, '0')}`;
+              
+              newScenes.push({
+                ...scene,
+                number: newSceneNumber++,
+                timecode: startTimecode,
+                endTimecode: endTimecode,
+                estimatedTime: `${duration.toFixed(1)}s`
+              });
+            }
+          });
+          
+          updatedScenes = newScenes;
+          
+          toast({
+            title: "🎬 Cenas divididas automaticamente!",
+            description: `${longSceneIndexes.length} cena(s) longa(s) dividida(s). Total: ${newScenes.length} cenas. Gerando ${improvedIndexes.length} novas imagens...`,
+          });
         }
       }
       
-      for (const sceneNum of sceneNumbers) {
-        const index = sceneNum - 1;
-        if (index >= 0 && index < updatedScenes.length) {
-          const scene = updatedScenes[index];
-          
-          // Melhorar o prompt localmente (rápido, sem API)
-          let improvedPrompt = scene.imagePrompt;
-          let improvedEmotion = scene.emotion || 'neutral';
-          let improvedTrigger = scene.retentionTrigger || 'continuity';
-          
-          // Adicionar elementos de melhoria baseado no tipo
-          if (improvementType === 'add_emotion' || improvementType === 'add_emotion_ending' || improvementType === 'improve_all') {
-            const emotions = ['tension', 'curiosity', 'surprise', 'shock'];
-            improvedEmotion = emotions[index % emotions.length];
+      // Para outros tipos de melhoria OU se split não foi necessário
+      if (improvementType !== 'split_long_scenes') {
+        for (const sceneNum of sceneNumbers) {
+          const index = sceneNum - 1;
+          if (index >= 0 && index < updatedScenes.length) {
+            const scene = updatedScenes[index];
             
-            // Adicionar termos cinematográficos ao prompt baseado no roteiro
-            const cinematicEnhancements = [
-              'dramatic lighting, intense atmosphere, emotional storytelling',
-              'cinematic composition, powerful visual impact, high tension',
-              'striking imagery, high contrast lighting, narrative tension',
-              'epic visual storytelling, dramatic shadows, emotional depth'
-            ];
-            if (!improvedPrompt.toLowerCase().includes('dramatic') && !improvedPrompt.toLowerCase().includes('cinematic')) {
-              improvedPrompt = `${improvedPrompt}, ${cinematicEnhancements[index % cinematicEnhancements.length]}`;
-            }
-          }
-          
-          if (improvementType === 'add_triggers' || improvementType === 'add_triggers_ending' || improvementType === 'improve_all') {
-            const triggers = ['curiosity', 'anticipation', 'mystery', 'revelation'];
-            improvedTrigger = triggers[index % triggers.length];
-          }
-          
-          if (improvementType === 'improve_hook' && sceneNum <= 3) {
-            improvedEmotion = 'shock';
-            improvedTrigger = 'curiosity';
-            if (!improvedPrompt.toLowerCase().includes('dramatic close-up') && !improvedPrompt.toLowerCase().includes('intense')) {
-              improvedPrompt = `${improvedPrompt}, dramatic close-up, intense gaze, high stakes moment, ultra cinematic, powerful hook`;
-            }
-          }
-          
-          // Para cenas longas, SEMPRE forçar melhorias visuais para compensar a duração
-          if (improvementType === 'split_long_scenes') {
-            const strongEmotions = ['tension', 'shock', 'curiosity', 'surprise'];
-            const strongTriggers = ['anticipation', 'revelation', 'mystery', 'pattern_break'];
-            improvedEmotion = strongEmotions[index % strongEmotions.length];
-            improvedTrigger = strongTriggers[index % strongTriggers.length];
+            // Melhorar o prompt localmente (rápido, sem API)
+            let improvedPrompt = scene.imagePrompt;
+            let improvedEmotion = scene.emotion || 'neutral';
+            let improvedTrigger = scene.retentionTrigger || 'continuity';
             
-            // FORÇAR adição de elementos dinâmicos mesmo se já existirem
-            const dynamicEnhancements = [
-              'dynamic composition, fast visual rhythm, engaging close-up, dramatic angle',
-              'striking perspective, intense movement, high energy framing, powerful contrast',
-              'bold visual storytelling, cinematic movement, impactful composition, dramatic lighting',
-              'epic scale, intense action framing, dynamic camera movement, high stakes tension'
-            ];
-            improvedPrompt = `${scene.imagePrompt}, ${dynamicEnhancements[index % dynamicEnhancements.length]}`;
-          }
-          
-          // Se vai regenerar OU se não tem imagem, marca para gerar
-          const needsImage = regenerateImages || !scene.generatedImage;
-          
-          updatedScenes[index] = {
-            ...scene,
-            imagePrompt: improvedPrompt,
-            emotion: improvedEmotion,
-            retentionTrigger: improvedTrigger,
-            generatedImage: needsImage ? undefined : scene.generatedImage,
-            generatingImage: needsImage ? true : false
-          };
-          
-          if (needsImage) {
-            improvedIndexes.push(index);
+            // Adicionar elementos de melhoria baseado no tipo
+            if (improvementType === 'add_emotion' || improvementType === 'add_emotion_ending' || improvementType === 'improve_all') {
+              const emotions = ['tension', 'curiosity', 'surprise', 'shock'];
+              improvedEmotion = emotions[index % emotions.length];
+              
+              // Adicionar termos cinematográficos ao prompt baseado no roteiro
+              const cinematicEnhancements = [
+                'dramatic lighting, intense atmosphere, emotional storytelling',
+                'cinematic composition, powerful visual impact, high tension',
+                'striking imagery, high contrast lighting, narrative tension',
+                'epic visual storytelling, dramatic shadows, emotional depth'
+              ];
+              if (!improvedPrompt.toLowerCase().includes('dramatic') && !improvedPrompt.toLowerCase().includes('cinematic')) {
+                improvedPrompt = `${improvedPrompt}, ${cinematicEnhancements[index % cinematicEnhancements.length]}`;
+              }
+            }
+            
+            if (improvementType === 'add_triggers' || improvementType === 'add_triggers_ending' || improvementType === 'improve_all') {
+              const triggers = ['curiosity', 'anticipation', 'mystery', 'revelation'];
+              improvedTrigger = triggers[index % triggers.length];
+            }
+            
+            if (improvementType === 'improve_hook' && sceneNum <= 3) {
+              improvedEmotion = 'shock';
+              improvedTrigger = 'curiosity';
+              if (!improvedPrompt.toLowerCase().includes('dramatic close-up') && !improvedPrompt.toLowerCase().includes('intense')) {
+                improvedPrompt = `${improvedPrompt}, dramatic close-up, intense gaze, high stakes moment, ultra cinematic, powerful hook`;
+              }
+            }
+            
+            // Para cenas longas, SEMPRE forçar melhorias visuais para compensar a duração
+            if (improvementType === 'split_long_scenes') {
+              const strongEmotions = ['tension', 'shock', 'curiosity', 'surprise'];
+              const strongTriggers = ['anticipation', 'revelation', 'mystery', 'pattern_break'];
+              improvedEmotion = strongEmotions[index % strongEmotions.length];
+              improvedTrigger = strongTriggers[index % strongTriggers.length];
+              
+              // FORÇAR adição de elementos dinâmicos mesmo se já existirem
+              const dynamicEnhancements = [
+                'dynamic composition, fast visual rhythm, engaging close-up, dramatic angle',
+                'striking perspective, intense movement, high energy framing, powerful contrast',
+                'bold visual storytelling, cinematic movement, impactful composition, dramatic lighting',
+                'epic scale, intense action framing, dynamic camera movement, high stakes tension'
+              ];
+              improvedPrompt = `${scene.imagePrompt}, ${dynamicEnhancements[index % dynamicEnhancements.length]}`;
+            }
+            
+            // Se vai regenerar OU se não tem imagem, marca para gerar
+            const needsImage = regenerateImages || !scene.generatedImage;
+            
+            updatedScenes[index] = {
+              ...scene,
+              imagePrompt: improvedPrompt,
+              emotion: improvedEmotion,
+              retentionTrigger: improvedTrigger,
+              generatedImage: needsImage ? undefined : scene.generatedImage,
+              generatingImage: needsImage ? true : false
+            };
+            
+            if (needsImage) {
+              improvedIndexes.push(index);
+            }
           }
         }
       }
