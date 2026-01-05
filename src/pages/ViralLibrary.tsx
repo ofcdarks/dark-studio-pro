@@ -523,10 +523,34 @@ const ViralLibrary = () => {
                         
                         {/* Actions */}
                         <div className="flex gap-2">
+                          {thumb.prompt && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={async () => {
+                                await navigator.clipboard.writeText(thumb.prompt!);
+                                setCopiedId(thumb.id);
+                                setTimeout(() => setCopiedId(null), 2000);
+                                toast.success("Prompt copiado!");
+                              }}
+                            >
+                              {copiedId === thumb.id ? (
+                                <>
+                                  <Check className="w-3 h-3 mr-1" />
+                                  Copiado
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3 mr-1" />
+                                  Prompt
+                                </>
+                              )}
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="secondary"
-                            className="flex-1"
                             onClick={() => window.open(thumb.image_url, '_blank')}
                           >
                             <Eye className="w-3 h-3 mr-1" />
