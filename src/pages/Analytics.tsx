@@ -45,7 +45,8 @@ import {
   Star,
   GripVertical,
   Copy,
-  Save
+  Save,
+  Pencil
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -172,6 +173,9 @@ const Analytics = () => {
   const [analyticsData, setAnalyticsData] = usePersistedState<YouTubeAnalytics | null>("analytics_data", null);
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
   const [checklistItems, setChecklistItems] = usePersistedState<Record<string, boolean>>("analytics_checklist", {});
+  const [manualNiche, setManualNiche] = usePersistedState<{ niche: string; subNiche: string; microNiche: string } | null>("analytics_manual_niche", null);
+  const [isNicheDialogOpen, setIsNicheDialogOpen] = useState(false);
+  const [editingNiche, setEditingNiche] = useState({ niche: '', subNiche: '', microNiche: '' });
   const [newGoal, setNewGoal] = useState({
     goal_type: "subscribers",
     target_value: 10000,
@@ -2195,7 +2199,9 @@ const Analytics = () => {
                     };
                   };
                   
-                  const channelNiche = detectNiche();
+                  const detectedNicheData = detectNiche();
+                  // Use manual override if set, otherwise use detected
+                  const channelNiche = manualNiche || detectedNicheData;
                   const nicheKeyword = channelNiche.microNiche || channelNiche.subNiche;
                   const secondaryKeyword = keywords[1] || channelNiche.subNiche;
                   
@@ -2789,7 +2795,16 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                             <Target className="w-5 h-5 text-primary" />
                           </div>
                           <div className="flex-1">
-                            <p className="font-semibold text-foreground text-sm">Nicho Detectado</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-foreground text-sm">
+                                {manualNiche ? 'Nicho Definido' : 'Nicho Detectado'}
+                              </p>
+                              {manualNiche && (
+                                <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-green-500/10 text-green-600 border-green-500/30">
+                                  Manual
+                                </Badge>
+                              )}
+                            </div>
                             <div className="flex flex-wrap items-center gap-1.5 mt-1">
                               <Badge variant="outline" className="text-xs bg-primary/10 border-primary/30">
                                 {channelNiche.niche}
@@ -2807,6 +2822,92 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                                 </>
                               )}
                             </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {manualNiche && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setManualNiche(null);
+                                  toast({ title: "Nicho resetado", description: "Usando detecção automática" });
+                                }}
+                                className="text-xs h-7 text-muted-foreground hover:text-foreground"
+                              >
+                                <RefreshCw className="w-3 h-3 mr-1" />
+                                Auto
+                              </Button>
+                            )}
+                            <Dialog open={isNicheDialogOpen} onOpenChange={setIsNicheDialogOpen}>
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setEditingNiche({
+                                    niche: channelNiche.niche,
+                                    subNiche: channelNiche.subNiche,
+                                    microNiche: channelNiche.microNiche
+                                  })}
+                                  className="text-xs h-7 gap-1"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                  Editar
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Definir Nicho Manualmente</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                  <div className="space-y-2">
+                                    <Label>Nicho Principal</Label>
+                                    <Input
+                                      value={editingNiche.niche}
+                                      onChange={(e) => setEditingNiche(prev => ({ ...prev, niche: e.target.value }))}
+                                      placeholder="Ex: Finanças, Tecnologia, Games..."
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Sub-nicho</Label>
+                                    <Input
+                                      value={editingNiche.subNiche}
+                                      onChange={(e) => setEditingNiche(prev => ({ ...prev, subNiche: e.target.value }))}
+                                      placeholder="Ex: Criptomoedas, Reviews, FPS..."
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Micro-nicho (opcional)</Label>
+                                    <Input
+                                      value={editingNiche.microNiche}
+                                      onChange={(e) => setEditingNiche(prev => ({ ...prev, microNiche: e.target.value }))}
+                                      placeholder="Ex: Bitcoin + DeFi, iPhone 15, Valorant..."
+                                    />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      onClick={() => {
+                                        if (editingNiche.niche && editingNiche.subNiche) {
+                                          setManualNiche(editingNiche);
+                                          setIsNicheDialogOpen(false);
+                                          toast({ title: "Nicho atualizado!", description: "As dicas foram recalculadas para o novo nicho" });
+                                        } else {
+                                          toast({ title: "Preencha os campos", description: "Nicho e Sub-nicho são obrigatórios", variant: "destructive" });
+                                        }
+                                      }}
+                                      className="flex-1"
+                                    >
+                                      Salvar
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => setIsNicheDialogOpen(false)}
+                                    >
+                                      Cancelar
+                                    </Button>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
                           </div>
                         </div>
                       </div>
