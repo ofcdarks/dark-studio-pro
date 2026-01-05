@@ -167,6 +167,7 @@ const PromptsImages = () => {
   const [showCapcutInstructions, setShowCapcutInstructions] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("clean");
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [generationStartTime, setGenerationStartTime] = useState<number | null>(null);
   const cancelGenerationRef = useRef(false);
   
   const { user } = useAuth();
@@ -366,6 +367,7 @@ const PromptsImages = () => {
     setGeneratingImages(true);
     setImageBatchTotal(pendingIndexes.length);
     setImageBatchDone(0);
+    setGenerationStartTime(Date.now()); // Iniciar contagem de tempo
 
     const BATCH_SIZE = 5; // Processar 5 imagens por vez
     let processed = 0;
@@ -482,6 +484,7 @@ const PromptsImages = () => {
 
     setCurrentGeneratingIndex(null);
     setGeneratingImages(false);
+    setGenerationStartTime(null); // Reset tempo
 
     if (cancelGenerationRef.current) {
       toast({
@@ -2041,52 +2044,84 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Loading - Geração de Imagens */}
       {/* Barra de progresso flutuante quando gerando (sem modal) */}
-      {generatingImages && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-primary/50 rounded-xl shadow-2xl p-4 min-w-[320px] max-w-md">
-          <div className="flex items-center gap-4">
-            {/* Mini logo com pulso */}
-            <div className="relative w-12 h-12 flex-shrink-0">
-              <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
-              <div className="relative w-12 h-12 rounded-full border-2 border-primary/50 overflow-hidden">
-                <img 
-                  src={logoGif} 
-                  alt="Loading" 
-                  className="w-full h-full object-cover scale-110"
+      {generatingImages && (() => {
+        // Calcular estimativa de tempo restante
+        const elapsedMs = generationStartTime ? Date.now() - generationStartTime : 0;
+        const avgTimePerImage = imageBatchDone > 0 ? elapsedMs / imageBatchDone : 0;
+        const remainingImages = imageBatchTotal - imageBatchDone;
+        const estimatedRemainingMs = avgTimePerImage * remainingImages;
+        
+        // Formatar tempo
+        const formatTime = (ms: number): string => {
+          if (ms <= 0) return "Calculando...";
+          const totalSeconds = Math.ceil(ms / 1000);
+          if (totalSeconds < 60) return `~${totalSeconds}s`;
+          const minutes = Math.floor(totalSeconds / 60);
+          const seconds = totalSeconds % 60;
+          return seconds > 0 ? `~${minutes}m ${seconds}s` : `~${minutes}m`;
+        };
+        
+        const timeEstimate = imageBatchDone > 0 ? formatTime(estimatedRemainingMs) : "Calculando...";
+        const avgPerImage = imageBatchDone > 0 ? `${(avgTimePerImage / 1000).toFixed(1)}s/img` : "";
+        
+        return (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-primary/50 rounded-xl shadow-2xl p-4 min-w-[360px] max-w-md">
+            <div className="flex items-center gap-4">
+              {/* Mini logo com pulso */}
+              <div className="relative w-12 h-12 flex-shrink-0">
+                <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+                <div className="relative w-12 h-12 rounded-full border-2 border-primary/50 overflow-hidden">
+                  <img 
+                    src={logoGif} 
+                    alt="Loading" 
+                    className="w-full h-full object-cover scale-110"
+                  />
+                </div>
+              </div>
+              
+              {/* Progresso */}
+              <div className="flex-1 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-foreground">
+                    Gerando Imagens
+                  </span>
+                  <span className="text-sm font-bold text-primary">
+                    {imageBatchDone}/{imageBatchTotal}
+                  </span>
+                </div>
+                <Progress 
+                  value={imageBatchTotal > 0 ? (imageBatchDone / imageBatchTotal) * 100 : 0} 
+                  className="h-2 bg-secondary" 
                 />
+                {/* Estimativa de tempo */}
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {timeEstimate}
+                  </span>
+                  {avgPerImage && (
+                    <span className="text-muted-foreground/70">
+                      {avgPerImage}
+                    </span>
+                  )}
+                </div>
               </div>
+              
+              {/* Botão Cancelar */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleCancelGeneration}
+                className="flex-shrink-0 text-destructive hover:bg-destructive/10"
+                title="Cancelar"
+              >
+                <X className="w-5 h-5" />
+              </Button>
             </div>
-            
-            {/* Progresso */}
-            <div className="flex-1 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-foreground">
-                  Gerando Imagens
-                </span>
-                <span className="text-sm font-bold text-primary">
-                  {imageBatchDone}/{imageBatchTotal}
-                </span>
-              </div>
-              <Progress 
-                value={imageBatchTotal > 0 ? (imageBatchDone / imageBatchTotal) * 100 : 0} 
-                className="h-2 bg-secondary" 
-              />
-            </div>
-            
-            {/* Botão Cancelar */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleCancelGeneration}
-              className="flex-shrink-0 text-destructive hover:bg-destructive/10"
-              title="Cancelar"
-            >
-              <X className="w-5 h-5" />
-            </Button>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Modal de Instruções CapCut */}
       <Dialog open={showCapcutInstructions} onOpenChange={setShowCapcutInstructions}>
