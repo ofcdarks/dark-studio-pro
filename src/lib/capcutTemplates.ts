@@ -392,7 +392,7 @@ const createVideoMaterial = (
   media_path: "",
   object_locked: null,
   origin_material_id: "",
-  path: `Resources/${fileName}`,
+  path: `./Resources/${fileName}`,
   picture_from: "none",
   picture_set_category_id: "",
   picture_set_category_name: "",
@@ -663,7 +663,7 @@ export const generateCapcutDraftMetaInfoWithTemplate = (
     create_time: nowSeconds,
     duration: secondsToMicroseconds(scene.durationSeconds),
     extra_info: "",
-    file_Path: `Resources/${scene.fileName}`,
+    file_Path: `./Resources/${scene.fileName}`,
     height: 1080,
     id: generateId(),
     import_time: nowSeconds,
@@ -687,7 +687,7 @@ export const generateCapcutDraftMetaInfoWithTemplate = (
     draft_cloud_template_id: "",
     draft_cloud_tutorial_info: null,
     draft_cloud_videocut_purchase_info: null,
-    draft_cover: "",
+    draft_cover: "draft_cover.jpg",
     draft_deeplink_url: "",
     draft_fold_path: "",
     draft_id: generateId(),
@@ -713,4 +713,37 @@ export const generateCapcutDraftMetaInfoWithTemplate = (
   };
 
   return JSON.stringify(metaInfo, null, 2);
+};
+
+/**
+ * Gerar o draft_info.json (arquivo de índice obrigatório para CapCut)
+ */
+export const generateCapcutDraftInfoWithTemplate = (
+  projectName = "Projeto Gerado"
+): string => {
+  const now = Date.now();
+  const nowSeconds = Math.floor(now / 1000);
+  
+  const draftInfo = {
+    draft_cloud_last_action_download: false,
+    draft_cloud_materials: [],
+    draft_cloud_purchase_info: null,
+    draft_cloud_template_id: "",
+    draft_cloud_tutorial_info: null,
+    draft_cloud_videocut_purchase_info: null,
+    draft_enterprise_info: null,
+    draft_id: generateId(),
+    draft_is_ai_packaging_used: false,
+    draft_is_ai_shorts: false,
+    draft_is_ai_translate: false,
+    draft_is_article_video_draft: false,
+    draft_is_invisible: false,
+    draft_name: projectName,
+    draft_new_version: "",
+    draft_timeline_materials_size: 0,
+    tm_draft_create: nowSeconds,
+    tm_draft_modified: nowSeconds
+  };
+
+  return JSON.stringify(draftInfo, null, 2);
 };
