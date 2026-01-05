@@ -182,7 +182,7 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
       style,
     });
 
-    const BATCH_SIZE = 3;
+    const BATCH_SIZE = 5;
     let processed = 0;
     let errorOccurred = false;
 
