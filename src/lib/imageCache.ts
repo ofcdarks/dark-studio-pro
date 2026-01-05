@@ -145,3 +145,41 @@ export const clearImageCache = async (): Promise<void> => {
     console.error('Error clearing image cache:', error);
   }
 };
+
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+export const cleanupOldCacheEntries = async (): Promise<number> => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    
+    const results = await new Promise<CachedImage[]>((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+    
+    const now = Date.now();
+    const oldEntries = results.filter(item => (now - item.timestamp) > THREE_DAYS_MS);
+    
+    for (const entry of oldEntries) {
+      await new Promise<void>((resolve, reject) => {
+        const request = store.delete(entry.sceneNumber);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    }
+    
+    db.close();
+    
+    if (oldEntries.length > 0) {
+      console.log(`Cache cleanup: removed ${oldEntries.length} entries older than 3 days`);
+    }
+    
+    return oldEntries.length;
+  } catch (error) {
+    console.error('Error cleaning up old cache entries:', error);
+    return 0;
+  }
+};
