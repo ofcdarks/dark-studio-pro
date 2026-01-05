@@ -231,8 +231,9 @@ const PromptsImages = () => {
   // FFmpeg Video Generation states
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [videoKenBurns, setVideoKenBurns] = useState(true);
-  const [videoCrossfade, setVideoCrossfade] = useState(true);
-  const [videoCrossfadeDuration, setVideoCrossfadeDuration] = useState("0.5");
+  const [videoTransitionEnabled, setVideoTransitionEnabled] = useState(true);
+  const [videoTransitionType, setVideoTransitionType] = useState<"fade" | "wipeleft" | "wiperight" | "wipeup" | "wipedown" | "slideleft" | "slideright" | "zoomin" | "circleopen" | "dissolve">("fade");
+  const [videoTransitionDuration, setVideoTransitionDuration] = useState("0.5");
   const [videoColorFilter, setVideoColorFilter] = useState<"warm" | "cool" | "cinematic" | "vintage" | "none">("cinematic");
   const [videoResolution, setVideoResolution] = useState<"720p" | "1080p">("1080p");
   const [generatedVideoBlob, setGeneratedVideoBlob] = useState<Blob | null>(null);
@@ -1282,8 +1283,9 @@ echo "Agora importe o video no CapCut!"
       fps: 30,
       resolution: videoResolution,
       kenBurnsEnabled: videoKenBurns,
-      crossfadeEnabled: videoCrossfade,
-      crossfadeDuration: parseFloat(videoCrossfadeDuration) || 0.5,
+      transitionEnabled: videoTransitionEnabled,
+      transitionType: videoTransitionType,
+      transitionDuration: parseFloat(videoTransitionDuration) || 0.5,
       colorFilterEnabled: videoColorFilter !== "none",
       colorFilter: videoColorFilter
     });
@@ -3378,29 +3380,52 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               <Switch checked={videoKenBurns} onCheckedChange={setVideoKenBurns} />
             </div>
 
-            {/* Transição Crossfade */}
+            {/* Transição */}
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-sm">Transição Crossfade</Label>
-                <p className="text-xs text-muted-foreground">Fade suave entre cenas</p>
+                <Label className="text-sm">Transição entre cenas</Label>
+                <p className="text-xs text-muted-foreground">Efeito visual entre cenas</p>
               </div>
-              <Switch checked={videoCrossfade} onCheckedChange={setVideoCrossfade} />
+              <Switch checked={videoTransitionEnabled} onCheckedChange={setVideoTransitionEnabled} />
             </div>
 
-            {videoCrossfade && (
-              <div className="flex items-center justify-between pl-4 border-l-2 border-purple-500/30">
-                <Label className="text-sm">Duração do crossfade</Label>
-                <Select value={videoCrossfadeDuration} onValueChange={setVideoCrossfadeDuration}>
-                  <SelectTrigger className="w-24 h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0.3">0.3s</SelectItem>
-                    <SelectItem value="0.5">0.5s</SelectItem>
-                    <SelectItem value="0.8">0.8s</SelectItem>
-                    <SelectItem value="1">1.0s</SelectItem>
-                  </SelectContent>
-                </Select>
+            {videoTransitionEnabled && (
+              <div className="space-y-3 pl-4 border-l-2 border-purple-500/30">
+                <div className="space-y-2">
+                  <Label className="text-sm">Tipo de transição</Label>
+                  <Select value={videoTransitionType} onValueChange={(v) => setVideoTransitionType(v as any)}>
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fade">✨ Dissolve (Fade)</SelectItem>
+                      <SelectItem value="wipeleft">⬅️ Wipe Left</SelectItem>
+                      <SelectItem value="wiperight">➡️ Wipe Right</SelectItem>
+                      <SelectItem value="wipeup">⬆️ Wipe Up</SelectItem>
+                      <SelectItem value="wipedown">⬇️ Wipe Down</SelectItem>
+                      <SelectItem value="slideleft">📤 Slide Left</SelectItem>
+                      <SelectItem value="slideright">📥 Slide Right</SelectItem>
+                      <SelectItem value="zoomin">🔍 Zoom In</SelectItem>
+                      <SelectItem value="circleopen">⭕ Circle Open</SelectItem>
+                      <SelectItem value="dissolve">🌀 Dissolve</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Duração</Label>
+                  <Select value={videoTransitionDuration} onValueChange={setVideoTransitionDuration}>
+                    <SelectTrigger className="w-24 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0.3">0.3s</SelectItem>
+                      <SelectItem value="0.5">0.5s</SelectItem>
+                      <SelectItem value="0.8">0.8s</SelectItem>
+                      <SelectItem value="1">1.0s</SelectItem>
+                      <SelectItem value="1.5">1.5s</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
 
