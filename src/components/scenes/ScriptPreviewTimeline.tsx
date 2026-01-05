@@ -19,7 +19,7 @@ interface GeneratedScene {
   generatedImage?: string;
   emotion?: string;
   retentionTrigger?: string;
-  motionRecommended?: boolean; // Indica se a cena se beneficia de movimento (até 5s)
+  motionRecommended?: boolean; // Indica se a cena se beneficia de movimento (até 8s)
 }
 
 interface ScriptPreviewTimelineProps {
@@ -172,8 +172,8 @@ export function ScriptPreviewTimeline({
   ];
 
   const shouldRecommendMotion = (text: string, emotion?: string, durationSeconds?: number): boolean => {
-    // Só recomendar movimento para cenas de até 5 segundos
-    if (durationSeconds !== undefined && durationSeconds > 5) return false;
+    // Só recomendar movimento para cenas de até 8 segundos
+    if (durationSeconds !== undefined && durationSeconds > 8) return false;
     
     const lowerText = text.toLowerCase();
     const hasMotionKeyword = MOTION_KEYWORDS.some(kw => lowerText.includes(kw));
@@ -569,7 +569,7 @@ export function ScriptPreviewTimeline({
               <TooltipContent side="top" className="max-w-xs">
                 <p className="font-medium mb-1">🎬 Movimento Recomendado</p>
                 <p className="text-xs text-muted-foreground">
-                  {motionScenesCount} cenas contêm ação, emoção intensa ou elementos naturais que se beneficiam de animação (até 5s).
+                  {motionScenesCount} cenas contêm ação, emoção intensa ou elementos naturais que se beneficiam de animação (até 8s).
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -901,7 +901,7 @@ export function ScriptPreviewTimeline({
                           {sceneMotion && (
                             <div className="flex items-center gap-2 pt-1">
                               <span className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-medium">
-                                🎬 Movimento até 5s recomendado
+                                🎬 Movimento até 8s recomendado
                               </span>
                             </div>
                           )}
@@ -1003,7 +1003,7 @@ export function ScriptPreviewTimeline({
                       )}
                       {scene.motionRecommended && (
                         <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
-                          🎬 Movimento 5s
+                          🎬 Movimento 8s
                         </span>
                       )}
                     </div>

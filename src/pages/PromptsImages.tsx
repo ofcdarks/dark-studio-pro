@@ -1949,8 +1949,8 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
     ];
 
     const shouldRecommendMotion = (text: string, emotion?: string, durationSeconds?: number): boolean => {
-      // Só recomendar movimento para cenas de até 5 segundos
-      if (durationSeconds !== undefined && durationSeconds > 5) return false;
+      // Só recomendar movimento para cenas de até 8 segundos
+      if (durationSeconds !== undefined && durationSeconds > 8) return false;
       
       const lowerText = text.toLowerCase();
       const hasMotionKeyword = MOTION_KEYWORDS.some(kw => lowerText.includes(kw));
@@ -1971,7 +1971,7 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
       return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     };
 
-    // Identificar cenas com movimento recomendado (apenas cenas de até 5s)
+    // Identificar cenas com movimento recomendado (apenas cenas de até 8s)
     const motionScenes = generatedScenes.filter(s => {
       const startSec = s.timecode ? parseInt(s.timecode.split(":")[0]) * 60 + parseInt(s.timecode.split(":")[1]) : 0;
       const endSec = s.endTimecode ? parseInt(s.endTimecode.split(":")[0]) * 60 + parseInt(s.endTimecode.split(":")[1]) : startSec;
@@ -2010,7 +2010,7 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
 🎬 Total de Cenas: ${generatedScenes.length}
 📝 Total de Palavras: ${totalWords}
 🎙️ Velocidade de Narração: ${currentWpm} WPM
-🎥 Cenas para Animar: ${motionScenes.length} (recomendado movimento até 5s)
+🎥 Cenas para Animar: ${motionScenes.length} (recomendado movimento até 8s)
 
 ================================================================================
                          INSTRUÇÕES PARA O CAPCUT
@@ -2056,7 +2056,7 @@ ${group.scenes.map(s => {
     const motionSection = motionScenes.length > 0 ? `
 
 ================================================================================
-                    🎬 CENAS PARA ADICIONAR MOVIMENTO (até 5s)
+                    🎬 CENAS PARA ADICIONAR MOVIMENTO (até 8s)
 ================================================================================
 
 As cenas abaixo contêm elementos de ação, emoção intensa ou elementos naturais
@@ -2109,7 +2109,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
 💡 KEN BURNS (para cenas marcadas com 🎬):
    - Adicione zoom lento (5-10%) em cenas com movimento recomendado
-   - Limite a 5 segundos de animação para não distrair
+   - Limite a 8 segundos de animação para não distrair
 
 💡 VERIFICAÇÃO:
    - Assista o vídeo 1x e anote dessincronia
