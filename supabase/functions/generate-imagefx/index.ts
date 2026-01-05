@@ -182,10 +182,13 @@ function buildPromptPayload(options: {
   const seed = options.seed ?? Math.floor(Math.random() * 2147483647);
   const model = options.model === "IMAGEN_3" ? Model.IMAGEN_3 : Model.IMAGEN_3_5;
   
+  // Enriquecer prompt com formato 16:9 para evitar bordas pretas
+  const enhancedPrompt = `${options.prompt}, 16:9 aspect ratio, no black bars, no letterbox, no borders, fill entire frame`;
+  
   const payload: any = {
     userInput: {
       candidatesCount: options.numberOfImages || 1,
-      prompts: [options.prompt],
+      prompts: [enhancedPrompt],
       seed: seed
     },
     clientContext: {
