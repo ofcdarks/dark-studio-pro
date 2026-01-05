@@ -71,7 +71,10 @@ import { ScriptPreviewTimeline } from "@/components/scenes/ScriptPreviewTimeline
 import { SUBTITLE_STYLES, SubtitleStyle, generateSubtitleInstructions } from "@/lib/subtitleStyles";
 import { DEFAULT_AUDIO_MIX, AudioMixSettings, generateAudioFolderStructure, generateAudioMixReadme } from "@/lib/audioMixConfig";
 import { Slider } from "@/components/ui/slider";
-import { getAllCachedImages, getCacheStats } from "@/lib/imageCache";
+import { getAllCachedImages, getCacheStats, cleanupOldCacheEntries } from "@/lib/imageCache";
+
+// Cleanup old cache entries on app load (runs once)
+cleanupOldCacheEntries();
 
 interface CharacterDescription {
   name: string;
