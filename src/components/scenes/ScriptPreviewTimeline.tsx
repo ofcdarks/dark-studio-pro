@@ -19,6 +19,7 @@ interface GeneratedScene {
   generatedImage?: string;
   emotion?: string;
   retentionTrigger?: string;
+  motionRecommended?: boolean; // Indica se a cena se beneficia de movimento (até 5s)
 }
 
 interface ScriptPreviewTimelineProps {
@@ -43,6 +44,7 @@ interface PreviewScene {
   generatedImage?: string;
   emotion?: string;
   retentionTrigger?: string;
+  motionRecommended?: boolean;
 }
 
 // Mapeamento de emoções para cores
@@ -155,6 +157,27 @@ export function ScriptPreviewTimeline({
   
   // Se há cenas geradas, usa elas (com timecodes corretos)
   // Senão, estima baseado em palavras por cena
+  // Palavras-chave que indicam ação/movimento na cena
+  const MOTION_KEYWORDS = [
+    'caminha', 'corre', 'anda', 'move', 'dirige', 'voa', 'nada', 'pula', 'salta',
+    'walks', 'runs', 'moves', 'drives', 'flies', 'swims', 'jumps',
+    'pan', 'zoom', 'dolly', 'tracking', 'movimento', 'motion',
+    'água', 'water', 'fogo', 'fire', 'vento', 'wind', 'nuvens', 'clouds',
+    'carro', 'car', 'veículo', 'vehicle', 'trem', 'train', 'avião', 'plane',
+    'multidão', 'crowd', 'pessoas', 'people', 'animais', 'animals',
+    'explosão', 'explosion', 'queda', 'fall', 'subida', 'rise',
+    'dança', 'dance', 'luta', 'fight', 'perseguição', 'chase',
+    'oceano', 'ocean', 'rio', 'river', 'cachoeira', 'waterfall',
+    'floresta', 'forest', 'tempestade', 'storm', 'chuva', 'rain'
+  ];
+
+  const shouldRecommendMotion = (text: string, emotion?: string): boolean => {
+    const lowerText = text.toLowerCase();
+    const hasMotionKeyword = MOTION_KEYWORDS.some(kw => lowerText.includes(kw));
+    const hasActionEmotion = emotion && ['tension', 'tensão', 'shock', 'choque', 'surprise', 'surpresa'].includes(emotion.toLowerCase());
+    return hasMotionKeyword || !!hasActionEmotion;
+  };
+
   const previewScenes = useMemo(() => {
     if (generatedScenes.length > 0) {
       // Usar as cenas geradas com seus timecodes reais
@@ -163,6 +186,7 @@ export function ScriptPreviewTimeline({
         const startTime = currentTime;
         const endTime = currentTime + scene.durationSeconds;
         currentTime = endTime;
+        const motionRecommended = scene.motionRecommended ?? shouldRecommendMotion(scene.text, scene.emotion);
         return {
           number: scene.number,
           text: scene.text,
@@ -172,7 +196,8 @@ export function ScriptPreviewTimeline({
           endTime,
           generatedImage: scene.generatedImage,
           emotion: scene.emotion,
-          retentionTrigger: scene.retentionTrigger
+          retentionTrigger: scene.retentionTrigger,
+          motionRecommended
         };
       });
     }
@@ -695,6 +720,7 @@ export function ScriptPreviewTimeline({
                 const sceneImage = previewScenes[index]?.generatedImage;
                 const sceneEmotion = previewScenes[index]?.emotion;
                 const sceneTrigger = previewScenes[index]?.retentionTrigger;
+                const sceneMotion = previewScenes[index]?.motionRecommended;
                 const emotionStyle = getEmotionStyle(sceneEmotion);
                 const triggerStyle = getTriggerStyle(sceneTrigger);
                 
@@ -758,6 +784,15 @@ export function ScriptPreviewTimeline({
                         {!sceneImage && (
                           <div className="absolute top-1 right-1 z-20">
                             <ImagePlus className="w-3 h-3 text-white/60" />
+                          </div>
+                        )}
+                        
+                        {/* Indicador de movimento recomendado */}
+                        {sceneMotion && sceneImage && (
+                          <div className="absolute top-1 right-1 z-20">
+                            <span className="text-[8px] px-1 py-0.5 rounded bg-emerald-500/80 text-white font-medium">
+                              🎬
+                            </span>
                           </div>
                         )}
                         
@@ -829,6 +864,15 @@ export function ScriptPreviewTimeline({
                               <span className="text-xs text-muted-foreground">Gatilho:</span>
                               <span className={`text-xs px-2 py-1 rounded ${triggerStyle.bg} ${triggerStyle.text} font-medium`}>
                                 🔁 {triggerStyle.label}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Movimento recomendado */}
+                          {sceneMotion && (
+                            <div className="flex items-center gap-2 pt-1">
+                              <span className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-medium">
+                                🎬 Movimento até 5s recomendado
                               </span>
                             </div>
                           )}
@@ -926,6 +970,11 @@ export function ScriptPreviewTimeline({
                       {scene.retentionTrigger && (
                         <span className={`text-[9px] px-1.5 py-0.5 rounded ${triggerStyle.bg} ${triggerStyle.text}`}>
                           🔁 {triggerStyle.label}
+                        </span>
+                      )}
+                      {scene.motionRecommended && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
+                          🎬 Movimento 5s
                         </span>
                       )}
                     </div>
