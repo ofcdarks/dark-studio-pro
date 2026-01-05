@@ -10,14 +10,17 @@ export interface VideoScene {
   durationSeconds: number;
 }
 
+export type TransitionType = "fade" | "wipeleft" | "wiperight" | "wipeup" | "wipedown" | "slideleft" | "slideright" | "zoomin" | "circleopen" | "dissolve";
+
 export interface VideoGenerationOptions {
   scenes: VideoScene[];
   projectName: string;
   fps?: number;
   resolution?: "720p" | "1080p";
   kenBurnsEnabled?: boolean;
-  crossfadeEnabled?: boolean;
-  crossfadeDuration?: number; // in seconds
+  transitionEnabled?: boolean;
+  transitionType?: TransitionType;
+  transitionDuration?: number; // in seconds
   colorFilterEnabled?: boolean;
   colorFilter?: "warm" | "cool" | "cinematic" | "vintage" | "none";
 }
@@ -107,8 +110,9 @@ export function useFFmpegVideoGenerator() {
         fps = 30,
         resolution = "1080p",
         kenBurnsEnabled = true,
-        crossfadeEnabled = true,
-        crossfadeDuration = 0.5,
+        transitionEnabled = true,
+        transitionType = "fade",
+        transitionDuration = 0.5,
         colorFilterEnabled = true,
         colorFilter = "cinematic",
       } = options;
@@ -227,16 +231,16 @@ export function useFFmpegVideoGenerator() {
         // Build the concat or xfade chain
         let finalFilter = filterParts.join("; ");
 
-        if (validScenes.length > 1 && crossfadeEnabled) {
-          // Add crossfade transitions
+        if (validScenes.length > 1 && transitionEnabled) {
+          // Add transitions between scenes
           let currentInput = "[v0]";
           for (let i = 1; i < validScenes.length; i++) {
             const outputLabel = i === validScenes.length - 1 ? "[vout]" : `[xf${i}]`;
             const offset = validScenes
               .slice(0, i)
-              .reduce((sum, s) => sum + s.durationSeconds, 0) - crossfadeDuration * i;
+              .reduce((sum, s) => sum + s.durationSeconds, 0) - transitionDuration * i;
             
-            finalFilter += `; ${currentInput}[v${i}]xfade=transition=fade:duration=${crossfadeDuration}:offset=${Math.max(0, offset).toFixed(2)}${outputLabel}`;
+            finalFilter += `; ${currentInput}[v${i}]xfade=transition=${transitionType}:duration=${transitionDuration}:offset=${Math.max(0, offset).toFixed(2)}${outputLabel}`;
             currentInput = outputLabel.replace("]", "").replace("[", "");
             currentInput = `[${currentInput}]`;
           }
