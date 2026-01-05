@@ -45,6 +45,7 @@ import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -163,6 +164,7 @@ const PromptsImages = () => {
   const [editingPromptIndex, setEditingPromptIndex] = useState<number | null>(null);
   const [editingPromptText, setEditingPromptText] = useState("");
   const [downloadingAll, setDownloadingAll] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<Set<number>>(() => new Set());
   const [savedCapcutFolder, setSavedCapcutFolder] = useState<string | null>(null);
   const [showCapcutInstructions, setShowCapcutInstructions] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("clean");
@@ -505,49 +507,122 @@ const PromptsImages = () => {
     toast({ title: "Cancelando...", description: "Aguarde o lote atual finalizar" });
   };
 
-  // Baixar todas as imagens geradas
+  const downloadScenesAsZip = async (scenes: ScenePrompt[], zipFileName: string) => {
+    const zip = new JSZip();
+
+    let added = 0;
+    for (const scene of scenes) {
+      if (!scene.generatedImage) continue;
+
+      try {
+        const response = await fetch(scene.generatedImage);
+        const blob = await response.blob();
+        zip.file(`cena_${String(scene.number).padStart(3, "0")}.png`, blob);
+        added++;
+      } catch (e) {
+        console.warn("Falha ao incluir imagem no ZIP:", scene.number, e);
+      }
+    }
+
+    if (added === 0) {
+      throw new Error("Nenhuma imagem pôde ser adicionada ao ZIP");
+    }
+
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(zipBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = zipFileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    return added;
+  };
+
+  // Baixar todas as imagens geradas (ZIP) — evita bloqueio do navegador e corrige CORS
   const handleDownloadAllImages = async () => {
     const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
-    
+
     if (scenesWithImages.length === 0) {
       toast({ title: "Nenhuma imagem para baixar" });
       return;
     }
 
     setDownloadingAll(true);
-    
+
     try {
-      for (let i = 0; i < scenesWithImages.length; i++) {
-        const scene = scenesWithImages[i];
-        if (!scene.generatedImage) continue;
-        
-        // Criar link de download
-        const link = document.createElement("a");
-        link.href = scene.generatedImage;
-        link.download = `cena-${scene.number}-${scene.timecode?.replace(":", "m")}s.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Pequena pausa entre downloads
-        if (i < scenesWithImages.length - 1) {
-          await new Promise(r => setTimeout(r, 300));
-        }
-      }
-      
+      const fileName = `Imagens_${new Date().toISOString().split("T")[0]}.zip`;
+      const added = await downloadScenesAsZip(scenesWithImages, fileName);
       toast({
         title: "Download iniciado!",
-        description: `${scenesWithImages.length} imagens baixadas`,
+        description: `ZIP com ${added} imagens`,
       });
     } catch (error) {
       toast({
         title: "Erro no download",
-        description: "Não foi possível baixar as imagens",
+        description: "Não foi possível gerar o ZIP das imagens",
         variant: "destructive",
       });
     } finally {
       setDownloadingAll(false);
     }
+  };
+
+  const handleSelectAllImages = () => {
+    const all = generatedScenes.filter(s => s.generatedImage).map(s => s.number);
+    setSelectedImages(new Set(all));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedImages(new Set());
+  };
+
+  const handleDownloadSelectedImages = async () => {
+    const selectedScenes = generatedScenes.filter(s => s.generatedImage && selectedImages.has(s.number));
+
+    if (selectedScenes.length === 0) {
+      toast({ title: "Nenhuma imagem selecionada" });
+      return;
+    }
+
+    setDownloadingAll(true);
+    try {
+      const fileName = `Imagens_selecionadas_${new Date().toISOString().split("T")[0]}.zip`;
+      const added = await downloadScenesAsZip(selectedScenes, fileName);
+      toast({
+        title: "Download iniciado!",
+        description: `ZIP com ${added} imagens selecionadas`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro no download",
+        description: "Não foi possível gerar o ZIP das selecionadas",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
+
+  const handleClearSelectedImages = () => {
+    if (selectedImages.size === 0) return;
+
+    const clearedCount = Array.from(selectedImages).length;
+    updateScenes(
+      generatedScenes.map((s) =>
+        selectedImages.has(s.number)
+          ? { ...s, generatedImage: undefined, generatingImage: false }
+          : s
+      )
+    );
+    setSelectedImages(new Set());
+
+    toast({
+      title: "Imagens removidas",
+      description: `${clearedCount} imagens foram limpas`,
+    });
   };
 
   // IndexedDB para persistir o handle do diretório (localStorage não suporta FileSystemDirectoryHandle)
@@ -1494,20 +1569,73 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                         </div>
                       </div>
 
-                      {/* Grid de imagens - sempre visível */}
                       <div className="mb-6">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-sm font-medium text-muted-foreground">
-                            Imagens das Cenas ({generatedScenes.filter(s => s.generatedImage).length}/{generatedScenes.length})
-                          </h4>
-                          <Button
-                            variant={filterPending ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setFilterPending(!filterPending)}
-                            className="h-7 text-xs"
-                          >
-                            {filterPending ? "Ver Todas" : "Só Pendentes"}
-                          </Button>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-medium text-muted-foreground">
+                              Imagens das Cenas ({generatedScenes.filter(s => s.generatedImage).length}/{generatedScenes.length})
+                            </h4>
+                            {selectedImages.size > 0 && (
+                              <Badge variant="outline" className="text-xs">
+                                {selectedImages.size} selecionadas
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleSelectAllImages}
+                              disabled={!generatedScenes.some(s => s.generatedImage)}
+                              className="h-7 text-xs"
+                            >
+                              <Check className="w-3.5 h-3.5 mr-1.5" />
+                              Selecionar todas
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleClearSelection}
+                              disabled={selectedImages.size === 0}
+                              className="h-7 text-xs"
+                            >
+                              Limpar seleção
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleDownloadSelectedImages}
+                              disabled={downloadingAll || selectedImages.size === 0}
+                              className="h-7 text-xs"
+                            >
+                              {downloadingAll ? (
+                                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                              ) : (
+                                <DownloadCloud className="w-3.5 h-3.5 mr-1.5" />
+                              )}
+                              Baixar
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleClearSelectedImages}
+                              disabled={selectedImages.size === 0}
+                              className="h-7 text-xs"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                              Limpar
+                            </Button>
+
+                            <Button
+                              variant={filterPending ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setFilterPending(!filterPending)}
+                              className="h-7 text-xs"
+                            >
+                              {filterPending ? "Ver Todas" : "Só Pendentes"}
+                            </Button>
+                          </div>
                         </div>
                         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                           {generatedScenes
@@ -1532,6 +1660,24 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                             >
                               {scene.generatedImage ? (
                                 <>
+                                  <div
+                                    className="absolute top-1 left-1 z-10"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Checkbox
+                                      checked={selectedImages.has(scene.number)}
+                                      onCheckedChange={(checked) => {
+                                        setSelectedImages((prev) => {
+                                          const next = new Set(prev);
+                                          if (checked) next.add(scene.number);
+                                          else next.delete(scene.number);
+                                          return next;
+                                        });
+                                      }}
+                                      aria-label={`Selecionar cena ${scene.number}`}
+                                    />
+                                  </div>
+
                                   <img 
                                     src={scene.generatedImage} 
                                     alt={`Cena ${scene.number}`}
@@ -2294,15 +2440,14 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
           </ScrollArea>
 
           <div className="space-y-4 pt-2">
-            {/* Info sobre SRT */}
+            {/* SRT */}
             <div className="p-3 bg-secondary/50 rounded-lg border border-border">
               <h4 className="font-semibold text-foreground text-sm mb-1 flex items-center gap-2">
                 <FileText className="w-4 h-4 text-primary" />
-                SRT para Narração
+                SRT
               </h4>
               <p className="text-xs text-muted-foreground">
-                O arquivo SRT será gerado com blocos de no máximo <strong>499 caracteres</strong>, 
-                sem cortar palavras, e com <strong>10 segundos</strong> de intervalo entre cenas.
+                O arquivo <strong>NARRACOES.srt</strong> também será gerado junto com o projeto.
               </p>
             </div>
 
