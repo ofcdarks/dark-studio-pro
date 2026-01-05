@@ -2264,9 +2264,22 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                         <h3 className="font-semibold text-sm text-foreground">
                           {detectedCharacters.length} Personagem(ns) Detectado(s)
                         </h3>
-                        <Badge variant="outline" className="ml-auto text-xs">
+                        <Badge variant="outline" className="text-xs">
                           Seed fixa ativada
                         </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setDetectedCharacters([]);
+                            setBgCharacters([]);
+                            toast({ title: "Personagens limpos", description: "Seeds fixas desativadas" });
+                          }}
+                          className="ml-auto h-6 text-xs text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          Limpar
+                        </Button>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {detectedCharacters.map((char, idx) => (
