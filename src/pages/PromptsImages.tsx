@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
 import { useFFmpegVideo, ProcessingMode, supportsMultiThread } from "@/hooks/useFFmpegVideo";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
+import { generateEdl, generateEdlWithTransitions } from "@/lib/edlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -1186,6 +1187,58 @@ echo "Agora importe o video no CapCut!"
   const handleConfirmCapcutExport = async () => {
     setShowCapcutInstructions(false);
     await handleSaveToCapcutFolder();
+  };
+
+  // Exportar EDL para DaVinci Resolve
+  const handleExportEdl = () => {
+    const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
+    
+    if (scenesWithImages.length === 0) {
+      toast({ 
+        title: "Nenhuma imagem disponível", 
+        description: "Gere as imagens primeiro antes de exportar o EDL.",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // Calcular durações das cenas
+    const scenesForEdl = generatedScenes.map(scene => {
+      const durationSeconds = Math.max(1, wordCountToSeconds(scene.wordCount));
+      const imagePath = scene.generatedImage 
+        ? `cena_${String(scene.number).padStart(3, "0")}.jpg`
+        : undefined;
+      return {
+        number: scene.number,
+        text: scene.text,
+        durationSeconds,
+        imagePath
+      };
+    });
+
+    // Gerar EDL com transições de dissolve
+    const edlContent = generateEdlWithTransitions(scenesForEdl, {
+      title: projectName || "Projeto_Video",
+      fps: 24,
+      transitionFrames: 12 // 0.5s de dissolve
+    });
+
+    // Baixar arquivo
+    const blob = new Blob([edlContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const safeFileName = (projectName.trim() || "projeto").replace(/[^a-zA-Z0-9_-]/g, "_");
+    link.download = `${safeFileName}_davinci.edl`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({ 
+      title: "✅ EDL exportado!", 
+      description: "Importe no DaVinci Resolve: File > Import > Timeline > Import AAF, EDL, XML..." 
+    });
   };
 
   // Gerar vídeo MP4 diretamente no navegador usando FFmpeg.wasm
@@ -3007,6 +3060,29 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Baixar ZIP
+                </Button>
+              </div>
+
+              {/* Exportar EDL para DaVinci Resolve */}
+              <div className="p-3 bg-secondary/50 rounded-lg border border-border">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🎬</span>
+                    <span className="font-medium text-sm text-foreground">DaVinci Resolve</span>
+                  </div>
+                  <Badge variant="outline" className="text-[10px]">EDL</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Exporta arquivo EDL (Edit Decision List) com timecodes e transições de dissolve. Compatível com DaVinci Resolve 16+.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={handleExportEdl}
+                  disabled={generatedScenes.filter(s => s.generatedImage).length === 0}
+                  className="w-full"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Baixar EDL para DaVinci
                 </Button>
               </div>
             </div>
