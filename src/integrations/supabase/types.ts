@@ -1000,6 +1000,39 @@ export type Database = {
         }
         Relationships: []
       }
+      srt_history: {
+        Row: {
+          block_count: number | null
+          created_at: string
+          id: string
+          original_text: string
+          srt_content: string
+          title: string | null
+          user_id: string
+          word_count: number | null
+        }
+        Insert: {
+          block_count?: number | null
+          created_at?: string
+          id?: string
+          original_text: string
+          srt_content: string
+          title?: string | null
+          user_id: string
+          word_count?: number | null
+        }
+        Update: {
+          block_count?: number | null
+          created_at?: string
+          id?: string
+          original_text?: string
+          srt_content?: string
+          title?: string | null
+          user_id?: string
+          word_count?: number | null
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           color: string

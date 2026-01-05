@@ -3,14 +3,32 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Subtitles, Scissors, Play, Split, Clock } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Subtitles, Scissors, Play, Split, Clock, History, Trash2, Copy, Download, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
-import { generateNarrationSrt } from "@/lib/srtGenerator";
+import { generateNarrationSrt, countSrtBlocks } from "@/lib/srtGenerator";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+interface SrtHistoryItem {
+  id: string;
+  title: string | null;
+  original_text: string;
+  srt_content: string;
+  word_count: number;
+  block_count: number;
+  created_at: string;
+}
 
 const SRTConverter = () => {
+  const { user } = useAuth();
+  
   // Conversor SRT states
   const [srtInputText, setSrtInputText] = usePersistedState("srt_conversor_input", "");
   const [srtOutputText, setSrtOutputText] = usePersistedState("srt_conversor_output", "");
@@ -20,6 +38,12 @@ const SRTConverter = () => {
   const [divisorOutputText, setDivisorOutputText] = usePersistedState("srt_divisor_output", "");
   const [wordsLimit, setWordsLimit] = useState("");
   const [charsLimit, setCharsLimit] = useState("");
+
+  // History states
+  const [history, setHistory] = useState<SrtHistoryItem[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState<SrtHistoryItem | null>(null);
 
   // Stats for Divisor
   const divisorStats = useMemo(() => {
@@ -36,8 +60,88 @@ const SRTConverter = () => {
     return { words, chars, duration };
   }, [divisorInputText]);
 
+  // Load history
+  const loadHistory = async () => {
+    if (!user) return;
+    
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('srt_history')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setHistory(data || []);
+    } catch (error) {
+      console.error('Error loading SRT history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHistory();
+  }, [user]);
+
+  // Save to history
+  const saveToHistory = async (originalText: string, srtContent: string) => {
+    if (!user) return;
+
+    const wordCount = originalText.split(/\s+/).filter(w => w.length > 0).length;
+    const blockCount = countSrtBlocks(srtContent);
+    const title = originalText.slice(0, 50) + (originalText.length > 50 ? '...' : '');
+
+    try {
+      const { error } = await supabase
+        .from('srt_history')
+        .insert({
+          user_id: user.id,
+          title,
+          original_text: originalText,
+          srt_content: srtContent,
+          word_count: wordCount,
+          block_count: blockCount
+        });
+
+      if (error) throw error;
+      loadHistory();
+    } catch (error) {
+      console.error('Error saving to history:', error);
+    }
+  };
+
+  // Delete from history
+  const deleteFromHistory = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('srt_history')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setHistory(prev => prev.filter(item => item.id !== id));
+      if (selectedHistoryItem?.id === id) {
+        setSelectedHistoryItem(null);
+      }
+      toast.success('Item removido do histórico');
+    } catch (error) {
+      console.error('Error deleting from history:', error);
+      toast.error('Erro ao remover do histórico');
+    }
+  };
+
+  // Load history item
+  const loadHistoryItem = (item: SrtHistoryItem) => {
+    setSrtInputText(item.original_text);
+    setSrtOutputText(item.srt_content);
+    setSelectedHistoryItem(item);
+    toast.success('SRT carregado do histórico');
+  };
+
   // Converte texto para SRT com blocos de 499 chars e 10s entre legendas
-  const handleConvertToSrt = () => {
+  const handleConvertToSrt = async () => {
     if (!srtInputText.trim()) {
       toast.error('Cole o texto primeiro');
       return;
@@ -64,6 +168,9 @@ const SRTConverter = () => {
 
     setSrtOutputText(srtContent);
     toast.success('Texto convertido para SRT!');
+
+    // Save to history
+    await saveToHistory(text, srtContent);
   };
 
   // Divide por palavras
@@ -121,6 +228,15 @@ const SRTConverter = () => {
     const result = parts.map((part, idx) => `--- Parte ${idx + 1} ---\n${part}`).join('\n\n');
     setDivisorOutputText(result);
     toast.success(`Roteiro dividido em ${parts.length} partes!`);
+  };
+
+  const handleCopySrt = () => {
+    if (!srtOutputText) {
+      toast.error('Nenhum conteúdo para copiar');
+      return;
+    }
+    navigator.clipboard.writeText(srtOutputText);
+    toast.success('SRT copiado!');
   };
 
   const handleDownloadSrt = () => {
@@ -204,26 +320,29 @@ const SRTConverter = () => {
 
               {srtOutputText && (
                 <div className="mt-4">
-                  <label className="text-sm font-medium text-foreground mb-2 block">Resultado SRT</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-foreground">Resultado SRT</label>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={handleCopySrt}>
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={handleDownloadSrt}>
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
                   <Textarea
                     value={srtOutputText}
                     readOnly
                     className="bg-secondary/50 border-border min-h-48 font-mono text-sm"
                   />
-                  <Button 
-                    variant="outline" 
-                    onClick={handleDownloadSrt}
-                    className="mt-2 gap-2"
-                  >
-                    Baixar SRT
-                  </Button>
                 </div>
               )}
             </div>
           </Card>
 
           {/* Divisor de Texto */}
-          <Card className="p-6 border-border">
+          <Card className="p-6 mb-6 border-border">
             <div className="flex items-center gap-3 mb-2">
               <Scissors className="w-5 h-5 text-purple-500" />
               <h2 className="text-xl font-semibold text-foreground">Divisor de Texto</h2>
@@ -325,6 +444,81 @@ const SRTConverter = () => {
               )}
             </div>
           </Card>
+
+          {/* Histórico de SRT */}
+          {user && (
+            <Card className="p-6 border-border">
+              <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <History className="w-5 h-5 text-primary" />
+                      <h2 className="text-xl font-semibold text-foreground">Histórico de SRT</h2>
+                      <span className="text-sm text-muted-foreground">({history.length})</span>
+                    </div>
+                    {isHistoryOpen ? (
+                      <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                    )}
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  {loadingHistory ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Carregando histórico...
+                    </div>
+                  ) : history.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Nenhum SRT gerado ainda. Converta um texto para começar.
+                    </div>
+                  ) : (
+                    <ScrollArea className="h-[400px] mt-4">
+                      <div className="space-y-3 pr-4">
+                        {history.map((item) => (
+                          <div
+                            key={item.id}
+                            className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                              selectedHistoryItem?.id === item.id
+                                ? 'bg-primary/10 border-primary/50'
+                                : 'bg-secondary/30 border-border hover:bg-secondary/50'
+                            }`}
+                            onClick={() => loadHistoryItem(item)}
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-foreground truncate">
+                                  {item.title || 'Sem título'}
+                                </p>
+                                <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                                  <span>{item.word_count} palavras</span>
+                                  <span>{item.block_count} blocos</span>
+                                  <span>
+                                    {format(new Date(item.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                  </span>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteFromHistory(item.id);
+                                }}
+                                className="text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+            </Card>
+          )}
         </div>
       </div>
     </MainLayout>
