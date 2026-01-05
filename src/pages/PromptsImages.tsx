@@ -1837,6 +1837,24 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                             >
                               {filterPending ? "Ver Todas" : "Só Pendentes"}
                             </Button>
+                            
+                            {/* Botão para regenerar apenas mídias perdidas */}
+                            {generatedScenes.some(s => !s.generatedImage) && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={handleGenerateAllImages}
+                                disabled={generatingImages}
+                                className="h-7 text-xs"
+                              >
+                                {generatingImages ? (
+                                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                                )}
+                                Regenerar Perdidas ({generatedScenes.filter(s => !s.generatedImage).length})
+                              </Button>
+                            )}
                           </div>
                         </div>
                         <div className="relative">
