@@ -288,31 +288,45 @@ ${videoData ? `
 
 Analise este título e identifique:
 
-1. FÓRMULA DO TÍTULO:
+1. FORMATO E ESTRUTURA DO TÍTULO ORIGINAL:
+   - Detecte o formato exato: usa CAIXA ALTA? Usa separadores (| - : •)?
+   - Tem sufixo padrão (ex: "- Documentário", "| REACT", "(LEGENDADO)")?
+   - Qual a estrutura visual? (ex: "TEMA | SUBTEMA - Categoria")
+   - CRÍTICO: Os títulos gerados DEVEM seguir este mesmo formato visual!
+
+2. FÓRMULA DO TÍTULO:
    - Qual padrão/técnica ele usa? (pergunta, número, mistério, nome próprio, CAIXA ALTA, etc)
    - Por que essa fórmula funciona para este nicho?
 
-2. NICHO E SUBNICHO:
+3. NICHO E SUBNICHO:
    - Nicho principal detectado
    - Subnicho específico
    - Micronicho (se aplicável)
 
-3. ELEMENTOS DE SUCESSO:
+4. ELEMENTOS DE SUCESSO:
    - Por que este título viralizou?
    - Que gatilhos emocionais ativa?
    - Que curiosidade desperta?
 
-4. GERE 5 TÍTULOS OTIMIZADOS:
+5. GERE 5 TÍTULOS OTIMIZADOS:
+   - OBRIGATÓRIO: Use o MESMO FORMATO VISUAL do original (separadores, caixa alta, sufixos)
+   - Se o original usa "TEMA | SUBTEMA", os novos também devem
+   - Se o original tem "- Documentário" no final, mantenha
    - Use a mesma fórmula identificada
    - Adapte para o idioma: ${langLabel}
    - Mantenha o impacto e curiosidade
-   - Use CAIXA ALTA estrategicamente
-   - Máximo 60 caracteres cada
+   - Máximo 70 caracteres cada
 
 Retorne APENAS em formato JSON válido:
 {
   "originalTitle": "título original do vídeo",
   "translatedTitle": "título traduzido se necessário ou igual ao original",
+  "titleFormat": {
+    "usesUppercase": true/false,
+    "separators": ["|", "-"],
+    "suffix": "- Documentário" ou null,
+    "structure": "TEMA | SUBTEMA - Categoria"
+  },
   "videoStats": {
     "views": número,
     "comments": número,
@@ -324,11 +338,11 @@ Retorne APENAS em formato JSON válido:
   "formula": "descrição da fórmula identificada",
   "whyItWorks": "explicação de por que este título funciona e viraliza",
   "titles": [
-    {"title": "TÍTULO 1 OTIMIZADO", "score": 95, "explanation": "Usa a fórmula X com gatilho Y"},
-    {"title": "TÍTULO 2 OTIMIZADO", "score": 92, "explanation": "Variação da fórmula com Z"},
-    {"title": "TÍTULO 3 OTIMIZADO", "score": 90, "explanation": "Combina elementos A e B"},
-    {"title": "TÍTULO 4 OTIMIZADO", "score": 88, "explanation": "Foco em gatilho W"},
-    {"title": "TÍTULO 5 OTIMIZADO", "score": 85, "explanation": "Alternativa com Q"}
+    {"title": "TÍTULO 1 NO MESMO FORMATO", "score": 95, "explanation": "Mantém estrutura X | Y com gatilho Z"},
+    {"title": "TÍTULO 2 NO MESMO FORMATO", "score": 92, "explanation": "Variação usando mesmos separadores"},
+    {"title": "TÍTULO 3 NO MESMO FORMATO", "score": 90, "explanation": "Combina elementos A e B no formato original"},
+    {"title": "TÍTULO 4 NO MESMO FORMATO", "score": 88, "explanation": "Foco em gatilho W mantendo estrutura"},
+    {"title": "TÍTULO 5 NO MESMO FORMATO", "score": 85, "explanation": "Alternativa respeitando o formato visual"}
   ]
 }`;
 
