@@ -89,6 +89,8 @@ interface ScenePrompt {
   generatedImage?: string;
   generatingImage?: boolean;
   characterName?: string; // Personagem principal nesta cena
+  emotion?: string; // Emoção dominante: tensão, surpresa, medo, admiração, choque, curiosidade
+  retentionTrigger?: string; // Gatilho de retenção: curiosidade, quebra_padrão, antecipação, revelação, mistério
 }
 
 interface SceneHistory {
@@ -2252,7 +2254,9 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                         text: scene.text,
                         wordCount: scene.wordCount,
                         durationSeconds: (scene.wordCount / currentWpm) * 60,
-                        generatedImage: scene.generatedImage
+                        generatedImage: scene.generatedImage,
+                        emotion: scene.emotion,
+                        retentionTrigger: scene.retentionTrigger
                       })) : []}
                     />
                   )}

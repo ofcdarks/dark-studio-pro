@@ -20,6 +20,8 @@ interface ScenePrompt {
   generatedImage?: string;
   generatingImage?: boolean;
   characterName?: string; // Personagem principal nesta cena
+  emotion?: string; // Emoção dominante
+  retentionTrigger?: string; // Gatilho de retenção
 }
 
 interface BackgroundGenerationState {
