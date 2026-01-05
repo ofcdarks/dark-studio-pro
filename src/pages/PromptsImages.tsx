@@ -115,6 +115,7 @@ const AI_MODELS = [
 const NARRATION_SPEEDS = [
   { value: "120", label: "Lenta (120 WPM)", description: "Narração pausada, mais tempo por cena" },
   { value: "140", label: "Normal (140 WPM)", description: "Ritmo natural de fala" },
+  { value: "150", label: "Padrão SRT (150 WPM)", description: "Velocidade padrão para legendas" },
   { value: "160", label: "Rápida (160 WPM)", description: "Narração dinâmica" },
   { value: "180", label: "Muito Rápida (180 WPM)", description: "Locução acelerada" },
 ];
@@ -1658,6 +1659,52 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
     toast({
       title: "Download iniciado!",
       description: "Arquivo TXT com os prompts",
+    });
+  };
+
+  // Baixar SRT com mesma configuração do gerador de roteiros (150 WPM, 499 chars, 10s gap)
+  const downloadSrt = () => {
+    if (generatedScenes.length === 0) {
+      toast({ title: "Nenhuma cena para exportar", variant: "destructive" });
+      return;
+    }
+
+    // Calcular timecodes baseados no WPM atual
+    const scenesWithDurations = generatedScenes.map((scene) => {
+      const startSeconds = scene.timecode ? 
+        parseInt(scene.timecode.split(":")[0]) * 60 + parseInt(scene.timecode.split(":")[1]) : 0;
+      const endSeconds = scene.endTimecode ? 
+        parseInt(scene.endTimecode.split(":")[0]) * 60 + parseInt(scene.endTimecode.split(":")[1]) : startSeconds;
+      return { ...scene, startSeconds, endSeconds };
+    });
+
+    const scenesForSrt = scenesWithDurations.map(s => ({
+      number: s.number,
+      text: s.text,
+      startSeconds: s.startSeconds,
+      endSeconds: s.endSeconds
+    }));
+
+    // Usar a mesma configuração do srtGenerator (499 chars, 10s gap)
+    const srtContent = generateNarrationSrt(scenesForSrt, {
+      maxCharsPerBlock: 499,
+      gapBetweenScenes: 10
+    });
+
+    const blob = new Blob([srtContent], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `legendas-${new Date().toISOString().split('T')[0]}.srt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    const blockCount = srtContent.split('\n\n').filter(b => b.trim()).length;
+    toast({
+      title: "SRT gerado!",
+      description: `${blockCount} blocos de legenda (máx 499 chars)`,
     });
   };
 
@@ -3478,6 +3525,15 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               >
                 <Download className="w-3 h-3 mr-1" />
                 Baixar ZIP
+              </Button>
+              <Button
+                variant="outline"
+                onClick={downloadSrt}
+                disabled={generatedScenes.length === 0}
+                className="flex-1 h-8 text-xs border-cyan-500/50 text-cyan-500 hover:bg-cyan-500/10"
+              >
+                <Type className="w-3 h-3 mr-1" />
+                Baixar SRT
               </Button>
             </div>
 
