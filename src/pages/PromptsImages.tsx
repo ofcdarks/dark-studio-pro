@@ -2973,7 +2973,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
       {/* Modal de Instruções CapCut */}
       <Dialog open={showCapcutInstructions} onOpenChange={setShowCapcutInstructions}>
-        <DialogContent className="max-w-md bg-card border-primary/50 rounded-xl shadow-xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-2xl bg-card border-primary/50 rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="pb-2">
             <DialogTitle className="flex items-center gap-2 text-foreground text-base">
               <Video className="w-4 h-4 text-primary" />
