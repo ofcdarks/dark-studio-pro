@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useApiSettings } from "@/hooks/useApiSettings";
@@ -14,6 +15,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 type UserPlan = 'free' | 'pro' | 'admin' | 'master' | 'annual';
+
+interface NotificationPrefs {
+  notify_viral_videos: boolean;
+  notify_weekly_reports: boolean;
+  notify_new_features: boolean;
+}
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -39,6 +46,21 @@ const SettingsPage = () => {
     youtube: false,
     imagefx: false,
   });
+  
+  // Notification preferences
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>({
+    notify_viral_videos: true,
+    notify_weekly_reports: true,
+    notify_new_features: true,
+  });
+  const [savingNotifications, setSavingNotifications] = useState(false);
+
+  // Password change modal
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Fetch user plan/role
   useEffect(() => {
@@ -53,13 +75,10 @@ const SettingsPage = () => {
           .maybeSingle();
         
         if (roleData?.role) {
-          // Check if user has annual plan by checking subscriptions or plan_permissions
-          // For now, map the role to plan type
           const role = roleData.role as string;
           if (role === 'admin') {
             setUserPlan('admin');
           } else if (role === 'pro') {
-            // Check if it's annual pro
             setUserPlan('pro');
           } else {
             setUserPlan('free');
@@ -71,6 +90,33 @@ const SettingsPage = () => {
     };
     
     fetchUserPlan();
+  }, [user]);
+
+  // Fetch notification preferences
+  useEffect(() => {
+    const fetchNotificationPrefs = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('user_preferences')
+          .select('notify_viral_videos, notify_weekly_reports, notify_new_features')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (data) {
+          setNotificationPrefs({
+            notify_viral_videos: data.notify_viral_videos ?? true,
+            notify_weekly_reports: data.notify_weekly_reports ?? true,
+            notify_new_features: data.notify_new_features ?? true,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching notification prefs:', error);
+      }
+    };
+    
+    fetchNotificationPrefs();
   }, [user]);
 
   useEffect(() => {
@@ -96,7 +142,6 @@ const SettingsPage = () => {
     }
   }, [settings]);
 
-  // Check if user can use their own API keys (annual plans or master/admin)
   const canUseOwnApiKeys = userPlan === 'admin' || userPlan === 'master' || userPlan === 'annual';
 
   const handleSaveProfile = async () => {
@@ -154,6 +199,89 @@ const SettingsPage = () => {
 
   const toggleShowKey = (provider: string) => {
     setShowKeys(prev => ({ ...prev, [provider]: !prev[provider as keyof typeof prev] }));
+  };
+
+  // Save notification preferences
+  const handleNotificationChange = async (key: keyof NotificationPrefs, value: boolean) => {
+    if (!user) return;
+    
+    const newPrefs = { ...notificationPrefs, [key]: value };
+    setNotificationPrefs(newPrefs);
+    setSavingNotifications(true);
+    
+    try {
+      // Check if user has preferences record
+      const { data: existing } = await supabase
+        .from('user_preferences')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (existing) {
+        await supabase
+          .from('user_preferences')
+          .update({
+            [key]: value,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id);
+      } else {
+        await supabase
+          .from('user_preferences')
+          .insert({
+            user_id: user.id,
+            [key]: value,
+          });
+      }
+      
+      toast.success('Preferência atualizada!');
+    } catch (error) {
+      console.error('Error saving notification pref:', error);
+      toast.error('Erro ao salvar preferência');
+      // Revert on error
+      setNotificationPrefs(prev => ({ ...prev, [key]: !value }));
+    } finally {
+      setSavingNotifications(false);
+    }
+  };
+
+  // Change password
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      toast.error('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+    
+    setChangingPassword(true);
+    
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Senha alterada com sucesso!');
+      setPasswordModalOpen(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      toast.error(error.message || 'Erro ao alterar senha');
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const renderApiKeyField = (
@@ -386,21 +514,33 @@ const SettingsPage = () => {
                     <p className="font-medium text-foreground">Alertas de Vídeos Virais</p>
                     <p className="text-sm text-muted-foreground">Receba notificações quando um vídeo viralizar</p>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={notificationPrefs.notify_viral_videos}
+                    onCheckedChange={(checked) => handleNotificationChange('notify_viral_videos', checked)}
+                    disabled={savingNotifications}
+                  />
                 </div>
                 <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
                   <div>
                     <p className="font-medium text-foreground">Relatórios Semanais</p>
                     <p className="text-sm text-muted-foreground">Resumo semanal de performance</p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={notificationPrefs.notify_weekly_reports}
+                    onCheckedChange={(checked) => handleNotificationChange('notify_weekly_reports', checked)}
+                    disabled={savingNotifications}
+                  />
                 </div>
                 <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
                   <div>
                     <p className="font-medium text-foreground">Novos Recursos</p>
                     <p className="text-sm text-muted-foreground">Atualizações sobre novos recursos</p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={notificationPrefs.notify_new_features}
+                    onCheckedChange={(checked) => handleNotificationChange('notify_new_features', checked)}
+                    disabled={savingNotifications}
+                  />
                 </div>
               </div>
             </Card>
@@ -411,17 +551,86 @@ const SettingsPage = () => {
                 <h3 className="font-semibold text-foreground">Segurança</h3>
               </div>
               <div className="space-y-4">
-                <Button variant="outline" className="border-border text-foreground hover:bg-secondary">
+                <Button 
+                  variant="outline" 
+                  className="border-border text-foreground hover:bg-secondary"
+                  onClick={() => setPasswordModalOpen(true)}
+                >
                   Alterar Senha
                 </Button>
-                <Button variant="outline" className="border-border text-foreground hover:bg-secondary">
-                  Ativar 2FA
+                <Button 
+                  variant="outline" 
+                  className="border-border text-foreground hover:bg-secondary opacity-50 cursor-not-allowed"
+                  disabled
+                  title="2FA não disponível no momento"
+                >
+                  <Lock className="w-4 h-4 mr-2" />
+                  Ativar 2FA (Em breve)
                 </Button>
               </div>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Password Change Modal */}
+      <Dialog open={passwordModalOpen} onOpenChange={setPasswordModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Senha</DialogTitle>
+            <DialogDescription>
+              Digite sua nova senha abaixo. A senha deve ter pelo menos 6 caracteres.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">Nova Senha</label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
+                className="bg-secondary border-border"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">Confirmar Nova Senha</label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="bg-secondary border-border"
+              />
+            </div>
+            {newPassword && confirmPassword && newPassword !== confirmPassword && (
+              <div className="flex items-center gap-2 text-destructive text-sm">
+                <AlertCircle className="w-4 h-4" />
+                As senhas não coincidem
+              </div>
+            )}
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setPasswordModalOpen(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleChangePassword}
+                disabled={changingPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {changingPassword ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
+                Alterar Senha
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };

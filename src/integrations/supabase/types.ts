@@ -1187,6 +1187,9 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          notify_new_features: boolean | null
+          notify_viral_videos: boolean | null
+          notify_weekly_reports: boolean | null
           sidebar_order: string[] | null
           theme: string | null
           updated_at: string
@@ -1195,6 +1198,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          notify_new_features?: boolean | null
+          notify_viral_videos?: boolean | null
+          notify_weekly_reports?: boolean | null
           sidebar_order?: string[] | null
           theme?: string | null
           updated_at?: string
@@ -1203,6 +1209,9 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          notify_new_features?: boolean | null
+          notify_viral_videos?: boolean | null
+          notify_weekly_reports?: boolean | null
           sidebar_order?: string[] | null
           theme?: string | null
           updated_at?: string
