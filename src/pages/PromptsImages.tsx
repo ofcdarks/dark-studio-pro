@@ -1238,88 +1238,55 @@ echo "Agora importe o video no CapCut!"
     });
   };
 
-  // Importar imagens de pasta existente para relink
-  const handleImportImagesFromFolder = async () => {
-    try {
-      // Verificar suporte à File System Access API
-      if (!('showDirectoryPicker' in window)) {
-        toast({ 
-          title: "Não suportado", 
-          description: "Seu navegador não suporta seleção de pastas. Use Chrome, Edge ou Opera.",
-          variant: "destructive" 
-        });
-        return;
-      }
+  // Ref para o input de arquivos oculto
+  const importImagesInputRef = useRef<HTMLInputElement>(null);
 
-      toast({ 
-        title: "📁 Selecione a pasta com as imagens", 
-        description: "Procure a pasta onde estão as imagens (cena_001.jpg, cena_002.jpg, etc.)",
-      });
+  // Importar imagens via input file (compatível com todos navegadores)
+  const handleImportImagesFromFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-      const dirHandle = await (window as any).showDirectoryPicker({
-        id: 'import-images',
-        mode: 'read',
-        startIn: 'downloads'
-      });
+    let importedCount = 0;
+    const updatedScenes = [...generatedScenes];
 
-      let importedCount = 0;
-      const updatedScenes = [...generatedScenes];
+    // Mapear arquivos por nome
+    const fileMap = new Map<string, File>();
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      fileMap.set(file.name.toLowerCase(), file);
+    }
 
-      // Iterar pelas cenas e procurar imagens correspondentes
-      for (let i = 0; i < updatedScenes.length; i++) {
-        const scene = updatedScenes[i];
-        const jpgFileName = `cena_${String(scene.number).padStart(3, "0")}.jpg`;
-        const pngFileName = `cena_${String(scene.number).padStart(3, "0")}.png`;
-        
-        let fileHandle: any = null;
-        
-        // Tentar encontrar JPG primeiro, depois PNG
-        try {
-          fileHandle = await dirHandle.getFileHandle(jpgFileName);
-        } catch {
-          try {
-            fileHandle = await dirHandle.getFileHandle(pngFileName);
-          } catch {
-            // Arquivo não encontrado
-          }
-        }
+    // Iterar pelas cenas e procurar imagens correspondentes
+    for (let i = 0; i < updatedScenes.length; i++) {
+      const scene = updatedScenes[i];
+      const jpgFileName = `cena_${String(scene.number).padStart(3, "0")}.jpg`;
+      const pngFileName = `cena_${String(scene.number).padStart(3, "0")}.png`;
+      
+      const file = fileMap.get(jpgFileName.toLowerCase()) || fileMap.get(pngFileName.toLowerCase());
 
-        if (fileHandle) {
-          try {
-            const file = await fileHandle.getFile();
-            const url = URL.createObjectURL(file);
-            updatedScenes[i] = { ...updatedScenes[i], generatedImage: url };
-            importedCount++;
-          } catch (err) {
-            console.warn(`Erro ao ler ${jpgFileName}:`, err);
-          }
-        }
-      }
-
-      if (importedCount > 0) {
-        setGeneratedScenes(updatedScenes);
-        toast({ 
-          title: "✅ Imagens importadas!", 
-          description: `${importedCount} imagens foram carregadas da pasta "${dirHandle.name}".`
-        });
-      } else {
-        toast({ 
-          title: "Nenhuma imagem encontrada", 
-          description: "Nenhum arquivo cena_001.jpg/png encontrado. Verifique a pasta.",
-          variant: "destructive" 
-        });
-      }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        toast({ title: "Cancelado", description: "Nenhuma pasta selecionada" });
-      } else {
-        toast({ 
-          title: "Erro ao importar", 
-          description: error.message || "Não foi possível acessar a pasta",
-          variant: "destructive" 
-        });
+      if (file) {
+        const url = URL.createObjectURL(file);
+        updatedScenes[i] = { ...updatedScenes[i], generatedImage: url };
+        importedCount++;
       }
     }
+
+    if (importedCount > 0) {
+      setGeneratedScenes(updatedScenes);
+      toast({ 
+        title: "✅ Imagens importadas!", 
+        description: `${importedCount} imagens foram carregadas.`
+      });
+    } else {
+      toast({ 
+        title: "Nenhuma imagem correspondente", 
+        description: "Nenhum arquivo cena_001.jpg/png encontrado. Verifique os nomes.",
+        variant: "destructive" 
+      });
+    }
+
+    // Limpar input para permitir reimportação
+    e.target.value = "";
   };
 
   // Detectar sistema operacional
@@ -3057,9 +3024,18 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
           <div className="space-y-2 pt-2 border-t border-border">
             {/* Botões principais */}
             <div className="flex gap-2">
+              {/* Input oculto para importar arquivos */}
+              <input
+                ref={importImagesInputRef}
+                type="file"
+                accept="image/jpeg,image/png"
+                multiple
+                className="hidden"
+                onChange={handleImportImagesFromFiles}
+              />
               <Button
                 variant="outline"
-                onClick={handleImportImagesFromFolder}
+                onClick={() => importImagesInputRef.current?.click()}
                 className="flex-1 h-8 text-xs"
               >
                 <FolderSearch className="w-3 h-3 mr-1" />
