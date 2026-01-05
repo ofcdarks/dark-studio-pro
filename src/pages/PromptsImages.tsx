@@ -2054,8 +2054,8 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                     </div>
                   </Card>
 
-                  {/* Preview de Timeline (antes de gerar) */}
-                  {script.trim() && generatedScenes.length === 0 && !generating && (
+                  {/* Preview de Timeline */}
+                  {script.trim() && !generating && (
                     <ScriptPreviewTimeline
                       script={script}
                       wordsPerScene={parseInt(wordsPerScene) || 80}
