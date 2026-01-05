@@ -385,6 +385,18 @@ Retorne APENAS os 8 gatilhos, um por linha, sem numeração, hífens ou explica�
     setIsGeneratingScript(true);
     setGenerationStatus("Preparando dados do agente...");
     setGenerationProgress(5);
+    setShowScriptForm(false);
+    
+    // Create a preview message that will be updated in real-time
+    const previewMessageId = `preview-${Date.now()}`;
+    const previewMessage: Message = {
+      id: previewMessageId,
+      role: "assistant",
+      content: "⏳ *Gerando roteiro...*\n\n",
+      timestamp: new Date(),
+      isScript: true
+    };
+    setMessages(prev => [...prev, previewMessage]);
     
     try {
       const ctaPositions = [];
@@ -395,8 +407,8 @@ Retorne APENAS os 8 gatilhos, um por linha, sem numeração, hífens ou explica�
       const userDuration = parseInt(scriptDuration || "1");
       const duration = userDuration + 1;
       
-      // Dividir em partes de 5 minutos para roteiros longos
-      const MINUTES_PER_PART = 5;
+      // Dividir em partes de 3 minutos para roteiros longos
+      const MINUTES_PER_PART = 3;
       const numParts = Math.max(1, Math.ceil(duration / MINUTES_PER_PART));
       setTotalParts(numParts);
       
@@ -499,6 +511,16 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
         fullScript += (fullScript ? "\n\n" : "") + partContent;
         totalCreditsUsed += data?.creditsUsed || 0;
 
+        // Update preview message with the content so far (real-time update)
+        const progressLabel = numParts > 1 
+          ? `📝 **Roteiro em progresso** (Parte ${partIndex + 1}/${numParts} concluída)\n\n---\n\n` 
+          : "";
+        setMessages(prev => prev.map(msg => 
+          msg.id === previewMessageId 
+            ? { ...msg, content: progressLabel + fullScript }
+            : msg
+        ));
+
         if (numParts > 1) {
           toast.success(`Parte ${partIndex + 1}/${numParts} concluída`);
         }
@@ -541,23 +563,21 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
         ? `${Math.floor(actualMinutes)}:${String(Math.round((actualMinutes % 1) * 60)).padStart(2, '0')} min`
         : `${actualSeconds} seg`;
 
-      // Add script to chat as assistant message
-      const scriptMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: fullScript,
-        timestamp: new Date(),
-        isScript: true
-      };
-      setMessages(prev => [...prev, scriptMessage]);
+      // Update the preview message to final state
+      setMessages(prev => prev.map(msg => 
+        msg.id === previewMessageId 
+          ? { ...msg, content: fullScript }
+          : msg
+      ));
       
-      setShowScriptForm(false);
       setScriptTitle("");
       toast.success(`Roteiro completo gerado: ${wordCount} palavras (~${formattedTime})`);
       
     } catch (error) {
       console.error("[GenerateScript] Error:", error);
       toast.error("Erro ao gerar roteiro. Tente novamente.");
+      // Remove the preview message on error
+      setMessages(prev => prev.filter(msg => msg.id !== previewMessageId));
     } finally {
       setIsGeneratingScript(false);
       setGenerationStatus("");
@@ -733,41 +753,61 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
     <>
       {/* Loading Modal durante geração */}
       <Dialog open={isGeneratingScript} onOpenChange={() => {}}>
-        <DialogContent className="bg-card border-primary/50 rounded-2xl max-w-sm text-center p-8" onPointerDownOutside={(e) => e.preventDefault()}>
-          <div className="flex flex-col items-center gap-6">
+        <DialogContent className="bg-card border-primary/50 rounded-2xl max-w-xs text-center p-6" onPointerDownOutside={(e) => e.preventDefault()}>
+          <div className="flex flex-col items-center gap-4">
             {/* Logo com efeito de pulso */}
-            <div className="relative w-20 h-20">
+            <div className="relative w-16 h-16">
               <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
               <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
-              <div className="relative w-20 h-20 rounded-full border-2 border-primary/50 overflow-hidden">
+              <div className="relative w-16 h-16 rounded-full border-2 border-primary/50 overflow-hidden">
                 <img src={logoGif} alt="Logo" className="w-full h-full object-cover scale-110" />
               </div>
             </div>
 
             {/* Title */}
             <div className="space-y-1">
-              <h3 className="text-lg font-semibold text-foreground">
+              <h3 className="text-base font-semibold text-foreground">
                 Gerando Roteiro Viral
               </h3>
-              <p className="text-sm text-muted-foreground">
-                {loadingSteps[currentStep]}...
+              <p className="text-xs text-muted-foreground">
+                {generationStatus || loadingSteps[currentStep]}
               </p>
             </div>
+
+            {/* Part indicator */}
+            {totalParts > 1 && (
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalParts }, (_, i) => (
+                  <div
+                    key={i}
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300 ${
+                      i < currentPart
+                        ? "bg-primary text-primary-foreground"
+                        : i === currentPart - 1
+                        ? "bg-primary/80 text-primary-foreground animate-pulse"
+                        : "bg-muted-foreground/20 text-muted-foreground"
+                    }`}
+                  >
+                    {i + 1}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Progress Bar */}
-            <div className="w-full space-y-2">
-              <Progress value={progress} className="h-1.5" />
+            <div className="w-full space-y-1.5">
+              <Progress value={generationProgress > 0 ? generationProgress : progress} className="h-1.5" />
               <p className="text-xs text-muted-foreground">
-                {Math.round(progress)}%
+                {Math.round(generationProgress > 0 ? generationProgress : progress)}%
               </p>
             </div>
 
-            {/* Steps indicator */}
-            <div className="flex gap-1.5">
+            {/* Steps indicator - smaller */}
+            <div className="flex gap-1">
               {loadingSteps.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                  className={`w-1 h-1 rounded-full transition-all duration-300 ${
                     idx <= currentStep 
                       ? "bg-primary" 
                       : "bg-muted-foreground/20"
