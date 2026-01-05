@@ -2679,114 +2679,63 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
 
       {/* Modal de Instruções CapCut */}
       <Dialog open={showCapcutInstructions} onOpenChange={setShowCapcutInstructions}>
-        <DialogContent className="max-w-xl bg-card border-primary/50 rounded-xl shadow-xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              <Video className="w-5 h-5 text-primary" />
+        <DialogContent className="max-w-md bg-card border-primary/50 rounded-xl shadow-xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-foreground text-base">
+              <Video className="w-4 h-4 text-primary" />
               Exportar para CapCut
             </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Escolha um template com transições pré-configuradas
-            </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="max-h-[60vh]">
-            <div className="space-y-4 pr-2">
+          <ScrollArea className="flex-1 pr-2">
+            <div className="space-y-3">
               {/* Nome do Projeto */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-primary" />
+              <div className="space-y-1">
+                <Label className="text-xs font-medium flex items-center gap-1.5">
+                  <FileText className="w-3 h-3 text-primary" />
                   Nome do Projeto
                 </Label>
                 <Input
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   placeholder="Meu Projeto"
-                  className="bg-secondary/50"
+                  className="bg-secondary/50 h-8 text-sm"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Este nome será usado no arquivo ZIP e dentro do CapCut
-                </p>
               </div>
 
-              {/* Seletor de Templates por Categoria */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Layout className="w-4 h-4 text-primary" />
-                  Template do Projeto
+              {/* Seletor de Templates - Compacto */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium flex items-center gap-1.5">
+                  <Layout className="w-3 h-3 text-primary" />
+                  Template
                 </Label>
                 
-                <RadioGroup 
-                  value={selectedTemplate} 
-                  onValueChange={setSelectedTemplate}
-                  className="space-y-4"
-                >
-                  {TEMPLATE_CATEGORIES.map((category) => (
-                    <div key={category.id} className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                        <span>{category.icon}</span>
-                        <span>{category.name}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
+                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                  <SelectTrigger className="h-8 bg-secondary/50 text-xs">
+                    <SelectValue placeholder="Selecione um template" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {TEMPLATE_CATEGORIES.map((category) => (
+                      <div key={category.id}>
+                        <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                          {category.icon} {category.name}
+                        </div>
                         {CAPCUT_TEMPLATES.filter(t => t.category === category.id).map((template) => (
-                          <div key={template.id}>
-                            <RadioGroupItem
-                              value={template.id}
-                              id={`template-${template.id}`}
-                              className="peer sr-only"
-                            />
-                            <Label
-                              htmlFor={`template-${template.id}`}
-                              className={cn(
-                                "flex flex-col items-start gap-1 p-2.5 rounded-lg border-2 cursor-pointer transition-all",
-                                "hover:border-primary/50 hover:bg-primary/5",
-                                selectedTemplate === template.id
-                                  ? "border-primary bg-primary/10"
-                                  : "border-border bg-secondary/30"
-                              )}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">{template.preview}</span>
-                                <span className="font-semibold text-foreground text-xs">{template.name}</span>
-                              </div>
-                              <p className="text-[10px] text-muted-foreground line-clamp-1">{template.description}</p>
-                              <div className="flex flex-wrap gap-1 mt-0.5">
-                                {template.transitionType !== 'none' && (
-                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
-                                    {template.transitionType}
-                                  </Badge>
-                                )}
-                                {template.hasColorGrading && (
-                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-amber-500/50 text-amber-500">
-                                    🎨
-                                  </Badge>
-                                )}
-                                {template.hasSlowMotion && (
-                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-purple-500/50 text-purple-500">
-                                    🐌
-                                  </Badge>
-                                )}
-                                {template.hasBlur && (
-                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-blue-500/50 text-blue-500">
-                                    💫
-                                  </Badge>
-                                )}
-                              </div>
-                            </Label>
-                          </div>
+                          <SelectItem key={template.id} value={template.id} className="text-xs">
+                            <span className="flex items-center gap-2">
+                              <span>{template.preview}</span>
+                              <span>{template.name}</span>
+                            </span>
+                          </SelectItem>
                         ))}
                       </div>
-                    </div>
-                  ))}
-                </RadioGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                {/* Preview visual do template selecionado */}
+                {/* Preview compacto */}
                 {selectedTemplate && (
-                  <div className="mt-4 p-3 bg-secondary/30 rounded-lg border border-border">
-                    <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                      <Eye className="w-3 h-3" />
-                      Preview do Template
-                    </div>
+                  <div className="p-2 bg-secondary/30 rounded-lg border border-border">
                     <TemplatePreview 
                       template={CAPCUT_TEMPLATES.find(t => t.id === selectedTemplate) || CAPCUT_TEMPLATES[0]}
                       isActive={true}
@@ -2794,34 +2743,8 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                   </div>
                 )}
               </div>
-            </div>
-          </ScrollArea>
 
-          <div className="space-y-4 pt-2">
-            {/* SRT */}
-            <div className="p-3 bg-secondary/50 rounded-lg border border-border">
-              <h4 className="font-semibold text-foreground text-sm mb-1 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-primary" />
-                SRT
-              </h4>
-              <p className="text-xs text-muted-foreground">
-                O arquivo <strong>NARRACOES.srt</strong> também será gerado junto com o projeto.
-              </p>
-            </div>
-
-            {/* Pasta salva */}
-            {savedCapcutFolder && (
-              <div className="p-3 bg-primary/10 rounded-lg border border-primary/30 flex items-center gap-2">
-                <Check className="w-4 h-4 text-primary" />
-                <span className="text-sm text-foreground">
-                  Pasta salva: <strong>{savedCapcutFolder}</strong>
-                </span>
-              </div>
-            )}
-
-            {/* Botões */}
-            <div className="space-y-3 pt-2">
-              {/* Timeline Visual */}
+              {/* Timeline Visual compacta */}
               {generatedScenes.length > 0 && (
                 <SceneTimeline
                   scenes={generatedScenes.map(scene => ({
@@ -2831,78 +2754,64 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                     durationSeconds: Math.max(1, wordCountToSeconds(scene.wordCount)),
                     generatedImage: scene.generatedImage
                   }))}
-                  className="p-3 bg-secondary/30 rounded-lg border border-border"
+                  className="p-2 bg-secondary/30 rounded-lg border border-border"
                 />
               )}
-              
-              {/* Botão de importar imagens */}
+            </div>
+          </ScrollArea>
+
+          <div className="space-y-2 pt-2 border-t border-border">
+            {/* Botões principais */}
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={handleImportImagesFromFolder}
-                className="w-full"
+                className="flex-1 h-8 text-xs"
               >
-                <FolderSearch className="w-4 h-4 mr-2" />
-                Importar Imagens de Pasta (Relink)
+                <FolderSearch className="w-3 h-3 mr-1" />
+                Importar
               </Button>
-              
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    navigator.clipboard.writeText(capcutInstructionsText);
-                    toast({ title: "Instruções copiadas!", description: "Cole em um bloco de notas para referência." });
-                  }}
-                  className="flex-1"
-                >
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copiar Instruções
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleConfirmCapcutExport}
-                  className="flex-1"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Baixar ZIP
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                onClick={handleConfirmCapcutExport}
+                className="flex-1 h-8 text-xs"
+              >
+                <Download className="w-3 h-3 mr-1" />
+                Baixar ZIP
+              </Button>
+            </div>
 
-              {/* Exportar EDL para DaVinci Resolve */}
-              <div className="p-3 bg-secondary/50 rounded-lg border border-border">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🎬</span>
-                    <span className="font-medium text-sm text-foreground">DaVinci Resolve</span>
-                  </div>
-                  <Badge variant="outline" className="text-[10px]">EDL</Badge>
+            {/* Exportar EDL para DaVinci Resolve */}
+            <div className="p-2 bg-secondary/50 rounded-lg border border-border">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">🎬</span>
+                  <span className="font-medium text-xs text-foreground">DaVinci Resolve</span>
                 </div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Exporta arquivo EDL (Edit Decision List) com timecodes e transições de dissolve. Compatível com DaVinci Resolve 16+.
-                </p>
-                
-                {/* Seletor de FPS */}
-                <div className="flex items-center gap-2 mb-3">
-                  <Label className="text-xs text-muted-foreground whitespace-nowrap">FPS:</Label>
-                  <Select value={edlFps} onValueChange={setEdlFps}>
-                    <SelectTrigger className="h-8 bg-background border-border text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="24">24 fps (Cinema)</SelectItem>
-                      <SelectItem value="25">25 fps (PAL)</SelectItem>
-                      <SelectItem value="30">30 fps (NTSC)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
+                <Badge variant="outline" className="text-[9px] h-4">EDL</Badge>
+              </div>
+              
+              {/* Seletor de FPS + Botão */}
+              <div className="flex items-center gap-2">
+                <Select value={edlFps} onValueChange={setEdlFps}>
+                  <SelectTrigger className="h-7 w-28 bg-background border-border text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="24">24 fps</SelectItem>
+                    <SelectItem value="25">25 fps</SelectItem>
+                    <SelectItem value="30">30 fps</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={handleExportEdl}
                   disabled={generatedScenes.filter(s => s.generatedImage).length === 0}
-                  className="w-full"
+                  className="flex-1 h-7 text-xs"
                 >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Baixar EDL para DaVinci
+                  <FileText className="w-3 h-3 mr-1" />
+                  Baixar EDL
                 </Button>
               </div>
             </div>
