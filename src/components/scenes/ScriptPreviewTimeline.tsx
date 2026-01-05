@@ -726,45 +726,60 @@ export function ScriptPreviewTimeline({
                         </div>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-md p-0 overflow-hidden">
+                    <TooltipContent side="top" className="max-w-lg p-0 overflow-hidden shadow-xl border-primary/30">
                       <div className="flex gap-0">
-                        {/* Preview da imagem no tooltip */}
+                        {/* Preview da imagem no tooltip - MAIOR */}
                         {sceneImage && (
                           <img 
                             src={sceneImage} 
                             alt={`Cena ${scene.number}`}
-                            className="w-32 h-24 object-cover"
+                            className="w-44 h-28 object-cover flex-shrink-0"
                           />
                         )}
-                        <div className="p-2 space-y-1 min-w-[180px]">
-                          <p className="font-bold flex items-center gap-2">
-                            Cena {scene.number}
+                        <div className="p-3 space-y-2 min-w-[220px] max-w-[280px]">
+                          {/* Header com número e emoção */}
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-bold text-base text-foreground">
+                              Cena {scene.number}
+                            </p>
                             {sceneEmotion && (
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${emotionStyle.bg} ${emotionStyle.text}`}>
+                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${emotionStyle.bg} ${emotionStyle.text}`}>
                                 {emotionStyle.icon} {sceneEmotion}
                               </span>
                             )}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatTimecode(scene.startTime)} → {formatTimecode(scene.endTime)}
-                          </p>
-                          <p className="text-xs">
-                            <span className="text-primary font-medium">{formatTime(scene.durationSeconds)}</span>
-                            {" • "}
+                          </div>
+                          
+                          {/* Timecode */}
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-muted-foreground">⏱️</span>
+                            <span className="text-foreground font-medium">
+                              {formatTimecode(scene.startTime)} → {formatTimecode(scene.endTime)}
+                            </span>
+                          </div>
+                          
+                          {/* Duração e palavras */}
+                          <div className="flex items-center gap-3 text-sm">
+                            <span className="text-primary font-bold">{formatTime(scene.durationSeconds)}</span>
+                            <span className="text-muted-foreground">•</span>
                             <span className="text-muted-foreground">{scene.wordCount} palavras</span>
-                          </p>
+                          </div>
+                          
                           {/* Gatilho de retenção */}
                           {sceneTrigger && (
-                            <div className="flex items-center gap-1">
-                              <span className="text-[10px] text-muted-foreground">Gatilho:</span>
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${triggerStyle.bg} ${triggerStyle.text} font-medium`}>
+                            <div className="flex items-center gap-2 pt-1">
+                              <span className="text-xs text-muted-foreground">Gatilho:</span>
+                              <span className={`text-xs px-2 py-1 rounded ${triggerStyle.bg} ${triggerStyle.text} font-medium`}>
                                 🔁 {triggerStyle.label}
                               </span>
                             </div>
                           )}
-                          <p className="text-[10px] text-muted-foreground line-clamp-2 border-t pt-1 mt-1 max-w-[200px]">
-                            "{scene.text.substring(0, 80)}..."
-                          </p>
+                          
+                          {/* Texto da narração */}
+                          <div className="border-t border-border/50 pt-2 mt-2">
+                            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+                              "{scene.text.substring(0, 120)}{scene.text.length > 120 ? '...' : ''}"
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </TooltipContent>
