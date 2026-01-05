@@ -1999,18 +1999,29 @@ const Analytics = () => {
                 </div>
 
                 {(() => {
-                  // Generate personalized tips based on channel data
+                  // ============================================
+                  // YOUTUBE VIRAL EXPERT ANALYSIS ENGINE
+                  // ============================================
+                  
                   const channelName = analyticsData.channel.name;
                   const channelDescription = analyticsData.channel.description || "";
-                  const topVideoTitles = analyticsData.topVideos?.slice(0, 5).map(v => v.title) || [];
+                  const topVideos = analyticsData.topVideos || [];
+                  const allVideos = analyticsData.allVideos || [];
+                  const topVideoTitles = topVideos.slice(0, 10).map(v => v.title);
                   const avgEngagement = analyticsData.recentMetrics.avgEngagementRate;
                   const avgViews = analyticsData.recentMetrics.avgViewsPerVideo;
+                  const avgLikes = analyticsData.recentMetrics.avgLikesPerVideo;
+                  const avgComments = analyticsData.recentMetrics.avgCommentsPerVideo;
                   const subs = analyticsData.statistics.subscribers;
                   const totalVideos = analyticsData.statistics.totalVideos;
+                  const totalViews = analyticsData.statistics.totalViews;
                   
-                  // Extract keywords from top videos and channel
+                  // ============================================
+                  // ADVANCED KEYWORD EXTRACTION (Viral Expert)
+                  // ============================================
                   const extractKeywords = (texts: string[]): string[] => {
-                    const stopWords = new Set(['de', 'da', 'do', 'e', 'a', 'o', 'os', 'as', 'um', 'uma', 'para', 'com', 'em', 'que', 'por', 'mais', 'como', 'the', 'and', 'to', 'of', 'in', 'is', 'for', 'on', 'it', 'with', 'this', 'you', 'are', 'be', 'at', 'or', 'an', 'from', 'was', 'have', 'has', 'not', 'but']);
+                    const stopWords = new Set(['de', 'da', 'do', 'dos', 'das', 'e', 'a', 'o', 'os', 'as', 'um', 'uma', 'uns', 'umas', 'para', 'com', 'em', 'que', 'por', 'mais', 'como', 'seu', 'sua', 'seus', 'suas', 'esse', 'essa', 'isso', 'este', 'esta', 'isto', 'aquele', 'aquela', 'aquilo', 'the', 'and', 'to', 'of', 'in', 'is', 'for', 'on', 'it', 'with', 'this', 'you', 'are', 'be', 'at', 'or', 'an', 'from', 'was', 'have', 'has', 'not', 'but', 'can', 'will', 'just', 'your', 'what', 'how', 'why', 'when', 'where', 'which', 'who', 'very', 'much', 'more', 'most', 'some', 'any', 'each', 'every', 'all', 'both', 'few', 'other', 'such', 'only', 'same', 'than', 'too', 'also', 'even', 'after', 'before', 'between', 'under', 'over', 'again', 'then', 'here', 'there', 'about', 'into', 'through', 'during', 'without']);
+                    
                     const allWords = texts.join(' ').toLowerCase()
                       .replace(/[^\w\sáàãâéêíóôõúç]/g, '')
                       .split(/\s+/)
@@ -2023,25 +2034,227 @@ const Analytics = () => {
                     
                     return Object.entries(wordCount)
                       .sort((a, b) => b[1] - a[1])
-                      .slice(0, 10)
+                      .slice(0, 15)
                       .map(([word]) => word);
                   };
 
                   const keywords = extractKeywords([channelName, channelDescription, ...topVideoTitles]);
+                  const nicheKeyword = keywords[0] || 'seu nicho';
+                  const secondaryKeyword = keywords[1] || 'conteúdo';
                   
-                  // Generate suggested tags (without #)
-                  const suggestedTagsRaw = keywords.slice(0, 8);
-                  const suggestedTags = suggestedTagsRaw.map(k => `#${k}`);
+                  // ============================================
+                  // VIRAL TITLE PATTERNS ANALYSIS
+                  // ============================================
+                  const analyzeViralPatterns = () => {
+                    const patterns: { type: string; examples: string[]; score: number }[] = [];
+                    
+                    // Detect number patterns in successful titles
+                    const numberTitles = topVideoTitles.filter(t => /\d+/.test(t));
+                    if (numberTitles.length > 0) {
+                      patterns.push({
+                        type: 'numbers',
+                        examples: numberTitles.slice(0, 2),
+                        score: numberTitles.length / topVideoTitles.length
+                      });
+                    }
+                    
+                    // Detect question patterns
+                    const questionTitles = topVideoTitles.filter(t => /\?|como|por que|qual|quando/i.test(t));
+                    if (questionTitles.length > 0) {
+                      patterns.push({
+                        type: 'questions',
+                        examples: questionTitles.slice(0, 2),
+                        score: questionTitles.length / topVideoTitles.length
+                      });
+                    }
+                    
+                    // Detect "How to" / Tutorial patterns
+                    const tutorialTitles = topVideoTitles.filter(t => /como|tutorial|aprenda|guia|passo/i.test(t));
+                    if (tutorialTitles.length > 0) {
+                      patterns.push({
+                        type: 'tutorial',
+                        examples: tutorialTitles.slice(0, 2),
+                        score: tutorialTitles.length / topVideoTitles.length
+                      });
+                    }
+                    
+                    // Detect emotional/clickbait patterns
+                    const emotionalTitles = topVideoTitles.filter(t => /incrível|surpreend|chocante|nunca|sempre|melhor|pior|secreto|revelado|verdade/i.test(t));
+                    if (emotionalTitles.length > 0) {
+                      patterns.push({
+                        type: 'emotional',
+                        examples: emotionalTitles.slice(0, 2),
+                        score: emotionalTitles.length / topVideoTitles.length
+                      });
+                    }
+                    
+                    return patterns.sort((a, b) => b.score - a.score);
+                  };
                   
-                  // Generate suggested hashtags for description
-                  const suggestedHashtagsRaw = keywords.slice(0, 5);
-                  const suggestedHashtags = suggestedHashtagsRaw.map(k => `#${k.charAt(0).toUpperCase() + k.slice(1)}`);
+                  const viralPatterns = analyzeViralPatterns();
+                  const dominantPattern = viralPatterns[0]?.type || 'none';
+                  
+                  // ============================================
+                  // CHANNEL HEALTH SCORE CALCULATION
+                  // ============================================
+                  const calculateHealthScore = () => {
+                    let score = 0;
+                    const issues: string[] = [];
+                    
+                    // Engagement rate (target: >5%)
+                    if (avgEngagement >= 5) score += 25;
+                    else if (avgEngagement >= 3) score += 15;
+                    else issues.push('engagement_low');
+                    
+                    // Views per video ratio (target: views/video > subs * 0.1)
+                    const viewsRatio = avgViews / Math.max(subs, 1);
+                    if (viewsRatio >= 0.3) score += 25;
+                    else if (viewsRatio >= 0.1) score += 15;
+                    else issues.push('views_low');
+                    
+                    // Subscriber to views ratio
+                    const subViewRatio = totalViews / Math.max(subs, 1);
+                    if (subViewRatio >= 100) score += 25;
+                    else if (subViewRatio >= 50) score += 15;
+                    else issues.push('sub_conversion_low');
+                    
+                    // Content consistency (videos count)
+                    if (totalVideos >= 50) score += 25;
+                    else if (totalVideos >= 20) score += 15;
+                    else issues.push('content_low');
+                    
+                    return { score, issues };
+                  };
+                  
+                  const healthScore = calculateHealthScore();
+                  
+                  // ============================================
+                  // DYNAMIC VIRAL TITLE SUGGESTIONS
+                  // ============================================
+                  const generateViralTitles = (): string[] => {
+                    const titles: string[] = [];
+                    const kw = nicheKeyword.toUpperCase();
+                    const kw2 = secondaryKeyword.toUpperCase();
+                    
+                    // Number-based titles (proven to increase CTR)
+                    titles.push(`7 Segredos de ${kw} Que NINGUÉM Te Conta`);
+                    titles.push(`${kw}: 5 Erros FATAIS Que Você Está Cometendo`);
+                    titles.push(`3 Técnicas de ${kw} Para EXPLODIR Seus Resultados`);
+                    
+                    // Question/Curiosity titles
+                    titles.push(`Por Que ${kw} Vai MUDAR Tudo em 2025?`);
+                    titles.push(`${kw} Funciona? A VERDADE Que Ninguém Fala`);
+                    
+                    // Tutorial/Value titles
+                    titles.push(`Como Dominar ${kw} em 30 Dias (Guia COMPLETO)`);
+                    titles.push(`${kw} Para Iniciantes: Do ZERO ao AVANÇADO`);
+                    
+                    // Emotional/Urgency titles
+                    titles.push(`PARE de Fazer ${kw} ERRADO! (Veja o Certo)`);
+                    titles.push(`${kw}: O Que ${subs > 1000 ? 'Milhares' : 'Poucos'} Sabem e Você NÃO`);
+                    
+                    return titles;
+                  };
+                  
+                  const viralTitleSuggestions = generateViralTitles();
+                  
+                  // ============================================
+                  // THUMBNAIL STRATEGY BASED ON NICHE
+                  // ============================================
+                  const getThumbnailStrategy = () => {
+                    const avgCTREstimate = avgViews / Math.max(subs * 0.1, 1);
+                    
+                    if (avgCTREstimate < 5) {
+                      return {
+                        priority: 'CRÍTICO',
+                        color: 'red',
+                        tips: [
+                          `Use ROSTO com expressão de SURPRESA ou CHOQUE`,
+                          `Texto máximo: 3-4 palavras em fonte BOLD`,
+                          `Cores: Amarelo/Preto ou Vermelho/Branco (alto contraste)`,
+                          `Adicione setas ou círculos apontando para elemento key`,
+                          `Teste A/B: Crie 2 thumbnails e troque após 24h se CTR < 5%`
+                        ]
+                      };
+                    }
+                    return {
+                      priority: 'OTIMIZAÇÃO',
+                      color: 'amber',
+                      tips: [
+                        `Mantenha consistência visual (mesma fonte/cores)`,
+                        `Use contraste extremo entre fundo e texto`,
+                        `Rostos sempre performam melhor que objetos`,
+                        `Evite thumbnails muito similares entre si`
+                      ]
+                    };
+                  };
+                  
+                  const thumbnailStrategy = getThumbnailStrategy();
+                  
+                  // ============================================
+                  // POSTING SCHEDULE OPTIMIZATION
+                  // ============================================
+                  const getOptimalSchedule = () => {
+                    // YouTube best practices based on channel size
+                    if (subs < 1000) {
+                      return {
+                        frequency: '3-4 vídeos/semana',
+                        bestDays: 'Terça, Quinta e Sábado',
+                        bestTime: '17:00 - 19:00 (horário de pico)',
+                        shorts: '5-7 Shorts/semana para crescimento rápido',
+                        reason: 'Canais novos precisam de volume para o algoritmo entender seu conteúdo'
+                      };
+                    } else if (subs < 10000) {
+                      return {
+                        frequency: '2-3 vídeos/semana',
+                        bestDays: 'Terça e Quinta (+ 1 fim de semana)',
+                        bestTime: '18:00 - 20:00',
+                        shorts: '3-5 Shorts/semana',
+                        reason: 'Foco em qualidade mantendo consistência'
+                      };
+                    } else {
+                      return {
+                        frequency: '2 vídeos/semana de alta qualidade',
+                        bestDays: 'Terça e Sexta',
+                        bestTime: '19:00 - 21:00',
+                        shorts: '3 Shorts/semana complementares',
+                        reason: 'Audiência estabelecida espera qualidade premium'
+                      };
+                    }
+                  };
+                  
+                  const optimalSchedule = getOptimalSchedule();
+                  
+                  // ============================================
+                  // TAGS & HASHTAGS (Viral Expert Level)
+                  // ============================================
+                  const suggestedTagsRaw = keywords.slice(0, 10);
+                  const suggestedTags = suggestedTagsRaw.map(k => k);
+                  
+                  // Hashtags with trending format
+                  const suggestedHashtags = [
+                    `#${nicheKeyword.charAt(0).toUpperCase() + nicheKeyword.slice(1)}`,
+                    `#${secondaryKeyword.charAt(0).toUpperCase() + secondaryKeyword.slice(1)}`,
+                    '#Shorts',
+                    '#YouTube',
+                    `#${nicheKeyword}2025`
+                  ].slice(0, 5);
+                  
+                  // Long-tail tags for SEO
+                  const longTailTags = [
+                    `${nicheKeyword} para iniciantes`,
+                    `como fazer ${nicheKeyword}`,
+                    `${nicheKeyword} tutorial`,
+                    `${nicheKeyword} dicas`,
+                    `melhor ${nicheKeyword}`,
+                    `${nicheKeyword} 2025`
+                  ];
                   
                   // Copy functions
                   const copyTags = () => {
-                    const tagsText = suggestedTagsRaw.join(', ');
+                    const tagsText = [...suggestedTags, ...longTailTags].join(', ');
                     navigator.clipboard.writeText(tagsText);
-                    toast({ title: "Tags copiadas!", description: tagsText });
+                    toast({ title: "Tags copiadas!", description: `${suggestedTags.length + longTailTags.length} tags prontas para usar` });
                   };
                   
                   const copyHashtags = () => {
@@ -2050,150 +2263,185 @@ const Analytics = () => {
                     toast({ title: "Hashtags copiadas!", description: hashtagsText });
                   };
                   
-                  const copyAll = () => {
-                    const allText = `TAGS:\n${suggestedTagsRaw.join(', ')}\n\nHASHTAGS:\n${suggestedHashtags.join(' ')}\n\nPALAVRAS-CHAVE:\n${keywords.join(', ')}`;
-                    navigator.clipboard.writeText(allText);
-                    toast({ title: "Tudo copiado!", description: "Tags, hashtags e palavras-chave" });
+                  const copyViralTitles = () => {
+                    const titlesText = viralTitleSuggestions.join('\n');
+                    navigator.clipboard.writeText(titlesText);
+                    toast({ title: "Títulos virais copiados!", description: `${viralTitleSuggestions.length} sugestões de títulos` });
                   };
                   
-                  // Analyze top performing content patterns
-                  const topVideoPatterns = topVideoTitles.length > 0 
-                    ? topVideoTitles.slice(0, 3).map((t, i) => `"${t.slice(0, 40)}${t.length > 40 ? '...' : ''}"`)
-                    : [];
+                  const copyAll = () => {
+                    const allText = `🎯 ESTRATÉGIA VIRAL PARA: ${channelName}
+═══════════════════════════════════════
 
-                  // Generate title keyword suggestions
-                  const titleKeywords = keywords.slice(0, 5).join(', ');
+📊 SCORE DE SAÚDE DO CANAL: ${healthScore.score}/100
+
+🏷️ TAGS RECOMENDADAS:
+${[...suggestedTags, ...longTailTags].join(', ')}
+
+#️⃣ HASHTAGS:
+${suggestedHashtags.join(' ')}
+
+🎬 TÍTULOS VIRAIS SUGERIDOS:
+${viralTitleSuggestions.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+🖼️ ESTRATÉGIA DE THUMBNAIL:
+${thumbnailStrategy.tips.map(t => `• ${t}`).join('\n')}
+
+📅 CRONOGRAMA IDEAL:
+• Frequência: ${optimalSchedule.frequency}
+• Melhores dias: ${optimalSchedule.bestDays}
+• Melhor horário: ${optimalSchedule.bestTime}
+• Shorts: ${optimalSchedule.shorts}
+
+💡 PALAVRAS-CHAVE DO NICHO:
+${keywords.join(', ')}
+
+═══════════════════════════════════════
+Gerado por Viral Analytics Expert`;
+                    navigator.clipboard.writeText(allText);
+                    toast({ title: "Estratégia completa copiada!", description: "Pronta para implementar" });
+                  };
                   
-                  // Calculate ideal posting frequency
-                  const idealFrequency = subs < 1000 ? '2-3 vídeos/semana' : 
-                                         subs < 10000 ? '1-2 vídeos/semana' : 
-                                         '3-4 vídeos/semana';
-
-                  // SEO Tasks with personalized suggestions
+                  // ============================================
+                  // DYNAMIC CHECKLIST ITEMS (Expert Level)
+                  // ============================================
+                  
                   const seoTasks = [
                     { 
                       id: "seo_1", 
-                      label: "Usar palavras-chave no título", 
-                      desc: `Palavras-chave sugeridas para seu nicho: ${titleKeywords}`,
-                      expanded: `Baseado nos seus vídeos de sucesso, use termos como: ${keywords.slice(0, 6).join(', ')}. Posicione a palavra-chave principal no início do título.`
+                      label: "Otimizar títulos com gatilhos mentais", 
+                      desc: healthScore.issues.includes('views_low') 
+                        ? `⚠️ PRIORIDADE: Seus títulos não estão convertendo. Views/vídeo: ${formatNumber(avgViews)}`
+                        : `Use números, perguntas e palavras de poder`,
+                      expanded: `🎯 TÍTULOS VIRAIS PARA SEU CANAL:\n\n${viralTitleSuggestions.slice(0, 5).map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\n📝 FÓRMULAS QUE FUNCIONAM:\n• [NÚMERO] + [BENEFÍCIO] + [URGÊNCIA]\n• [PERGUNTA] + [PROMESSA]\n• [ERRO] + [SOLUÇÃO]`,
+                      copyText: viralTitleSuggestions.join('\n'),
+                      copyLabel: 'Copiar Títulos'
                     },
                     { 
                       id: "seo_2", 
-                      label: "Otimizar descrição dos vídeos", 
-                      desc: `Modelo: [Resumo 2 linhas] + [Links] + [Timestamps] + [Tags]`,
-                      expanded: `Comece com: "${channelName} apresenta..." seguido de resumo do vídeo. Inclua links para redes sociais e timestamps para vídeos longos.`
+                      label: "Usar tags long-tail para SEO", 
+                      desc: `${suggestedTags.length + longTailTags.length} tags específicas para ${nicheKeyword}`,
+                      expanded: `🏷️ TAGS PRINCIPAIS:\n${suggestedTags.join(', ')}\n\n🔍 TAGS LONG-TAIL (Alta conversão):\n${longTailTags.join('\n')}\n\n💡 DICA: Use 8-12 tags por vídeo, misturando gerais e específicas`,
+                      copyText: [...suggestedTags, ...longTailTags].join(', '),
+                      copyLabel: 'Copiar Tags'
                     },
                     { 
                       id: "seo_3", 
-                      label: "Adicionar tags relevantes", 
-                      desc: `Tags sugeridas: ${suggestedTags.slice(0, 5).join(' ')}`,
-                      expanded: `Use estas tags baseadas no seu conteúdo:\n${suggestedTags.join('\n')}\n\nAdicione também variações e sinônimos.`
+                      label: "Otimizar descrição (primeiras 150 chars)", 
+                      desc: `Modelo viral com ${nicheKeyword} + CTA`,
+                      expanded: `📝 MODELO DE DESCRIÇÃO:\n\n🔥 ${channelName} te ensina [BENEFÍCIO] sobre ${nicheKeyword}! Neste vídeo você vai descobrir [PROMESSA].\n\n⏱️ TIMESTAMPS:\n0:00 - Introdução\n[...]\n\n🔗 LINKS:\n• Instagram: @${channelName.toLowerCase().replace(/\s/g, '')}\n• TikTok: @${channelName.toLowerCase().replace(/\s/g, '')}\n\n${suggestedHashtags.join(' ')}\n\n📌 Tags: ${suggestedTags.slice(0, 5).join(', ')}`,
+                      copyText: `🔥 ${channelName} te ensina [BENEFÍCIO] sobre ${nicheKeyword}! Neste vídeo você vai descobrir [PROMESSA].\n\n⏱️ TIMESTAMPS:\n0:00 - Introdução\n\n${suggestedHashtags.join(' ')}`,
+                      copyLabel: 'Copiar Modelo'
                     },
                     { 
                       id: "seo_4", 
-                      label: "Criar thumbnails chamativas", 
-                      desc: avgViews < 1000 
-                        ? "Prioridade ALTA: Suas views sugerem que thumbnails precisam melhorar"
-                        : "Use rostos com emoção, texto grande e cores vibrantes",
-                      expanded: `Dicas personalizadas:\n• Rostos com expressões fortes (surpresa, alegria)\n• Texto máximo 3-4 palavras grandes\n• Cores que contrastem: amarelo/preto, vermelho/branco\n• Evite thumbnails similares aos seus vídeos anteriores`
+                      label: `Thumbnails: ${thumbnailStrategy.priority}`, 
+                      desc: thumbnailStrategy.tips[0],
+                      expanded: `🖼️ ESTRATÉGIA DE THUMBNAIL (${thumbnailStrategy.priority}):\n\n${thumbnailStrategy.tips.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\n🎨 PALETA DE CORES VIRAL:\n• Amarelo #FFD700 + Preto #000000\n• Vermelho #FF0000 + Branco #FFFFFF\n• Azul #0066FF + Amarelo #FFD700\n\n📏 CHECKLIST:\n☐ Rosto com emoção forte\n☐ Texto em 3-4 palavras máximo\n☐ Contraste extremo\n☐ Elemento de curiosidade`,
+                      priority: thumbnailStrategy.color
                     },
                     { 
                       id: "seo_5", 
-                      label: "Usar hashtags estrategicamente", 
-                      desc: `Hashtags sugeridas: ${suggestedHashtags.slice(0, 3).join(' ')}`,
-                      expanded: `Coloque no final da descrição:\n${suggestedHashtags.join(' ')}\n\nLimite-se a 3-5 hashtags por vídeo para melhor alcance.`
+                      label: "Hashtags estratégicas (máx 3-5)", 
+                      desc: suggestedHashtags.join(' '),
+                      expanded: `#️⃣ HASHTAGS RECOMENDADAS:\n${suggestedHashtags.join('\n')}\n\n📍 ONDE COLOCAR:\n• Final da descrição\n• Primeira linha (para Shorts)\n\n⚠️ EVITE:\n• Mais de 5 hashtags\n• Hashtags genéricas como #youtube\n• Hashtags não relacionadas`,
+                      copyText: suggestedHashtags.join(' '),
+                      copyLabel: 'Copiar Hashtags'
                     },
                   ];
 
-                  // Engagement Tasks with personalized suggestions
                   const engagementTasks = [
                     { 
                       id: "eng_1", 
-                      label: "Pedir curtidas nos primeiros 30s", 
-                      desc: avgEngagement < 3 
-                        ? `URGENTE: Seu engajamento de ${avgEngagement.toFixed(1)}% está baixo`
-                        : `Seu engajamento de ${avgEngagement.toFixed(1)}% pode melhorar com CTAs`,
-                      expanded: `Frases que funcionam:\n• "Se você está gostando, deixa o like!"\n• "Curta se você também [situação relacionada]"\n• Faça isso antes da marca de 30 segundos`
+                      label: avgEngagement < 3 ? "⚠️ URGENTE: Aumentar engajamento" : "Otimizar CTAs para engajamento", 
+                      desc: `Taxa atual: ${avgEngagement.toFixed(1)}% | Meta: >5%`,
+                      expanded: `📊 ANÁLISE DE ENGAJAMENTO:\n• Atual: ${avgEngagement.toFixed(1)}%\n• Média do nicho: 4-6%\n• Sua meta: ${(avgEngagement * 1.5).toFixed(1)}%\n\n🎯 SCRIPTS DE CTA QUE CONVERTEM:\n\n0-30s: "Se você quer [BENEFÍCIO], deixa o like agora!"\n\n50%: "Tá curtindo? Então se inscreve e ativa o sininho!"\n\nFinal: "Comenta aqui qual [TEMA] você quer ver no próximo!"\n\n💡 DICA: CTAs nos primeiros 30s têm 3x mais conversão`,
+                      priority: avgEngagement < 3 ? 'red' : undefined
                     },
                     { 
                       id: "eng_2", 
-                      label: "Fazer perguntas para gerar comentários", 
-                      desc: `Perguntas sugeridas: "Qual sua experiência com [${keywords[0] || 'tema'}]?"`,
-                      expanded: `Exemplos personalizados:\n• "Vocês preferem [opção A] ou [opção B]?"\n• "Deixa nos comentários qual ${keywords[0] || 'assunto'} vocês querem ver"\n• "Me conta sua história com ${keywords[1] || 'isso'}"`
+                      label: "Perguntas virais para comentários", 
+                      desc: `Exemplos específicos para ${nicheKeyword}`,
+                      expanded: `💬 PERGUNTAS QUE GERAM COMENTÁRIOS:\n\n1. "Vocês preferem [A] ou [B]? Comenta!"\n\n2. "Qual ${nicheKeyword} vocês querem que eu faça próximo?"\n\n3. "Quem mais já passou por isso? 🙋"\n\n4. "Concordam? Discordam? Comenta aí!"\n\n5. "Deixa nos comentários sua maior dúvida sobre ${nicheKeyword}"\n\n📌 DICA: Fixe o melhor comentário para incentivar mais interação`
                     },
                     { 
                       id: "eng_3", 
-                      label: "Responder comentários frequentemente", 
+                      label: subs < 1000 ? "CRÍTICO: Responder 100% dos comentários" : "Responder nas primeiras 2h", 
                       desc: subs < 1000 
-                        ? "CRÍTICO para crescimento: Responda TODOS os comentários"
-                        : "Responda pelo menos nas primeiras 2 horas",
-                      expanded: `Estratégia de resposta:\n• Primeiras 2h: Responda todos\n• Faça perguntas nas respostas para continuar conversa\n• Fixe o melhor comentário\n• Use emojis para parecer mais amigável`
+                        ? `Com ${formatNumber(subs)} subs, cada comentário vale ouro`
+                        : `Algoritmo favorece vídeos com respostas rápidas`,
+                      expanded: `⚡ ESTRATÉGIA DE RESPOSTAS:\n\n📍 PRIMEIRAS 2 HORAS:\n• Responda TODOS os comentários\n• Use emojis para parecer amigável\n• Faça perguntas para continuar conversa\n\n📍 APÓS 24 HORAS:\n• Responda os mais relevantes\n• Fixe comentário de destaque\n\n💡 TEMPLATES DE RESPOSTA:\n• "Boa pergunta! [resposta]"\n• "Exatamente! Você pegou o ponto 🎯"\n• "Vou fazer um vídeo sobre isso! Se inscreve!"`,
+                      priority: subs < 1000 ? 'red' : undefined
                     },
                     { 
                       id: "eng_4", 
-                      label: "Usar cards e telas finais", 
-                      desc: `Promova seu vídeo mais popular: ${topVideoTitles[0]?.slice(0, 30) || 'Top vídeo'}...`,
-                      expanded: `Configure:\n• Card aos 50% do vídeo promovendo vídeo relacionado\n• Tela final com inscrição + 2 vídeos sugeridos\n• Link para playlist do canal`
+                      label: "Cards e telas finais otimizados", 
+                      desc: `Promova: "${topVideoTitles[0]?.slice(0, 35) || 'seu melhor vídeo'}..."`,
+                      expanded: `📺 CONFIGURAÇÃO IDEAL:\n\n🎴 CARDS (durante o vídeo):\n• 25% do vídeo: Card para playlist relacionada\n• 50% do vídeo: Card para vídeo popular\n• Após menção: Card para vídeo mencionado\n\n🔚 TELA FINAL (últimos 20s):\n• Elemento 1: "Inscreva-se" (esquerda)\n• Elemento 2: Melhor vídeo (centro)\n• Elemento 3: Upload mais recente (direita)\n\n📊 TOP VÍDEOS PARA PROMOVER:\n${topVideoTitles.slice(0, 3).map((t, i) => `${i + 1}. ${t.slice(0, 40)}...`).join('\n')}`
                     },
                   ];
 
-                  // Content Tasks with personalized suggestions
                   const contentTasks = [
                     { 
                       id: "cnt_1", 
-                      label: "Gancho forte nos primeiros 5s", 
-                      desc: `Exemplo: "Você sabia que ${keywords[0] || 'isso'} pode [benefício]?"`,
-                      expanded: `Modelos de gancho para seu nicho:\n• "Vocês pediram e eu trouxe..."\n• "Isso mudou minha forma de ver ${keywords[0] || 'o assunto'}"\n• "3 erros que você está cometendo com ${keywords[1] || 'isso'}"\n• Mostre o resultado final primeiro`
+                      label: "Gancho nos primeiros 5 segundos", 
+                      desc: `Modelo: "Você sabia que ${nicheKeyword}..."`,
+                      expanded: `⚡ GANCHOS VIRAIS PARA SEU NICHO:\n\n1. CURIOSIDADE:\n"Você NÃO vai acreditar o que ${nicheKeyword} pode fazer..."\n\n2. PROMESSA:\n"Em 5 minutos você vai dominar ${nicheKeyword}"\n\n3. CHOQUE:\n"90% das pessoas fazem ${nicheKeyword} ERRADO"\n\n4. RESULTADO:\n[Mostra resultado incrível primeiro]\n"Quer saber como eu fiz isso?"\n\n5. POLÊMICA:\n"Vou te contar a verdade sobre ${nicheKeyword} que ninguém fala"\n\n⏱️ REGRA: Capture atenção em 3 segundos ou perde o viewer`
                     },
                     { 
                       id: "cnt_2", 
-                      label: "Manter vídeos concisos", 
+                      label: `Duração ideal: ${subs < 5000 ? '5-8 min' : '10-15 min'}`, 
                       desc: subs < 5000 
-                        ? "Foque em vídeos de 5-10 min para reter audiência nova"
-                        : "Vídeos de 10-20 min funcionam bem para audiências engajadas",
-                      expanded: `Para seu tamanho de canal:\n• Corte pausas e "uhms"\n• Use jump cuts para manter ritmo\n• Cada minuto deve ter valor claro\n• Analise retenção no YouTube Studio`
+                        ? "Audiência nova: Vídeos curtos retêm melhor"
+                        : "Audiência engajada: Pode aprofundar mais",
+                      expanded: `📊 ESTRATÉGIA DE DURAÇÃO:\n\nPara ${formatNumber(subs)} inscritos:\n\n📹 VÍDEOS LONGOS:\n• Duração: ${subs < 5000 ? '5-8 min' : '10-15 min'}\n• Corte pausas e "uhms"\n• Jump cuts a cada 3-5s\n• Retenção meta: >40%\n\n📱 SHORTS:\n• Duração: 30-60s\n• Gancho em 1s\n• Loop no final\n• CTA: "Segue para mais!"\n\n🎯 ANÁLISE DO SEU CANAL:\n• Avg views: ${formatNumber(avgViews)}\n• Faça vídeos que as pessoas terminem!`
                     },
                     { 
                       id: "cnt_3", 
-                      label: "Criar séries de conteúdo", 
-                      desc: `Sugiro série sobre: ${keywords[0] || 'seu principal tema'} - Partes 1, 2, 3...`,
-                      expanded: `Ideias de séries baseadas no seu conteúdo:\n• "${keywords[0]?.toUpperCase() || 'TEMA'} - Parte [N]"\n• "Guia Completo de ${keywords[1] || 'assunto'}"\n• "Top 10 ${keywords[2] || 'coisas'} que você precisa saber"\nSéries aumentam tempo de sessão!`
+                      label: "Criar série viral", 
+                      desc: `"${nicheKeyword.toUpperCase()} - Episódio [N]"`,
+                      expanded: `📚 IDEIAS DE SÉRIE PARA ${nicheKeyword.toUpperCase()}:\n\n1. SÉRIE TUTORIAL:\n"${nicheKeyword} do ZERO - Parte [1,2,3...]"\n\n2. SÉRIE TOP:\n"Top 10 ${nicheKeyword} - Parte [1,2...]"\n\n3. SÉRIE DESAFIO:\n"30 Dias de ${nicheKeyword} - Dia [N]"\n\n4. SÉRIE REAÇÃO:\n"Reagindo a ${nicheKeyword} - Ep [N]"\n\n💡 POR QUE FUNCIONA:\n• Aumenta Watch Time total\n• Cria expectativa\n• Algoritmo promove séries\n• Viewers ficam "viciados"`
                     },
                     { 
                       id: "cnt_4", 
-                      label: "Publicar Shorts regularmente", 
-                      desc: subs < 1000 
-                        ? "ALTA PRIORIDADE: Shorts podem explodir seu crescimento"
-                        : "Shorts complementam seu conteúdo principal",
-                      expanded: `Estratégia de Shorts:\n• Recorte momentos virais dos seus vídeos longos\n• Trending topics do seu nicho\n• Dicas rápidas de 30-60 segundos\n• Publique 3-5 Shorts/semana`
+                      label: subs < 1000 ? "🔥 PRIORIDADE: Shorts para crescer" : "Shorts complementares", 
+                      desc: `Meta: ${optimalSchedule.shorts}`,
+                      expanded: `📱 ESTRATÉGIA DE SHORTS:\n\n📊 PARA ${formatNumber(subs)} INSCRITOS:\n• Frequência: ${optimalSchedule.shorts}\n• Duração ideal: 30-45s\n\n🎬 TIPOS QUE VIRALIZAM:\n1. Recorte do melhor momento do vídeo longo\n2. Dica rápida de 30s sobre ${nicheKeyword}\n3. Tendência + seu nicho\n4. "Resposta a comentário" (Stories style)\n\n⚡ ESTRUTURA VIRAL:\n• 1s: Gancho visual forte\n• 2-5s: Promessa/problema\n• 6-25s: Conteúdo\n• 26-30s: CTA + Loop\n\n#️⃣ HASHTAGS PARA SHORTS:\n#Shorts #${nicheKeyword} #Viral`,
+                      priority: subs < 1000 ? 'amber' : undefined
                     },
                   ];
 
-                  // Growth Tasks with personalized suggestions
                   const growthTasks = [
                     { 
                       id: "grw_1", 
-                      label: "Publicar consistentemente", 
-                      desc: `Meta recomendada: ${idealFrequency}`,
-                      expanded: `Cronograma sugerido para ${formatNumber(subs)} inscritos:\n• ${idealFrequency}\n• Mesmos dias/horários toda semana\n• Use agendamento do YouTube Studio\n• Anuncie nos Community Posts`
+                      label: "Cronograma de postagem otimizado", 
+                      desc: `${optimalSchedule.frequency} | ${optimalSchedule.bestDays}`,
+                      expanded: `📅 CRONOGRAMA IDEAL PARA ${formatNumber(subs)} INSCRITOS:\n\n📹 VÍDEOS LONGOS:\n• Frequência: ${optimalSchedule.frequency}\n• Dias: ${optimalSchedule.bestDays}\n• Horário: ${optimalSchedule.bestTime}\n\n📱 SHORTS:\n• ${optimalSchedule.shorts}\n• Qualquer horário (alcance global)\n\n💡 ${optimalSchedule.reason}\n\n⏰ DICA PRO:\n• Agende no YouTube Studio\n• Anuncie 24h antes nos Community Posts\n• Seja CONSISTENTE (mesmo horário sempre)`
                     },
                     { 
                       id: "grw_2", 
-                      label: "Analisar Analytics semanalmente", 
-                      desc: `Foque em: CTR (meta >5%), Retenção (meta >40%), e origem do tráfego`,
-                      expanded: `Métricas prioritárias:\n• CTR atual: verifique se está acima de 5%\n• Retenção média: busque manter >40%\n• Identifique vídeos com picos e replique\n• Analise de onde vem seu tráfego`
+                      label: `Analisar métricas semanalmente`, 
+                      desc: `Score atual: ${healthScore.score}/100 | ${healthScore.issues.length > 0 ? `Problemas: ${healthScore.issues.length}` : 'Saudável!'}`,
+                      expanded: `📊 DIAGNÓSTICO DO CANAL:\n\n🏆 SCORE: ${healthScore.score}/100\n\n✅ MÉTRICAS A MONITORAR:\n• CTR: Meta >5% (verifique no Studio)\n• Retenção: Meta >40%\n• Engajamento: Atual ${avgEngagement.toFixed(1)}%\n• Views/vídeo: Atual ${formatNumber(avgViews)}\n\n${healthScore.issues.length > 0 ? `⚠️ PROBLEMAS DETECTADOS:\n${healthScore.issues.map(i => {
+                        if (i === 'engagement_low') return '• Engajamento baixo - Melhore CTAs';
+                        if (i === 'views_low') return '• Views baixas - Otimize títulos/thumbnails';
+                        if (i === 'sub_conversion_low') return '• Conversão de subs baixa - Mais CTAs de inscrição';
+                        if (i === 'content_low') return '• Pouco conteúdo - Aumente frequência';
+                        return `• ${i}`;
+                      }).join('\n')}` : '✅ CANAL SAUDÁVEL! Mantenha a consistência.'}`,
+                      priority: healthScore.issues.length > 2 ? 'red' : healthScore.issues.length > 0 ? 'amber' : undefined
                     },
                     { 
                       id: "grw_3", 
-                      label: "Colaborar com outros criadores", 
-                      desc: `Busque canais de ${formatNumber(Math.round(subs * 0.5))} a ${formatNumber(subs * 2)} inscritos`,
-                      expanded: `Estratégia de colaboração:\n• Canais similares em tamanho (50%-200% do seu)\n• Nichos complementares\n• Proposta: "Posso trazer valor para sua audiência com [seu expertise]"\n• Comece com comentários e interações genuínas`
+                      label: "Colaborações estratégicas", 
+                      desc: `Busque canais de ${formatNumber(Math.round(subs * 0.5))}-${formatNumber(subs * 2)} subs`,
+                      expanded: `🤝 ESTRATÉGIA DE COLABORAÇÃO:\n\n🎯 CANAIS IDEAIS:\n• Tamanho: ${formatNumber(Math.round(subs * 0.5))} a ${formatNumber(subs * 2)} inscritos\n• Nicho: ${nicheKeyword} ou complementar\n• Engajamento similar ou maior\n\n📝 TEMPLATE DE PROPOSTA:\n"Olá [NOME]! Sou do canal ${channelName} e adoro seu conteúdo sobre [TEMA DELES]. Tenho uma ideia de collab que beneficiaria ambos: [PROPOSTA]. O que acha?"\n\n💡 TIPOS DE COLLAB:\n1. Participação cruzada (você no canal dele e vice-versa)\n2. Vídeo conjunto\n3. Menção mútua\n4. Desafio conjunto`
                     },
                     { 
                       id: "grw_4", 
-                      label: "Promover em outras redes", 
-                      desc: `Crie presença no Instagram, TikTok e Twitter sobre ${keywords[0] || 'seu nicho'}`,
-                      expanded: `Cross-posting estratégico:\n• TikTok/Reels: Seus Shorts editados\n• Twitter/X: Discussões sobre ${keywords[0] || 'seu tema'}\n• Instagram: Bastidores e Stories\n• Sempre leve audiência de volta ao YouTube`
+                      label: "Cross-posting em outras redes", 
+                      desc: `TikTok, Instagram, Twitter sobre ${nicheKeyword}`,
+                      expanded: `📱 ESTRATÉGIA MULTIPLATAFORMA:\n\n🎵 TIKTOK:\n• Reposte seus Shorts\n• Use áudios trending\n• Bio: "Vídeos completos no YouTube ⬇️"\n\n📸 INSTAGRAM:\n• Reels: Mesmos Shorts\n• Stories: Bastidores\n• Feed: Thumbnails/Quotes\n\n🐦 TWITTER/X:\n• Discussões sobre ${nicheKeyword}\n• Threads explicativas\n• Anuncie novos vídeos\n\n⚡ REGRA DE OURO:\n• Crie conteúdo nativo para cada rede\n• Sempre redirecione para YouTube\n• Link na bio: YouTube primeiro`
                     },
                   ];
 
@@ -2203,10 +2451,42 @@ const Analytics = () => {
 
                   return (
                     <>
+                      {/* Health Score Banner */}
+                      <div className={`mb-4 p-4 rounded-lg border ${
+                        healthScore.score >= 75 ? 'bg-green-500/10 border-green-500/30' :
+                        healthScore.score >= 50 ? 'bg-amber-500/10 border-amber-500/30' :
+                        'bg-red-500/10 border-red-500/30'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${
+                              healthScore.score >= 75 ? 'bg-green-500/20 text-green-500' :
+                              healthScore.score >= 50 ? 'bg-amber-500/20 text-amber-500' :
+                              'bg-red-500/20 text-red-500'
+                            }`}>
+                              {healthScore.score}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-foreground">Score de Saúde do Canal</p>
+                              <p className="text-xs text-muted-foreground">
+                                {healthScore.score >= 75 ? '✅ Excelente! Continue assim' :
+                                 healthScore.score >= 50 ? '⚠️ Bom, mas pode melhorar' :
+                                 '🚨 Atenção: Otimizações urgentes necessárias'}
+                              </p>
+                            </div>
+                          </div>
+                          {healthScore.issues.length > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              {healthScore.issues.length} problema{healthScore.issues.length > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
                       {/* Copy Buttons for Tags/Hashtags */}
                       <div className="flex flex-wrap gap-2 mb-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-xs font-medium text-foreground">Copiar sugestões:</span>
+                          <span className="text-xs font-medium text-foreground">📋 Copiar sugestões:</span>
                         </div>
                         <Button
                           variant="outline"
@@ -2215,7 +2495,7 @@ const Analytics = () => {
                           className="text-xs h-7 gap-1"
                         >
                           <Copy className="w-3 h-3" />
-                          Tags ({suggestedTagsRaw.length})
+                          Tags ({suggestedTags.length + longTailTags.length})
                         </Button>
                         <Button
                           variant="outline"
@@ -2224,7 +2504,16 @@ const Analytics = () => {
                           className="text-xs h-7 gap-1"
                         >
                           <Copy className="w-3 h-3" />
-                          Hashtags ({suggestedHashtags.length})
+                          Hashtags
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={copyViralTitles}
+                          className="text-xs h-7 gap-1"
+                        >
+                          <Copy className="w-3 h-3" />
+                          Títulos Virais
                         </Button>
                         <Button
                           variant="default"
@@ -2233,7 +2522,7 @@ const Analytics = () => {
                           className="text-xs h-7 gap-1"
                         >
                           <Copy className="w-3 h-3" />
-                          Copiar Tudo
+                          Estratégia Completa
                         </Button>
                       </div>
 
@@ -2255,10 +2544,12 @@ const Analytics = () => {
 
                         {/* SEO & Discovery */}
                         <TabsContent value="seo" className="space-y-2">
-                          {seoTasks.map((item) => (
+                          {seoTasks.map((item: any) => (
                             <div key={item.id} className="group">
-                              <label
-                                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              <div
+                                className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                                  item.priority === 'red' ? 'border-red-500/50 bg-red-500/5' :
+                                  item.priority === 'amber' ? 'border-amber-500/50 bg-amber-500/5' :
                                   checklistItems[item.id] 
                                     ? "bg-green-500/10 border-green-500/30" 
                                     : "bg-secondary/50 border-border hover:bg-secondary"
@@ -2268,30 +2559,55 @@ const Analytics = () => {
                                   type="checkbox"
                                   checked={checklistItems[item.id] || false}
                                   onChange={(e) => setChecklistItems(prev => ({ ...prev, [item.id]: e.target.checked }))}
-                                  className="mt-1 w-4 h-4 rounded border-border accent-green-500"
+                                  className="mt-1 w-4 h-4 rounded border-border accent-green-500 cursor-pointer"
                                 />
-                                <div className="flex-1">
-                                  <p className={`text-sm font-medium ${checklistItems[item.id] ? "text-green-500 line-through" : "text-foreground"}`}>
-                                    {item.label}
-                                  </p>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className={`text-sm font-medium ${checklistItems[item.id] ? "text-green-500 line-through" : "text-foreground"}`}>
+                                      {item.label}
+                                    </p>
+                                    {item.priority === 'red' && (
+                                      <Badge className="text-[10px] py-0 px-1 bg-red-500/20 text-red-500 border-red-500/30">URGENTE</Badge>
+                                    )}
+                                    {item.priority === 'amber' && (
+                                      <Badge className="text-[10px] py-0 px-1 bg-amber-500/20 text-amber-500 border-amber-500/30">PRIORIDADE</Badge>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-muted-foreground">{item.desc}</p>
                                   {item.expanded && (
-                                    <div className="mt-2 p-2 rounded bg-background/50 border border-border/50 text-xs text-muted-foreground whitespace-pre-line hidden group-hover:block">
+                                    <div className="mt-2 p-3 rounded bg-background/80 border border-border/50 text-xs text-muted-foreground whitespace-pre-line hidden group-hover:block">
                                       {item.expanded}
+                                      {item.copyText && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigator.clipboard.writeText(item.copyText);
+                                            toast({ title: "Copiado!", description: item.copyLabel });
+                                          }}
+                                          className="mt-2 text-xs h-6 gap-1"
+                                        >
+                                          <Copy className="w-3 h-3" />
+                                          {item.copyLabel}
+                                        </Button>
+                                      )}
                                     </div>
                                   )}
                                 </div>
-                              </label>
+                              </div>
                             </div>
                           ))}
                         </TabsContent>
 
                         {/* Engagement */}
                         <TabsContent value="engagement" className="space-y-2">
-                          {engagementTasks.map((item) => (
+                          {engagementTasks.map((item: any) => (
                             <div key={item.id} className="group">
-                              <label
-                                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              <div
+                                className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                                  item.priority === 'red' ? 'border-red-500/50 bg-red-500/5' :
+                                  item.priority === 'amber' ? 'border-amber-500/50 bg-amber-500/5' :
                                   checklistItems[item.id] 
                                     ? "bg-green-500/10 border-green-500/30" 
                                     : "bg-secondary/50 border-border hover:bg-secondary"
@@ -2301,30 +2617,40 @@ const Analytics = () => {
                                   type="checkbox"
                                   checked={checklistItems[item.id] || false}
                                   onChange={(e) => setChecklistItems(prev => ({ ...prev, [item.id]: e.target.checked }))}
-                                  className="mt-1 w-4 h-4 rounded border-border accent-green-500"
+                                  className="mt-1 w-4 h-4 rounded border-border accent-green-500 cursor-pointer"
                                 />
-                                <div className="flex-1">
-                                  <p className={`text-sm font-medium ${checklistItems[item.id] ? "text-green-500 line-through" : "text-foreground"}`}>
-                                    {item.label}
-                                  </p>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className={`text-sm font-medium ${checklistItems[item.id] ? "text-green-500 line-through" : "text-foreground"}`}>
+                                      {item.label}
+                                    </p>
+                                    {item.priority === 'red' && (
+                                      <Badge className="text-[10px] py-0 px-1 bg-red-500/20 text-red-500 border-red-500/30">URGENTE</Badge>
+                                    )}
+                                    {item.priority === 'amber' && (
+                                      <Badge className="text-[10px] py-0 px-1 bg-amber-500/20 text-amber-500 border-amber-500/30">PRIORIDADE</Badge>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-muted-foreground">{item.desc}</p>
                                   {item.expanded && (
-                                    <div className="mt-2 p-2 rounded bg-background/50 border border-border/50 text-xs text-muted-foreground whitespace-pre-line hidden group-hover:block">
+                                    <div className="mt-2 p-3 rounded bg-background/80 border border-border/50 text-xs text-muted-foreground whitespace-pre-line hidden group-hover:block">
                                       {item.expanded}
                                     </div>
                                   )}
                                 </div>
-                              </label>
+                              </div>
                             </div>
                           ))}
                         </TabsContent>
 
                         {/* Content */}
                         <TabsContent value="content" className="space-y-2">
-                          {contentTasks.map((item) => (
+                          {contentTasks.map((item: any) => (
                             <div key={item.id} className="group">
-                              <label
-                                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              <div
+                                className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                                  item.priority === 'red' ? 'border-red-500/50 bg-red-500/5' :
+                                  item.priority === 'amber' ? 'border-amber-500/50 bg-amber-500/5' :
                                   checklistItems[item.id] 
                                     ? "bg-green-500/10 border-green-500/30" 
                                     : "bg-secondary/50 border-border hover:bg-secondary"
@@ -2334,30 +2660,40 @@ const Analytics = () => {
                                   type="checkbox"
                                   checked={checklistItems[item.id] || false}
                                   onChange={(e) => setChecklistItems(prev => ({ ...prev, [item.id]: e.target.checked }))}
-                                  className="mt-1 w-4 h-4 rounded border-border accent-green-500"
+                                  className="mt-1 w-4 h-4 rounded border-border accent-green-500 cursor-pointer"
                                 />
-                                <div className="flex-1">
-                                  <p className={`text-sm font-medium ${checklistItems[item.id] ? "text-green-500 line-through" : "text-foreground"}`}>
-                                    {item.label}
-                                  </p>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className={`text-sm font-medium ${checklistItems[item.id] ? "text-green-500 line-through" : "text-foreground"}`}>
+                                      {item.label}
+                                    </p>
+                                    {item.priority === 'red' && (
+                                      <Badge className="text-[10px] py-0 px-1 bg-red-500/20 text-red-500 border-red-500/30">URGENTE</Badge>
+                                    )}
+                                    {item.priority === 'amber' && (
+                                      <Badge className="text-[10px] py-0 px-1 bg-amber-500/20 text-amber-500 border-amber-500/30">PRIORIDADE</Badge>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-muted-foreground">{item.desc}</p>
                                   {item.expanded && (
-                                    <div className="mt-2 p-2 rounded bg-background/50 border border-border/50 text-xs text-muted-foreground whitespace-pre-line hidden group-hover:block">
+                                    <div className="mt-2 p-3 rounded bg-background/80 border border-border/50 text-xs text-muted-foreground whitespace-pre-line hidden group-hover:block">
                                       {item.expanded}
                                     </div>
                                   )}
                                 </div>
-                              </label>
+                              </div>
                             </div>
                           ))}
                         </TabsContent>
 
                         {/* Growth */}
                         <TabsContent value="growth" className="space-y-2">
-                          {growthTasks.map((item) => (
+                          {growthTasks.map((item: any) => (
                             <div key={item.id} className="group">
-                              <label
-                                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              <div
+                                className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                                  item.priority === 'red' ? 'border-red-500/50 bg-red-500/5' :
+                                  item.priority === 'amber' ? 'border-amber-500/50 bg-amber-500/5' :
                                   checklistItems[item.id] 
                                     ? "bg-green-500/10 border-green-500/30" 
                                     : "bg-secondary/50 border-border hover:bg-secondary"
@@ -2367,20 +2703,28 @@ const Analytics = () => {
                                   type="checkbox"
                                   checked={checklistItems[item.id] || false}
                                   onChange={(e) => setChecklistItems(prev => ({ ...prev, [item.id]: e.target.checked }))}
-                                  className="mt-1 w-4 h-4 rounded border-border accent-green-500"
+                                  className="mt-1 w-4 h-4 rounded border-border accent-green-500 cursor-pointer"
                                 />
-                                <div className="flex-1">
-                                  <p className={`text-sm font-medium ${checklistItems[item.id] ? "text-green-500 line-through" : "text-foreground"}`}>
-                                    {item.label}
-                                  </p>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className={`text-sm font-medium ${checklistItems[item.id] ? "text-green-500 line-through" : "text-foreground"}`}>
+                                      {item.label}
+                                    </p>
+                                    {item.priority === 'red' && (
+                                      <Badge className="text-[10px] py-0 px-1 bg-red-500/20 text-red-500 border-red-500/30">URGENTE</Badge>
+                                    )}
+                                    {item.priority === 'amber' && (
+                                      <Badge className="text-[10px] py-0 px-1 bg-amber-500/20 text-amber-500 border-amber-500/30">PRIORIDADE</Badge>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-muted-foreground">{item.desc}</p>
                                   {item.expanded && (
-                                    <div className="mt-2 p-2 rounded bg-background/50 border border-border/50 text-xs text-muted-foreground whitespace-pre-line hidden group-hover:block">
+                                    <div className="mt-2 p-3 rounded bg-background/80 border border-border/50 text-xs text-muted-foreground whitespace-pre-line hidden group-hover:block">
                                       {item.expanded}
                                     </div>
                                   )}
                                 </div>
-                              </label>
+                              </div>
                             </div>
                           ))}
                         </TabsContent>
