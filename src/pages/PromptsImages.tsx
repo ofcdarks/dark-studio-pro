@@ -59,6 +59,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import logoGif from "@/assets/logo.gif";
 import { SceneTimeline } from "@/components/scenes/SceneTimeline";
+import { ScriptPreviewTimeline } from "@/components/scenes/ScriptPreviewTimeline";
 
 interface CharacterDescription {
   name: string;
@@ -1772,6 +1773,15 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                       </Button>
                     </div>
                   </Card>
+
+                  {/* Preview de Timeline (antes de gerar) */}
+                  {script.trim() && generatedScenes.length === 0 && !generating && (
+                    <ScriptPreviewTimeline
+                      script={script}
+                      wordsPerScene={parseInt(wordsPerScene) || 80}
+                      wpm={currentWpm}
+                    />
+                  )}
 
                   {/* Personagens Detectados */}
                   {detectedCharacters.length > 0 && (
