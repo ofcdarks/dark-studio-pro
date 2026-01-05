@@ -169,6 +169,7 @@ const PromptsImages = () => {
   const [showCapcutInstructions, setShowCapcutInstructions] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("clean");
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [projectName, setProjectName] = usePersistedState("prompts_project_name", "Meu Projeto");
   const [generationStartTime, setGenerationStartTime] = useState<number | null>(null);
   const cancelGenerationRef = useRef(false);
   
@@ -1020,9 +1021,9 @@ const PromptsImages = () => {
       }));
 
       // Gerar JSONs do projeto CapCut COM TEMPLATE
-      const projectName = `Projeto_${template.id}_${new Date().toISOString().split("T")[0]}`;
-      const draftContentJson = generateCapcutDraftContentWithTemplate(scenesForCapcut, template, projectName);
-      const draftMetaInfoJson = generateCapcutDraftMetaInfoWithTemplate(scenesForCapcut, projectName);
+      const sanitizedProjectName = projectName.trim() || "Meu Projeto";
+      const draftContentJson = generateCapcutDraftContentWithTemplate(scenesForCapcut, template, sanitizedProjectName);
+      const draftMetaInfoJson = generateCapcutDraftMetaInfoWithTemplate(scenesForCapcut, sanitizedProjectName);
       
       // Arquivos de documentação
       zip.file("DURACOES.txt", durationsTxt);
@@ -1119,7 +1120,8 @@ const PromptsImages = () => {
       const url = URL.createObjectURL(zipBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `CapCut_${new Date().toISOString().split("T")[0]}.zip`;
+      const safeFileName = (projectName.trim() || "Projeto").replace(/[^a-zA-Z0-9_-]/g, "_");
+      link.download = `${safeFileName}_${new Date().toISOString().split("T")[0]}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -2352,6 +2354,23 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
           
           <ScrollArea className="max-h-[60vh]">
             <div className="space-y-4 pr-2">
+              {/* Nome do Projeto */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary" />
+                  Nome do Projeto
+                </Label>
+                <Input
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  placeholder="Meu Projeto"
+                  className="bg-secondary/50"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Este nome será usado no arquivo ZIP e dentro do CapCut
+                </p>
+              </div>
+
               {/* Seletor de Templates por Categoria */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-2">
