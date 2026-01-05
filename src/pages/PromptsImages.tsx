@@ -1443,10 +1443,22 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                           {generatedScenes
                             .map((scene, index) => ({ scene, index }))
                             .filter(({ scene }) => !filterPending || !scene.generatedImage)
-                            .map(({ scene, index }) => (
+                            .map(({ scene, index }) => {
+                            // Verificar se este card está na fila de processamento
+                            const isPending = !scene.generatedImage && generatingImages;
+                            const isCurrentlyGenerating = currentGeneratingIndex === index;
+                            
+                            return (
                             <div 
                               key={`img-${scene.number}`}
-                              className="group relative aspect-video rounded-lg overflow-hidden bg-secondary border border-border"
+                              className={cn(
+                                "group relative aspect-video rounded-lg overflow-hidden bg-secondary border transition-all duration-300",
+                                isCurrentlyGenerating 
+                                  ? "border-primary shadow-lg shadow-primary/20 ring-2 ring-primary/30" 
+                                  : isPending 
+                                    ? "border-primary/30 animate-pulse" 
+                                    : "border-border"
+                              )}
                             >
                               {scene.generatedImage ? (
                                 <>
@@ -1477,10 +1489,18 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                                     )}
                                   </Button>
                                 </>
-                              ) : currentGeneratingIndex === index ? (
-                                <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                                  <span className="text-[10px] text-muted-foreground">Gerando...</span>
+                              ) : isCurrentlyGenerating ? (
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-primary/10 to-primary/5">
+                                  <div className="relative">
+                                    <div className="absolute inset-0 bg-primary/30 rounded-full animate-ping" />
+                                    <Loader2 className="w-6 h-6 animate-spin text-primary relative z-10" />
+                                  </div>
+                                  <span className="text-[10px] text-primary font-medium">Gerando...</span>
+                                </div>
+                              ) : isPending ? (
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-secondary to-secondary/50">
+                                  <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                                  <span className="text-[10px] text-muted-foreground">Na fila...</span>
                                 </div>
                               ) : (
                                 <button 
@@ -1492,7 +1512,12 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                                   <span className="text-[10px] text-muted-foreground">Gerar</span>
                                 </button>
                               )}
-                              <div className="absolute bottom-1 left-1 bg-background/80 px-1.5 py-0.5 rounded">
+                              <div className={cn(
+                                "absolute bottom-1 left-1 px-1.5 py-0.5 rounded transition-colors",
+                                isCurrentlyGenerating 
+                                  ? "bg-primary text-primary-foreground" 
+                                  : "bg-background/80"
+                              )}>
                                 <div className="text-xs font-bold leading-none">{scene.number}</div>
                                 {scene.timecode && (
                                   <div className="text-[9px] text-muted-foreground font-mono leading-none mt-0.5">
@@ -1501,7 +1526,7 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                                 )}
                               </div>
                             </div>
-                          ))}
+                          )})}
                         </div>
                       </div>
 
@@ -2017,14 +2042,14 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
       </Dialog>
 
       {/* Modal de Loading - Geração de Imagens */}
-      <Dialog open={generatingImages} onOpenChange={() => {}}>
-        <DialogContent className="max-w-sm bg-card border-primary/50 rounded-xl shadow-xl" hideCloseButton>
-          <div className="flex flex-col items-center justify-center py-4 space-y-4">
-            {/* Logo com efeito de pulso */}
-            <div className="relative w-24 h-24">
+      {/* Barra de progresso flutuante quando gerando (sem modal) */}
+      {generatingImages && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-primary/50 rounded-xl shadow-2xl p-4 min-w-[320px] max-w-md">
+          <div className="flex items-center gap-4">
+            {/* Mini logo com pulso */}
+            <div className="relative w-12 h-12 flex-shrink-0">
               <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
-              <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
-              <div className="relative w-24 h-24 rounded-full border-2 border-primary/50 overflow-hidden">
+              <div className="relative w-12 h-12 rounded-full border-2 border-primary/50 overflow-hidden">
                 <img 
                   src={logoGif} 
                   alt="Loading" 
@@ -2033,66 +2058,35 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
               </div>
             </div>
             
-            {/* Contador de progresso */}
-            <div className="text-center space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">
-                Gerando Imagens
-              </h3>
-              <p className="text-2xl font-bold text-primary">
-                {imageBatchDone} / {imageBatchTotal}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {currentGeneratingIndex !== null 
-                  ? `Processando cena ${currentGeneratingIndex + 1}...` 
-                  : "Iniciando..."}
-              </p>
-            </div>
-
-            {/* Barra de progresso */}
-            <div className="w-full space-y-2">
+            {/* Progresso */}
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-foreground">
+                  Gerando Imagens
+                </span>
+                <span className="text-sm font-bold text-primary">
+                  {imageBatchDone}/{imageBatchTotal}
+                </span>
+              </div>
               <Progress 
                 value={imageBatchTotal > 0 ? (imageBatchDone / imageBatchTotal) * 100 : 0} 
-                className="h-3 bg-secondary" 
+                className="h-2 bg-secondary" 
               />
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">
-                  {imageBatchTotal - imageBatchDone} restantes
-                </span>
-                <span className="text-xs font-medium text-primary">
-                  {imageBatchTotal > 0 ? Math.round((imageBatchDone / imageBatchTotal) * 100) : 0}%
-                </span>
-              </div>
             </div>
-
-            {/* Preview da cena atual */}
-            {currentGeneratingIndex !== null && generatedScenes[currentGeneratingIndex] && (
-              <div className="w-full p-3 bg-secondary/50 rounded-lg border border-border">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge className="bg-primary/20 text-primary text-xs">
-                    Cena {currentGeneratingIndex + 1}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {generatedScenes[currentGeneratingIndex]?.timecode}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground font-mono line-clamp-2">
-                  {generatedScenes[currentGeneratingIndex]?.imagePrompt}
-                </p>
-              </div>
-            )}
-
+            
             {/* Botão Cancelar */}
             <Button
-              variant="outline"
+              variant="ghost"
+              size="icon"
               onClick={handleCancelGeneration}
-              className="w-full border-destructive/50 text-destructive hover:bg-destructive/10"
+              className="flex-shrink-0 text-destructive hover:bg-destructive/10"
+              title="Cancelar"
             >
-              <X className="w-4 h-4 mr-2" />
-              Cancelar Geração
+              <X className="w-5 h-5" />
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* Modal de Instruções CapCut */}
       <Dialog open={showCapcutInstructions} onOpenChange={setShowCapcutInstructions}>
