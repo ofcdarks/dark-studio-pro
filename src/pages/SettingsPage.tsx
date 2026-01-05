@@ -8,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload } from "lucide-react";
+import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload, History, Video, FileText, Play, Sparkles, Mic } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useApiSettings } from "@/hooks/useApiSettings";
@@ -66,6 +68,10 @@ const SettingsPage = () => {
   // Avatar upload
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // Activity logs
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
 
   // Fetch user plan/role
   useEffect(() => {
@@ -133,6 +139,32 @@ const SettingsPage = () => {
       setAvatarUrl(profile.avatar_url || null);
     }
   }, [profile]);
+
+  // Fetch activity logs
+  useEffect(() => {
+    const fetchActivityLogs = async () => {
+      if (!user) return;
+      
+      setLoadingLogs(true);
+      try {
+        const { data, error } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
+        if (error) throw error;
+        setActivityLogs(data || []);
+      } catch (error) {
+        console.error('Error fetching activity logs:', error);
+      } finally {
+        setLoadingLogs(false);
+      }
+    };
+    
+    fetchActivityLogs();
+  }, [user]);
 
   useEffect(() => {
     if (settings) {
@@ -333,6 +365,44 @@ const SettingsPage = () => {
   };
 
   // Change password
+  const getActivityIcon = (action: string) => {
+    switch (action) {
+      case 'video_analysis':
+        return <Video className="w-4 h-4 text-primary" />;
+      case 'script_generated':
+        return <FileText className="w-4 h-4 text-green-500" />;
+      case 'image_generated':
+        return <Sparkles className="w-4 h-4 text-purple-500" />;
+      case 'tts_generated':
+        return <Mic className="w-4 h-4 text-blue-500" />;
+      case 'scene_generated':
+        return <Play className="w-4 h-4 text-orange-500" />;
+      default:
+        return <History className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
+
+  const getActivityLabel = (action: string) => {
+    switch (action) {
+      case 'video_analysis':
+        return 'Vídeo analisado';
+      case 'script_generated':
+        return 'Roteiro gerado';
+      case 'image_generated':
+        return 'Imagem gerada';
+      case 'tts_generated':
+        return 'Áudio gerado';
+      case 'scene_generated':
+        return 'Cenas geradas';
+      case 'thumbnail_generated':
+        return 'Thumbnail gerada';
+      case 'channel_analysis':
+        return 'Canal analisado';
+      default:
+        return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
   const handleChangePassword = async () => {
     if (!newPassword || !confirmPassword) {
       toast.error('Preencha todos os campos');
@@ -711,6 +781,53 @@ const SettingsPage = () => {
                   Ativar 2FA (Em breve)
                 </Button>
               </div>
+            </Card>
+
+            {/* Activity Logs Section */}
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <History className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold text-foreground">Histórico de Atividades</h3>
+              </div>
+              
+              {loadingLogs ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : activityLogs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <History className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>Nenhuma atividade registrada ainda</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activityLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 border border-border/50"
+                    >
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        {getActivityIcon(log.action)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium text-sm text-foreground">
+                            {getActivityLabel(log.action)}
+                          </span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {log.created_at && format(new Date(log.created_at), "dd MMM, HH:mm", { locale: ptBR })}
+                          </span>
+                        </div>
+                        {log.description && (
+                          <p className="text-sm text-muted-foreground truncate mt-0.5">
+                            {log.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
           </div>
         </div>
