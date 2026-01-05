@@ -34,7 +34,8 @@ import {
   DownloadCloud,
   Video,
   RotateCcw,
-  Layout
+  Layout,
+  FolderSearch
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -853,23 +854,60 @@ const PromptsImages = () => {
         return { ...scene, startSeconds, endSeconds, durationSeconds };
       });
 
-      // Salvar cada imagem diretamente na pasta selecionada
+      // Função auxiliar para converter para JPG
+      const convertToJpg = async (imageUrl: string): Promise<Blob> => {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        
+        // Criar canvas para conversão
+        const img = new window.Image();
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        return new Promise((resolve, reject) => {
+          img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx?.drawImage(img, 0, 0);
+            canvas.toBlob((jpgBlob) => {
+              if (jpgBlob) resolve(jpgBlob);
+              else reject(new Error('Falha ao converter para JPG'));
+            }, 'image/jpeg', 0.92);
+          };
+          img.onerror = reject;
+          img.src = imageUrl;
+        });
+      };
+
+      // Salvar cada imagem diretamente na pasta selecionada (em JPG)
       let savedCount = 0;
       for (const scene of scenesWithImages) {
         if (scene.generatedImage) {
           try {
-            const response = await fetch(scene.generatedImage);
-            const blob = await response.blob();
-            const fileName = `cena_${String(scene.number).padStart(3, "0")}.png`;
+            const jpgBlob = await convertToJpg(scene.generatedImage);
+            const fileName = `cena_${String(scene.number).padStart(3, "0")}.jpg`;
             
             const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
             const writable = await fileHandle.createWritable();
-            await writable.write(blob);
+            await writable.write(jpgBlob);
             await writable.close();
             savedCount++;
           } catch (err) {
             console.warn(`Erro ao salvar cena ${scene.number}`, err);
           }
+        }
+      }
+
+      // Salvar draft_cover.jpg usando a primeira imagem
+      if (scenesWithImages.length > 0 && scenesWithImages[0].generatedImage) {
+        try {
+          const coverBlob = await convertToJpg(scenesWithImages[0].generatedImage);
+          const coverHandle = await dirHandle.getFileHandle("draft_cover.jpg", { create: true });
+          const coverWritable = await coverHandle.createWritable();
+          await coverWritable.write(coverBlob);
+          await coverWritable.close();
+        } catch (err) {
+          console.warn("Erro ao salvar draft_cover.jpg", err);
         }
       }
 
@@ -961,14 +999,44 @@ const PromptsImages = () => {
         return { ...scene, startSeconds, endSeconds, durationSeconds };
       });
 
-      // Criar pasta Resources e adicionar imagens dentro dela
+      // Função auxiliar para converter para JPG no ZIP
+      const convertToJpgBlob = async (imageUrl: string): Promise<Blob> => {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        
+        const img = new window.Image();
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        return new Promise((resolve, reject) => {
+          img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx?.drawImage(img, 0, 0);
+            canvas.toBlob((jpgBlob) => {
+              if (jpgBlob) resolve(jpgBlob);
+              else reject(new Error('Falha ao converter para JPG'));
+            }, 'image/jpeg', 0.92);
+          };
+          img.onerror = reject;
+          img.src = imageUrl;
+        });
+      };
+
+      // Criar pasta Resources e adicionar imagens em JPG
       const resourcesFolder = zip.folder("Resources");
+      let firstImageBlob: Blob | null = null;
+      
       for (const scene of scenesWithImages) {
         if (scene.generatedImage && resourcesFolder) {
           try {
-            const response = await fetch(scene.generatedImage);
-            const blob = await response.blob();
-            resourcesFolder.file(`cena_${String(scene.number).padStart(3, "0")}.png`, blob);
+            const jpgBlob = await convertToJpgBlob(scene.generatedImage);
+            resourcesFolder.file(`cena_${String(scene.number).padStart(3, "0")}.jpg`, jpgBlob);
+            
+            // Guardar a primeira imagem para usar como capa
+            if (!firstImageBlob) {
+              firstImageBlob = jpgBlob;
+            }
           } catch (err) {
             console.warn(`Erro cena ${scene.number}`, err);
           }
@@ -1042,7 +1110,7 @@ const PromptsImages = () => {
         "7) Selecione 'Localizar arquivo...' ou 'Relink media'",
         "",
         "8) Navegue até a pasta Resources/ dentro do projeto e selecione",
-        "   a imagem correspondente (cena_001.png, cena_002.png, etc.)",
+        "   a imagem correspondente (cena_001.jpg, cena_002.jpg, etc.)",
         "",
         "9) O CapCut irá vincular automaticamente as outras imagens!",
         "",
@@ -1051,10 +1119,10 @@ const PromptsImages = () => {
         "═══════════════════════════════════════════════════════════════",
       ].join("\n");
 
-      // Gerar dados para o JSON do CapCut
+      // Gerar dados para o JSON do CapCut (usando JPG)
       const scenesForCapcut = scenesWithDurations.map(s => ({
         number: s.number,
-        fileName: `cena_${String(s.number).padStart(3, "0")}.png`,
+        fileName: `cena_${String(s.number).padStart(3, "0")}.jpg`,
         durationSeconds: s.durationSeconds,
         startSeconds: s.startSeconds,
         text: s.text
@@ -1128,9 +1196,14 @@ const PromptsImages = () => {
       zip.file("template.tmp", "");
       zip.file("template-2.tmp", "");
       
-      // Imagem de capa placeholder (1x1 pixel transparente em base64)
-      const draftCoverBase64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBEQCEAwEPwAB//9k=";
-      zip.file("draft_cover.jpg", draftCoverBase64, { base64: true });
+      // Usar a primeira imagem como capa, ou placeholder se não houver
+      if (firstImageBlob) {
+        zip.file("draft_cover.jpg", firstImageBlob);
+      } else {
+        // Fallback: 1x1 pixel transparente em base64
+        const draftCoverBase64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBEQCEAwEPwAB//9k=";
+        zip.file("draft_cover.jpg", draftCoverBase64, { base64: true });
+      }
       
       // Pastas vazias (estrutura exata do CapCut)
       zip.folder("adjust_mask");
@@ -1188,6 +1261,90 @@ const PromptsImages = () => {
     await handleSaveToCapcutFolder();
   };
 
+  // Importar imagens de pasta existente para relink
+  const handleImportImagesFromFolder = async () => {
+    try {
+      // Verificar suporte à File System Access API
+      if (!('showDirectoryPicker' in window)) {
+        toast({ 
+          title: "Não suportado", 
+          description: "Seu navegador não suporta seleção de pastas. Use Chrome, Edge ou Opera.",
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      toast({ 
+        title: "📁 Selecione a pasta com as imagens", 
+        description: "Procure a pasta onde estão as imagens (cena_001.jpg, cena_002.jpg, etc.)",
+      });
+
+      const dirHandle = await (window as any).showDirectoryPicker({
+        id: 'import-images',
+        mode: 'read',
+        startIn: 'downloads'
+      });
+
+      let importedCount = 0;
+      const updatedScenes = [...generatedScenes];
+
+      // Iterar pelas cenas e procurar imagens correspondentes
+      for (let i = 0; i < updatedScenes.length; i++) {
+        const scene = updatedScenes[i];
+        const jpgFileName = `cena_${String(scene.number).padStart(3, "0")}.jpg`;
+        const pngFileName = `cena_${String(scene.number).padStart(3, "0")}.png`;
+        
+        let fileHandle: any = null;
+        
+        // Tentar encontrar JPG primeiro, depois PNG
+        try {
+          fileHandle = await dirHandle.getFileHandle(jpgFileName);
+        } catch {
+          try {
+            fileHandle = await dirHandle.getFileHandle(pngFileName);
+          } catch {
+            // Arquivo não encontrado
+          }
+        }
+
+        if (fileHandle) {
+          try {
+            const file = await fileHandle.getFile();
+            const url = URL.createObjectURL(file);
+            updatedScenes[i] = { ...updatedScenes[i], generatedImage: url };
+            importedCount++;
+          } catch (err) {
+            console.warn(`Erro ao ler ${jpgFileName}:`, err);
+          }
+        }
+      }
+
+      if (importedCount > 0) {
+        setGeneratedScenes(updatedScenes);
+        toast({ 
+          title: "✅ Imagens importadas!", 
+          description: `${importedCount} imagens foram carregadas da pasta "${dirHandle.name}".`
+        });
+      } else {
+        toast({ 
+          title: "Nenhuma imagem encontrada", 
+          description: "Nenhum arquivo cena_001.jpg/png encontrado. Verifique a pasta.",
+          variant: "destructive" 
+        });
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        toast({ title: "Cancelado", description: "Nenhuma pasta selecionada" });
+      } else {
+        toast({ 
+          title: "Erro ao importar", 
+          description: error.message || "Não foi possível acessar a pasta",
+          variant: "destructive" 
+        });
+      }
+    }
+  };
+
   // Detectar sistema operacional
   const isWindows = typeof navigator !== 'undefined' && navigator.platform?.toLowerCase().includes('win');
   const isMac = typeof navigator !== 'undefined' && (navigator.platform?.toLowerCase().includes('mac') || navigator.userAgent?.toLowerCase().includes('mac'));
@@ -1213,9 +1370,10 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
 3. Use DURACOES.txt para ajustar a duração de cada cena
 
 === DICAS ===
-• As imagens são nomeadas em ordem: cena_001.png, cena_002.png...
+• As imagens são nomeadas em ordem: cena_001.jpg, cena_002.jpg...
 • O arquivo DURACOES.txt contém os tempos de cada cena
-• Após escolher uma pasta, ela será lembrada para próximas exportações`;
+• Após escolher uma pasta, ela será lembrada para próximas exportações
+• Use "Importar Imagens de Pasta" para carregar imagens já baixadas`;
 
 
   // Editar prompt de uma cena
@@ -2522,25 +2680,37 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
             )}
 
             {/* Botões */}
-            <div className="flex gap-2 pt-2">
+            <div className="space-y-2 pt-2">
+              {/* Botão de importar imagens */}
               <Button
                 variant="outline"
-                onClick={() => {
-                  navigator.clipboard.writeText(capcutInstructionsText);
-                  toast({ title: "Instruções copiadas!", description: "Cole em um bloco de notas para referência." });
-                }}
-                className="flex-1"
+                onClick={handleImportImagesFromFolder}
+                className="w-full"
               >
-                <Copy className="w-4 h-4 mr-2" />
-                Copiar Instruções
+                <FolderSearch className="w-4 h-4 mr-2" />
+                Importar Imagens de Pasta (Relink)
               </Button>
-              <Button
-                onClick={handleConfirmCapcutExport}
-                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <Video className="w-4 h-4 mr-2" />
-                Exportar Agora
-              </Button>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(capcutInstructionsText);
+                    toast({ title: "Instruções copiadas!", description: "Cole em um bloco de notas para referência." });
+                  }}
+                  className="flex-1"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copiar Instruções
+                </Button>
+                <Button
+                  onClick={handleConfirmCapcutExport}
+                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Video className="w-4 h-4 mr-2" />
+                  Exportar Agora
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
