@@ -31,6 +31,9 @@ export interface VideoGenerationProgress {
   currentScene?: number;
   totalScenes?: number;
   message: string;
+  downloadedMB?: number;
+  totalMB?: number;
+  downloadLabel?: string;
 }
 
 export function useFFmpegVideoGenerator() {
@@ -119,12 +122,18 @@ export function useFFmpegVideoGenerator() {
       },
     ];
 
-    const fetchWithProgress = async (url: string, label: string): Promise<Blob> => {
+    const formatBytes = (bytes: number): string => {
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+    };
+
+    const fetchWithProgress = async (url: string, label: string, progressBase: number, progressRange: number): Promise<Blob> => {
       const response = await fetch(url, { signal: abortControllerRef.current?.signal });
       if (!response.ok) throw new Error(`Failed to fetch ${url}`);
       
       const reader = response.body?.getReader();
       const contentLength = Number(response.headers.get("Content-Length")) || 0;
+      const totalMB = contentLength > 0 ? Number((contentLength / (1024 * 1024)).toFixed(1)) : 0;
       
       if (!reader) {
         return await response.blob();
@@ -142,14 +151,19 @@ export function useFFmpegVideoGenerator() {
         chunks.push(value);
         receivedLength += value.length;
         
-        if (contentLength > 0) {
-          const pct = Math.round((receivedLength / contentLength) * 100);
-          setProgress((prev) => ({
-            ...prev,
-            progress: Math.min(20, 10 + pct * 0.1),
-            message: `${label} ${pct}%`,
-          }));
-        }
+        const downloadedMB = Number((receivedLength / (1024 * 1024)).toFixed(1));
+        const pct = contentLength > 0 ? (receivedLength / contentLength) : 0;
+        
+        setProgress({
+          stage: "loading",
+          progress: Math.min(progressBase + progressRange, progressBase + pct * progressRange),
+          message: contentLength > 0 
+            ? `${label}: ${formatBytes(receivedLength)} / ${formatBytes(contentLength)}`
+            : `${label}: ${formatBytes(receivedLength)}`,
+          downloadedMB,
+          totalMB,
+          downloadLabel: label,
+        });
       }
 
       const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
@@ -168,31 +182,23 @@ export function useFFmpegVideoGenerator() {
       try {
         setProgress({
           stage: "loading",
-          progress: 8,
-          message: config.isMultiThread ? "Carregando FFmpeg Multi-Thread..." : "Carregando FFmpeg...",
+          progress: 5,
+          message: config.isMultiThread ? "Preparando FFmpeg Multi-Thread..." : "Preparando FFmpeg...",
         });
 
-        const coreBlob = await fetchWithProgress(`${config.base}/ffmpeg-core.js`, "Core JS:");
+        // Core JS: ~100KB, progress 5-8%
+        const coreBlob = await fetchWithProgress(`${config.base}/ffmpeg-core.js`, "Baixando Core JS", 5, 3);
         const coreURL = URL.createObjectURL(new Blob([await coreBlob.text()], { type: "text/javascript" }));
 
-        setProgress({
-          stage: "loading",
-          progress: 12,
-          message: "Baixando WASM (~30MB)...",
-        });
-
-        const wasmBlob = await fetchWithProgress(`${config.base}/ffmpeg-core.wasm`, "WASM:");
+        // WASM: ~31MB, progress 8-20%
+        const wasmBlob = await fetchWithProgress(`${config.base}/ffmpeg-core.wasm`, "Baixando WASM", 8, 12);
         const wasmURL = URL.createObjectURL(wasmBlob);
 
         let workerURL: string | undefined;
         if (config.isMultiThread) {
           try {
-            setProgress({
-              stage: "loading",
-              progress: 18,
-              message: "Baixando Worker...",
-            });
-            const workerBlob = await fetchWithProgress(`${config.base}/ffmpeg-core.worker.js`, "Worker:");
+            // Worker: ~50KB, progress 20-22%
+            const workerBlob = await fetchWithProgress(`${config.base}/ffmpeg-core.worker.js`, "Baixando Worker", 20, 2);
             workerURL = URL.createObjectURL(new Blob([await workerBlob.text()], { type: "text/javascript" }));
           } catch {
             // Worker optional, continue without multi-thread
