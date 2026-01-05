@@ -24,6 +24,7 @@ import logoGif from "@/assets/logo.gif";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 interface ScriptAgent {
   id: string;
@@ -49,6 +50,7 @@ export const GenerateScriptModal = ({
   agent,
 }: GenerateScriptModalProps) => {
   const { user } = useAuth();
+  const { logActivity } = useActivityLog();
   const [generating, setGenerating] = useState(false);
   
   // Form state
@@ -206,6 +208,12 @@ Gere um roteiro completo seguindo a estrutura e fórmula do agente, otimizado pa
       if (updateError) {
         console.error("[GenerateScript] Error updating agent:", updateError);
       }
+
+      // Log activity
+      await logActivity({
+        action: 'script_generated',
+        description: `Roteiro "${videoTitle}" (${targetDuration} min) gerado com ${agent.name}`,
+      });
 
       toast.success(`Roteiro gerado com sucesso! (${data?.creditsUsed || estimatedCredits} créditos)`);
       
