@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle } from "lucide-react";
+import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useApiSettings } from "@/hooks/useApiSettings";
@@ -61,6 +62,10 @@ const SettingsPage = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+
+  // Avatar upload
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Fetch user plan/role
   useEffect(() => {
@@ -125,6 +130,7 @@ const SettingsPage = () => {
         full_name: profile.full_name || '',
         email: profile.email || '',
       });
+      setAvatarUrl(profile.avatar_url || null);
     }
   }, [profile]);
 
@@ -162,6 +168,87 @@ const SettingsPage = () => {
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Erro ao atualizar perfil');
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 2MB');
+      return;
+    }
+    
+    setUploadingAvatar(true);
+    
+    try {
+      // Delete old avatar if exists
+      if (avatarUrl) {
+        const oldPath = avatarUrl.split('/avatars/')[1];
+        if (oldPath) {
+          await supabase.storage.from('avatars').remove([oldPath]);
+        }
+      }
+      
+      // Upload new avatar
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { contentType: file.type });
+      
+      if (uploadError) throw uploadError;
+      
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+      
+      // Update profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: urlData.publicUrl })
+        .eq('id', user.id);
+      
+      if (updateError) throw updateError;
+      
+      setAvatarUrl(urlData.publicUrl);
+      toast.success('Foto de perfil atualizada!');
+      refetchProfile();
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Erro ao enviar foto');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user || !avatarUrl) return;
+    
+    setUploadingAvatar(true);
+    
+    try {
+      const oldPath = avatarUrl.split('/avatars/')[1];
+      if (oldPath) {
+        await supabase.storage.from('avatars').remove([oldPath]);
+      }
+      
+      await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', user.id);
+      
+      setAvatarUrl(null);
+      toast.success('Foto removida!');
+      refetchProfile();
+    } catch (error) {
+      console.error('Error removing avatar:', error);
+      toast.error('Erro ao remover foto');
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -403,7 +490,63 @@ const SettingsPage = () => {
                 <User className="w-5 h-5 text-primary" />
                 <h3 className="font-semibold text-foreground">Perfil</h3>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Avatar Section */}
+                <div className="flex items-center gap-6">
+                  <div className="relative">
+                    <Avatar className="w-24 h-24 border-2 border-border">
+                      <AvatarImage src={avatarUrl || undefined} alt="Avatar" />
+                      <AvatarFallback className="bg-secondary text-2xl">
+                        {profileData.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    {uploadingAvatar && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-full">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm text-muted-foreground">Foto de Perfil</p>
+                    <div className="flex gap-2">
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          className="hidden"
+                          onChange={handleAvatarUpload}
+                          disabled={uploadingAvatar}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-border"
+                          disabled={uploadingAvatar}
+                          asChild
+                        >
+                          <span>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Enviar Foto
+                          </span>
+                        </Button>
+                      </label>
+                      {avatarUrl && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={handleRemoveAvatar}
+                          disabled={uploadingAvatar}
+                        >
+                          Remover
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">PNG, JPG ou WEBP. Máximo 2MB.</p>
+                  </div>
+                </div>
+
+                {/* Name and Email */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm text-muted-foreground mb-2 block">Nome</label>
