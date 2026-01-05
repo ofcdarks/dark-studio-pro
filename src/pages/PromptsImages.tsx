@@ -991,7 +991,7 @@ const PromptsImages = () => {
         "",
         "7) Selecione 'Localizar arquivo...' ou 'Relink media'",
         "",
-        "8) Quando pedir para selecionar uma pasta, escolha a pasta Resources/ (a pasta que contém as imagens cena_001.jpg, cena_002.jpg, etc.)",
+        "8) Quando pedir para selecionar uma pasta, escolha a PASTA DO PROJETO (onde você extraiu o ZIP, NÃO a pasta Resources)",
         "",
         "9) O CapCut irá vincular automaticamente as outras imagens!",
         "",
