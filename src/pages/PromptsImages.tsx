@@ -257,6 +257,10 @@ const PromptsImages = () => {
   const [showAudioSettings, setShowAudioSettings] = useState(false);
   const [editingCharacterIndex, setEditingCharacterIndex] = useState<number | null>(null);
   
+  // SRT Preview Modal
+  const [showSrtPreview, setShowSrtPreview] = useState(false);
+  const [srtPreviewData, setSrtPreviewData] = useState<{ content: string; blocks: Array<{ index: number; start: string; end: string; text: string; charCount: number }> } | null>(null);
+  
   // FFmpeg hook
   const { generateVideo, downloadVideo, isGenerating: isGeneratingVideo, progress: videoProgress } = useFFmpegVideoGenerator();
   
@@ -1667,8 +1671,8 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
     });
   };
 
-  // Baixar SRT sincronizado com o WPM atual (cenas contíguas, sem gaps)
-  const downloadSrt = () => {
+  // Preparar e mostrar preview do SRT
+  const openSrtPreview = () => {
     if (generatedScenes.length === 0) {
       toast({ title: "Nenhuma cena para exportar", variant: "destructive" });
       return;
@@ -1695,7 +1699,32 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
       gapBetweenScenes: 0
     });
 
-    const blob = new Blob([srtContent], { type: "text/plain;charset=utf-8" });
+    // Parsear blocos para exibir no preview
+    const rawBlocks = srtContent.split('\n\n').filter(b => b.trim());
+    const blocks = rawBlocks.map(block => {
+      const lines = block.split('\n');
+      const index = parseInt(lines[0]) || 0;
+      const timeLine = lines[1] || '';
+      const [start, end] = timeLine.split(' --> ');
+      const text = lines.slice(2).join(' ');
+      return {
+        index,
+        start: start || '00:00:00,000',
+        end: end || '00:00:00,000',
+        text,
+        charCount: text.length
+      };
+    });
+
+    setSrtPreviewData({ content: srtContent, blocks });
+    setShowSrtPreview(true);
+  };
+
+  // Baixar SRT do preview
+  const downloadSrtFromPreview = () => {
+    if (!srtPreviewData) return;
+    
+    const blob = new Blob([srtPreviewData.content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -1705,12 +1734,18 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    const blockCount = srtContent.split('\n\n').filter(b => b.trim()).length;
-    const totalDuration = Math.floor(currentTime / 60) + ":" + String(Math.floor(currentTime % 60)).padStart(2, '0');
     toast({
-      title: "SRT gerado!",
-      description: `${blockCount} blocos | ${currentWpm} WPM | Duração: ${totalDuration}`,
+      title: "SRT baixado!",
+      description: `${srtPreviewData.blocks.length} blocos | ${currentWpm} WPM`,
     });
+    setShowSrtPreview(false);
+  };
+
+  // Copiar SRT do preview
+  const copySrtFromPreview = () => {
+    if (!srtPreviewData) return;
+    navigator.clipboard.writeText(srtPreviewData.content);
+    toast({ title: "SRT copiado para a área de transferência!" });
   };
 
   // Exportar Plano de Produção para CapCut
@@ -2683,11 +2718,11 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={downloadSrt}
+                            onClick={openSrtPreview}
                             className="border-cyan-500/50 text-cyan-500 hover:bg-cyan-500/10"
-                            title="Baixar legendas SRT (499 chars, 150 WPM)"
+                            title="Preview e download de legendas SRT"
                           >
-                            <Type className="w-4 h-4 mr-2" />
+                            <Eye className="w-4 h-4 mr-2" />
                             SRT
                           </Button>
                           <Button variant="outline" size="sm" onClick={copyAllPrompts}>
@@ -3906,12 +3941,12 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               </Button>
               <Button
                 variant="outline"
-                onClick={downloadSrt}
+                onClick={openSrtPreview}
                 disabled={generatedScenes.length === 0}
                 className="flex-1 h-8 text-xs border-cyan-500/50 text-cyan-500 hover:bg-cyan-500/10"
               >
-                <Type className="w-3 h-3 mr-1" />
-                Baixar SRT
+                <Eye className="w-3 h-3 mr-1" />
+                Preview SRT
               </Button>
             </div>
 
@@ -4332,6 +4367,124 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               )}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Preview do SRT */}
+      <Dialog open={showSrtPreview} onOpenChange={setShowSrtPreview}>
+        <DialogContent className="max-w-2xl max-h-[85vh] bg-card border-cyan-500/30 rounded-xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Type className="w-5 h-5 text-cyan-500" />
+              Preview de Legendas SRT
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Revise os blocos de legenda antes de baixar
+            </DialogDescription>
+          </DialogHeader>
+          
+          {srtPreviewData && (
+            <div className="space-y-4">
+              {/* Estatísticas */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-cyan-500">{srtPreviewData.blocks.length}</p>
+                  <p className="text-xs text-muted-foreground">Blocos</p>
+                </div>
+                <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-primary">{currentWpm}</p>
+                  <p className="text-xs text-muted-foreground">WPM</p>
+                </div>
+                <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-green-500">
+                    {srtPreviewData.blocks.length > 0 ? srtPreviewData.blocks[srtPreviewData.blocks.length - 1].end.split(',')[0] : '00:00:00'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Duração</p>
+                </div>
+              </div>
+
+              {/* Lista de blocos */}
+              <ScrollArea className="h-[45vh] pr-4">
+                <div className="space-y-2">
+                  {srtPreviewData.blocks.map((block, idx) => (
+                    <div 
+                      key={idx} 
+                      className={cn(
+                        "p-3 rounded-lg border transition-colors",
+                        block.charCount > 499 
+                          ? "bg-red-500/10 border-red-500/30" 
+                          : block.charCount > 400 
+                            ? "bg-amber-500/10 border-amber-500/30"
+                            : "bg-secondary/50 border-border"
+                      )}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs font-mono">
+                            #{block.index}
+                          </Badge>
+                          <span className="text-xs font-mono text-muted-foreground">
+                            {block.start.split(',')[0]} → {block.end.split(',')[0]}
+                          </span>
+                        </div>
+                        <Badge 
+                          variant={block.charCount > 499 ? "destructive" : block.charCount > 400 ? "outline" : "secondary"}
+                          className="text-xs"
+                        >
+                          {block.charCount} chars
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-foreground leading-relaxed">
+                        {block.text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+
+              {/* Legenda de cores */}
+              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-secondary/50 border border-border" />
+                  <span>≤400 chars</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-amber-500/10 border border-amber-500/30" />
+                  <span>401-499 chars</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-red-500/10 border border-red-500/30" />
+                  <span>&gt;499 chars</span>
+                </div>
+              </div>
+
+              {/* Botões de ação */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowSrtPreview(false)}
+                  className="flex-1"
+                >
+                  Fechar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={copySrtFromPreview}
+                  className="flex-1"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copiar
+                </Button>
+                <Button
+                  onClick={downloadSrtFromPreview}
+                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:opacity-90"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Baixar SRT
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </MainLayout>
