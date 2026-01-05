@@ -20,53 +20,182 @@ export interface CapcutTemplate {
   name: string;
   description: string;
   preview: string; // emoji ou ícone
-  transitionType: 'fade' | 'slide' | 'zoom' | 'none';
+  transitionType: 'fade' | 'slide' | 'zoom' | 'blur' | 'none';
   transitionDuration: number; // em segundos
   hasKenBurns: boolean; // efeito de zoom suave nas imagens
   hasVignette: boolean;
+  hasColorGrading?: boolean; // correção de cor cinematográfica
+  colorGradingType?: 'warm' | 'cold' | 'vintage' | 'cinematic' | 'bw';
+  hasSlowMotion?: boolean; // câmera lenta
+  slowMotionFactor?: number; // 0.5 = 50% velocidade
+  hasBlur?: boolean; // efeito blur
+  blurIntensity?: number; // 0-100
+  category: 'basic' | 'cinematic' | 'creative' | 'professional';
 }
 
 export const CAPCUT_TEMPLATES: CapcutTemplate[] = [
+  // === BÁSICOS ===
   {
     id: 'clean',
-    name: 'Clean (Sem Transições)',
-    description: 'Cortes diretos, sem efeitos. Ideal para edição manual posterior.',
+    name: 'Clean',
+    description: 'Cortes diretos, sem efeitos. Ideal para edição manual.',
     preview: '✂️',
     transitionType: 'none',
     transitionDuration: 0,
     hasKenBurns: false,
     hasVignette: false,
+    category: 'basic',
   },
   {
     id: 'fade',
     name: 'Fade Suave',
-    description: 'Transições de fade entre cenas. Elegante e profissional.',
+    description: 'Transições de fade elegantes e profissionais.',
     preview: '🌅',
     transitionType: 'fade',
     transitionDuration: 0.5,
     hasKenBurns: true,
     hasVignette: false,
+    category: 'basic',
   },
   {
     id: 'slide',
     name: 'Slide Dinâmico',
-    description: 'Transições de slide lateral. Dinâmico e moderno.',
+    description: 'Transições de slide lateral. Moderno e energético.',
     preview: '➡️',
     transitionType: 'slide',
     transitionDuration: 0.4,
     hasKenBurns: false,
     hasVignette: false,
+    category: 'basic',
   },
+  
+  // === CINEMATOGRÁFICOS ===
   {
-    id: 'zoom',
-    name: 'Zoom Cinematográfico',
-    description: 'Transições de zoom com Ken Burns. Estilo documentário.',
+    id: 'cinematic',
+    name: 'Cinematográfico',
+    description: 'Zoom + Ken Burns + Vinheta + Color Grading quente.',
     preview: '🎬',
     transitionType: 'zoom',
     transitionDuration: 0.6,
     hasKenBurns: true,
     hasVignette: true,
+    hasColorGrading: true,
+    colorGradingType: 'cinematic',
+    category: 'cinematic',
   },
+  {
+    id: 'documentary',
+    name: 'Documentário',
+    description: 'Fade lento + Ken Burns + Tons frios. Estilo Netflix.',
+    preview: '🎞️',
+    transitionType: 'fade',
+    transitionDuration: 0.8,
+    hasKenBurns: true,
+    hasVignette: true,
+    hasColorGrading: true,
+    colorGradingType: 'cold',
+    category: 'cinematic',
+  },
+  {
+    id: 'vintage',
+    name: 'Vintage Film',
+    description: 'Fade + Vinheta forte + Tons vintage sépia.',
+    preview: '📽️',
+    transitionType: 'fade',
+    transitionDuration: 0.7,
+    hasKenBurns: true,
+    hasVignette: true,
+    hasColorGrading: true,
+    colorGradingType: 'vintage',
+    category: 'cinematic',
+  },
+  
+  // === CRIATIVOS ===
+  {
+    id: 'blur-dream',
+    name: 'Blur Dreamy',
+    description: 'Transições com blur suave. Efeito sonho/fantasia.',
+    preview: '💫',
+    transitionType: 'blur',
+    transitionDuration: 0.6,
+    hasKenBurns: true,
+    hasVignette: false,
+    hasBlur: true,
+    blurIntensity: 15,
+    category: 'creative',
+  },
+  {
+    id: 'slowmo',
+    name: 'Slow Motion Epic',
+    description: 'Zoom dramático + Slow Motion 50% + Vinheta.',
+    preview: '🐌',
+    transitionType: 'zoom',
+    transitionDuration: 1.0,
+    hasKenBurns: true,
+    hasVignette: true,
+    hasSlowMotion: true,
+    slowMotionFactor: 0.5,
+    category: 'creative',
+  },
+  {
+    id: 'bw-noir',
+    name: 'Black & White Noir',
+    description: 'Fade + Preto e branco + Vinheta intensa.',
+    preview: '🖤',
+    transitionType: 'fade',
+    transitionDuration: 0.6,
+    hasKenBurns: true,
+    hasVignette: true,
+    hasColorGrading: true,
+    colorGradingType: 'bw',
+    category: 'creative',
+  },
+  
+  // === PROFISSIONAIS ===
+  {
+    id: 'youtube-viral',
+    name: 'YouTube Viral',
+    description: 'Cortes rápidos + Zoom punch + Cores vibrantes.',
+    preview: '🔥',
+    transitionType: 'zoom',
+    transitionDuration: 0.3,
+    hasKenBurns: false,
+    hasVignette: false,
+    hasColorGrading: true,
+    colorGradingType: 'warm',
+    category: 'professional',
+  },
+  {
+    id: 'podcast-style',
+    name: 'Podcast/Talking Head',
+    description: 'Fade suave + Ken Burns lento. Foco no conteúdo.',
+    preview: '🎙️',
+    transitionType: 'fade',
+    transitionDuration: 0.4,
+    hasKenBurns: true,
+    hasVignette: false,
+    category: 'professional',
+  },
+  {
+    id: 'news-broadcast',
+    name: 'News Broadcast',
+    description: 'Slide rápido + Cores frias. Estilo jornalístico.',
+    preview: '📺',
+    transitionType: 'slide',
+    transitionDuration: 0.3,
+    hasKenBurns: false,
+    hasVignette: false,
+    hasColorGrading: true,
+    colorGradingType: 'cold',
+    category: 'professional',
+  },
+];
+
+export const TEMPLATE_CATEGORIES = [
+  { id: 'basic', name: 'Básicos', icon: '⚡' },
+  { id: 'cinematic', name: 'Cinematográficos', icon: '🎬' },
+  { id: 'creative', name: 'Criativos', icon: '✨' },
+  { id: 'professional', name: 'Profissionais', icon: '💼' },
 ];
 
 interface SceneData {

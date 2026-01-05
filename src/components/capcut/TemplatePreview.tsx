@@ -44,6 +44,12 @@ export const TemplatePreview = ({ template, isActive }: TemplatePreviewProps) =>
           animate: { scale: 1, opacity: 1 },
           transition: { duration: baseDuration, ease: easeOut }
         };
+      case 'blur':
+        return {
+          initial: { opacity: 0, filter: "blur(10px)" },
+          animate: { opacity: 1, filter: "blur(0px)" },
+          transition: { duration: baseDuration, ease: easeInOut }
+        };
       default: // 'none' - corte direto
         return {
           initial: { opacity: 1 },
@@ -53,11 +59,27 @@ export const TemplatePreview = ({ template, isActive }: TemplatePreviewProps) =>
     }
   };
 
-  // Animação Ken Burns (zoom suave contínuo)
-  const kenBurnsAnimation = template.hasKenBurns ? {
-    animate: { scale: [1, 1.05, 1] },
-    transition: { duration: 3, repeat: Infinity, ease: easeInOut }
-  } : {};
+  // Obter cor do color grading
+  const getColorGradingOverlay = () => {
+    if (!template.hasColorGrading) return null;
+    switch (template.colorGradingType) {
+      case 'warm':
+        return 'bg-gradient-to-br from-orange-500/20 to-amber-500/10';
+      case 'cold':
+        return 'bg-gradient-to-br from-blue-500/20 to-cyan-500/10';
+      case 'vintage':
+        return 'bg-gradient-to-br from-amber-600/30 to-yellow-500/10 sepia';
+      case 'cinematic':
+        return 'bg-gradient-to-br from-amber-500/15 to-orange-500/10';
+      case 'bw':
+        return 'bg-black/0'; // Handled separately with grayscale
+      default:
+        return null;
+    }
+  };
+
+  const colorGradingOverlay = getColorGradingOverlay();
+  const isBlackAndWhite = template.colorGradingType === 'bw';
 
   return (
     <div className="w-full space-y-2">
@@ -72,7 +94,10 @@ export const TemplatePreview = ({ template, isActive }: TemplatePreviewProps) =>
         </div>
 
         {/* Cenas na timeline */}
-        <div className="relative h-full flex items-center px-2 gap-1">
+        <div className={cn(
+          "relative h-full flex items-center px-2 gap-1",
+          isBlackAndWhite && "grayscale"
+        )}>
           {sceneColors.map((color, idx) => (
             <motion.div
               key={idx}
@@ -86,6 +111,9 @@ export const TemplatePreview = ({ template, isActive }: TemplatePreviewProps) =>
                 ...getTransitionAnimation().transition,
                 delay: idx * 0.8
               }}
+              style={template.hasSlowMotion ? { 
+                animationDuration: `${2 / (template.slowMotionFactor || 1)}s` 
+              } : undefined}
             >
               {/* Conteúdo da cena */}
               <motion.div 
@@ -98,9 +126,23 @@ export const TemplatePreview = ({ template, isActive }: TemplatePreviewProps) =>
                 </span>
               </motion.div>
 
+              {/* Color grading overlay */}
+              {colorGradingOverlay && (
+                <div className={cn("absolute inset-0 pointer-events-none", colorGradingOverlay)} />
+              )}
+
               {/* Efeito vinheta */}
               {template.hasVignette && (
                 <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30 pointer-events-none" />
+              )}
+
+              {/* Blur overlay */}
+              {template.hasBlur && idx === 1 && isActive && (
+                <motion.div 
+                  className="absolute inset-0 backdrop-blur-sm pointer-events-none"
+                  animate={{ opacity: [0, 0.5, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: easeInOut }}
+                />
               )}
 
               {/* Indicador de transição entre cenas */}
@@ -146,18 +188,27 @@ export const TemplatePreview = ({ template, isActive }: TemplatePreviewProps) =>
 
               {/* Cena B (entrando) */}
               <motion.div
-                className="absolute inset-0 bg-gradient-to-br from-amber-500 to-amber-500/60 flex items-center justify-center"
+                className={cn(
+                  "absolute inset-0 bg-gradient-to-br from-amber-500 to-amber-500/60 flex items-center justify-center",
+                  isBlackAndWhite && "grayscale"
+                )}
                 initial={{ opacity: 0 }}
                 animate={
                   template.transitionType === 'fade' ? { opacity: [0, 1, 0] } :
                   template.transitionType === 'slide' ? { x: ["100%", 0, "100%"] } :
                   template.transitionType === 'zoom' ? { scale: [0.5, 1, 0.5], opacity: [0, 1, 0] } :
+                  template.transitionType === 'blur' ? { opacity: [0, 1, 0], filter: ["blur(10px)", "blur(0px)", "blur(10px)"] } :
                   {}
                 }
                 transition={{ duration: 2, repeat: Infinity, ease: easeInOut }}
               >
                 <span className="text-xs font-bold text-white">Cena B</span>
               </motion.div>
+
+              {/* Color grading overlay no preview */}
+              {colorGradingOverlay && (
+                <div className={cn("absolute inset-0 pointer-events-none rounded", colorGradingOverlay)} />
+              )}
             </div>
           </div>
 
@@ -166,15 +217,16 @@ export const TemplatePreview = ({ template, isActive }: TemplatePreviewProps) =>
             <span className="text-[10px] text-muted-foreground bg-background/80 px-2 py-0.5 rounded">
               {template.transitionType === 'fade' ? '⬛→⬜ Fade' :
                template.transitionType === 'slide' ? '➡️ Slide' :
-               template.transitionType === 'zoom' ? '🔍 Zoom' : ''}
+               template.transitionType === 'zoom' ? '🔍 Zoom' :
+               template.transitionType === 'blur' ? '💫 Blur' : ''}
             </span>
           </div>
         </div>
       )}
 
       {/* Efeitos adicionais */}
-      {isActive && (template.hasKenBurns || template.hasVignette) && (
-        <div className="flex gap-2 justify-center">
+      {isActive && (template.hasKenBurns || template.hasVignette || template.hasColorGrading || template.hasSlowMotion || template.hasBlur) && (
+        <div className="flex flex-wrap gap-2 justify-center">
           {template.hasKenBurns && (
             <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/50 px-2 py-1 rounded">
               <motion.span
@@ -183,13 +235,40 @@ export const TemplatePreview = ({ template, isActive }: TemplatePreviewProps) =>
               >
                 🔍
               </motion.span>
-              Ken Burns ativo
+              Ken Burns
             </div>
           )}
           {template.hasVignette && (
             <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/50 px-2 py-1 rounded">
               <span>🌑</span>
-              Vinheta aplicada
+              Vinheta
+            </div>
+          )}
+          {template.hasColorGrading && (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/50 px-2 py-1 rounded">
+              <span>🎨</span>
+              {template.colorGradingType === 'warm' ? 'Tons Quentes' :
+               template.colorGradingType === 'cold' ? 'Tons Frios' :
+               template.colorGradingType === 'vintage' ? 'Vintage' :
+               template.colorGradingType === 'cinematic' ? 'Cinematográfico' :
+               template.colorGradingType === 'bw' ? 'P&B' : 'Color Grading'}
+            </div>
+          )}
+          {template.hasSlowMotion && (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/50 px-2 py-1 rounded">
+              <motion.span
+                animate={{ opacity: [1, 0.5, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                🐌
+              </motion.span>
+              Slow Motion {Math.round((template.slowMotionFactor || 1) * 100)}%
+            </div>
+          )}
+          {template.hasBlur && (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/50 px-2 py-1 rounded">
+              <span>💫</span>
+              Blur {template.blurIntensity}%
             </div>
           )}
         </div>

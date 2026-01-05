@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
-import { generateCapcutDraftContentWithTemplate, generateCapcutDraftMetaInfoWithTemplate, CAPCUT_TEMPLATES, CapcutTemplate } from "@/lib/capcutTemplates";
+import { generateCapcutDraftContentWithTemplate, generateCapcutDraftMetaInfoWithTemplate, CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { Input } from "@/components/ui/input";
@@ -2107,69 +2107,97 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            {/* Seletor de Templates */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Layout className="w-4 h-4 text-primary" />
-                Template do Projeto
-              </Label>
-              <RadioGroup 
-                value={selectedTemplate} 
-                onValueChange={setSelectedTemplate}
-                className="grid grid-cols-2 gap-3"
-              >
-                {CAPCUT_TEMPLATES.map((template) => (
-                  <div key={template.id}>
-                    <RadioGroupItem
-                      value={template.id}
-                      id={`template-${template.id}`}
-                      className="peer sr-only"
-                    />
-                    <Label
-                      htmlFor={`template-${template.id}`}
-                      className={cn(
-                        "flex flex-col items-start gap-1 p-3 rounded-lg border-2 cursor-pointer transition-all",
-                        "hover:border-primary/50 hover:bg-primary/5",
-                        selectedTemplate === template.id
-                          ? "border-primary bg-primary/10"
-                          : "border-border bg-secondary/30"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{template.preview}</span>
-                        <span className="font-semibold text-foreground text-sm">{template.name}</span>
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-4 pr-2">
+              {/* Seletor de Templates por Categoria */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Layout className="w-4 h-4 text-primary" />
+                  Template do Projeto
+                </Label>
+                
+                <RadioGroup 
+                  value={selectedTemplate} 
+                  onValueChange={setSelectedTemplate}
+                  className="space-y-4"
+                >
+                  {TEMPLATE_CATEGORIES.map((category) => (
+                    <div key={category.id} className="space-y-2">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                        <span>{category.icon}</span>
+                        <span>{category.name}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">{template.description}</p>
-                      {template.transitionType !== 'none' && (
-                        <div className="flex gap-1 mt-1">
-                          {template.hasKenBurns && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">Ken Burns</Badge>
-                          )}
-                          {template.hasVignette && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">Vinheta</Badge>
-                          )}
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            {template.transitionDuration}s
-                          </Badge>
-                        </div>
-                      )}
-                    </Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {CAPCUT_TEMPLATES.filter(t => t.category === category.id).map((template) => (
+                          <div key={template.id}>
+                            <RadioGroupItem
+                              value={template.id}
+                              id={`template-${template.id}`}
+                              className="peer sr-only"
+                            />
+                            <Label
+                              htmlFor={`template-${template.id}`}
+                              className={cn(
+                                "flex flex-col items-start gap-1 p-2.5 rounded-lg border-2 cursor-pointer transition-all",
+                                "hover:border-primary/50 hover:bg-primary/5",
+                                selectedTemplate === template.id
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border bg-secondary/30"
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{template.preview}</span>
+                                <span className="font-semibold text-foreground text-xs">{template.name}</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground line-clamp-1">{template.description}</p>
+                              <div className="flex flex-wrap gap-1 mt-0.5">
+                                {template.transitionType !== 'none' && (
+                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
+                                    {template.transitionType}
+                                  </Badge>
+                                )}
+                                {template.hasColorGrading && (
+                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-amber-500/50 text-amber-500">
+                                    🎨
+                                  </Badge>
+                                )}
+                                {template.hasSlowMotion && (
+                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-purple-500/50 text-purple-500">
+                                    🐌
+                                  </Badge>
+                                )}
+                                {template.hasBlur && (
+                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-blue-500/50 text-blue-500">
+                                    💫
+                                  </Badge>
+                                )}
+                              </div>
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </RadioGroup>
+
+                {/* Preview visual do template selecionado */}
+                {selectedTemplate && (
+                  <div className="mt-4 p-3 bg-secondary/30 rounded-lg border border-border">
+                    <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                      <Eye className="w-3 h-3" />
+                      Preview do Template
+                    </div>
+                    <TemplatePreview 
+                      template={CAPCUT_TEMPLATES.find(t => t.id === selectedTemplate) || CAPCUT_TEMPLATES[0]}
+                      isActive={true}
+                    />
                   </div>
-                ))}
-              </RadioGroup>
-
-              {/* Preview visual do template selecionado */}
-              {selectedTemplate && (
-                <div className="mt-4">
-                  <TemplatePreview 
-                    template={CAPCUT_TEMPLATES.find(t => t.id === selectedTemplate) || CAPCUT_TEMPLATES[0]}
-                    isActive={true}
-                  />
-                </div>
-              )}
+                )}
+              </div>
             </div>
+          </ScrollArea>
 
+          <div className="space-y-4 pt-2">
             {/* Info sobre SRT */}
             <div className="p-3 bg-secondary/50 rounded-lg border border-border">
               <h4 className="font-semibold text-foreground text-sm mb-1 flex items-center gap-2">
@@ -2179,55 +2207,6 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
               <p className="text-xs text-muted-foreground">
                 O arquivo SRT será gerado com blocos de no máximo <strong>499 caracteres</strong>, 
                 sem cortar palavras, e com <strong>10 segundos</strong> de intervalo entre cenas.
-              </p>
-            </div>
-
-            {/* Método 1 */}
-            <div className="p-4 bg-secondary/50 rounded-lg border border-border">
-              <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">1</span>
-                Seleção de Pasta (Recomendado)
-              </h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                Ao clicar em "Exportar Agora", você escolhe uma pasta e os arquivos são salvos diretamente.
-              </p>
-              <div className="space-y-2 text-xs font-mono bg-background/50 p-3 rounded border border-border">
-                <div className={cn(
-                  "p-2 rounded transition-all",
-                  isWindows ? "bg-primary/10 border border-primary/30" : "opacity-60"
-                )}>
-                  <span className={cn("text-muted-foreground", isWindows && "text-primary font-semibold")}>
-                    {isWindows && "👉 "} Windows:
-                  </span>
-                  <p className={cn("text-foreground", isWindows && "text-primary")}>
-                    C:\Users\[Você]\Documents\CapCut\User Data\Projects\[Projeto]
-                  </p>
-                </div>
-                <div className={cn(
-                  "p-2 rounded transition-all",
-                  isMac ? "bg-primary/10 border border-primary/30" : "opacity-60"
-                )}>
-                  <span className={cn("text-muted-foreground", isMac && "text-primary font-semibold")}>
-                    {isMac && "👉 "} macOS:
-                  </span>
-                  <p className={cn("text-foreground", isMac && "text-primary")}>
-                    ~/Documents/CapCut/User Data/Projects/[Projeto]
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs text-primary mt-2">
-                ⚠️ Escolha uma SUBPASTA do projeto, não a pasta "Documentos" raiz.
-              </p>
-            </div>
-
-            {/* Método 2 */}
-            <div className="p-4 bg-secondary/30 rounded-lg border border-border/50">
-              <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs flex items-center justify-center">2</span>
-                Download ZIP (Alternativa)
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Se o navegador bloquear a pasta, um ZIP será baixado automaticamente. Extraia e importe no CapCut.
               </p>
             </div>
 
