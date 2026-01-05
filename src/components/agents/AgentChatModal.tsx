@@ -76,6 +76,11 @@ export function AgentChatModal({ open, onOpenChange, agent, onModelChange, onTri
   const [autoTriggers, setAutoTriggers] = useState<string[]>([]);
   const [isGeneratingTriggers, setIsGeneratingTriggers] = useState(false);
   const [useAutoTriggers, setUseAutoTriggers] = useState(false);
+  
+  // SRT Preview state
+  const [showSrtPreview, setShowSrtPreview] = useState(false);
+  const [srtPreviewContent, setSrtPreviewContent] = useState("");
+  const [srtPreviewTitle, setSrtPreviewTitle] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -581,9 +586,16 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
     });
   };
 
-  const downloadSRT = (content: string, title: string) => {
+  // Open SRT preview modal
+  const openSrtPreview = (content: string, title: string) => {
     const srtContent = convertToSRT(content);
-    const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
+    setSrtPreviewContent(srtContent);
+    setSrtPreviewTitle(title || 'roteiro');
+    setShowSrtPreview(true);
+  };
+
+  const downloadSRT = (content: string, title: string) => {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -593,6 +605,11 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     toast.success("SRT baixado com sucesso!");
+  };
+
+  const copySrtToClipboard = (content: string) => {
+    navigator.clipboard.writeText(content);
+    toast.success("SRT copiado!");
   };
 
   const startEditing = (messageId: string, content: string) => {
@@ -706,6 +723,51 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
                   }`}
                 />
               ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* SRT Preview Modal */}
+      <Dialog open={showSrtPreview} onOpenChange={setShowSrtPreview}>
+        <DialogContent className="bg-card border-primary/30 rounded-2xl max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader className="pb-4 border-b border-border/50">
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <FileText className="w-5 h-5 text-primary" />
+              Preview do SRT
+            </DialogTitle>
+          </DialogHeader>
+          
+          <ScrollArea className="flex-1 max-h-[50vh]">
+            <pre className="text-sm font-mono text-muted-foreground whitespace-pre-wrap p-4 bg-background/50 rounded-lg border border-border/50">
+              {srtPreviewContent}
+            </pre>
+          </ScrollArea>
+
+          <div className="flex items-center justify-between pt-4 border-t border-border/50">
+            <div className="text-xs text-muted-foreground">
+              {srtPreviewContent.split('\n\n').filter(b => b.trim()).length} blocos • Max 499 chars • 10s gap
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => copySrtToClipboard(srtPreviewContent)}
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Copiar
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  downloadSRT(srtPreviewContent, srtPreviewTitle);
+                  setShowSrtPreview(false);
+                }}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Baixar SRT
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -858,7 +920,7 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => downloadSRT(message.content, scriptTitle || 'roteiro')}
+                              onClick={() => openSrtPreview(message.content, scriptTitle || 'roteiro')}
                               className="h-6 px-2 text-xs"
                             >
                               <Download className="w-3 h-3 mr-1" />
