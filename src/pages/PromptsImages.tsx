@@ -233,7 +233,7 @@ const PromptsImages = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("clean");
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [projectName, setProjectName] = usePersistedState("prompts_project_name", "Meu Projeto");
-  const [narrationSpeed, setNarrationSpeed] = usePersistedState("prompts_narration_speed", "140");
+  const [narrationSpeed, setNarrationSpeed] = usePersistedState("prompts_narration_speed", "150");
   const [audioDurationInput, setAudioDurationInput] = useState("");
   const [showDurationModal, setShowDurationModal] = useState(false);
   const [edlFps, setEdlFps] = usePersistedState("prompts_edl_fps", "24");
@@ -3681,27 +3681,26 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               </div>
             </div>
 
-            {/* Gerar MP4 com FFmpeg */}
-            <div className="p-2 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-500/30">
+            {/* Gerar MP4 com FFmpeg - Em Breve */}
+            <div className="p-2 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-500/30 opacity-60">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5">
                   <Play className="w-4 h-4 text-purple-400" />
                   <span className="font-medium text-xs text-foreground">Gerar Vídeo MP4</span>
                 </div>
-                <Badge className="bg-purple-500/20 text-purple-300 text-[9px] h-4">BETA</Badge>
+                <Badge className="bg-amber-500/20 text-amber-300 text-[9px] h-4">EM BREVE</Badge>
               </div>
               <p className="text-[10px] text-muted-foreground mb-2">
-                Gere um vídeo direto no navegador com efeitos Ken Burns, crossfade e filtros de cor
+                Vídeo com narração sincronizada às imagens - aguarde nova versão
               </p>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowVideoModal(true)}
-                disabled={generatedScenes.filter(s => s.generatedImage).length === 0}
-                className="w-full h-7 text-xs border-purple-500/30 hover:bg-purple-500/20"
+                disabled={true}
+                className="w-full h-7 text-xs border-purple-500/30 cursor-not-allowed"
               >
                 <Video className="w-3 h-3 mr-1" />
-                Configurar e Gerar MP4
+                Em Breve
               </Button>
             </div>
           </div>
