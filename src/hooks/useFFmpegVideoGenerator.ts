@@ -48,8 +48,8 @@ export function useFFmpegVideoGenerator() {
 
     setProgress({
       stage: "loading",
-      progress: 10,
-      message: "Carregando FFmpeg.wasm...",
+      progress: 5,
+      message: "Iniciando FFmpeg...",
     });
 
     const ffmpeg = new FFmpeg();
@@ -67,13 +67,90 @@ export function useFFmpegVideoGenerator() {
       console.log("[FFmpeg]", message);
     });
 
-    const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
+    // Use esm.sh with proper CORS headers - more reliable than unpkg
+    const baseURL = "https://esm.sh/@ffmpeg/core@0.12.6/dist/esm";
 
     try {
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+      setProgress({
+        stage: "loading",
+        progress: 10,
+        message: "Baixando FFmpeg Core...",
       });
+
+      // Fetch with timeout wrapper
+      const fetchWithTimeout = async (url: string, timeout = 30000): Promise<Response> => {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
+        try {
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(id);
+          return response;
+        } catch (error) {
+          clearTimeout(id);
+          throw error;
+        }
+      };
+
+      // Try primary CDN first, then fallback
+      const cdns = [
+        "https://esm.sh/@ffmpeg/core@0.12.6/dist/esm",
+        "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm",
+        "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm"
+      ];
+
+      let coreURL: string | null = null;
+      let wasmURL: string | null = null;
+
+      for (const cdn of cdns) {
+        try {
+          setProgress({
+            stage: "loading",
+            progress: 12,
+            message: `Tentando CDN...`,
+          });
+
+          const coreResponse = await fetchWithTimeout(`${cdn}/ffmpeg-core.js`, 15000);
+          if (!coreResponse.ok) continue;
+          const coreBlob = await coreResponse.blob();
+          coreURL = URL.createObjectURL(new Blob([await coreBlob.text()], { type: "text/javascript" }));
+
+          setProgress({
+            stage: "loading",
+            progress: 18,
+            message: "Baixando WASM (~30MB)...",
+          });
+
+          const wasmResponse = await fetchWithTimeout(`${cdn}/ffmpeg-core.wasm`, 60000);
+          if (!wasmResponse.ok) {
+            URL.revokeObjectURL(coreURL);
+            coreURL = null;
+            continue;
+          }
+          const wasmBlob = await wasmResponse.blob();
+          wasmURL = URL.createObjectURL(wasmBlob);
+
+          break; // Success!
+        } catch (e) {
+          console.warn(`CDN ${cdn} failed:`, e);
+          continue;
+        }
+      }
+
+      if (!coreURL || !wasmURL) {
+        throw new Error("Não foi possível baixar FFmpeg de nenhum CDN. Verifique sua conexão.");
+      }
+
+      setProgress({
+        stage: "loading",
+        progress: 22,
+        message: "Inicializando FFmpeg...",
+      });
+
+      await ffmpeg.load({
+        coreURL,
+        wasmURL,
+      });
+
       loadedRef.current = true;
       setProgress({
         stage: "loading",
@@ -81,9 +158,11 @@ export function useFFmpegVideoGenerator() {
         message: "FFmpeg carregado!",
       });
       return ffmpeg;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading FFmpeg:", error);
-      throw new Error("Falha ao carregar FFmpeg. Tente recarregar a página.");
+      loadedRef.current = false;
+      ffmpegRef.current = null;
+      throw new Error(error.message || "Falha ao carregar FFmpeg. Tente recarregar a página.");
     }
   }, []);
 
