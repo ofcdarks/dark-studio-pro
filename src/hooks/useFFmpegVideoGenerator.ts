@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import { fetchFile } from "@ffmpeg/util";
 import { toast } from "@/hooks/use-toast";
 
 export interface VideoScene {
@@ -20,14 +20,14 @@ export interface VideoGenerationOptions {
   kenBurnsEnabled?: boolean;
   transitionEnabled?: boolean;
   transitionType?: TransitionType;
-  transitionDuration?: number; // in seconds
+  transitionDuration?: number;
   colorFilterEnabled?: boolean;
   colorFilter?: "warm" | "cool" | "cinematic" | "vintage" | "none";
 }
 
 export interface VideoGenerationProgress {
-  stage: "loading" | "processing" | "encoding" | "done" | "error";
-  progress: number; // 0-100
+  stage: "loading" | "processing" | "encoding" | "done" | "error" | "cancelled";
+  progress: number;
   currentScene?: number;
   totalScenes?: number;
   message: string;
@@ -42,9 +42,40 @@ export function useFFmpegVideoGenerator() {
   });
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const loadedRef = useRef(false);
+  const cancelledRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const cancelGeneration = useCallback(() => {
+    cancelledRef.current = true;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    if (ffmpegRef.current) {
+      try {
+        ffmpegRef.current.terminate();
+        ffmpegRef.current = null;
+        loadedRef.current = false;
+      } catch (e) {
+        console.warn("Error terminating FFmpeg:", e);
+      }
+    }
+    setProgress({
+      stage: "cancelled",
+      progress: 0,
+      message: "Geração cancelada",
+    });
+    setIsGenerating(false);
+    toast({
+      title: "Cancelado",
+      description: "Geração de vídeo foi cancelada.",
+    });
+  }, []);
 
   const loadFFmpeg = useCallback(async () => {
     if (loadedRef.current && ffmpegRef.current) return ffmpegRef.current;
+
+    cancelledRef.current = false;
+    abortControllerRef.current = new AbortController();
 
     setProgress({
       stage: "loading",
@@ -56,6 +87,7 @@ export function useFFmpegVideoGenerator() {
     ffmpegRef.current = ffmpeg;
 
     ffmpeg.on("progress", ({ progress: p }) => {
+      if (cancelledRef.current) return;
       setProgress((prev) => ({
         ...prev,
         progress: Math.min(90, 30 + p * 60),
@@ -67,103 +99,138 @@ export function useFFmpegVideoGenerator() {
       console.log("[FFmpeg]", message);
     });
 
-    // Use esm.sh with proper CORS headers - more reliable than unpkg
-    const baseURL = "https://esm.sh/@ffmpeg/core@0.12.6/dist/esm";
+    // CDNs to try - using multi-threaded version for better performance
+    const cdnConfigs = [
+      {
+        base: "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm",
+        isMultiThread: true,
+      },
+      {
+        base: "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm",
+        isMultiThread: true,
+      },
+      {
+        base: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm",
+        isMultiThread: false,
+      },
+      {
+        base: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm",
+        isMultiThread: false,
+      },
+    ];
 
-    try {
-      setProgress({
-        stage: "loading",
-        progress: 10,
-        message: "Baixando FFmpeg Core...",
-      });
+    const fetchWithProgress = async (url: string, label: string): Promise<Blob> => {
+      const response = await fetch(url, { signal: abortControllerRef.current?.signal });
+      if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+      
+      const reader = response.body?.getReader();
+      const contentLength = Number(response.headers.get("Content-Length")) || 0;
+      
+      if (!reader) {
+        return await response.blob();
+      }
 
-      // Fetch with timeout wrapper
-      const fetchWithTimeout = async (url: string, timeout = 30000): Promise<Response> => {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeout);
-        try {
-          const response = await fetch(url, { signal: controller.signal });
-          clearTimeout(id);
-          return response;
-        } catch (error) {
-          clearTimeout(id);
-          throw error;
+      const chunks: Uint8Array[] = [];
+      let receivedLength = 0;
+
+      while (true) {
+        if (cancelledRef.current) throw new Error("Cancelled");
+        
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        chunks.push(value);
+        receivedLength += value.length;
+        
+        if (contentLength > 0) {
+          const pct = Math.round((receivedLength / contentLength) * 100);
+          setProgress((prev) => ({
+            ...prev,
+            progress: Math.min(20, 10 + pct * 0.1),
+            message: `${label} ${pct}%`,
+          }));
         }
-      };
+      }
 
-      // Try primary CDN first, then fallback
-      const cdns = [
-        "https://esm.sh/@ffmpeg/core@0.12.6/dist/esm",
-        "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm",
-        "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm"
-      ];
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const result = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        result.set(chunk, offset);
+        offset += chunk.length;
+      }
+      return new Blob([result]);
+    };
 
-      let coreURL: string | null = null;
-      let wasmURL: string | null = null;
+    for (const config of cdnConfigs) {
+      if (cancelledRef.current) throw new Error("Cancelled");
+      
+      try {
+        setProgress({
+          stage: "loading",
+          progress: 8,
+          message: config.isMultiThread ? "Carregando FFmpeg Multi-Thread..." : "Carregando FFmpeg...",
+        });
 
-      for (const cdn of cdns) {
-        try {
-          setProgress({
-            stage: "loading",
-            progress: 12,
-            message: `Tentando CDN...`,
-          });
+        const coreBlob = await fetchWithProgress(`${config.base}/ffmpeg-core.js`, "Core JS:");
+        const coreURL = URL.createObjectURL(new Blob([await coreBlob.text()], { type: "text/javascript" }));
 
-          const coreResponse = await fetchWithTimeout(`${cdn}/ffmpeg-core.js`, 15000);
-          if (!coreResponse.ok) continue;
-          const coreBlob = await coreResponse.blob();
-          coreURL = URL.createObjectURL(new Blob([await coreBlob.text()], { type: "text/javascript" }));
+        setProgress({
+          stage: "loading",
+          progress: 12,
+          message: "Baixando WASM (~30MB)...",
+        });
 
-          setProgress({
-            stage: "loading",
-            progress: 18,
-            message: "Baixando WASM (~30MB)...",
-          });
+        const wasmBlob = await fetchWithProgress(`${config.base}/ffmpeg-core.wasm`, "WASM:");
+        const wasmURL = URL.createObjectURL(wasmBlob);
 
-          const wasmResponse = await fetchWithTimeout(`${cdn}/ffmpeg-core.wasm`, 60000);
-          if (!wasmResponse.ok) {
-            URL.revokeObjectURL(coreURL);
-            coreURL = null;
-            continue;
+        let workerURL: string | undefined;
+        if (config.isMultiThread) {
+          try {
+            setProgress({
+              stage: "loading",
+              progress: 18,
+              message: "Baixando Worker...",
+            });
+            const workerBlob = await fetchWithProgress(`${config.base}/ffmpeg-core.worker.js`, "Worker:");
+            workerURL = URL.createObjectURL(new Blob([await workerBlob.text()], { type: "text/javascript" }));
+          } catch {
+            // Worker optional, continue without multi-thread
+            console.warn("Worker not available, using single-thread");
           }
-          const wasmBlob = await wasmResponse.blob();
-          wasmURL = URL.createObjectURL(wasmBlob);
-
-          break; // Success!
-        } catch (e) {
-          console.warn(`CDN ${cdn} failed:`, e);
-          continue;
         }
+
+        setProgress({
+          stage: "loading",
+          progress: 22,
+          message: "Inicializando FFmpeg...",
+        });
+
+        if (cancelledRef.current) throw new Error("Cancelled");
+
+        await ffmpeg.load({
+          coreURL,
+          wasmURL,
+          workerURL,
+        });
+
+        loadedRef.current = true;
+        setProgress({
+          stage: "loading",
+          progress: 25,
+          message: config.isMultiThread && workerURL ? "FFmpeg Multi-Thread carregado! 🚀" : "FFmpeg carregado!",
+        });
+
+        console.log(`[FFmpeg] Loaded from ${config.base}, multi-thread: ${config.isMultiThread && !!workerURL}`);
+        return ffmpeg;
+      } catch (e: any) {
+        if (e.message === "Cancelled" || cancelledRef.current) throw e;
+        console.warn(`CDN ${config.base} failed:`, e);
+        continue;
       }
-
-      if (!coreURL || !wasmURL) {
-        throw new Error("Não foi possível baixar FFmpeg de nenhum CDN. Verifique sua conexão.");
-      }
-
-      setProgress({
-        stage: "loading",
-        progress: 22,
-        message: "Inicializando FFmpeg...",
-      });
-
-      await ffmpeg.load({
-        coreURL,
-        wasmURL,
-      });
-
-      loadedRef.current = true;
-      setProgress({
-        stage: "loading",
-        progress: 25,
-        message: "FFmpeg carregado!",
-      });
-      return ffmpeg;
-    } catch (error: any) {
-      console.error("Error loading FFmpeg:", error);
-      loadedRef.current = false;
-      ffmpegRef.current = null;
-      throw new Error(error.message || "Falha ao carregar FFmpeg. Tente recarregar a página.");
     }
+
+    throw new Error("Não foi possível baixar FFmpeg. Verifique sua conexão.");
   }, []);
 
   const getColorFilterString = (filter: string): string => {
@@ -196,7 +263,6 @@ export function useFFmpegVideoGenerator() {
         colorFilter = "cinematic",
       } = options;
 
-      // Filter scenes that have images
       const validScenes = scenes.filter((s) => s.generatedImage);
       if (validScenes.length === 0) {
         toast({
@@ -207,11 +273,12 @@ export function useFFmpegVideoGenerator() {
         return null;
       }
 
+      cancelledRef.current = false;
       setIsGenerating(true);
 
       try {
         const ffmpeg = await loadFFmpeg();
-        if (!ffmpeg) throw new Error("FFmpeg não carregou");
+        if (!ffmpeg || cancelledRef.current) return null;
 
         const width = resolution === "1080p" ? 1920 : 1280;
         const height = resolution === "1080p" ? 1080 : 720;
@@ -224,8 +291,9 @@ export function useFFmpegVideoGenerator() {
           message: "Processando imagens...",
         });
 
-        // Write all images to FFmpeg filesystem
         for (let i = 0; i < validScenes.length; i++) {
+          if (cancelledRef.current) return null;
+          
           const scene = validScenes[i];
           const imageData = scene.generatedImage!;
 
@@ -237,7 +305,6 @@ export function useFFmpegVideoGenerator() {
             message: `Carregando imagem ${i + 1}/${validScenes.length}...`,
           });
 
-          // Convert base64 or URL to file
           let fileData: Uint8Array;
           if (imageData.startsWith("data:")) {
             const base64 = imageData.split(",")[1];
@@ -254,13 +321,14 @@ export function useFFmpegVideoGenerator() {
           await ffmpeg.writeFile(`img_${String(i).padStart(3, "0")}.jpg`, fileData);
         }
 
+        if (cancelledRef.current) return null;
+
         setProgress({
           stage: "encoding",
           progress: 50,
           message: "Gerando vídeo com efeitos...",
         });
 
-        // Build complex filter for Ken Burns + transitions + color
         const filterParts: string[] = [];
         const concatInputs: string[] = [];
 
@@ -269,19 +337,14 @@ export function useFFmpegVideoGenerator() {
           const duration = scene.durationSeconds;
           const totalFrames = Math.round(duration * fps);
 
-          // Ken Burns effect parameters - random zoom direction
           const zoomStart = 1.0;
           const zoomEnd = kenBurnsEnabled ? 1.15 : 1.0;
           const panX = kenBurnsEnabled ? (i % 2 === 0 ? 0.02 : -0.02) : 0;
           const panY = kenBurnsEnabled ? (i % 3 === 0 ? 0.01 : -0.01) : 0;
 
-          // Build filter for this image
           let imageFilter = `[${i}:v]loop=loop=${totalFrames}:size=1:start=0,setpts=N/${fps}/TB,`;
-          
-          // Scale to proper resolution
           imageFilter += `scale=${width * 1.2}:${height * 1.2},`;
           
-          // Ken Burns zoom and pan effect
           if (kenBurnsEnabled) {
             const zoomExpr = `${zoomStart}+(${zoomEnd - zoomStart})*on/${totalFrames}`;
             const xExpr = `(iw-ow)/2+iw*${panX}*on/${totalFrames}`;
@@ -291,7 +354,6 @@ export function useFFmpegVideoGenerator() {
             imageFilter += `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,`;
           }
 
-          // Color filter
           if (colorFilterEnabled && colorFilter !== "none") {
             const colorFilterStr = getColorFilterString(colorFilter);
             if (colorFilterStr) {
@@ -299,7 +361,6 @@ export function useFFmpegVideoGenerator() {
             }
           }
 
-          // Trim and set duration
           imageFilter += `trim=duration=${duration},setpts=PTS-STARTPTS`;
           imageFilter += `[v${i}]`;
 
@@ -307,11 +368,9 @@ export function useFFmpegVideoGenerator() {
           concatInputs.push(`[v${i}]`);
         }
 
-        // Build the concat or xfade chain
         let finalFilter = filterParts.join("; ");
 
         if (validScenes.length > 1 && transitionEnabled) {
-          // Add transitions between scenes
           let currentInput = "[v0]";
           for (let i = 1; i < validScenes.length; i++) {
             const outputLabel = i === validScenes.length - 1 ? "[vout]" : `[xf${i}]`;
@@ -324,17 +383,14 @@ export function useFFmpegVideoGenerator() {
             currentInput = `[${currentInput}]`;
           }
         } else {
-          // Simple concat
           finalFilter += `; ${concatInputs.join("")}concat=n=${validScenes.length}:v=1:a=0[vout]`;
         }
 
-        // Build input arguments
         const inputArgs: string[] = [];
         for (let i = 0; i < validScenes.length; i++) {
           inputArgs.push("-loop", "1", "-t", validScenes[i].durationSeconds.toFixed(2), "-i", `img_${String(i).padStart(3, "0")}.jpg`);
         }
 
-        // Execute FFmpeg command
         const outputFilename = `${projectName.replace(/[^a-zA-Z0-9_-]/g, "_")}_video.mp4`;
 
         await ffmpeg.exec([
@@ -357,18 +413,18 @@ export function useFFmpegVideoGenerator() {
           outputFilename,
         ]);
 
+        if (cancelledRef.current) return null;
+
         setProgress({
           stage: "done",
           progress: 95,
           message: "Finalizando...",
         });
 
-        // Read the output file
         const data = await ffmpeg.readFile(outputFilename);
         const uint8Array = data instanceof Uint8Array ? data : new TextEncoder().encode(data as string);
         const blob = new Blob([new Uint8Array(uint8Array)], { type: "video/mp4" });
 
-        // Cleanup
         for (let i = 0; i < validScenes.length; i++) {
           try {
             await ffmpeg.deleteFile(`img_${String(i).padStart(3, "0")}.jpg`);
@@ -391,6 +447,9 @@ export function useFFmpegVideoGenerator() {
 
         return blob;
       } catch (error: any) {
+        if (cancelledRef.current || error.message === "Cancelled") {
+          return null;
+        }
         console.error("FFmpeg error:", error);
         setProgress({
           stage: "error",
@@ -424,6 +483,7 @@ export function useFFmpegVideoGenerator() {
   return {
     generateVideo,
     downloadVideo,
+    cancelGeneration,
     isGenerating,
     progress,
   };
