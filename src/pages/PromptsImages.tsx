@@ -260,6 +260,7 @@ const PromptsImages = () => {
   const [audioMixSettings, setAudioMixSettings] = usePersistedState<AudioMixSettings>("prompts_audio_mix", DEFAULT_AUDIO_MIX);
   const [showAudioSettings, setShowAudioSettings] = useState(false);
   const [editingCharacterIndex, setEditingCharacterIndex] = useState<number | null>(null);
+  const [timecodesUpdated, setTimecodesUpdated] = useState(false);
   
   // SRT Preview Modal
   const [showSrtPreview, setShowSrtPreview] = useState(false);
@@ -2653,6 +2654,9 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                         if (generatedScenes.length > 0) {
                           const recalculatedScenes = computeScenesWithWpm(generatedScenes, newWpm);
                           updateScenes(recalculatedScenes);
+                          setTimecodesUpdated(true);
+                          // Limpar indicador após 5 segundos
+                          setTimeout(() => setTimecodesUpdated(false), 5000);
                         }
                       }}
                       onImproveScenes={handleImproveScenes}
@@ -2837,10 +2841,19 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                             size="sm" 
                             onClick={downloadProductionPlan}
                             title="Plano de produção com instruções para CapCut"
-                            className="border-green-500/50 text-green-500 hover:bg-green-500/10"
+                            className={cn(
+                              "border-green-500/50 text-green-500 hover:bg-green-500/10 relative",
+                              timecodesUpdated && "ring-2 ring-green-400 ring-offset-1 ring-offset-background"
+                            )}
                           >
                             <FileText className="w-4 h-4 mr-2" />
                             Plano
+                            {timecodesUpdated && (
+                              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
+                              </span>
+                            )}
                           </Button>
                           <Button variant="outline" size="sm" onClick={downloadPrompts}>
                             <Download className="w-4 h-4 mr-2" />
