@@ -10,7 +10,7 @@ import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { 
-  Image, 
+  Image as ImageIcon, 
   Wand2, 
   Copy, 
   Save, 
@@ -55,6 +55,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES } from "@/lib/thumbnailStyles";
@@ -208,6 +209,7 @@ const PromptsImages = () => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [expandedScene, setExpandedScene] = useState<number | null>(null);
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("generator");
   const [filterPending, setFilterPending] = useState(false);
   const [previewScene, setPreviewScene] = useState<ScenePrompt | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number>(0);
@@ -1782,14 +1784,29 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
   };
 
   // Carregar histórico
-  const loadFromHistory = (history: SceneHistory) => {
+  const loadFromHistory = (history: SceneHistory, loadPrompts = false) => {
     setScript(history.script);
     setStyle(history.style || "cinematic");
-    setGeneratedScenes(history.scenes);
-    toast({
-      title: "Carregado!",
-      description: "Roteiro carregado do histórico",
-    });
+    
+    if (loadPrompts) {
+      // Carregar prompts para regenerar imagens
+      setGeneratedScenes(history.scenes.map(scene => ({
+        ...scene,
+        generatedImage: undefined, // Limpa imagens para regenerar
+        generatingImage: false
+      })));
+      setActiveTab("generator");
+      toast({
+        title: "Prompts carregados!",
+        description: `${history.scenes.length} prompts prontos para gerar imagens`,
+      });
+    } else {
+      setGeneratedScenes(history.scenes);
+      toast({
+        title: "Carregado!",
+        description: "Roteiro carregado do histórico",
+      });
+    }
   };
 
   // Deletar do histórico
@@ -1923,7 +1940,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
             </p>
           </div>
 
-          <Tabs defaultValue="generator" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="bg-secondary">
               <TabsTrigger value="generator" className="gap-2">
                 <Film className="w-4 h-4" />
@@ -2672,30 +2689,58 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => setExpandedHistory(expandedHistory === history.id ? null : history.id)}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => loadFromHistory(history)}
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => deleteFromHistory(history.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => setExpandedHistory(expandedHistory === history.id ? null : history.id)}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Visualizar prompts</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                  onClick={() => loadFromHistory(history, true)}
+                                >
+                                  <ImageIcon className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Carregar prompts e gerar imagens</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => loadFromHistory(history, false)}
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Copiar roteiro</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => deleteFromHistory(history.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Excluir do histórico</TooltipContent>
+                            </Tooltip>
                           </div>
                         </div>
 
