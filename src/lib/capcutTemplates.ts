@@ -342,88 +342,93 @@ const createVideoSegment = (
   };
 };
 
-// Criar material de vídeo/imagem
+// Criar material de vídeo/imagem com metadados para vinculação
 const createVideoMaterial = (
   id: string,
   fileName: string,
   durationMicro: number,
+  sceneIndex: number,
   width = 1920,
   height = 1080
-) => ({
-  aigc_type: "none",
-  audio_fade: null,
-  cartoon_path: "",
-  category_id: "",
-  category_name: "local",
-  check_flag: 63487,
-  crop: {
-    lower_left_x: 0.0,
-    lower_left_y: 1.0,
-    lower_right_x: 1.0,
-    lower_right_y: 1.0,
-    upper_left_x: 0.0,
-    upper_left_y: 0.0,
-    upper_right_x: 1.0,
-    upper_right_y: 0.0
-  },
-  crop_ratio: "free",
-  crop_scale: 1.0,
-  duration: durationMicro,
-  extra_type_option: 0,
-  formula_id: "",
-  freeze: null,
-  gameplay: null,
-  has_audio: false,
-  height: height,
-  id: id,
-  intensifies_audio_path: "",
-  intensifies_path: "",
-  is_ai_generate_content: false,
-  is_unified_beauty_mode: false,
-  local_id: "",
-  local_material_id: generateId(),
-  material_id: id,
-  material_name: fileName,
-  material_url: "",
-  matting: {
-    flag: 0,
-    has_use_quick_brush: false,
-    has_use_quick_eraser: false,
-    interactiveTime: [],
-    path: "",
-    strokes: []
-  },
-  media_path: "",
-  object_locked: null,
-  origin_material_id: "",
-  path: `./Resources/${fileName}`,
-  picture_from: "none",
-  picture_set_category_id: "",
-  picture_set_category_name: "",
-  request_id: "",
-  reverse_intensifies_path: "",
-  reverse_path: "",
-  smart_motion: null,
-  source: 0,
-  source_platform: 0,
-  stable: {
-    matrix_path: "",
-    stable_level: 0,
-    time_range: { duration: 0, start: 0 }
-  },
-  team_id: "",
-  type: "photo",
-  video_algorithm: {
-    algorithms: [],
-    deflicker: null,
-    motion_blur_config: null,
-    noise_reduction: null,
-    path: "",
-    quality_enhance: null,
-    time_range: null
-  },
-  width: width
-});
+) => {
+  const localMaterialId = generateId();
+  
+  return {
+    aigc_type: "none",
+    audio_fade: null,
+    cartoon_path: "",
+    category_id: "",
+    category_name: "local",
+    check_flag: 63487,
+    crop: {
+      lower_left_x: 0.0,
+      lower_left_y: 1.0,
+      lower_right_x: 1.0,
+      lower_right_y: 1.0,
+      upper_left_x: 0.0,
+      upper_left_y: 0.0,
+      upper_right_x: 1.0,
+      upper_right_y: 0.0
+    },
+    crop_ratio: "free",
+    crop_scale: 1.0,
+    duration: durationMicro,
+    extra_type_option: 0,
+    formula_id: "",
+    freeze: null,
+    gameplay: null,
+    has_audio: false,
+    height: height,
+    id: id,
+    intensifies_audio_path: "",
+    intensifies_path: "",
+    is_ai_generate_content: false,
+    is_unified_beauty_mode: false,
+    local_id: localMaterialId,
+    local_material_id: localMaterialId,
+    material_id: id,
+    material_name: fileName,
+    material_url: "",
+    matting: {
+      flag: 0,
+      has_use_quick_brush: false,
+      has_use_quick_eraser: false,
+      interactiveTime: [],
+      path: "",
+      strokes: []
+    },
+    media_path: `Resources/${fileName}`,
+    object_locked: null,
+    origin_material_id: "",
+    path: `Resources/${fileName}`,
+    picture_from: "none",
+    picture_set_category_id: "",
+    picture_set_category_name: "",
+    request_id: "",
+    reverse_intensifies_path: "",
+    reverse_path: "",
+    smart_motion: null,
+    source: 0,
+    source_platform: 0,
+    stable: {
+      matrix_path: "",
+      stable_level: 0,
+      time_range: { duration: 0, start: 0 }
+    },
+    team_id: "",
+    type: "photo",
+    video_algorithm: {
+      algorithms: [],
+      deflicker: null,
+      motion_blur_config: null,
+      noise_reduction: null,
+      path: "",
+      quality_enhance: null,
+      time_range: null
+    },
+    width: width
+  };
+};
 
 // Criar track de vídeo
 const createVideoTrack = (trackId: string, segments: any[]) => ({
@@ -484,8 +489,8 @@ export const generateCapcutDraftContentWithTemplate = (
     const durationMicro = secondsToMicroseconds(scene.durationSeconds);
     const isLastSegment = index === scenes.length - 1;
     
-    // Material com path vazio (requer relink)
-    videoMaterials.push(createVideoMaterial(materialId, scene.fileName, durationMicro));
+    // Material com path para Resources/
+    videoMaterials.push(createVideoMaterial(materialId, scene.fileName, durationMicro, index));
     
     // Segment com duração correta
     segments.push(createVideoSegment(
@@ -732,9 +737,27 @@ export const generateCapcutDraftMetaInfoWithTemplate = (
     0
   );
 
-  // Materiais no formato real do CapCut
+// Materiais importados para cada cena (type 0 = foto/vídeo)
+  const importedMaterials = scenes.map((scene) => ({
+    create_time: Math.floor(now / 1000),
+    duration: secondsToMicroseconds(scene.durationSeconds),
+    extra_info: "",
+    file_Path: `Resources/${scene.fileName}`,
+    height: 1080,
+    id: generateId(),
+    import_time: Math.floor(now / 1000),
+    import_time_ms: now,
+    item_source: 1,
+    md5: "",
+    metetype: "photo",
+    roughcut_time_range: { duration: -1, start: -1 },
+    sub_time_range: { duration: -1, start: -1 },
+    type: 0,
+    width: 1920
+  }));
+  
   const draftMaterials = [
-    { type: 0, value: [] },
+    { type: 0, value: importedMaterials },
     { type: 1, value: [] },
     { type: 2, value: [] },
     { type: 3, value: [] },

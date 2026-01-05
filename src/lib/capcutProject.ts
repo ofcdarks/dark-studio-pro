@@ -77,88 +77,92 @@ const createVideoSegment = (
   volume: 1.0
 });
 
-// Criar material de vídeo/imagem
+// Criar material de vídeo/imagem com metadados para vinculação
 const createVideoMaterial = (
   id: string,
   fileName: string,
   durationMicro: number,
   width = 1920,
   height = 1080
-) => ({
-  aigc_type: "none",
-  audio_fade: null,
-  cartoon_path: "",
-  category_id: "",
-  category_name: "local",
-  check_flag: 63487,
-  crop: {
-    lower_left_x: 0.0,
-    lower_left_y: 1.0,
-    lower_right_x: 1.0,
-    lower_right_y: 1.0,
-    upper_left_x: 0.0,
-    upper_left_y: 0.0,
-    upper_right_x: 1.0,
-    upper_right_y: 0.0
-  },
-  crop_ratio: "free",
-  crop_scale: 1.0,
-  duration: durationMicro,
-  extra_type_option: 0,
-  formula_id: "",
-  freeze: null,
-  gameplay: null,
-  has_audio: false,
-  height: height,
-  id: id,
-  intensifies_audio_path: "",
-  intensifies_path: "",
-  is_ai_generate_content: false,
-  is_unified_beauty_mode: false,
-  local_id: "",
-  local_material_id: generateId(),
-  material_id: id,
-  material_name: fileName,
-  material_url: "",
-  matting: {
-    flag: 0,
-    has_use_quick_brush: false,
-    has_use_quick_eraser: false,
-    interactiveTime: [],
-    path: "",
-    strokes: []
-  },
-  media_path: "",
-  object_locked: null,
-  origin_material_id: "",
-  path: `./Resources/${fileName}`, // Path relativo correto para CapCut
-  picture_from: "none",
-  picture_set_category_id: "",
-  picture_set_category_name: "",
-  request_id: "",
-  reverse_intensifies_path: "",
-  reverse_path: "",
-  smart_motion: null,
-  source: 0,
-  source_platform: 0,
-  stable: {
-    matrix_path: "",
-    stable_level: 0,
-    time_range: { duration: 0, start: 0 }
-  },
-  team_id: "",
-  type: "photo",
-  video_algorithm: {
-    algorithms: [],
-    deflicker: null,
-    motion_blur_config: null,
-    noise_reduction: null,
-    path: "",
-    quality_enhance: null,
-    time_range: null
-  },
-  width: width
-});
+) => {
+  const localMaterialId = generateId();
+  
+  return {
+    aigc_type: "none",
+    audio_fade: null,
+    cartoon_path: "",
+    category_id: "",
+    category_name: "local",
+    check_flag: 63487,
+    crop: {
+      lower_left_x: 0.0,
+      lower_left_y: 1.0,
+      lower_right_x: 1.0,
+      lower_right_y: 1.0,
+      upper_left_x: 0.0,
+      upper_left_y: 0.0,
+      upper_right_x: 1.0,
+      upper_right_y: 0.0
+    },
+    crop_ratio: "free",
+    crop_scale: 1.0,
+    duration: durationMicro,
+    extra_type_option: 0,
+    formula_id: "",
+    freeze: null,
+    gameplay: null,
+    has_audio: false,
+    height: height,
+    id: id,
+    intensifies_audio_path: "",
+    intensifies_path: "",
+    is_ai_generate_content: false,
+    is_unified_beauty_mode: false,
+    local_id: localMaterialId,
+    local_material_id: localMaterialId,
+    material_id: id,
+    material_name: fileName,
+    material_url: "",
+    matting: {
+      flag: 0,
+      has_use_quick_brush: false,
+      has_use_quick_eraser: false,
+      interactiveTime: [],
+      path: "",
+      strokes: []
+    },
+    media_path: `Resources/${fileName}`,
+    object_locked: null,
+    origin_material_id: "",
+    path: `Resources/${fileName}`,
+    picture_from: "none",
+    picture_set_category_id: "",
+    picture_set_category_name: "",
+    request_id: "",
+    reverse_intensifies_path: "",
+    reverse_path: "",
+    smart_motion: null,
+    source: 0,
+    source_platform: 0,
+    stable: {
+      matrix_path: "",
+      stable_level: 0,
+      time_range: { duration: 0, start: 0 }
+    },
+    team_id: "",
+    type: "photo",
+    video_algorithm: {
+      algorithms: [],
+      deflicker: null,
+      motion_blur_config: null,
+      noise_reduction: null,
+      path: "",
+      quality_enhance: null,
+      time_range: null
+    },
+    width: width
+  };
+};
 
 // Criar track de vídeo
 const createVideoTrack = (trackId: string, segments: any[]) => ({
@@ -392,12 +396,12 @@ export const generateCapcutDraftMetaInfo = (
     0
   );
 
-  // Criar lista de materiais importados
-  const draftMaterials = scenes.map((scene) => ({
+// Criar lista de materiais importados no formato correto
+  const importedMaterials = scenes.map((scene) => ({
     create_time: nowSeconds,
     duration: secondsToMicroseconds(scene.durationSeconds),
     extra_info: "",
-    file_Path: `./Resources/${scene.fileName}`,
+    file_Path: `Resources/${scene.fileName}`,
     height: 1080,
     id: generateId(),
     import_time: nowSeconds,
@@ -410,6 +414,17 @@ export const generateCapcutDraftMetaInfo = (
     type: 0,
     width: 1920
   }));
+  
+  // Estrutura de materiais no formato do CapCut (type 0 = foto/vídeo)
+  const draftMaterials = [
+    { type: 0, value: importedMaterials },
+    { type: 1, value: [] },
+    { type: 2, value: [] },
+    { type: 3, value: [] },
+    { type: 6, value: [] },
+    { type: 7, value: [] },
+    { type: 8, value: [] }
+  ];
 
   const metaInfo = {
     all_imported_media_resource_start_timecode: null,
