@@ -25,7 +25,7 @@ const formatSrtTime = (seconds: number): string => {
 
 /**
  * Divide texto em blocos de no máximo maxChars caracteres
- * sem cortar palavras
+ * sem cortar palavras e tentando respeitar limites de frases
  */
 const splitTextIntoBlocks = (text: string, maxChars: number = 499): string[] => {
   if (text.length <= maxChars) {
@@ -33,21 +33,48 @@ const splitTextIntoBlocks = (text: string, maxChars: number = 499): string[] => 
   }
 
   const blocks: string[] = [];
-  const words = text.split(/\s+/).filter(w => w.length > 0);
+  
+  // Primeiro, tenta dividir por sentenças completas
+  // Padrões de fim de frase: . ! ? seguidos de espaço ou fim
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+  
   let currentBlock = '';
 
-  for (const word of words) {
-    const testBlock = currentBlock ? `${currentBlock} ${word}` : word;
-    
-    if (testBlock.length <= maxChars) {
-      currentBlock = testBlock;
-    } else {
-      // Se a palavra sozinha é maior que o limite, força inclusão
-      if (currentBlock.length === 0) {
-        blocks.push(word);
-      } else {
+  for (const sentence of sentences) {
+    // Se a sentença sozinha é maior que o limite, divide por palavras
+    if (sentence.length > maxChars) {
+      // Salva o bloco atual se existir
+      if (currentBlock.trim().length > 0) {
         blocks.push(currentBlock.trim());
-        currentBlock = word;
+        currentBlock = '';
+      }
+      
+      // Divide a sentença longa por palavras
+      const words = sentence.split(/\s+/).filter(w => w.length > 0);
+      for (const word of words) {
+        const testBlock = currentBlock ? `${currentBlock} ${word}` : word;
+        
+        if (testBlock.length <= maxChars) {
+          currentBlock = testBlock;
+        } else {
+          if (currentBlock.length > 0) {
+            blocks.push(currentBlock.trim());
+          }
+          currentBlock = word;
+        }
+      }
+    } else {
+      // Tenta adicionar a sentença ao bloco atual
+      const testBlock = currentBlock ? `${currentBlock} ${sentence}` : sentence;
+      
+      if (testBlock.length <= maxChars) {
+        currentBlock = testBlock;
+      } else {
+        // Salva o bloco atual e inicia novo com a sentença
+        if (currentBlock.trim().length > 0) {
+          blocks.push(currentBlock.trim());
+        }
+        currentBlock = sentence;
       }
     }
   }
@@ -94,7 +121,7 @@ export const generateNarrationSrt = (
   let blockIndex = 1;
   let currentTime = 0;
 
-  scenes.forEach((scene, sceneIndex) => {
+  scenes.forEach((scene) => {
     const textBlocks = splitTextIntoBlocks(scene.text, maxChars);
     const sceneDuration = scene.endSeconds - scene.startSeconds;
     
@@ -116,10 +143,15 @@ export const generateNarrationSrt = (
       });
 
       currentTime = endSeconds;
+      
+      // Adiciona gap de 10 segundos após cada bloco (exceto o último)
+      if (gapBetweenScenes > 0 && blockIdx < textBlocks.length - 1) {
+        currentTime += gapBetweenScenes;
+      }
     });
 
-    // Adiciona gap de 10 segundos após cada cena (exceto a última)
-    if (sceneIndex < scenes.length - 1) {
+    // Adiciona gap após último bloco da cena (exceto na última cena)
+    if (gapBetweenScenes > 0 && textBlocks.length > 0) {
       currentTime += gapBetweenScenes;
     }
   });
