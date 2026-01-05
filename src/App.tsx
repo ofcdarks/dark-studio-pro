@@ -22,7 +22,7 @@ import ViralLibrary from "./pages/ViralLibrary";
 import ViralAgents from "./pages/ViralAgents";
 import PromptsImages from "./pages/PromptsImages";
 import VoiceGenerator from "./pages/VoiceGenerator";
-import BatchImages from "./pages/BatchImages";
+
 import VideoGenerator from "./pages/VideoGenerator";
 import YouTubeIntegration from "./pages/YouTubeIntegration";
 import SearchChannels from "./pages/SearchChannels";
@@ -30,7 +30,7 @@ import ChannelAnalyzer from "./pages/ChannelAnalyzer";
 import SRTConverter from "./pages/SRTConverter";
 import SettingsPage from "./pages/SettingsPage";
 import AdminPanel from "./pages/AdminPanel";
-import ThumbnailsPage from "./pages/ThumbnailsPage";
+
 import SceneGenerator from "./pages/SceneGenerator";
 import AnalysisHistory from "./pages/AnalysisHistory";
 import PlansCredits from "./pages/PlansCredits";
@@ -63,7 +63,7 @@ const App = () => (
                 <Route path="/agents" element={<ProtectedRoute><ViralAgents /></ProtectedRoute>} />
                 <Route path="/prompts" element={<ProtectedRoute><PromptsImages /></ProtectedRoute>} />
                 <Route path="/voice" element={<ProtectedRoute><VoiceGenerator /></ProtectedRoute>} />
-                <Route path="/batch-images" element={<ProtectedRoute><BatchImages /></ProtectedRoute>} />
+                
                 <Route path="/video-gen" element={<ProtectedRoute><VideoGenerator /></ProtectedRoute>} />
                 <Route path="/youtube" element={<ProtectedRoute><YouTubeIntegration /></ProtectedRoute>} />
                 <Route path="/search-channels" element={<ProtectedRoute><SearchChannels /></ProtectedRoute>} />
@@ -71,7 +71,7 @@ const App = () => (
                 <Route path="/srt" element={<ProtectedRoute><SRTConverter /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
-                <Route path="/thumbnails" element={<ProtectedRoute><ThumbnailsPage /></ProtectedRoute>} />
+                
                 <Route path="/scenes" element={<ProtectedRoute><SceneGenerator /></ProtectedRoute>} />
                 <Route path="/plans" element={<ProtectedRoute><PlansCredits /></ProtectedRoute>} />
                 <Route path="/terms" element={<TermsOfService />} />
