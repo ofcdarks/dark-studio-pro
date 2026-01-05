@@ -56,6 +56,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useActivityLog } from "@/hooks/useActivityLog";
 import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES } from "@/lib/thumbnailStyles";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -260,6 +261,7 @@ const PromptsImages = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { logActivity } = useActivityLog();
 
   // Buscar histórico de prompts de cenas
   const { data: sceneHistory, isLoading: loadingHistory } = useQuery({
@@ -418,6 +420,12 @@ const PromptsImages = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: ["scene-prompts-history"] });
+
+      // Log activity
+      await logActivity({
+        action: 'scene_generated',
+        description: `${totalScenes} cenas geradas a partir do roteiro`,
+      });
 
       toast({
         title: "Prompts gerados!",

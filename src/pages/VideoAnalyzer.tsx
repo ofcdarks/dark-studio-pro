@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { useActivityLog } from "@/hooks/useActivityLog";
 import { TranscriptionSection } from "@/components/analyzer/TranscriptionSection";
 import { CreateAgentModal } from "@/components/analyzer/CreateAgentModal";
 import { ThumbnailLibrary } from "@/components/analyzer/ThumbnailLibrary";
@@ -112,6 +113,7 @@ const VideoAnalyzer = () => {
   
   const { user } = useAuth();
   const { toast } = useToast();
+  const { logActivity } = useActivityLog();
 
   const { data: folders } = useQuery({
     queryKey: ["folders", user?.id],
@@ -411,6 +413,12 @@ const VideoAnalyzer = () => {
           analysis_data: JSON.parse(JSON.stringify({ videoInfo: aiVideoInfo, titles: allTitles })),
         });
       }
+
+      // Log activity
+      await logActivity({
+        action: 'video_analysis',
+        description: `Vídeo analisado: ${realVideoData?.title || videoUrl}`,
+      });
 
       toast({
         title: failedModelLabels.length > 0 ? "Análise concluída (parcial)" : "Análise concluída!",
