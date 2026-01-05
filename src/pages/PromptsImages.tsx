@@ -211,6 +211,7 @@ const PromptsImages = () => {
   const [narrationSpeed, setNarrationSpeed] = usePersistedState("prompts_narration_speed", "140");
   const [audioDurationInput, setAudioDurationInput] = useState("");
   const [showDurationModal, setShowDurationModal] = useState(false);
+  const [edlFps, setEdlFps] = usePersistedState("prompts_edl_fps", "24");
   
   // Derivar estados de geração do background
   const generatingImages = bgState.isGenerating;
@@ -1201,10 +1202,12 @@ echo "Agora importe o video no CapCut!"
     });
 
     // Gerar EDL com transições de dissolve
+    const fpsValue = parseInt(edlFps) || 24;
+    const transitionFrames = Math.round(fpsValue * 0.5); // 0.5s de dissolve
     const edlContent = generateEdlWithTransitions(scenesForEdl, {
       title: projectName || "Projeto_Video",
-      fps: 24,
-      transitionFrames: 12 // 0.5s de dissolve
+      fps: fpsValue,
+      transitionFrames
     });
 
     // Baixar arquivo
@@ -2876,6 +2879,22 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                 <p className="text-xs text-muted-foreground mb-3">
                   Exporta arquivo EDL (Edit Decision List) com timecodes e transições de dissolve. Compatível com DaVinci Resolve 16+.
                 </p>
+                
+                {/* Seletor de FPS */}
+                <div className="flex items-center gap-2 mb-3">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">FPS:</Label>
+                  <Select value={edlFps} onValueChange={setEdlFps}>
+                    <SelectTrigger className="h-8 bg-background border-border text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="24">24 fps (Cinema)</SelectItem>
+                      <SelectItem value="25">25 fps (PAL)</SelectItem>
+                      <SelectItem value="30">30 fps (NTSC)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 <Button
                   variant="outline"
                   onClick={handleExportEdl}
