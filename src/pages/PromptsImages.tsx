@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
 import { CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
+import { useFFmpegVideo } from "@/hooks/useFFmpegVideo";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { Input } from "@/components/ui/input";
@@ -209,6 +210,14 @@ const PromptsImages = () => {
   const [narrationSpeed, setNarrationSpeed] = usePersistedState("prompts_narration_speed", "140");
   const [audioDurationInput, setAudioDurationInput] = useState("");
   const [showDurationModal, setShowDurationModal] = useState(false);
+  
+  // Hook para gerar vídeo no navegador
+  const { 
+    isGenerating: isGeneratingVideo, 
+    videoProgress, 
+    generateVideo, 
+    downloadVideo 
+  } = useFFmpegVideo();
   
   // Derivar estados de geração do background
   const generatingImages = bgState.isGenerating;
@@ -1169,6 +1178,55 @@ echo "Agora importe o video no CapCut!"
   const handleConfirmCapcutExport = async () => {
     setShowCapcutInstructions(false);
     await handleSaveToCapcutFolder();
+  };
+
+  // Gerar vídeo MP4 diretamente no navegador usando FFmpeg.wasm
+  const handleGenerateVideo = async () => {
+    const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
+    
+    if (scenesWithImages.length === 0) {
+      toast({ 
+        title: "Nenhuma imagem disponível", 
+        description: "Gere as imagens primeiro antes de criar o vídeo.",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    toast({ 
+      title: "🎬 Iniciando geração do vídeo", 
+      description: "Isso pode levar alguns minutos dependendo do número de cenas..." 
+    });
+
+    // Calcular durações das cenas
+    const scenesForVideo = scenesWithImages.map(scene => {
+      const durationSeconds = Math.max(1, wordCountToSeconds(scene.wordCount));
+      return {
+        imageUrl: scene.generatedImage!,
+        durationSeconds,
+        number: scene.number
+      };
+    });
+
+    const videoBlob = await generateVideo(scenesForVideo, projectName);
+    
+    if (videoBlob) {
+      const safeFileName = (projectName.trim() || "video").replace(/[^a-zA-Z0-9_-]/g, "_");
+      downloadVideo(videoBlob, `${safeFileName}_${new Date().toISOString().split("T")[0]}.mp4`);
+      
+      toast({ 
+        title: "✅ Vídeo gerado com sucesso!", 
+        description: "O vídeo foi baixado. Agora importe no CapCut!" 
+      });
+      
+      setShowCapcutInstructions(false);
+    } else {
+      toast({ 
+        title: "Erro ao gerar vídeo", 
+        description: "Tente novamente ou use a opção de baixar ZIP.",
+        variant: "destructive" 
+      });
+    }
   };
 
   // Importar imagens de pasta existente para relink
@@ -2758,6 +2816,44 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
 
             {/* Botões */}
             <div className="space-y-2 pt-2">
+              {/* Botão de GERAR VÍDEO (automático) */}
+              <Button
+                onClick={handleGenerateVideo}
+                disabled={isGeneratingVideo || generatedScenes.filter(s => s.generatedImage).length === 0}
+                className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70"
+              >
+                {isGeneratingVideo ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {videoProgress?.message || 'Gerando vídeo...'}
+                  </>
+                ) : (
+                  <>
+                    <Film className="w-4 h-4 mr-2" />
+                    🎬 Gerar Vídeo MP4 (Automático)
+                  </>
+                )}
+              </Button>
+              
+              {/* Barra de progresso do vídeo */}
+              {isGeneratingVideo && videoProgress && (
+                <div className="space-y-1">
+                  <Progress value={videoProgress.progress} className="h-2" />
+                  <p className="text-xs text-muted-foreground text-center">
+                    {videoProgress.currentScene && videoProgress.totalScenes 
+                      ? `Cena ${videoProgress.currentScene}/${videoProgress.totalScenes}`
+                      : videoProgress.message
+                    }
+                  </p>
+                </div>
+              )}
+
+              <div className="relative flex items-center py-2">
+                <div className="flex-grow border-t border-border"></div>
+                <span className="flex-shrink mx-4 text-xs text-muted-foreground">ou exporte ZIP</span>
+                <div className="flex-grow border-t border-border"></div>
+              </div>
+              
               {/* Botão de importar imagens */}
               <Button
                 variant="outline"
@@ -2781,11 +2877,12 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                   Copiar Instruções
                 </Button>
                 <Button
+                  variant="outline"
                   onClick={handleConfirmCapcutExport}
-                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="flex-1"
                 >
-                  <Video className="w-4 h-4 mr-2" />
-                  Exportar Agora
+                  <Download className="w-4 h-4 mr-2" />
+                  Baixar ZIP
                 </Button>
               </div>
             </div>
