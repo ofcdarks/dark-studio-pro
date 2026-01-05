@@ -60,6 +60,12 @@ import { Label } from "@/components/ui/label";
 import logoGif from "@/assets/logo.gif";
 import { SceneTimeline } from "@/components/scenes/SceneTimeline";
 
+interface CharacterDescription {
+  name: string;
+  description: string;
+  seed: number;
+}
+
 interface ScenePrompt {
   number: number;
   text: string;
@@ -70,6 +76,7 @@ interface ScenePrompt {
   endTimecode?: string; // fim
   generatedImage?: string;
   generatingImage?: boolean;
+  characterName?: string; // Personagem principal nesta cena
 }
 
 interface SceneHistory {
@@ -142,8 +149,12 @@ const PromptsImages = () => {
     startGeneration: startBgGeneration, 
     cancelGeneration: cancelBgGeneration,
     getUpdatedScenes,
-    syncScenes 
+    syncScenes,
+    setCharacters: setBgCharacters
   } = useBackgroundImageGeneration();
+
+  // Estado para personagens detectados
+  const [detectedCharacters, setDetectedCharacters] = usePersistedState<CharacterDescription[]>("prompts_characters", []);
 
   // Persisted states (sem imagens - muito grandes para localStorage)
   const [script, setScript] = usePersistedState("prompts_script", "");
@@ -345,7 +356,19 @@ const PromptsImages = () => {
         throw new Error(response.data.error);
       }
 
-      const { scenes, totalScenes, creditsUsed } = response.data;
+      const { scenes, totalScenes, creditsUsed, characters } = response.data;
+      
+      // Armazenar personagens detectados
+      if (characters && characters.length > 0) {
+        setDetectedCharacters(characters);
+        setBgCharacters(characters);
+        toast({
+          title: `${characters.length} personagem(ns) detectado(s)`,
+          description: characters.map((c: CharacterDescription) => c.name).join(", "),
+        });
+      } else {
+        setDetectedCharacters([]);
+      }
       
       if (!scenes || scenes.length === 0) {
         throw new Error("Nenhuma cena foi gerada. Tente novamente.");
@@ -423,7 +446,8 @@ const PromptsImages = () => {
     }
 
     // Usar o sistema de background para geração
-    startBgGeneration(generatedScenes, style, pendingIndexes);
+    // Usar o sistema de background para geração com personagens
+    startBgGeneration(generatedScenes, style, pendingIndexes, detectedCharacters);
   };
 
   // Cancelar geração
@@ -1388,11 +1412,17 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
         ? `${stylePrefix} ${scene.imagePrompt}`
         : scene.imagePrompt;
 
+      // Verificar se a cena tem um personagem e obter a seed correspondente
+      const characterSeed = scene.characterName 
+        ? detectedCharacters.find(c => c.name.toLowerCase() === scene.characterName?.toLowerCase())?.seed
+        : undefined;
+
       const { data, error } = await supabase.functions.invoke("generate-imagefx", {
         body: {
           prompt: fullPrompt,
           aspectRatio: "LANDSCAPE",
-          numberOfImages: 1
+          numberOfImages: 1,
+          seed: characterSeed // Usar seed fixa se houver personagem
         }
       });
 
@@ -1757,6 +1787,36 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
                       </Button>
                     </div>
                   </Card>
+
+                  {/* Personagens Detectados */}
+                  {detectedCharacters.length > 0 && (
+                    <Card className="p-4 border-primary/30 bg-primary/5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                        <h3 className="font-semibold text-sm text-foreground">
+                          {detectedCharacters.length} Personagem(ns) Detectado(s)
+                        </h3>
+                        <Badge variant="outline" className="ml-auto text-xs">
+                          Seed fixa ativada
+                        </Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {detectedCharacters.map((char, idx) => (
+                          <div 
+                            key={idx}
+                            className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-1.5 text-xs"
+                            title={char.description}
+                          >
+                            <span className="font-medium text-foreground">{char.name}</span>
+                            <span className="text-muted-foreground">seed: {char.seed}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Imagens de cenas com esses personagens usarão seed fixa para manter consistência visual.
+                      </p>
+                    </Card>
+                  )}
 
                   {/* Cenas Geradas */}
                   {generatedScenes.length > 0 && (

@@ -24,11 +24,18 @@ interface AdminApiKeys {
   laozhang_validated?: boolean;
 }
 
+interface CharacterDescription {
+  name: string;
+  description: string;
+  seed: number;
+}
+
 interface SceneResult {
   number: number;
   text: string;
   imagePrompt: string;
   wordCount: number;
+  characterName?: string; // Nome do personagem principal nesta cena
 }
 
 // Função para dividir texto em partes
@@ -44,6 +51,85 @@ function splitTextIntoChunks(text: string, wordsPerScene: number, scenesPerBatch
   return chunks;
 }
 
+// Função para detectar personagens no roteiro
+async function detectCharacters(
+  script: string,
+  apiUrl: string,
+  apiKey: string,
+  apiModel: string
+): Promise<CharacterDescription[]> {
+  const systemPrompt = `Você é um especialista em análise de roteiros. Analise o texto e identifique PERSONAGENS RECORRENTES que aparecem em múltiplas partes do roteiro.
+
+REGRAS:
+1. Identifique APENAS personagens que são mencionados/aparecem em diferentes momentos
+2. Ignore menções genéricas como "pessoas", "você", "a gente"
+3. Para cada personagem, crie uma descrição visual DETALHADA e CONSISTENTE em INGLÊS
+4. A descrição deve incluir: idade aproximada, gênero, características físicas marcantes, estilo de roupa típico
+5. Seja específico o suficiente para manter consistência visual em IA de imagem
+
+Retorne APENAS JSON:
+{"characters":[{"name":"Nome","description":"detailed english description of physical appearance, clothing style, distinctive features"}]}
+
+Se não houver personagens recorrentes, retorne: {"characters":[]}`;
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: apiModel,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Analise este roteiro e identifique personagens recorrentes:\n\n${script.substring(0, 8000)}` }
+        ],
+        max_tokens: 2000,
+        temperature: 0.3
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('[Detect Characters] API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    let content = data.choices?.[0]?.message?.content?.trim() || "";
+
+    // Parse JSON
+    if (content.startsWith("```json")) content = content.slice(7);
+    if (content.startsWith("```")) content = content.slice(3);
+    if (content.endsWith("```")) content = content.slice(0, -3);
+    content = content.trim();
+
+    const parsed = JSON.parse(content);
+    const characters = parsed.characters || [];
+
+    // Gerar seed fixa para cada personagem (baseado no nome para consistência)
+    return characters.map((char: any) => ({
+      name: char.name,
+      description: char.description,
+      seed: Math.abs(hashCode(char.name)) % 2147483647
+    }));
+  } catch (e) {
+    console.error('[Detect Characters] Error:', e);
+    return [];
+  }
+}
+
+// Função simples de hash para gerar seed consistente
+function hashCode(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash;
+}
+
 // Função para gerar prompts de um lote
 async function generateBatchPrompts(
   chunk: string,
@@ -51,20 +137,32 @@ async function generateBatchPrompts(
   startSceneNumber: number,
   scenesInBatch: number,
   style: string,
+  characters: CharacterDescription[],
   apiUrl: string,
   apiKey: string,
   apiModel: string
 ): Promise<SceneResult[]> {
-  const systemPrompt = `Você é um especialista em produção audiovisual. Analise o texto e divida em ${scenesInBatch} cenas, gerando prompts de imagem para cada.
+  const characterContext = characters.length > 0
+    ? `\n\nPERSONAGENS RECORRENTES (use descrições EXATAS quando aparecerem):
+${characters.map(c => `- ${c.name}: ${c.description}`).join('\n')}`
+    : '';
+
+  const characterInstruction = characters.length > 0
+    ? `
+5. Quando um personagem recorrente aparecer, use sua descrição EXATA no prompt
+6. Adicione "characterName" com o nome do personagem principal da cena (ou null se não houver)`
+    : '';
+
+  const systemPrompt = `Você é um especialista em produção audiovisual. Analise o texto e divida em ${scenesInBatch} cenas, gerando prompts de imagem para cada.${characterContext}
 
 Regras:
 1. Divida em EXATAMENTE ${scenesInBatch} cenas (ou menos se o texto for curto)
 2. Prompts de imagem CONCISOS em INGLÊS (40-60 palavras)
 3. Inclua: composição visual, elementos, iluminação, estilo ${style}
-4. Numere as cenas a partir de ${startSceneNumber}
+4. Numere as cenas a partir de ${startSceneNumber}${characterInstruction}
 
 Retorne APENAS JSON:
-{"scenes":[{"number":${startSceneNumber},"text":"resumo curto","imagePrompt":"english prompt","wordCount":100}]}`;
+{"scenes":[{"number":${startSceneNumber},"text":"resumo curto","imagePrompt":"english prompt with exact character description if applicable","wordCount":100${characters.length > 0 ? ',"characterName":"Nome ou null"' : ''}}]}`;
 
   const response = await fetch(apiUrl, {
     method: "POST",
@@ -237,6 +335,11 @@ serve(async (req) => {
       });
     }
 
+    // Detectar personagens no roteiro primeiro
+    console.log(`[Generate Scenes] Detecting characters...`);
+    const characters = await detectCharacters(script, apiUrl, apiKey, apiModel);
+    console.log(`[Generate Scenes] Found ${characters.length} recurring characters:`, characters.map(c => c.name));
+
     // Dividir script em chunks
     const chunks = splitTextIntoChunks(script, wordsPerScene, scenesPerBatch);
     console.log(`[Generate Scenes] Split into ${chunks.length} chunks`);
@@ -259,6 +362,7 @@ serve(async (req) => {
           currentSceneNumber,
           scenesInBatch,
           style,
+          characters,
           apiUrl,
           apiKey,
           apiModel
@@ -322,7 +426,8 @@ serve(async (req) => {
         scenes: allScenes,
         totalScenes: allScenes.length,
         totalBatches: chunks.length,
-        creditsUsed: creditsNeeded
+        creditsUsed: creditsNeeded,
+        characters: characters // Retornar personagens detectados
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
