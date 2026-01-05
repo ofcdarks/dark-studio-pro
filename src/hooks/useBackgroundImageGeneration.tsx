@@ -3,6 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { THUMBNAIL_STYLES } from "@/lib/thumbnailStyles";
 import { useToast } from "@/hooks/use-toast";
 
+interface CharacterDescription {
+  name: string;
+  description: string;
+  seed: number;
+}
+
 interface ScenePrompt {
   number: number;
   text: string;
@@ -13,6 +19,7 @@ interface ScenePrompt {
   endTimecode?: string;
   generatedImage?: string;
   generatingImage?: boolean;
+  characterName?: string; // Personagem principal nesta cena
 }
 
 interface BackgroundGenerationState {
@@ -27,15 +34,17 @@ interface BackgroundGenerationState {
   style: string;
   failedIndexes: number[];
   rateLimitHit: boolean;
+  characters: CharacterDescription[];
 }
 
 interface BackgroundImageGenerationContextType {
   state: BackgroundGenerationState;
-  startGeneration: (scenes: ScenePrompt[], style: string, pendingIndexes: number[]) => void;
+  startGeneration: (scenes: ScenePrompt[], style: string, pendingIndexes: number[], characters?: CharacterDescription[]) => void;
   cancelGeneration: () => void;
   getUpdatedScenes: () => ScenePrompt[];
   clearState: () => void;
   syncScenes: (scenes: ScenePrompt[]) => void;
+  setCharacters: (characters: CharacterDescription[]) => void;
 }
 
 const initialState: BackgroundGenerationState = {
@@ -50,6 +59,7 @@ const initialState: BackgroundGenerationState = {
   style: 'cinematic',
   failedIndexes: [],
   rateLimitHit: false,
+  characters: [],
 };
 
 const BackgroundImageGenerationContext = createContext<BackgroundImageGenerationContextType | null>(null);
@@ -68,12 +78,19 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
   const generateSingleImage = useCallback(async (
     sceneIndex: number, 
     scenes: ScenePrompt[], 
-    style: string
+    style: string,
+    characters: CharacterDescription[]
   ): Promise<{ index: number; success: boolean; imageUrl?: string; rateLimited?: boolean }> => {
     const maxRetries = 3;
     let retries = 0;
     let lastError = "";
     let wasRateLimited = false;
+
+    // Verificar se a cena tem um personagem e obter a seed correspondente
+    const scene = scenes[sceneIndex];
+    const characterSeed = scene.characterName 
+      ? characters.find(c => c.name.toLowerCase() === scene.characterName?.toLowerCase())?.seed
+      : undefined;
 
     while (retries <= maxRetries) {
       if (cancelRef.current) {
@@ -83,14 +100,15 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
       try {
         const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
         const fullPrompt = stylePrefix
-          ? `${stylePrefix} ${scenes[sceneIndex].imagePrompt}`
-          : scenes[sceneIndex].imagePrompt;
+          ? `${stylePrefix} ${scene.imagePrompt}`
+          : scene.imagePrompt;
 
         const { data, error } = await supabase.functions.invoke("generate-imagefx", {
           body: {
             prompt: fullPrompt,
             aspectRatio: "LANDSCAPE",
             numberOfImages: 1,
+            seed: characterSeed, // Usar seed fixa se houver personagem
           },
         });
 
@@ -169,7 +187,8 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
   const startGeneration = useCallback(async (
     scenes: ScenePrompt[], 
     style: string, 
-    pendingIndexes: number[]
+    pendingIndexes: number[],
+    characters: CharacterDescription[] = []
   ) => {
     if (state.isGenerating) {
       toast({ 
@@ -194,6 +213,7 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
       style,
       failedIndexes: [],
       rateLimitHit: false,
+      characters,
     });
 
     const BATCH_SIZE = 5;
@@ -210,7 +230,7 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
 
       try {
         // Iniciar todas as 5 requisições em paralelo
-        const promises = batchIndexes.map(idx => generateSingleImage(idx, scenesRef.current, style));
+        const promises = batchIndexes.map(idx => generateSingleImage(idx, scenesRef.current, style, characters));
         
         // Processar resultados conforme vão chegando (exibição sequencial)
         for (let i = 0; i < promises.length; i++) {
@@ -335,6 +355,10 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
     }
   }, [state.isGenerating]);
 
+  const setCharacters = useCallback((characters: CharacterDescription[]) => {
+    setState(prev => ({ ...prev, characters }));
+  }, []);
+
   return (
     <BackgroundImageGenerationContext.Provider value={{
       state,
@@ -343,6 +367,7 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
       getUpdatedScenes,
       clearState,
       syncScenes,
+      setCharacters,
     }}>
       {children}
     </BackgroundImageGenerationContext.Provider>
