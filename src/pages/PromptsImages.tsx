@@ -37,7 +37,8 @@ import {
   RotateCcw,
   Layout,
   FolderSearch,
-  Timer
+  Timer,
+  Play
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +47,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { useBackgroundImageGeneration } from "@/hooks/useBackgroundImageGeneration";
+import { useFFmpegVideoGenerator } from "@/hooks/useFFmpegVideoGenerator";
 import { SessionIndicator } from "@/components/ui/session-indicator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +59,7 @@ import { cn } from "@/lib/utils";
 import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES } from "@/lib/thumbnailStyles";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import logoGif from "@/assets/logo.gif";
 import { SceneTimeline } from "@/components/scenes/SceneTimeline";
 import { ScriptPreviewTimeline } from "@/components/scenes/ScriptPreviewTimeline";
@@ -224,6 +227,18 @@ const PromptsImages = () => {
   const [audioDurationInput, setAudioDurationInput] = useState("");
   const [showDurationModal, setShowDurationModal] = useState(false);
   const [edlFps, setEdlFps] = usePersistedState("prompts_edl_fps", "24");
+  
+  // FFmpeg Video Generation states
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoKenBurns, setVideoKenBurns] = useState(true);
+  const [videoCrossfade, setVideoCrossfade] = useState(true);
+  const [videoCrossfadeDuration, setVideoCrossfadeDuration] = useState("0.5");
+  const [videoColorFilter, setVideoColorFilter] = useState<"warm" | "cool" | "cinematic" | "vintage" | "none">("cinematic");
+  const [videoResolution, setVideoResolution] = useState<"720p" | "1080p">("1080p");
+  const [generatedVideoBlob, setGeneratedVideoBlob] = useState<Blob | null>(null);
+  
+  // FFmpeg hook
+  const { generateVideo, downloadVideo, isGenerating: isGeneratingVideo, progress: videoProgress } = useFFmpegVideoGenerator();
   
   // Derivar estados de geração do background
   const generatingImages = bgState.isGenerating;
@@ -1236,6 +1251,54 @@ echo "Agora importe o video no CapCut!"
       title: "✅ EDL exportado!", 
       description: "Importe no DaVinci Resolve: File > Import > Timeline > Import AAF, EDL, XML..." 
     });
+  };
+
+  // Gerar vídeo MP4 com FFmpeg.wasm
+  const handleGenerateVideo = async () => {
+    const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
+    
+    if (scenesWithImages.length === 0) {
+      toast({ 
+        title: "Nenhuma imagem disponível", 
+        description: "Gere as imagens primeiro antes de criar o vídeo.",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // Preparar cenas com durações
+    const scenesForVideo = generatedScenes
+      .filter(s => s.generatedImage)
+      .map(scene => ({
+        number: scene.number,
+        text: scene.text,
+        generatedImage: scene.generatedImage,
+        durationSeconds: Math.max(2, wordCountToSeconds(scene.wordCount))
+      }));
+
+    const blob = await generateVideo({
+      scenes: scenesForVideo,
+      projectName: projectName || "video",
+      fps: 30,
+      resolution: videoResolution,
+      kenBurnsEnabled: videoKenBurns,
+      crossfadeEnabled: videoCrossfade,
+      crossfadeDuration: parseFloat(videoCrossfadeDuration) || 0.5,
+      colorFilterEnabled: videoColorFilter !== "none",
+      colorFilter: videoColorFilter
+    });
+
+    if (blob) {
+      setGeneratedVideoBlob(blob);
+    }
+  };
+
+  // Baixar vídeo gerado
+  const handleDownloadGeneratedVideo = () => {
+    if (generatedVideoBlob) {
+      const safeFileName = (projectName.trim() || "video").replace(/[^a-zA-Z0-9_-]/g, "_");
+      downloadVideo(generatedVideoBlob, `${safeFileName}_com_efeitos.mp4`);
+    }
   };
 
   // Ref para o input de arquivos oculto
@@ -3085,6 +3148,30 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                 </Button>
               </div>
             </div>
+
+            {/* Gerar MP4 com FFmpeg */}
+            <div className="p-2 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-500/30">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5">
+                  <Play className="w-4 h-4 text-purple-400" />
+                  <span className="font-medium text-xs text-foreground">Gerar Vídeo MP4</span>
+                </div>
+                <Badge className="bg-purple-500/20 text-purple-300 text-[9px] h-4">BETA</Badge>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-2">
+                Gere um vídeo direto no navegador com efeitos Ken Burns, crossfade e filtros de cor
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowVideoModal(true)}
+                disabled={generatedScenes.filter(s => s.generatedImage).length === 0}
+                className="w-full h-7 text-xs border-purple-500/30 hover:bg-purple-500/20"
+              >
+                <Video className="w-3 h-3 mr-1" />
+                Configurar e Gerar MP4
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -3249,6 +3336,161 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                 <Copy className="w-4 h-4 mr-2" />
                 Copiar Marcadores
               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Geração de Vídeo MP4 */}
+      <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
+        <DialogContent className="max-w-lg bg-card border-purple-500/30 rounded-xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Play className="w-5 h-5 text-purple-400" />
+              Gerar Vídeo MP4 com Efeitos
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Configure os efeitos e gere um vídeo diretamente no navegador
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Resolução */}
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Resolução</Label>
+              <Select value={videoResolution} onValueChange={(v) => setVideoResolution(v as "720p" | "1080p")}>
+                <SelectTrigger className="w-32 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="720p">720p HD</SelectItem>
+                  <SelectItem value="1080p">1080p Full HD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Efeito Ken Burns */}
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm">Efeito Ken Burns</Label>
+                <p className="text-xs text-muted-foreground">Zoom suave nas imagens</p>
+              </div>
+              <Switch checked={videoKenBurns} onCheckedChange={setVideoKenBurns} />
+            </div>
+
+            {/* Transição Crossfade */}
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm">Transição Crossfade</Label>
+                <p className="text-xs text-muted-foreground">Fade suave entre cenas</p>
+              </div>
+              <Switch checked={videoCrossfade} onCheckedChange={setVideoCrossfade} />
+            </div>
+
+            {videoCrossfade && (
+              <div className="flex items-center justify-between pl-4 border-l-2 border-purple-500/30">
+                <Label className="text-sm">Duração do crossfade</Label>
+                <Select value={videoCrossfadeDuration} onValueChange={setVideoCrossfadeDuration}>
+                  <SelectTrigger className="w-24 h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0.3">0.3s</SelectItem>
+                    <SelectItem value="0.5">0.5s</SelectItem>
+                    <SelectItem value="0.8">0.8s</SelectItem>
+                    <SelectItem value="1">1.0s</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Filtro de cor */}
+            <div className="space-y-2">
+              <Label className="text-sm">Filtro de Cor</Label>
+              <Select value={videoColorFilter} onValueChange={(v) => setVideoColorFilter(v as any)}>
+                <SelectTrigger className="h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem filtro</SelectItem>
+                  <SelectItem value="cinematic">🎬 Cinemático</SelectItem>
+                  <SelectItem value="warm">🌅 Quente</SelectItem>
+                  <SelectItem value="cool">❄️ Frio</SelectItem>
+                  <SelectItem value="vintage">📼 Vintage</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Info */}
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
+              <p className="text-xs text-purple-300">
+                <strong>ℹ️ Info:</strong> {generatedScenes.filter(s => s.generatedImage).length} cenas serão processadas. 
+                O vídeo será gerado no navegador usando FFmpeg.wasm. 
+                Isso pode levar alguns minutos dependendo do tamanho.
+              </p>
+            </div>
+
+            {/* Progress */}
+            {isGeneratingVideo && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{videoProgress.message}</span>
+                  <span className="font-mono text-purple-400">{Math.round(videoProgress.progress)}%</span>
+                </div>
+                <Progress value={videoProgress.progress} className="h-2" />
+              </div>
+            )}
+
+            {/* Video Preview */}
+            {generatedVideoBlob && !isGeneratingVideo && (
+              <div className="space-y-2">
+                <Label className="text-sm text-green-400">✅ Vídeo gerado com sucesso!</Label>
+                <video 
+                  controls 
+                  className="w-full rounded-lg border border-border"
+                  src={URL.createObjectURL(generatedVideoBlob)}
+                />
+              </div>
+            )}
+
+            {/* Botões */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowVideoModal(false)}
+                className="flex-1"
+                disabled={isGeneratingVideo}
+              >
+                Fechar
+              </Button>
+              
+              {generatedVideoBlob && !isGeneratingVideo ? (
+                <Button
+                  onClick={handleDownloadGeneratedVideo}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Baixar MP4
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleGenerateVideo}
+                  disabled={isGeneratingVideo || generatedScenes.filter(s => s.generatedImage).length === 0}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90"
+                >
+                  {isGeneratingVideo ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 mr-2" />
+                      Gerar Vídeo
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>
