@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown } from "lucide-react";
+import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Sparkles, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -27,6 +27,7 @@ interface ScriptPreviewTimelineProps {
   className?: string;
   onSyncAudio?: (newWpm: number) => void;
   generatedScenes?: GeneratedScene[];
+  onImproveScenes?: (sceneNumbers: number[], improvementType: string) => void;
 }
 
 interface PreviewScene {
@@ -138,11 +139,13 @@ export function ScriptPreviewTimeline({
   wpm, 
   className = "",
   onSyncAudio,
-  generatedScenes = []
+  generatedScenes = [],
+  onImproveScenes
 }: ScriptPreviewTimelineProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [audioDuration, setAudioDuration] = useState("");
+  const [isImproving, setIsImproving] = useState(false);
   
   // Se há cenas geradas, usa elas (com timecodes corretos)
   // Senão, estima baseado em palavras por cena
@@ -207,6 +210,8 @@ export function ScriptPreviewTimeline({
       type: 'warning' | 'danger';
       message: string;
       scenes: number[];
+      suggestion: string;
+      improvementType: string;
     }> = [];
     
     // Detectar cenas sem emoção ou com emoção neutral consecutivas
@@ -221,8 +226,10 @@ export function ScriptPreviewTimeline({
         if (neutralStreak.length >= 2) {
           issues.push({
             type: neutralStreak.length >= 3 ? 'danger' : 'warning',
-            message: `${neutralStreak.length} cenas consecutivas sem emoção definida podem causar queda de retenção`,
-            scenes: [...neutralStreak]
+            message: `${neutralStreak.length} cenas consecutivas sem emoção definida`,
+            scenes: [...neutralStreak],
+            suggestion: 'Adicionar tensão, surpresa ou curiosidade nestas cenas',
+            improvementType: 'add_emotion'
           });
         }
         neutralStreak = [];
@@ -232,8 +239,10 @@ export function ScriptPreviewTimeline({
     if (neutralStreak.length >= 2) {
       issues.push({
         type: neutralStreak.length >= 3 ? 'danger' : 'warning',
-        message: `${neutralStreak.length} cenas consecutivas sem emoção no final do vídeo`,
-        scenes: [...neutralStreak]
+        message: `${neutralStreak.length} cenas sem emoção no final do vídeo`,
+        scenes: [...neutralStreak],
+        suggestion: 'Adicionar clímax emocional ou reflexão impactante',
+        improvementType: 'add_emotion_ending'
       });
     }
     
@@ -249,8 +258,10 @@ export function ScriptPreviewTimeline({
         if (noTriggerStreak.length >= 3) {
           issues.push({
             type: 'warning',
-            message: `${noTriggerStreak.length} cenas sem gatilhos de retenção podem perder audiência`,
-            scenes: [...noTriggerStreak]
+            message: `${noTriggerStreak.length} cenas sem gatilhos de retenção`,
+            scenes: [...noTriggerStreak],
+            suggestion: 'Inserir micro-cliffhangers ou perguntas retóricas',
+            improvementType: 'add_triggers'
           });
         }
         noTriggerStreak = [];
@@ -259,8 +270,10 @@ export function ScriptPreviewTimeline({
     if (noTriggerStreak.length >= 3) {
       issues.push({
         type: 'warning',
-        message: `${noTriggerStreak.length} cenas finais sem gatilhos de retenção`,
-        scenes: [...noTriggerStreak]
+        message: `${noTriggerStreak.length} cenas finais sem gatilhos`,
+        scenes: [...noTriggerStreak],
+        suggestion: 'Criar antecipação ou deixar pergunta aberta',
+        improvementType: 'add_triggers_ending'
       });
     }
     
@@ -269,8 +282,10 @@ export function ScriptPreviewTimeline({
     if (longScenes.length > 0) {
       issues.push({
         type: 'warning',
-        message: `${longScenes.length} cena(s) com mais de 10 segundos podem causar perda de atenção`,
-        scenes: longScenes.map(s => s.number)
+        message: `${longScenes.length} cena(s) com mais de 10 segundos`,
+        scenes: longScenes.map(s => s.number),
+        suggestion: 'Dividir em cortes mais rápidos de 5-8 segundos',
+        improvementType: 'split_long_scenes'
       });
     }
     
@@ -283,8 +298,10 @@ export function ScriptPreviewTimeline({
     if (!hasStrongHook && previewScenes.length >= 3) {
       issues.push({
         type: 'danger',
-        message: 'As 3 primeiras cenas não têm emoção de impacto - risco de perda imediata de audiência',
-        scenes: [1, 2, 3]
+        message: 'As 3 primeiras cenas não têm emoção de impacto',
+        scenes: [1, 2, 3],
+        suggestion: 'Criar hook com choque, mistério ou promessa ousada',
+        improvementType: 'improve_hook'
       });
     }
     
@@ -489,7 +506,7 @@ export function ScriptPreviewTimeline({
         )}
       </div>
 
-      {/* Alertas de Retenção */}
+      {/* Alertas de Retenção com Sugestões */}
       {retentionAnalysis && retentionAnalysis.issues.length > 0 && generatedScenes.length > 0 && (
         <div className="mb-3 space-y-2">
           {retentionAnalysis.issues.slice(0, 3).map((issue, index) => (
@@ -501,17 +518,81 @@ export function ScriptPreviewTimeline({
                   : 'border-amber-500/50 bg-amber-500/10'
               }`}
             >
-              <AlertTriangle className={`w-4 h-4 ${issue.type === 'danger' ? 'text-red-400' : 'text-amber-400'}`} />
-              <AlertDescription className="text-xs ml-2">
-                <span className={issue.type === 'danger' ? 'text-red-300' : 'text-amber-300'}>
-                  {issue.message}
-                </span>
-                <span className="text-muted-foreground ml-2">
-                  (Cenas {issue.scenes.join(', ')})
-                </span>
-              </AlertDescription>
+              <div className="flex items-start justify-between w-full gap-2">
+                <div className="flex items-start gap-2 flex-1">
+                  <AlertTriangle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${issue.type === 'danger' ? 'text-red-400' : 'text-amber-400'}`} />
+                  <div className="flex-1 min-w-0">
+                    <AlertDescription className="text-xs">
+                      <span className={issue.type === 'danger' ? 'text-red-300' : 'text-amber-300'}>
+                        {issue.message}
+                      </span>
+                      <span className="text-muted-foreground ml-1.5">
+                        (Cenas {issue.scenes.slice(0, 5).join(', ')}{issue.scenes.length > 5 ? '...' : ''})
+                      </span>
+                    </AlertDescription>
+                    <p className="text-[10px] text-cyan-400 mt-0.5 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      💡 {issue.suggestion}
+                    </p>
+                  </div>
+                </div>
+                {onImproveScenes && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={`h-7 text-[10px] px-2 flex-shrink-0 ${
+                      issue.type === 'danger'
+                        ? 'border-red-500/50 text-red-300 hover:bg-red-500/20'
+                        : 'border-amber-500/50 text-amber-300 hover:bg-amber-500/20'
+                    }`}
+                    disabled={isImproving}
+                    onClick={() => {
+                      setIsImproving(true);
+                      onImproveScenes(issue.scenes, issue.improvementType);
+                      toast.info(`Melhorando cenas ${issue.scenes.slice(0, 3).join(', ')}...`);
+                      setTimeout(() => setIsImproving(false), 3000);
+                    }}
+                  >
+                    {isImproving ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        Melhorar
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </Alert>
           ))}
+          
+          {/* Botão para melhorar todas as cenas com problemas */}
+          {retentionAnalysis.issues.length > 1 && onImproveScenes && (
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs border-primary/50 text-primary hover:bg-primary/20"
+                disabled={isImproving}
+                onClick={() => {
+                  setIsImproving(true);
+                  const allScenes = [...new Set(retentionAnalysis.issues.flatMap(i => i.scenes))];
+                  onImproveScenes(allScenes, 'improve_all');
+                  toast.info(`Melhorando ${allScenes.length} cenas com problemas...`);
+                  setTimeout(() => setIsImproving(false), 5000);
+                }}
+              >
+                {isImproving ? (
+                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3 h-3 mr-1" />
+                )}
+                Melhorar Todas ({retentionAnalysis.issues.length} problemas)
+              </Button>
+            </div>
+          )}
+          
           {retentionAnalysis.issues.length > 3 && (
             <p className="text-[10px] text-muted-foreground">
               +{retentionAnalysis.issues.length - 3} outros alertas...
