@@ -13,6 +13,7 @@ import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pen
 import { Progress } from "@/components/ui/progress";
 import logoGif from "@/assets/logo.gif";
 import { supabase } from "@/integrations/supabase/client";
+import { generateNarrationSrt } from "@/lib/srtGenerator";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { toast } from "sonner";
@@ -536,74 +537,48 @@ GERE AGORA O ROTEIRO COMPLETO DE NARRAÇÃO:
     return { wordCount, formattedTime };
   };
 
-  // Convert script to SRT format
+  // Convert script to SRT format using the same logic as SRTConverter
   const convertToSRT = (content: string) => {
-    // Clean the content first
+    // Clean the content first (remove part labels, titles, etc.)
     const cleanContent = content
       .replace(/^(Parte\s*\d+\s*[:\.]\s*)/gim, '')
       .replace(/^\*\*Parte\s*\d+\s*[:\.]\s*\*\*/gim, '')
       .replace(/^#+ .+$/gm, '')
+      .replace(/^\[[\d:]+\]\s*/gm, '') // Remove time markers like [00:00]
+      .replace(/^---+$/gm, '') // Remove separators
       .replace(/\n{3,}/g, '\n\n')
       .trim();
 
-    // Split content into sentences/phrases (never split words)
-    const sentences = cleanContent
-      .split(/(?<=[.!?])\s+/)
-      .filter(s => s.trim().length > 0);
+    // Split into paragraphs to create scenes
+    const paragraphs = cleanContent
+      .split(/\n\n+/)
+      .filter(p => p.trim().length > 0);
 
-    const srtParts: string[] = [];
-    let currentPart = '';
-    let partIndex = 1;
-    let currentTime = 0;
-    const timePerPart = 10; // 10 seconds per part
-
-    for (const sentence of sentences) {
-      const testPart = currentPart ? `${currentPart} ${sentence}` : sentence;
+    // Create scenes for the SRT generator
+    const scenes = paragraphs.map((text, index) => {
+      const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
+      const duration = Math.max(2, wordCount / 2.5); // 150 WPM = 2.5 words/second
       
-      // If adding this sentence would exceed 499 chars, finalize current part
-      if (testPart.length > 499 && currentPart.length >= 400) {
-        // Format time for SRT
-        const startTime = formatSRTTime(currentTime);
-        const endTime = formatSRTTime(currentTime + timePerPart);
-        
-        srtParts.push(`${partIndex}\n${startTime} --> ${endTime}\n${currentPart.trim()}\n`);
-        
-        partIndex++;
-        currentTime += timePerPart;
-        currentPart = sentence;
-      } 
-      // If current part is between 400-499 and sentence would push over, finalize
-      else if (currentPart.length >= 400 && testPart.length > 499) {
-        const startTime = formatSRTTime(currentTime);
-        const endTime = formatSRTTime(currentTime + timePerPart);
-        
-        srtParts.push(`${partIndex}\n${startTime} --> ${endTime}\n${currentPart.trim()}\n`);
-        
-        partIndex++;
-        currentTime += timePerPart;
-        currentPart = sentence;
+      // Calculate start/end times based on accumulated duration
+      let startSeconds = 0;
+      for (let i = 0; i < index; i++) {
+        const prevWords = paragraphs[i].split(/\s+/).filter(w => w.length > 0).length;
+        startSeconds += Math.max(2, prevWords / 2.5) + 10; // +10 gap between scenes
       }
-      else {
-        currentPart = testPart;
-      }
-    }
+      
+      return {
+        number: index + 1,
+        text: text.trim(),
+        startSeconds,
+        endSeconds: startSeconds + duration
+      };
+    });
 
-    // Add remaining content if any
-    if (currentPart.trim().length > 0) {
-      const startTime = formatSRTTime(currentTime);
-      const endTime = formatSRTTime(currentTime + timePerPart);
-      srtParts.push(`${partIndex}\n${startTime} --> ${endTime}\n${currentPart.trim()}\n`);
-    }
-
-    return srtParts.join('\n');
-  };
-
-  const formatSRTTime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    const ms = 0;
-    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+    // Use the same SRT generator as the SRTConverter tool
+    return generateNarrationSrt(scenes, {
+      maxCharsPerBlock: 499,
+      gapBetweenScenes: 10
+    });
   };
 
   const downloadSRT = (content: string, title: string) => {
