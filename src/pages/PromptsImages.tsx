@@ -88,9 +88,17 @@ const AI_MODELS = [
   { value: "gemini-2.5-pro-preview-06-05", label: "Gemini 2.5 Pro" },
 ];
 
-// Calcular tempo estimado baseado em palavras (média 150 palavras/min para narração)
-const calculateEstimatedTime = (wordCount: number): string => {
-  const minutes = wordCount / 150;
+// Opções de velocidade de narração (WPM)
+const NARRATION_SPEEDS = [
+  { value: "120", label: "Lenta (120 WPM)", description: "Narração pausada, mais tempo por cena" },
+  { value: "140", label: "Normal (140 WPM)", description: "Ritmo natural de fala" },
+  { value: "160", label: "Rápida (160 WPM)", description: "Narração dinâmica" },
+  { value: "180", label: "Muito Rápida (180 WPM)", description: "Locução acelerada" },
+];
+
+// Calcular tempo estimado baseado em palavras e WPM configurável
+const calculateEstimatedTimeWithWpm = (wordCount: number, wpm: number): string => {
+  const minutes = wordCount / wpm;
   if (minutes < 1) {
     return `${Math.round(minutes * 60)}s`;
   }
@@ -99,9 +107,10 @@ const calculateEstimatedTime = (wordCount: number): string => {
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 };
 
-const WORDS_PER_MINUTE = 150;
-
-const wordCountToSeconds = (wordCount: number): number => (wordCount / WORDS_PER_MINUTE) * 60;
+// Função legada para compatibilidade (usa WPM padrão)
+const calculateEstimatedTime = (wordCount: number): string => {
+  return calculateEstimatedTimeWithWpm(wordCount, 150);
+};
 
 const formatTimecode = (totalSeconds: number): string => {
   const s = Math.max(0, Math.floor(totalSeconds));
@@ -110,14 +119,17 @@ const formatTimecode = (totalSeconds: number): string => {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 };
 
-// Calcular timecode baseado em posição no roteiro
-const calculateTimecode = (scenes: ScenePrompt[], currentIndex: number): string => {
+// Calcular timecode baseado em posição no roteiro com WPM configurável
+const calculateTimecodeWithWpm = (scenes: ScenePrompt[], currentIndex: number, wpm: number): string => {
   let totalSeconds = 0;
   for (let i = 0; i < currentIndex; i++) {
-    totalSeconds += wordCountToSeconds(scenes[i].wordCount);
+    totalSeconds += (scenes[i].wordCount / wpm) * 60;
   }
   return formatTimecode(totalSeconds);
 };
+
+// Converter word count para segundos com WPM configurável
+const wordCountToSecondsWithWpm = (wordCount: number, wpm: number): number => (wordCount / wpm) * 60;
 
 const PromptsImages = () => {
   // Persisted states (sem imagens - muito grandes para localStorage)
@@ -171,8 +183,15 @@ const PromptsImages = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("clean");
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [projectName, setProjectName] = usePersistedState("prompts_project_name", "Meu Projeto");
+  const [narrationSpeed, setNarrationSpeed] = usePersistedState("prompts_narration_speed", "140");
   const [generationStartTime, setGenerationStartTime] = useState<number | null>(null);
   const cancelGenerationRef = useRef(false);
+  
+  // WPM atual baseado na velocidade selecionada
+  const currentWpm = parseInt(narrationSpeed) || 140;
+  
+  // Função para converter palavras em segundos usando o WPM atual
+  const wordCountToSeconds = (wordCount: number): number => (wordCount / currentWpm) * 60;
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -1540,11 +1559,35 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
     }
   };
 
-  // Estatísticas do roteiro atual
+  // Estatísticas do roteiro atual (usando WPM configurado)
   const scriptStats = {
     words: script.split(/\s+/).filter(Boolean).length,
     estimatedScenes: Math.ceil(script.split(/\s+/).filter(Boolean).length / (parseInt(wordsPerScene) || 80)),
-    estimatedDuration: calculateEstimatedTime(script.split(/\s+/).filter(Boolean).length)
+    estimatedDuration: calculateEstimatedTimeWithWpm(script.split(/\s+/).filter(Boolean).length, currentWpm)
+  };
+
+  // Recalcular timecodes quando WPM muda
+  const recalculateTimecodes = () => {
+    if (generatedScenes.length === 0) return;
+    
+    let cumulativeSeconds = 0;
+    const recalculatedScenes: ScenePrompt[] = generatedScenes.map((scene) => {
+      const startSeconds = cumulativeSeconds;
+      const durationSeconds = wordCountToSeconds(scene.wordCount);
+      const endSeconds = startSeconds + durationSeconds;
+      cumulativeSeconds = endSeconds;
+
+      return {
+        ...scene,
+        estimatedTime: calculateEstimatedTimeWithWpm(scene.wordCount, currentWpm),
+        timecode: formatTimecode(startSeconds),
+        endTimecode: formatTimecode(endSeconds),
+      };
+    });
+    
+    setGeneratedScenes(recalculatedScenes);
+    setPersistedScenes(recalculatedScenes.map(({ generatedImage, generatingImage, ...rest }) => rest));
+    toast({ title: "Timecodes recalculados", description: `Usando ${currentWpm} palavras/minuto` });
   };
 
   return (
@@ -1617,13 +1660,14 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-muted-foreground" />
                           <span className="text-sm text-muted-foreground">
-                            ~<strong className="text-foreground">{scriptStats.estimatedDuration}</strong> duração
+                            ~<strong className="text-foreground">{scriptStats.estimatedDuration}</strong> 
+                            <span className="text-xs ml-1">({currentWpm} WPM)</span>
                           </span>
                         </div>
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
                       <Select value={style} onValueChange={setStyle}>
                         <SelectTrigger className="bg-secondary border-border">
                           <SelectValue placeholder="Estilo" />
@@ -1670,6 +1714,21 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                         max={200}
                       />
 
+                      <Select value={narrationSpeed} onValueChange={setNarrationSpeed}>
+                        <SelectTrigger className="bg-secondary border-border">
+                          <SelectValue placeholder="Velocidade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {NARRATION_SPEEDS.map((speed) => (
+                            <SelectItem key={speed.value} value={speed.value}>
+                              <div className="flex flex-col">
+                                <span>{speed.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
                       <Button 
                         onClick={handleGenerate}
                         disabled={generating || !script.trim()}
@@ -1696,6 +1755,15 @@ Se o navegador bloquear a pasta, um ZIP será baixado automaticamente.
                           </h3>
                         </div>
                         <div className="flex flex-wrap gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={recalculateTimecodes}
+                            title={`Recalcular com ${currentWpm} WPM`}
+                          >
+                            <Clock className="w-4 h-4 mr-2" />
+                            {currentWpm} WPM
+                          </Button>
                           <Button variant="outline" size="sm" onClick={downloadPrompts}>
                             <Download className="w-4 h-4 mr-2" />
                             TXT
