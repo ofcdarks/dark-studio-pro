@@ -2039,9 +2039,165 @@ const Analytics = () => {
                       .map(([word]) => word);
                   };
 
-                  const keywords = extractKeywords([channelName, channelDescription, ...topVideoTitles]);
-                  const nicheKeyword = keywords[0] || 'seu nicho';
-                  const secondaryKeyword = keywords[1] || 'conteúdo';
+                  const keywords = extractKeywords([channelDescription, ...topVideoTitles]);
+                  
+                  // ============================================
+                  // NICHE DETECTION ENGINE (Based on Content Analysis)
+                  // ============================================
+                  const detectNiche = () => {
+                    const allContent = [channelDescription, ...topVideoTitles].join(' ').toLowerCase();
+                    
+                    // Niche categories with keywords
+                    const nichePatterns: Record<string, { keywords: string[]; subNiches: Record<string, string[]> }> = {
+                      'Finanças': {
+                        keywords: ['investimento', 'dinheiro', 'renda', 'bolsa', 'ações', 'trading', 'cripto', 'bitcoin', 'economia', 'finanças', 'poupança', 'trader', 'forex', 'rendimentos', 'dividendos', 'b3', 'mercado', 'financeiro', 'day trade', 'swing', 'money', 'invest', 'crypto', 'stock'],
+                        subNiches: {
+                          'Day Trade': ['day trade', 'scalp', 'operações', 'gráfico', 'candle', 'análise técnica'],
+                          'Criptomoedas': ['cripto', 'bitcoin', 'ethereum', 'blockchain', 'nft', 'defi', 'altcoin'],
+                          'Investimentos': ['dividendos', 'fii', 'reit', 'ações', 'longo prazo', 'carteira', 'portfolio'],
+                          'Educação Financeira': ['poupança', 'orçamento', 'economizar', 'dívidas', 'independência', 'liberdade financeira']
+                        }
+                      },
+                      'Tecnologia': {
+                        keywords: ['tech', 'tecnologia', 'software', 'hardware', 'programação', 'código', 'app', 'celular', 'smartphone', 'computador', 'review', 'unboxing', 'gadget', 'iphone', 'android', 'windows', 'mac', 'linux', 'developer', 'python', 'javascript'],
+                        subNiches: {
+                          'Reviews': ['review', 'unboxing', 'análise', 'hands-on', 'comparativo', 'vale a pena'],
+                          'Programação': ['código', 'programar', 'developer', 'python', 'javascript', 'react', 'node'],
+                          'Smartphones': ['celular', 'smartphone', 'iphone', 'android', 'samsung', 'xiaomi'],
+                          'PC/Hardware': ['pc', 'gamer', 'placa', 'processador', 'notebook', 'desktop', 'setup']
+                        }
+                      },
+                      'Games': {
+                        keywords: ['game', 'jogo', 'gameplay', 'gamer', 'ps5', 'xbox', 'nintendo', 'pc gamer', 'stream', 'live', 'fps', 'rpg', 'moba', 'fortnite', 'minecraft', 'valorant', 'lol', 'league', 'free fire', 'cod', 'gta'],
+                        subNiches: {
+                          'FPS/Shooter': ['fps', 'valorant', 'cs', 'call of duty', 'cod', 'fortnite', 'warzone'],
+                          'RPG/Aventura': ['rpg', 'adventure', 'elden ring', 'zelda', 'genshin', 'skyrim'],
+                          'MOBA': ['lol', 'league', 'dota', 'moba', 'wild rift'],
+                          'Mobile Games': ['free fire', 'mobile', 'pubg mobile', 'clash', 'brawl']
+                        }
+                      },
+                      'Beleza & Lifestyle': {
+                        keywords: ['maquiagem', 'make', 'skincare', 'beleza', 'cabelo', 'unha', 'beauty', 'rotina', 'grwm', 'outfit', 'moda', 'fashion', 'estilo', 'look', 'tendência', 'tutorial', 'resenha'],
+                        subNiches: {
+                          'Maquiagem': ['make', 'maquiagem', 'tutorial', 'look', 'base', 'batom', 'sombra'],
+                          'Skincare': ['skincare', 'pele', 'rotina', 'cuidados', 'hidratante', 'protetor'],
+                          'Cabelo': ['cabelo', 'hair', 'penteado', 'corte', 'coloração', 'tratamento'],
+                          'Moda': ['moda', 'outfit', 'look', 'fashion', 'roupa', 'tendência']
+                        }
+                      },
+                      'Fitness & Saúde': {
+                        keywords: ['treino', 'academia', 'fitness', 'exercício', 'musculação', 'crossfit', 'yoga', 'dieta', 'emagrecimento', 'peso', 'saúde', 'nutrição', 'suplemento', 'hipertrofia', 'cardio', 'maromba', 'workout', 'gym'],
+                        subNiches: {
+                          'Musculação': ['hipertrofia', 'musculação', 'treino', 'academia', 'peso', 'maromba'],
+                          'Emagrecimento': ['emagrecer', 'perder peso', 'dieta', 'déficit', 'cardio'],
+                          'Nutrição': ['dieta', 'alimentação', 'receita fit', 'suplemento', 'proteína'],
+                          'Yoga/Bem-estar': ['yoga', 'meditação', 'alongamento', 'flexibilidade', 'bem-estar']
+                        }
+                      },
+                      'Educação': {
+                        keywords: ['curso', 'aula', 'aprenda', 'estudar', 'concurso', 'enem', 'vestibular', 'faculdade', 'professor', 'explicação', 'matéria', 'resumo', 'dicas', 'estudo', 'português', 'matemática', 'história', 'inglês'],
+                        subNiches: {
+                          'Concursos': ['concurso', 'público', 'edital', 'prova', 'banca'],
+                          'Vestibular/ENEM': ['enem', 'vestibular', 'redação', 'aprovação', 'gabarito'],
+                          'Idiomas': ['inglês', 'espanhol', 'idioma', 'fluência', 'conversação'],
+                          'Aulas': ['aula', 'explicação', 'matemática', 'física', 'química']
+                        }
+                      },
+                      'Entretenimento': {
+                        keywords: ['humor', 'comédia', 'react', 'reação', 'viral', 'trend', 'challenge', 'desafio', 'pranks', 'vlog', 'daily', 'rotina', 'curiosidade', 'fatos', 'história', 'mistério', 'teoria', 'análise', 'podcast'],
+                        subNiches: {
+                          'React/Reações': ['react', 'reação', 'reagindo', 'assistindo'],
+                          'Humor': ['humor', 'comédia', 'piada', 'engraçado', 'meme'],
+                          'Vlogs': ['vlog', 'rotina', 'dia a dia', 'daily', 'lifestyle'],
+                          'Curiosidades': ['curiosidade', 'fato', 'mistério', 'história', 'teoria']
+                        }
+                      },
+                      'Negócios': {
+                        keywords: ['empreendedor', 'negócio', 'empresa', 'startup', 'vendas', 'marketing', 'cliente', 'lucro', 'renda extra', 'infoproduto', 'afiliado', 'dropshipping', 'e-commerce', 'loja', 'faturar', 'escalar'],
+                        subNiches: {
+                          'Marketing Digital': ['marketing', 'tráfego', 'ads', 'google', 'facebook', 'instagram'],
+                          'E-commerce': ['dropshipping', 'loja', 'shopify', 'mercado livre', 'vendas'],
+                          'Infoprodutos': ['curso', 'infoproduto', 'lançamento', 'afiliado', 'hotmart'],
+                          'Empreendedorismo': ['empreender', 'negócio', 'empresa', 'startup', 'gestão']
+                        }
+                      },
+                      'Automóveis': {
+                        keywords: ['carro', 'moto', 'veículo', 'automóvel', 'test drive', 'review', 'comparativo', 'motor', 'potência', 'velocidade', 'acelerar', 'dirigir', 'modelos', 'lançamento', 'suv', 'sedan', 'hatch', 'pickup'],
+                        subNiches: {
+                          'Reviews': ['review', 'test drive', 'avaliação', 'análise', 'comparativo'],
+                          'Motos': ['moto', 'motocicleta', 'pilotagem', 'viagem de moto'],
+                          'Performance': ['potência', 'performance', 'preparação', 'arrancada', 'velocidade'],
+                          'Manutenção': ['manutenção', 'mecânica', 'reparo', 'dica', 'problema']
+                        }
+                      },
+                      'Culinária': {
+                        keywords: ['receita', 'cozinha', 'comida', 'alimento', 'chef', 'cozinhar', 'preparo', 'ingrediente', 'prato', 'sobremesa', 'doce', 'salgado', 'bolo', 'assado', 'frito', 'saudável'],
+                        subNiches: {
+                          'Receitas Rápidas': ['fácil', 'rápido', 'simples', 'minutos', 'prático'],
+                          'Confeitaria': ['bolo', 'doce', 'sobremesa', 'confeitaria', 'decoração'],
+                          'Fitness/Saudável': ['fit', 'saudável', 'low carb', 'proteína', 'dieta'],
+                          'Churrasco': ['churrasco', 'carne', 'corte', 'assado', 'bbq']
+                        }
+                      }
+                    };
+                    
+                    let detectedNiche = 'Conteúdo Digital';
+                    let detectedSubNiche = 'Geral';
+                    let detectedMicroNiche = '';
+                    let maxScore = 0;
+                    
+                    // Detect main niche
+                    for (const [niche, data] of Object.entries(nichePatterns)) {
+                      let score = 0;
+                      for (const keyword of data.keywords) {
+                        if (allContent.includes(keyword)) {
+                          score += allContent.split(keyword).length - 1;
+                        }
+                      }
+                      if (score > maxScore) {
+                        maxScore = score;
+                        detectedNiche = niche;
+                        
+                        // Detect sub-niche
+                        let maxSubScore = 0;
+                        for (const [subNiche, subKeywords] of Object.entries(data.subNiches)) {
+                          let subScore = 0;
+                          for (const kw of subKeywords) {
+                            if (allContent.includes(kw)) {
+                              subScore += allContent.split(kw).length - 1;
+                            }
+                          }
+                          if (subScore > maxSubScore) {
+                            maxSubScore = subScore;
+                            detectedSubNiche = subNiche;
+                          }
+                        }
+                      }
+                    }
+                    
+                    // Detect micro-niche from top keywords specific to channel
+                    const topKeywords = keywords.filter(kw => 
+                      !['canal', 'video', 'vídeo', 'hoje', 'novo', 'nova', 'parte', 'episode'].includes(kw)
+                    ).slice(0, 3);
+                    
+                    if (topKeywords.length >= 2) {
+                      detectedMicroNiche = topKeywords.slice(0, 2).map(w => 
+                        w.charAt(0).toUpperCase() + w.slice(1)
+                      ).join(' + ');
+                    } else if (topKeywords.length === 1) {
+                      detectedMicroNiche = topKeywords[0].charAt(0).toUpperCase() + topKeywords[0].slice(1);
+                    }
+                    
+                    return {
+                      niche: detectedNiche,
+                      subNiche: detectedSubNiche,
+                      microNiche: detectedMicroNiche || `${detectedSubNiche} Especializado`
+                    };
+                  };
+                  
+                  const channelNiche = detectNiche();
+                  const nicheKeyword = channelNiche.microNiche || channelNiche.subNiche;
+                  const secondaryKeyword = keywords[1] || channelNiche.subNiche;
                   
                   // ============================================
                   // VIRAL TITLE PATTERNS ANALYSIS
@@ -2375,6 +2531,11 @@ const Analytics = () => {
                     return `🎯 ESTRATÉGIA VIRAL PARA: ${channelName}
 ═══════════════════════════════════════
 
+📂 NICHO DETECTADO:
+• Nicho: ${channelNiche.niche}
+• Sub-nicho: ${channelNiche.subNiche}
+• Micro-nicho: ${channelNiche.microNiche}
+
 📊 SCORE DE SAÚDE DO CANAL: ${healthScore.score}/100
 
 🏷️ TAGS RECOMENDADAS:
@@ -2467,13 +2628,14 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                   };
                   
                   // ============================================
-                  // DYNAMIC CHECKLIST ITEMS (Based on Channel Data)
+                  // DYNAMIC CHECKLIST ITEMS (Based on Niche Analysis)
                   // ============================================
                   
-                  // Get main topic from channel's top videos
-                  const mainTopic = suggestedTags[0] || 'seu conteúdo';
-                  const secondTopic = suggestedTags[1] || '';
+                  // Use detected niche info instead of channel name
+                  const mainTopic = channelNiche.microNiche || channelNiche.subNiche || 'seu conteúdo';
+                  const secondTopic = channelNiche.subNiche !== mainTopic ? channelNiche.subNiche : (suggestedTags[1] || '');
                   const topVideoTitle = topVideoTitles[0] || '';
+                  const nicheLabel = `${channelNiche.niche} > ${channelNiche.subNiche}${channelNiche.microNiche ? ` > ${channelNiche.microNiche}` : ''}`;
                   
                   const seoTasks = [
                     { 
@@ -2620,6 +2782,35 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
 
                   return (
                     <>
+                      {/* Niche Detection Banner */}
+                      <div className="mb-4 p-4 rounded-lg border bg-primary/5 border-primary/20">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Target className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-foreground text-sm">Nicho Detectado</p>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              <Badge variant="outline" className="text-xs bg-primary/10 border-primary/30">
+                                {channelNiche.niche}
+                              </Badge>
+                              <span className="text-muted-foreground">›</span>
+                              <Badge variant="outline" className="text-xs bg-secondary">
+                                {channelNiche.subNiche}
+                              </Badge>
+                              {channelNiche.microNiche && (
+                                <>
+                                  <span className="text-muted-foreground">›</span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {channelNiche.microNiche}
+                                  </Badge>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Health Score Banner */}
                       <div className={`mb-4 p-4 rounded-lg border ${
                         healthScore.score >= 75 ? 'bg-green-500/10 border-green-500/30' :
