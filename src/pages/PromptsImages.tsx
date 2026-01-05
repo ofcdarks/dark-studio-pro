@@ -324,7 +324,8 @@ const PromptsImages = () => {
           model,
           style,
           wordsPerScene: parseInt(wordsPerScene) || 80,
-          maxScenes: 500
+          maxScenes: 500,
+          wpm: currentWpm // Passar velocidade de narração para sincronização precisa
         },
       });
 
