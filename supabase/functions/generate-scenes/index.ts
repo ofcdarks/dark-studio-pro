@@ -138,6 +138,7 @@ async function generateBatchPrompts(
   scenesInBatch: number,
   style: string,
   characters: CharacterDescription[],
+  wpm: number,
   apiUrl: string,
   apiKey: string,
   apiModel: string
@@ -149,20 +150,45 @@ ${characters.map(c => `- ${c.name}: ${c.description}`).join('\n')}`
 
   const characterInstruction = characters.length > 0
     ? `
-5. Quando um personagem recorrente aparecer, use sua descrição EXATA no prompt
-6. Adicione "characterName" com o nome do personagem principal da cena (ou null se não houver)`
+- Quando um personagem recorrente aparecer, use sua descrição EXATA no prompt
+- Adicione "characterName" com o nome do personagem principal da cena (ou null se não houver)`
     : '';
 
-  const systemPrompt = `Você é um especialista em produção audiovisual. Analise o texto e divida em ${scenesInBatch} cenas, gerando prompts de imagem para cada.${characterContext}
+  const systemPrompt = `Você é um DIRETOR DE PRODUÇÃO AUDIOVISUAL com 40 anos de experiência em sincronização de vídeos narrados. Sua especialidade é fazer imagens "casarem" perfeitamente com a narração falada.
 
-Regras:
-1. Divida em EXATAMENTE ${scenesInBatch} cenas (ou menos se o texto for curto)
-2. Prompts de imagem CONCISOS em INGLÊS (40-60 palavras)
-3. Inclua: composição visual, elementos, iluminação, estilo ${style}
-4. Numere as cenas a partir de ${startSceneNumber}${characterInstruction}
+CONTEXTO TÉCNICO:
+- Velocidade de narração: ${wpm} palavras por minuto
+- Cada palavra leva aproximadamente ${(60/wpm).toFixed(2)} segundos para ser falada
+- O objetivo é que CADA IMAGEM apareça exatamente no momento em que aquele trecho está sendo narrado
+${characterContext}
 
-Retorne APENAS JSON:
-{"scenes":[{"number":${startSceneNumber},"text":"resumo curto","imagePrompt":"english prompt with exact character description if applicable","wordCount":100${characters.length > 0 ? ',"characterName":"Nome ou null"' : ''}}]}`;
+SUA MISSÃO:
+Analise este trecho de roteiro e divida em aproximadamente ${scenesInBatch} CORTES VISUAIS, identificando:
+
+1. **TRANSIÇÕES NARRATIVAS NATURAIS**: Onde o assunto muda, onde há uma pausa dramática, onde a cena mental do espectador precisa mudar
+
+2. **SINCRONIZAÇÃO FALA-IMAGEM**: A imagem deve ilustrar EXATAMENTE o que está sendo dito naquele momento. Se o narrador fala "imagine uma praia deserta", a imagem deve aparecer NESSE EXATO SEGUNDO
+
+3. **RITMO VISUAL**: Cenas muito longas entediam. Cenas muito curtas confundem. O ideal é entre 3-8 segundos por cena (${Math.round(wpm * 0.05)}-${Math.round(wpm * 0.13)} palavras)
+
+4. **WORDCOUNT PRECISO**: Conte EXATAMENTE quantas palavras estão no trecho de cada cena. Este número é CRÍTICO para o timecode
+
+REGRAS DE CORTE (experiência de 40 anos):
+- Corte quando o ASSUNTO muda (novo conceito, nova ideia)
+- Corte quando há TRANSIÇÃO EMOCIONAL (de problema para solução, de dúvida para certeza)
+- Corte em LISTAS (cada item = uma cena)
+- Corte em EXEMPLOS (cada exemplo visual = uma cena)
+- NÃO corte no meio de uma frase ou ideia incompleta
+- O "text" deve conter o TRECHO EXATO do roteiro (não resumo)${characterInstruction}
+
+FORMATO DO PROMPT DE IMAGEM:
+- Sempre em INGLÊS
+- 40-60 palavras
+- Inclua: composição, elementos visuais, iluminação, estilo ${style}
+- A imagem deve representar VISUALMENTE o que está sendo DITO naquele momento
+
+Retorne APENAS JSON (numere a partir de ${startSceneNumber}):
+{"scenes":[{"number":${startSceneNumber},"text":"TRECHO EXATO DO ROTEIRO DESTA CENA","imagePrompt":"detailed english prompt","wordCount":NÚMERO_EXATO_DE_PALAVRAS${characters.length > 0 ? ',"characterName":"Nome ou null"' : ''}}]}`;
 
   const response = await fetch(apiUrl, {
     method: "POST",
@@ -233,7 +259,8 @@ serve(async (req) => {
       model = "gpt-4o",
       style = "cinematic",
       wordsPerScene = 80,
-      maxScenes = 500
+      maxScenes = 500,
+      wpm = 140 // Palavras por minuto da narração
     } = body;
 
     if (!script) {
@@ -363,6 +390,7 @@ serve(async (req) => {
           scenesInBatch,
           style,
           characters,
+          wpm,
           apiUrl,
           apiKey,
           apiModel
