@@ -228,6 +228,7 @@ const PromptsImages = () => {
   const [loadingMessage, setLoadingMessage] = useState("");
   const [progress, setProgress] = useState(0);
   const [chunkProgress, setChunkProgress] = useState<{ current: number; total: number; scenesProcessed: number }>({ current: 0, total: 0, scenesProcessed: 0 });
+  const [sceneProgress, setSceneProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const [editingPromptIndex, setEditingPromptIndex] = useState<number | null>(null);
   const [editingPromptText, setEditingPromptText] = useState("");
   const [downloadingAll, setDownloadingAll] = useState(false);
@@ -359,6 +360,8 @@ const PromptsImages = () => {
     
     const wordCount = script.split(/\s+/).filter(Boolean).length;
     const wordsPerSceneNum = parseInt(wordsPerScene) || 80;
+    const estimatedTotalScenes = Math.ceil(wordCount / wordsPerSceneNum);
+    setSceneProgress({ done: 0, total: estimatedTotalScenes });
 
     // Para evitar timeouts quando há 100+ cenas, limitamos o tamanho por "cenas estimadas" e por palavras
     const MAX_ESTIMATED_SCENES_PER_CHUNK = 45; // ~4-5 batches (mais seguro)
@@ -407,38 +410,43 @@ const PromptsImages = () => {
         // Atualizar progresso de chunks
         setChunkProgress({ current: chunkIndex + 1, total: totalChunks, scenesProcessed: allScenes.length });
         
-        // Atualizar progresso
-        const baseProgress = 10 + (chunkIndex / totalChunks) * 70;
-        setProgress(Math.round(baseProgress));
-        setLoadingMessage(
-          totalChunks > 1 
-            ? `Gerando ~${estimatedScenesInChunk} cenas...`
-            : `Gerando ~${estimatedScenesInChunk} cenas...`
-        );
-        
-        // Simular progresso gradual dentro do chunk
+        const baseDone = allScenes.length;
         let simulatedPrompt = 0;
+
+        const updateSceneProgress = (done: number) => {
+          const total = Math.max(1, estimatedTotalScenes);
+          const clampedDone = Math.min(done, total);
+          setSceneProgress({ done: clampedDone, total });
+          const pct = 10 + (clampedDone / total) * 80;
+          setProgress(Math.min(90, Math.round(pct)));
+          setLoadingMessage(`Gerando cenas ${clampedDone}/${total}...`);
+        };
+
+        updateSceneProgress(baseDone);
+
         const progressInterval = setInterval(() => {
           if (simulatedPrompt < estimatedScenesInChunk) {
             simulatedPrompt++;
-            const chunkProgress = baseProgress + ((simulatedPrompt / estimatedScenesInChunk) * (70 / totalChunks));
-            setProgress(Math.min(85, Math.round(chunkProgress)));
+            updateSceneProgress(baseDone + simulatedPrompt);
           }
         }, 600);
-        
-        const response = await invokeGenerateScenesWithRetry({
-          script: chunk,
-          model,
-          style,
-          wordsPerScene: parseInt(wordsPerScene) || 80,
-          maxScenes: 500,
-          wpm: currentWpm,
-          // Passar contexto de personagens já detectados para consistência
-          existingCharacters: allCharacters.length > 0 ? allCharacters : undefined,
-          startSceneNumber: globalSceneNumber
-        });
 
-        clearInterval(progressInterval);
+        let response: any;
+        try {
+          response = await invokeGenerateScenesWithRetry({
+            script: chunk,
+            model,
+            style,
+            wordsPerScene: parseInt(wordsPerScene) || 80,
+            maxScenes: 500,
+            wpm: currentWpm,
+            // Passar contexto de personagens já detectados para consistência
+            existingCharacters: allCharacters.length > 0 ? allCharacters : undefined,
+            startSceneNumber: globalSceneNumber
+          });
+        } finally {
+          clearInterval(progressInterval);
+        }
 
         if (response.error) {
           throw new Error(response.error.message || `Erro na parte ${chunkIndex + 1}`);
@@ -464,6 +472,13 @@ const PromptsImages = () => {
         globalSceneNumber += scenes.length;
         allScenes = [...allScenes, ...adjustedScenes];
         setChunkProgress({ current: chunkIndex + 1, total: totalChunks, scenesProcessed: allScenes.length });
+        setSceneProgress(prev => ({ ...prev, done: Math.min(allScenes.length, Math.max(1, prev.total)) }));
+        setProgress(() => {
+          const total = Math.max(1, estimatedTotalScenes);
+          const clampedDone = Math.min(allScenes.length, total);
+          const pct = 10 + (clampedDone / total) * 80;
+          return Math.min(90, Math.round(pct));
+        });
         totalCreditsUsed += creditsUsed || 0;
         
         // Mesclar personagens únicos
@@ -485,6 +500,7 @@ const PromptsImages = () => {
       }
 
       setProgress(90);
+      setSceneProgress({ done: allScenes.length, total: allScenes.length });
       setLoadingMessage(`Finalizando ${allScenes.length} cenas...`);
 
       // Armazenar personagens detectados
@@ -2142,27 +2158,31 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
     estimatedDuration: calculateEstimatedTimeWithWpm(script.split(/\s+/).filter(Boolean).length, currentWpm)
   };
 
-  // Recalcular timecodes quando WPM muda
-  const recalculateTimecodes = () => {
-    if (generatedScenes.length === 0) return;
-    
+  const computeScenesWithWpm = (scenes: ScenePrompt[], wpm: number): ScenePrompt[] => {
     let cumulativeSeconds = 0;
-    const recalculatedScenes: ScenePrompt[] = generatedScenes.map((scene) => {
+
+    return scenes.map((scene) => {
       const startSeconds = cumulativeSeconds;
-      const durationSeconds = wordCountToSeconds(scene.wordCount);
+      const durationSeconds = (scene.wordCount / wpm) * 60;
       const endSeconds = startSeconds + durationSeconds;
       cumulativeSeconds = endSeconds;
 
       return {
         ...scene,
-        estimatedTime: calculateEstimatedTimeWithWpm(scene.wordCount, currentWpm),
+        estimatedTime: calculateEstimatedTimeWithWpm(scene.wordCount, wpm),
         timecode: formatTimecode(startSeconds),
         endTimecode: formatTimecode(endSeconds),
       };
     });
-    
-    setGeneratedScenes(recalculatedScenes);
-    setPersistedScenes(recalculatedScenes.map(({ generatedImage, generatingImage, ...rest }) => rest));
+  };
+
+  // Recalcular timecodes quando WPM muda
+  const recalculateTimecodes = () => {
+    if (generatedScenes.length === 0) return;
+
+    const recalculatedScenes = computeScenesWithWpm(generatedScenes, currentWpm);
+    updateScenes(recalculatedScenes);
+
     toast({ title: "Timecodes recalculados", description: `Usando ${currentWpm} palavras/minuto` });
   };
 
@@ -2202,24 +2222,9 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
     setAudioDurationInput("");
     
     // Recalcular timecodes com o novo WPM
-    let cumulativeSeconds = 0;
-    const recalculatedScenes: ScenePrompt[] = generatedScenes.map((scene) => {
-      const startSeconds = cumulativeSeconds;
-      const sceneDuration = (scene.wordCount / clampedWpm) * 60;
-      const endSeconds = startSeconds + sceneDuration;
-      cumulativeSeconds = endSeconds;
+    const recalculatedScenes = computeScenesWithWpm(generatedScenes, clampedWpm);
+    updateScenes(recalculatedScenes);
 
-      return {
-        ...scene,
-        estimatedTime: calculateEstimatedTimeWithWpm(scene.wordCount, clampedWpm),
-        timecode: formatTimecode(startSeconds),
-        endTimecode: formatTimecode(endSeconds),
-      };
-    });
-    
-    setGeneratedScenes(recalculatedScenes);
-    setPersistedScenes(recalculatedScenes.map(({ generatedImage, generatingImage, ...rest }) => rest));
-    
     toast({ 
       title: "✅ WPM calculado!", 
       description: `${totalWords} palavras em ${Math.floor(durationSeconds/60)}:${String(durationSeconds%60).padStart(2,'0')} = ${clampedWpm} WPM`
@@ -2643,7 +2648,13 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                       script={script}
                       wordsPerScene={parseInt(wordsPerScene) || 80}
                       wpm={currentWpm}
-                      onSyncAudio={generating ? undefined : (newWpm) => setNarrationSpeed(newWpm.toString())}
+                      onSyncAudio={generating ? undefined : (newWpm) => {
+                        setNarrationSpeed(newWpm.toString());
+                        if (generatedScenes.length > 0) {
+                          const recalculatedScenes = computeScenesWithWpm(generatedScenes, newWpm);
+                          updateScenes(recalculatedScenes);
+                        }
+                      }}
                       onImproveScenes={handleImproveScenes}
                       onGenerateMissingImages={(sceneNumbers) => {
                         // Marcar cenas como gerando e converter para índices 0-based
@@ -3734,7 +3745,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
             <div className="w-full space-y-2">
               <Progress value={progress} className="h-1.5 bg-secondary" />
               <p className="text-xs text-center text-muted-foreground">
-                {progress}%
+                {sceneProgress.total > 0 ? `${progress}% • ${sceneProgress.done}/${sceneProgress.total}` : `${progress}%`}
               </p>
             </div>
           </div>

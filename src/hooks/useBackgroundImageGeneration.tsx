@@ -231,32 +231,31 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
       if (cancelRef.current) break;
 
       try {
-        // Iniciar todas as 5 requisições em paralelo
-        const promises = batchIndexes.map(idx => generateSingleImage(idx, scenesRef.current, style, characters));
-        
-        // Processar resultados conforme vão chegando (exibição sequencial)
-        for (let i = 0; i < promises.length; i++) {
-          if (cancelRef.current) break;
-          
+        // Iniciar requisições em paralelo e atualizar conforme cada uma conclui
+        const tasks = batchIndexes.map(async (idx) => {
+          if (cancelRef.current || errorOccurred) return;
+
           try {
-            const result = await promises[i];
-            
+            const result = await generateSingleImage(idx, scenesRef.current, style, characters);
+
+            if (cancelRef.current || errorOccurred) return;
+
             if (result.success && result.imageUrl) {
               const { index, imageUrl } = result;
               processed++;
-              
+
               // Atualizar estado imediatamente quando cada imagem fica pronta
               setState(prev => {
                 const updatedScenes = [...prev.scenes];
                 updatedScenes[index] = { ...updatedScenes[index], generatedImage: imageUrl };
                 scenesRef.current = updatedScenes;
-                
+
                 return {
                   ...prev,
                   scenes: updatedScenes,
                   completedImages: processed,
                   currentSceneIndex: index,
-                  currentPrompt: prev.scenes[index]?.imagePrompt ?? null,
+                  currentPrompt: updatedScenes[index]?.imagePrompt ?? null,
                 };
               });
             } else {
@@ -266,7 +265,7 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
               if (result.rateLimited) {
                 rateLimitEncountered = true;
               }
-              
+
               setState(prev => ({
                 ...prev,
                 failedImages: failed,
@@ -275,18 +274,19 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
               }));
             }
           } catch (error: any) {
-            if (error.message === "AUTH_ERROR") {
+            if (error?.message === "AUTH_ERROR") {
               toast({
                 title: "Erro de autenticação",
                 description: "Atualize os cookies do ImageFX nas configurações.",
                 variant: "destructive",
               });
               errorOccurred = true;
-              break;
+              cancelRef.current = true;
             }
-            // Continuar com outras imagens do batch
           }
-        }
+        });
+
+        await Promise.allSettled(tasks);
       } catch (error: any) {
         if (error.message === "AUTH_ERROR") {
           toast({
@@ -295,6 +295,7 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
             variant: "destructive",
           });
           errorOccurred = true;
+          cancelRef.current = true;
         }
       }
     }
