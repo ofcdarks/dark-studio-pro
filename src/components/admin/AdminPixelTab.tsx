@@ -495,6 +495,172 @@ ${EMAIL_FOOTER}`
             </td>
           </tr>
 ${EMAIL_FOOTER}`
+  },
+  pending_approval: {
+    subject: "⏳ Cadastro Recebido - Aguardando Liberação",
+    body: `${EMAIL_HEADER}
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <!-- Pending Icon -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%); border: 2px solid #f59e0b; display: inline-flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 40px;">⏳</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #f59e0b; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
+                Cadastro Recebido!
+              </h2>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 8px 0; text-align: center;">
+                Olá, <strong style="color: #f59e0b;">{{name}}</strong>
+              </p>
+              
+              <p style="color: #737373; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0; text-align: center;">
+                Seu cadastro foi recebido com sucesso! Nossa equipe está analisando sua solicitação e em breve você receberá um email confirmando a liberação do seu acesso.
+              </p>
+              
+              <!-- Info Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 12px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 24px; text-align: center;">
+                    <p style="color: #f59e0b; font-size: 14px; font-weight: 600; margin: 0 0 12px 0;">📋 Próximos passos:</p>
+                    <p style="color: #a3a3a3; font-size: 14px; margin: 0;">
+                      1. Nossa equipe vai analisar seu cadastro<br>
+                      2. Você receberá um email de confirmação<br>
+                      3. Após aprovado, poderá acessar a plataforma
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #525252; font-size: 13px; line-height: 1.6; margin: 0; text-align: center;">
+                O tempo médio de análise é de até 24 horas úteis. Fique atento ao seu email!
+              </p>
+            </td>
+          </tr>
+${EMAIL_FOOTER}`
+  },
+  plan_start: {
+    subject: "🎉 Parabéns! Seu Plano {{plan_name}} foi Ativado!",
+    body: `${EMAIL_HEADER}
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <!-- Success Icon -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%); border: 2px solid #22c55e; display: inline-flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 40px;">🎉</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #22c55e; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
+                Plano Ativado com Sucesso!
+              </h2>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 24px 0; text-align: center;">
+                Olá, <strong style="color: #f59e0b;">{{name}}</strong>! Seu plano <strong style="color: #22c55e;">{{plan_name}}</strong> está ativo.
+              </p>
+              
+              <!-- Plan Details Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(20, 20, 20, 0.8); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <p style="color: #22c55e; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px 0;">Detalhes do Plano</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="color: #737373; font-size: 14px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">Plano</td>
+                        <td style="color: #22c55e; font-size: 14px; padding: 10px 0; text-align: right; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.05);">{{plan_name}}</td>
+                      </tr>
+                      <tr>
+                        <td style="color: #737373; font-size: 14px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">Créditos Mensais</td>
+                        <td style="color: #f59e0b; font-size: 14px; padding: 10px 0; text-align: right; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.05);">{{credits_amount}}</td>
+                      </tr>
+                      <tr>
+                        <td style="color: #737373; font-size: 14px; padding: 10px 0;">Valor</td>
+                        <td style="color: #d4d4d4; font-size: 14px; padding: 10px 0; text-align: right; font-weight: 600;">{{amount}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 0 0;">
+                <tr>
+                  <td align="center">
+                    <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);">
+                      Começar a Usar →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+${EMAIL_FOOTER}`
+  },
+  plan_renewal: {
+    subject: "🔄 Seu Plano {{plan_name}} foi Renovado!",
+    body: `${EMAIL_HEADER}
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <!-- Renewal Icon -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%); border: 2px solid #3b82f6; display: inline-flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 40px;">🔄</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #3b82f6; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
+                Plano Renovado!
+              </h2>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 24px 0; text-align: center;">
+                Olá, <strong style="color: #f59e0b;">{{name}}</strong>! Seu plano <strong style="color: #3b82f6;">{{plan_name}}</strong> foi renovado automaticamente.
+              </p>
+              
+              <!-- Renewal Details Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(20, 20, 20, 0.8); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="color: #737373; font-size: 14px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">Plano</td>
+                        <td style="color: #3b82f6; font-size: 14px; padding: 10px 0; text-align: right; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.05);">{{plan_name}}</td>
+                      </tr>
+                      <tr>
+                        <td style="color: #737373; font-size: 14px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">Valor Cobrado</td>
+                        <td style="color: #22c55e; font-size: 14px; padding: 10px 0; text-align: right; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.05);">{{amount}}</td>
+                      </tr>
+                      <tr>
+                        <td style="color: #737373; font-size: 14px; padding: 10px 0;">Próxima Renovação</td>
+                        <td style="color: #d4d4d4; font-size: 14px; padding: 10px 0; text-align: right; font-weight: 600;">{{date_end}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #525252; font-size: 13px; line-height: 1.6; margin: 0; text-align: center;">
+                Seus créditos mensais foram recarregados. Continue criando conteúdo incrível!
+              </p>
+            </td>
+          </tr>
+${EMAIL_FOOTER}`
   }
 };
 
@@ -520,6 +686,8 @@ export function AdminPixelTab() {
   const [savingSmtp, setSavingSmtp] = useState(false);
   const [emailLogoUrl, setEmailLogoUrl] = useState(DEFAULT_EMAIL_LOGO);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [sendingTemplate, setSendingTemplate] = useState<string | null>(null);
+  const [testEmailDestination, setTestEmailDestination] = useState("");
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -868,15 +1036,55 @@ export function AdminPixelTab() {
     fetchEmailTemplates();
   };
 
+  const sendTemplateTest = async (template: EmailTemplate) => {
+    const email = testEmailDestination.trim() || smtpEmail;
+    if (!email) {
+      toast.error("Configure um email de destino para o teste");
+      return;
+    }
+
+    setSendingTemplate(template.id);
+
+    try {
+      // Replace variables with sample data
+      const htmlBody = renderPreviewWithVariables(template.body);
+
+      const { data, error } = await supabase.functions.invoke("send-template-test", {
+        body: {
+          toEmail: email,
+          subject: template.subject.replace(/\{\{plan_name\}\}/g, "TURBO MAKER"),
+          htmlBody,
+        },
+      });
+
+      if (error) {
+        console.error("Send template error:", error);
+        toast.error(error.message || "Erro ao enviar template");
+      } else if (data?.success) {
+        toast.success(`Template "${getTemplateLabel(template.template_type)}" enviado para ${email}!`);
+      } else {
+        toast.error(data?.error || "Erro ao enviar template");
+      }
+    } catch (err: any) {
+      console.error("Send template error:", err);
+      toast.error(err.message || "Erro ao enviar template");
+    }
+
+    setSendingTemplate(null);
+  };
+
   const getTemplateLabel = (type: string) => {
     const labels: Record<string, string> = {
       welcome: "Bem-vindo (Registro)",
+      pending_approval: "Aguardando Liberação",
       access_approved: "Acesso Liberado (Aprovação)",
       password_recovery: "Recuperação de Senha",
       plan_cancellation: "Cancelamento de Plano",
       payment_confirmation: "Confirmação de Pagamento",
       credits_purchase: "Compra de Pacote de Créditos",
       blocked_password: "Senha Bloqueada",
+      plan_start: "Plano Ativado",
+      plan_renewal: "Plano Renovado",
     };
     return labels[type] || type;
   };
@@ -884,12 +1092,15 @@ export function AdminPixelTab() {
   const getTemplateIcon = (type: string) => {
     const icons: Record<string, string> = {
       welcome: "🚀",
+      pending_approval: "⏳",
       access_approved: "✅",
       password_recovery: "🔐",
       plan_cancellation: "📋",
       payment_confirmation: "💳",
       credits_purchase: "⚡",
       blocked_password: "🔒",
+      plan_start: "🎉",
+      plan_renewal: "🔄",
     };
     return icons[type] || "📧";
   };
@@ -1154,8 +1365,25 @@ export function AdminPixelTab() {
             Aplicar Tema La Casa Dark
           </Button>
         </div>
+        
+        {/* Test Email Destination */}
+        <div className="flex items-center gap-4 mb-4 p-4 bg-secondary/30 rounded-lg">
+          <div className="flex-1">
+            <label className="text-sm text-muted-foreground mb-2 block">Email de Destino para Testes</label>
+            <Input
+              placeholder="Deixe vazio para usar o email SMTP configurado"
+              value={testEmailDestination}
+              onChange={(e) => setTestEmailDestination(e.target.value)}
+              className="bg-secondary border-border"
+            />
+          </div>
+          <div className="text-xs text-muted-foreground mt-6">
+            📱 Envie para seu email e teste em dispositivos móveis
+          </div>
+        </div>
+
         <p className="text-sm text-muted-foreground mb-4">
-          Templates HTML premium com o tema La Casa Dark Core. Clique em "Preview" para visualizar.
+          Templates HTML premium com o tema La Casa Dark Core. Use o botão ✉️ para enviar e testar em dispositivos móveis.
         </p>
 
         <div className="space-y-3">
@@ -1170,6 +1398,23 @@ export function AdminPixelTab() {
                   <Badge variant="secondary">{getTemplateLabel(template.template_type)}</Badge>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      sendTemplateTest(template);
+                    }}
+                    disabled={sendingTemplate === template.id}
+                    title="Enviar template por email"
+                    className="text-primary hover:text-primary"
+                  >
+                    {sendingTemplate === template.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
                   <Button 
                     size="sm" 
                     variant="ghost"
