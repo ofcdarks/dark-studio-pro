@@ -271,6 +271,10 @@ const PromptsImages = () => {
   const [showSrtPreview, setShowSrtPreview] = useState(false);
   const [srtPreviewData, setSrtPreviewData] = useState<{ content: string; blocks: Array<{ index: number; start: string; end: string; text: string; charCount: number }> } | null>(null);
   
+  // EDL Validation Modal
+  const [showEdlValidationModal, setShowEdlValidationModal] = useState(false);
+  const [edlValidationData, setEdlValidationData] = useState<{ missingScenes: number[]; percentage: number; totalScenes: number; withImages: number } | null>(null);
+  
   // FFmpeg hook
   const { generateVideo, downloadVideo, isGenerating: isGeneratingVideo, progress: videoProgress } = useFFmpegVideoGenerator();
   
@@ -1534,32 +1538,53 @@ echo "Agora importe o video no CapCut!"
     });
   };
 
-  // Validar cenas antes de exportar EDL
-  const validateScenesForEdl = (scenes: ScenePrompt[]): { valid: boolean; warnings: string[]; errors: string[] } => {
+  // Validar cenas antes de exportar EDL - retorna também lista de cenas faltantes
+  const validateScenesForEdl = (scenes: ScenePrompt[]): { 
+    valid: boolean; 
+    warnings: string[]; 
+    errors: string[]; 
+    missingScenes: number[];
+    percentage: number;
+    totalScenes: number;
+    withImages: number;
+  } => {
     const warnings: string[] = [];
     const errors: string[] = [];
+    const missingScenes: number[] = [];
     
     // Verificar se há cenas com imagens
     const scenesWithImages = scenes.filter(s => s.generatedImage);
+    const totalScenes = scenes.length;
+    const withImages = scenesWithImages.length;
+    
     if (scenesWithImages.length === 0) {
       errors.push("Nenhuma cena possui imagem gerada");
-      return { valid: false, warnings, errors };
+      // Todas as cenas estão faltando
+      scenes.forEach(s => missingScenes.push(s.number));
+      return { valid: false, warnings, errors, missingScenes, percentage: 0, totalScenes, withImages };
     }
+    
+    // Identificar TODAS as cenas sem imagem
+    scenes.forEach(scene => {
+      if (!scene.generatedImage) {
+        missingScenes.push(scene.number);
+      }
+    });
     
     // Verificar numeração quebrada (ex: pula do 018 para 020)
     const sceneNumbers = scenesWithImages.map(s => s.number).sort((a, b) => a - b);
-    const missingNumbers: number[] = [];
+    const gapNumbers: number[] = [];
     for (let i = 0; i < sceneNumbers.length - 1; i++) {
       const current = sceneNumbers[i];
       const next = sceneNumbers[i + 1];
       for (let j = current + 1; j < next; j++) {
-        missingNumbers.push(j);
+        gapNumbers.push(j);
       }
     }
-    if (missingNumbers.length > 0) {
-      const missing = missingNumbers.length > 5 
-        ? `${missingNumbers.slice(0, 5).join(', ')}... (+${missingNumbers.length - 5} mais)`
-        : missingNumbers.join(', ');
+    if (gapNumbers.length > 0) {
+      const missing = gapNumbers.length > 5 
+        ? `${gapNumbers.slice(0, 5).join(', ')}... (+${gapNumbers.length - 5} mais)`
+        : gapNumbers.join(', ');
       warnings.push(`Numeração quebrada: cenas ${missing} não possuem imagem`);
     }
     
@@ -1573,42 +1598,17 @@ echo "Agora importe o video no CapCut!"
     }
     
     // Verificar % de cenas com imagem
-    const totalScenes = scenes.length;
-    const withImages = scenesWithImages.length;
     const percentage = Math.round((withImages / totalScenes) * 100);
     if (percentage < 100) {
       warnings.push(`Apenas ${percentage}% das cenas (${withImages}/${totalScenes}) possuem imagem`);
     }
     
-    return { valid: true, warnings, errors };
+    return { valid: true, warnings, errors, missingScenes, percentage, totalScenes, withImages };
   };
 
-  // Exportar EDL para DaVinci Resolve
-  const handleExportEdl = () => {
+  // Função para executar a exportação EDL de fato
+  const executeEdlExport = () => {
     const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
-    
-    // Validação
-    const validation = validateScenesForEdl(generatedScenes);
-    
-    if (!validation.valid) {
-      toast({ 
-        title: "❌ Não é possível exportar", 
-        description: validation.errors.join(". "),
-        variant: "destructive" 
-      });
-      return;
-    }
-    
-    // Mostrar warnings se houver
-    if (validation.warnings.length > 0) {
-      toast({ 
-        title: "⚠️ Atenção", 
-        description: validation.warnings.join(" | "),
-        variant: "default",
-        duration: 6000
-      });
-    }
-
     const scenesForEdl = getScenesForEdl();
     const fpsValue = parseInt(edlFps) || 24;
     const transitionFrames = Math.round(fpsValue * 0.5);
@@ -1633,6 +1633,65 @@ echo "Agora importe o video no CapCut!"
       title: "✅ EDL exportado!", 
       description: `${scenesWithImages.length} cenas incluídas. Importe no DaVinci: File > Import > Timeline...` 
     });
+    
+    setShowEdlValidationModal(false);
+  };
+
+  // Handler para gerar imagens faltantes do modal de validação EDL
+  const handleGenerateMissingFromEdlModal = () => {
+    if (!edlValidationData || edlValidationData.missingScenes.length === 0) return;
+    
+    const pendingIndexes = edlValidationData.missingScenes.map(num => num - 1);
+    const updatedScenes = generatedScenes.map((scene, idx) => {
+      if (pendingIndexes.includes(idx)) {
+        return { ...scene, generatingImage: true, generatedImage: undefined };
+      }
+      return scene;
+    });
+    setGeneratedScenes(updatedScenes);
+    
+    // Sincronizar e iniciar geração em background
+    syncScenes(updatedScenes);
+    startBgGeneration(updatedScenes, style, pendingIndexes, detectedCharacters);
+    
+    logActivity({ action: 'image_generated', description: `Gerando ${edlValidationData.missingScenes.length} imagens faltantes do modal EDL` });
+    
+    setShowEdlValidationModal(false);
+    
+    toast({
+      title: "🎨 Gerando imagens faltantes",
+      description: `${edlValidationData.missingScenes.length} cenas serão processadas em segundo plano`,
+    });
+  };
+
+  // Exportar EDL para DaVinci Resolve - agora abre modal se houver cenas faltantes
+  const handleExportEdl = () => {
+    // Validação
+    const validation = validateScenesForEdl(generatedScenes);
+    
+    if (!validation.valid) {
+      toast({ 
+        title: "❌ Não é possível exportar", 
+        description: validation.errors.join(". "),
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    // Se houver cenas faltantes, mostrar modal de confirmação
+    if (validation.missingScenes.length > 0) {
+      setEdlValidationData({
+        missingScenes: validation.missingScenes,
+        percentage: validation.percentage,
+        totalScenes: validation.totalScenes,
+        withImages: validation.withImages
+      });
+      setShowEdlValidationModal(true);
+      return;
+    }
+    
+    // Se 100% das cenas têm imagem, exportar direto
+    executeEdlExport();
   };
 
   // Exportar Tutorial EDL
@@ -4920,6 +4979,108 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   <Download className="w-4 h-4 mr-2" />
                   Baixar SRT
                 </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Validação EDL - Cenas Faltantes */}
+      <Dialog open={showEdlValidationModal} onOpenChange={setShowEdlValidationModal}>
+        <DialogContent className="max-w-lg max-h-[85vh] bg-card border-amber-500/30 rounded-xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Film className="w-5 h-5 text-amber-500" />
+              Validação do EDL
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Algumas cenas não possuem imagem gerada
+            </DialogDescription>
+          </DialogHeader>
+          
+          {edlValidationData && (
+            <div className="space-y-4">
+              {/* Estatísticas */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-green-500">{edlValidationData.withImages}</p>
+                  <p className="text-xs text-muted-foreground">Com Imagem</p>
+                </div>
+                <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-red-500">{edlValidationData.missingScenes.length}</p>
+                  <p className="text-xs text-muted-foreground">Sem Imagem</p>
+                </div>
+                <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                  <p className={cn(
+                    "text-2xl font-bold",
+                    edlValidationData.percentage >= 80 ? "text-amber-500" : "text-red-500"
+                  )}>
+                    {edlValidationData.percentage}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">Cobertura</p>
+                </div>
+              </div>
+
+              {/* Alerta visual */}
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <ImagePlus className="w-5 h-5 text-amber-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-500">
+                      {edlValidationData.missingScenes.length} cena{edlValidationData.missingScenes.length > 1 ? 's' : ''} sem imagem
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      O EDL incluirá apenas as cenas que possuem imagem. Cenas faltantes criarão gaps na timeline do DaVinci.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lista de cenas faltantes */}
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">Cenas sem imagem:</p>
+                <ScrollArea className="max-h-32">
+                  <div className="flex flex-wrap gap-1.5">
+                    {edlValidationData.missingScenes.map((sceneNum) => (
+                      <Badge 
+                        key={sceneNum} 
+                        variant="outline" 
+                        className="text-xs font-mono bg-red-500/10 border-red-500/30 text-red-400"
+                      >
+                        #{String(sceneNum).padStart(3, '0')}
+                      </Badge>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+
+              {/* Botões de ação */}
+              <div className="flex flex-col gap-2 pt-2">
+                <Button
+                  onClick={handleGenerateMissingFromEdlModal}
+                  disabled={bgState.isGenerating}
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-90"
+                >
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Gerar {edlValidationData.missingScenes.length} Imagens Faltantes
+                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowEdlValidationModal(false)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={executeEdlExport}
+                    className="flex-1 border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Exportar Mesmo Assim
+                  </Button>
+                </div>
               </div>
             </div>
           )}
