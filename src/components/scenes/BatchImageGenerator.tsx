@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Sparkles, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save } from "lucide-react";
+import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Sparkles, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES, getStylesByCategory } from "@/lib/thumbnailStyles";
@@ -21,6 +21,7 @@ interface GeneratedImage {
   imageUrl: string | null;
   status: "pending" | "generating" | "success" | "error";
   error?: string;
+  wasRewritten?: boolean;
 }
 
 interface BatchHistory {
@@ -312,7 +313,7 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
         if (result.success && result.imageUrl) {
           successCount++;
           setImages(prev => prev.map((img, i) => 
-            i === result.index ? { ...img, status: "success", imageUrl: result.imageUrl } : img
+            i === result.index ? { ...img, status: "success", imageUrl: result.imageUrl, wasRewritten: result.wasRewritten } : img
           ));
         } else {
           setImages(prev => prev.map((img, i) => 
@@ -354,12 +355,17 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
 
       // Handle both response formats
       const imageUrl = data.imageUrl || data.images?.[0]?.url;
+      const wasRewritten = data.images?.[0]?.wasRewritten || false;
       
       if (data.success && imageUrl) {
         setImages(prev => prev.map(img => 
-          img.id === imageId ? { ...img, status: "success", imageUrl } : img
+          img.id === imageId ? { ...img, status: "success", imageUrl, wasRewritten } : img
         ));
-        toast.success("Imagem regenerada!");
+        if (wasRewritten) {
+          toast.success("Imagem regenerada com prompt adaptado!");
+        } else {
+          toast.success("Imagem regenerada!");
+        }
       } else {
         throw new Error(data.error || "Falha ao gerar imagem");
       }
@@ -623,8 +629,16 @@ Um carro esportivo na montanha`}
                       )}
 
                       {/* Number Badge */}
-                      <div className="absolute top-1 left-1 bg-background/80 backdrop-blur-sm rounded px-1.5 py-0.5">
-                        <span className="text-xs font-medium">{index + 1}</span>
+                      <div className="absolute top-1 left-1 flex items-center gap-1">
+                        <div className="bg-background/80 backdrop-blur-sm rounded px-1.5 py-0.5">
+                          <span className="text-xs font-medium">{index + 1}</span>
+                        </div>
+                        {image.wasRewritten && (
+                          <div className="bg-amber-500/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-1">
+                            <Wand2 className="w-2.5 h-2.5 text-white" />
+                            <span className="text-[10px] font-medium text-white">Adaptado</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Action Buttons */}
