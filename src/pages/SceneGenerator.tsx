@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Film, Copy, Check, Image, Images, Download, ArrowRight } from "lucide-react";
+import { Loader2, Film, Copy, Check, Image, Images, Download, ArrowRight, Upload, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePersistedState } from "@/hooks/usePersistedState";
@@ -57,6 +57,36 @@ const SceneGenerator = () => {
   // Non-persisted states
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle TXT file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.txt')) {
+      toast.error("Por favor, selecione um arquivo .txt");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (content) {
+        setScript(content);
+        toast.success(`Arquivo "${file.name}" carregado com sucesso!`);
+      }
+    };
+    reader.onerror = () => {
+      toast.error("Erro ao ler o arquivo");
+    };
+    reader.readAsText(file);
+    
+    // Reset input to allow re-uploading same file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   // Calculate estimated scenes based on word count
   const wordCount = useMemo(() => {
@@ -254,10 +284,32 @@ const SceneGenerator = () => {
                       )}
 
                       <div>
-                        <Label htmlFor="script">Roteiro Completo</Label>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="script">Roteiro Completo</Label>
+                          <div className="flex gap-2">
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept=".txt"
+                              onChange={handleFileUpload}
+                              className="hidden"
+                              id="script-file-upload"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="h-7 text-xs"
+                            >
+                              <Upload className="w-3 h-3 mr-1" />
+                              Carregar TXT
+                            </Button>
+                          </div>
+                        </div>
                         <Textarea
                           id="script"
-                          placeholder="Cole seu roteiro aqui..."
+                          placeholder="Cole seu roteiro aqui ou carregue um arquivo .txt..."
                           value={script}
                           onChange={(e) => setScript(e.target.value)}
                           className="mt-1 min-h-64"
