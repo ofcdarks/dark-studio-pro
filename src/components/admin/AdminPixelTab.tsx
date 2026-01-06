@@ -612,17 +612,30 @@ export function AdminPixelTab() {
     setUploadingLogo(true);
 
     try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user) {
+        throw new Error("Você precisa estar logado para fazer upload do logo");
+      }
+
+      const userId = userData.user.id;
+
       // Get file extension
-      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'png';
-      const fileName = `logo-email.${fileExt}`;
-      
-      // Delete existing logos (try all extensions)
-      await supabase.storage.from("avatars").remove(["logo-email.png", "logo-email.gif", "logo-email.jpg", "logo-email.jpeg", "logo-email.webp"]);
+      const fileExt = file.name.split(".").pop()?.toLowerCase() || "png";
+      const filePath = `${userId}/logo-email.${fileExt}`;
+
+      // Delete existing logos (same user folder)
+      await supabase.storage.from("avatars").remove([
+        `${userId}/logo-email.png`,
+        `${userId}/logo-email.gif`,
+        `${userId}/logo-email.jpg`,
+        `${userId}/logo-email.jpeg`,
+        `${userId}/logo-email.webp`,
+      ]);
 
       // Upload new logo
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(fileName, file, {
+        .upload(filePath, file, {
           cacheControl: "3600",
           upsert: true,
         });
@@ -632,7 +645,7 @@ export function AdminPixelTab() {
       // Get public URL
       const { data: urlData } = supabase.storage
         .from("avatars")
-        .getPublicUrl(fileName);
+        .getPublicUrl(filePath);
 
       const newLogoUrl = urlData.publicUrl + `?t=${Date.now()}`;
       setEmailLogoUrl(newLogoUrl);
