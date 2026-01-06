@@ -905,6 +905,138 @@ ${config.references.map(r => `   • ${r}`).join('\n')}
 };
 
 /**
+ * Gera instruções de efeitos cinematográficos (independente de Color Grading)
+ * Usado quando há efeitos selecionados mas colorGrading é neutro
+ */
+export const generateCinematicEffectsInstructions = (settings: CinematicSettings): string | null => {
+  // Só gerar se houver algum efeito ativo
+  const hasEffects = settings.addVignette || settings.letterbox || settings.fadeInOut || settings.kenBurnsEffect;
+  if (!hasEffects) return null;
+  
+  let instructions = `
+╔══════════════════════════════════════════════════════════════════════════════╗
+║               INSTRUÇÕES DE EFEITOS CINEMATOGRÁFICOS - DAVINCI RESOLVE        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📋 CONFIGURAÇÕES DO PROJETO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  🎬 FPS:           ${settings.fps}
+  📐 Aspect Ratio:  ${settings.aspectRatio}
+  🔄 Transição:     ${TRANSITION_OPTIONS.find(t => t.id === settings.transitionType)?.name} (${settings.transitionDuration}s)
+  
+  Efeitos Selecionados:
+  ${settings.fadeInOut ? '  ✅ Fade In/Out' : '  ⬜ Fade In/Out'}
+  ${settings.kenBurnsEffect ? '  ✅ Ken Burns Effect (keyframes automáticos via XML!)' : '  ⬜ Ken Burns Effect'}
+  ${settings.addVignette ? '  ✅ Vignette (Vinheta)' : '  ⬜ Vignette'}
+  ${settings.letterbox ? '  ✅ Letterbox (Barras Cinema)' : '  ⬜ Letterbox'}
+
+═══════════════════════════════════════════════════════════════════════════════
+                         COMO APLICAR OS EFEITOS
+═══════════════════════════════════════════════════════════════════════════════
+`;
+
+  if (settings.addVignette) {
+    instructions += `
+🔲 VIGNETTE (Vinheta):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   1. Vá para a aba "Color" (ícone de pincel colorido)
+   2. Crie um novo node (Alt+S) para a vinheta
+   3. Vá para "Window" → "Vignette"
+   4. Configurações recomendadas:
+      • Inner Radius: 0.75
+      • Outer Radius: 0.95
+      • Roundness: 0.7
+      • Soft Edge: 0.8
+   5. Reduza o Gain Master desse node para 0.85
+   
+   💡 DICA: Aplique a vinheta em TODOS os clips selecionando-os juntos
+
+`;
+  }
+
+  if (settings.kenBurnsEffect) {
+    instructions += `
+📷 KEN BURNS EFFECT (Movimento de Câmera):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ✅ KEYFRAMES JÁ INCLUÍDOS NO XML!
+   
+   A IA analisou cada cena e aplicou movimentos automáticos:
+   • Zoom In/Out baseado no conteúdo emocional
+   • Pan Left/Right para cenas com movimento
+   • Intensidades variadas (subtle, normal, dramatic)
+   
+   Consulte o arquivo KEN_BURNS_MOVIMENTOS.txt para detalhes de cada cena.
+   
+   Para ajustar manualmente:
+   1. Na aba "Edit", selecione o clip
+   2. Vá para "Inspector" → "Transform"
+   3. Modifique os keyframes existentes conforme necessário
+
+`;
+  }
+
+  if (settings.letterbox) {
+    instructions += `
+🎬 LETTERBOX (Barras Cinematográficas):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Método 1 - Blanking Fill (Recomendado):
+   1. Em "Effects Library" → "Open FX" → busque "Blanking Fill"
+   2. Arraste para a timeline sobre todos os clips
+   3. Ajuste o aspect ratio para ${settings.aspectRatio}
+   
+   Método 2 - Manual:
+   1. Adicione um "Solid Color" preto em uma track acima
+   2. Faça crop para criar as barras
+   3. Tamanhos para ${settings.aspectRatio} em 1080p:
+      ${settings.aspectRatio === '2.35:1' ? '• Barras de 132px em cima e embaixo' : ''}
+      ${settings.aspectRatio === '2.39:1' ? '• Barras de 138px em cima e embaixo' : ''}
+      ${settings.aspectRatio === '1.85:1' ? '• Barras de 21px em cima e embaixo' : ''}
+      ${settings.aspectRatio === '16:9' ? '• Sem barras necessárias (nativo)' : ''}
+
+`;
+  }
+
+  if (settings.fadeInOut) {
+    instructions += `
+🌅 FADE IN/OUT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Fade In (Início do vídeo):
+   1. Selecione o PRIMEIRO clip da timeline
+   2. Clique direito → "Add Transition" → "Cross Dissolve"
+   3. Posicione a transição no INÍCIO do clip
+   4. Ajuste duração para 1-2 segundos
+   
+   Fade Out (Final do vídeo):
+   1. Selecione o ÚLTIMO clip da timeline
+   2. Clique direito → "Add Transition" → "Cross Dissolve"
+   3. Posicione a transição no FINAL do clip
+   4. Ajuste duração para 1-2 segundos
+   
+   💡 ALTERNATIVA: Use "Dip to Color Dissolve" (preto) para efeito mais dramático
+
+`;
+  }
+
+  instructions += `
+═══════════════════════════════════════════════════════════════════════════════
+                            ORDEM DE APLICAÇÃO
+═══════════════════════════════════════════════════════════════════════════════
+
+   1. ✅ Importe o XML e reconecte as mídias
+   2. ✅ Aplique os fades de entrada/saída
+   3. ✅ Adicione letterbox (se desejado)
+   4. ✅ Na aba Color, aplique a vinheta em um node dedicado
+   5. ✅ Ajuste keyframes de Ken Burns se necessário
+   6. ✅ Exporte em H.264 para YouTube (15-25 Mbps)
+
+Gerado automaticamente por Viral Video AI
+`;
+
+  return instructions;
+};
+
+/**
  * FPS options
  */
 export type FpsOption = 24 | 25 | 30 | 60;

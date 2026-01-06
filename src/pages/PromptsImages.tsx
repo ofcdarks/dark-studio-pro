@@ -21,6 +21,7 @@ import {
   CinematicSettings,
   DEFAULT_CINEMATIC_SETTINGS,
   generateColorGradingInstructions,
+  generateCinematicEffectsInstructions,
   generateKenBurnsReport,
   KEN_BURNS_OPTIONS,
   KenBurnsMotionType
@@ -1678,15 +1679,34 @@ echo "Agora importe o video no CapCut!"
         document.body.removeChild(colorLink);
         URL.revokeObjectURL(colorUrl);
       }, 300);
+    } else {
+      // Se colorGrading é neutro mas há efeitos, exportar instruções de efeitos
+      const effectsInstructions = generateCinematicEffectsInstructions(cinematicSettings);
+      if (effectsInstructions) {
+        setTimeout(() => {
+          const effectsBlob = new Blob([effectsInstructions], { type: "text/plain" });
+          const effectsUrl = URL.createObjectURL(effectsBlob);
+          const effectsLink = document.createElement("a");
+          effectsLink.href = effectsUrl;
+          effectsLink.download = `${safeFileName}_EFEITOS_CINEMATOGRAFICOS.txt`;
+          document.body.appendChild(effectsLink);
+          effectsLink.click();
+          document.body.removeChild(effectsLink);
+          URL.revokeObjectURL(effectsUrl);
+        }, 300);
+      }
     }
 
     const transitionName = TRANSITION_OPTIONS.find(t => t.id === cinematicSettings.transitionType)?.name || 'Cross Dissolve';
     const colorGradingName = COLOR_GRADING_OPTIONS.find(c => c.id === cinematicSettings.colorGrading)?.name || 'Neutro';
+    const hasEffects = cinematicSettings.addVignette || cinematicSettings.letterbox || cinematicSettings.fadeInOut || cinematicSettings.kenBurnsEffect;
     toast({ 
       title: "✅ Pacote Cinematográfico exportado!", 
       description: cinematicSettings.colorGrading !== 'neutral' 
         ? `XML + Instruções de ${colorGradingName} • ${scenesWithImages.length} cenas • ${aspectRatioConfig.name}`
-        : `${scenesWithImages.length} cenas • ${aspectRatioConfig.name} • ${cinematicSettings.fps}fps • ${transitionName}` 
+        : hasEffects 
+          ? `XML + Instruções de Efeitos • ${scenesWithImages.length} cenas • ${aspectRatioConfig.name}`
+          : `${scenesWithImages.length} cenas • ${aspectRatioConfig.name} • ${cinematicSettings.fps}fps • ${transitionName}` 
     });
     
     setShowEdlValidationModal(false);
@@ -1730,10 +1750,16 @@ echo "Agora importe o video no CapCut!"
     const tutorialContent = generateXmlTutorial(scenesForXml, projectName || "Meu Projeto");
     zip.file(`${safeFileName}_TUTORIAL_DAVINCI.txt`, tutorialContent);
     
-    // 3. Instruções de Color Grading (se não for neutro)
+    // 3. Instruções de Color Grading (se não for neutro) ou Efeitos Cinematográficos
     if (cinematicSettings.colorGrading !== 'neutral') {
       const colorGradingContent = generateColorGradingInstructions(cinematicSettings.colorGrading, cinematicSettings);
       zip.file(`${safeFileName}_COLOR_GRADING_${cinematicSettings.colorGrading.toUpperCase()}.txt`, colorGradingContent);
+    } else {
+      // Se colorGrading é neutro mas há efeitos, exportar instruções de efeitos
+      const effectsInstructions = generateCinematicEffectsInstructions(cinematicSettings);
+      if (effectsInstructions) {
+        zip.file(`${safeFileName}_EFEITOS_CINEMATOGRAFICOS.txt`, effectsInstructions);
+      }
     }
     
     // 4. Pasta de imagens renomeadas
@@ -1789,7 +1815,8 @@ echo "Agora importe o video no CapCut!"
 
   ${cinematicSettings.kenBurnsEffect ? `🎬 ${safeFileName}_KEN_BURNS_MOVIMENTOS.txt
      → Relatório detalhado de movimentos de câmera por cena (gerado por IA)\n` : ''}${cinematicSettings.colorGrading !== 'neutral' ? `🎨 ${safeFileName}_COLOR_GRADING_${cinematicSettings.colorGrading.toUpperCase()}.txt
-     → Instruções detalhadas de color grading com valores exatos\n` : ''}
+     → Instruções detalhadas de color grading com valores exatos\n` : cinematicSettings.addVignette || cinematicSettings.letterbox || cinematicSettings.fadeInOut ? `✨ ${safeFileName}_EFEITOS_CINEMATOGRAFICOS.txt
+     → Instruções para aplicar vinheta, letterbox e fades no DaVinci\n` : ''}
   📁 imagens/
      → ${scenesWithImages.length} imagens já renomeadas (cena_001.jpg, cena_002.jpg...)
 
