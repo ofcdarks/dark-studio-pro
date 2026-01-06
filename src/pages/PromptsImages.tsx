@@ -1534,17 +1534,79 @@ echo "Agora importe o video no CapCut!"
     });
   };
 
+  // Validar cenas antes de exportar EDL
+  const validateScenesForEdl = (scenes: ScenePrompt[]): { valid: boolean; warnings: string[]; errors: string[] } => {
+    const warnings: string[] = [];
+    const errors: string[] = [];
+    
+    // Verificar se há cenas com imagens
+    const scenesWithImages = scenes.filter(s => s.generatedImage);
+    if (scenesWithImages.length === 0) {
+      errors.push("Nenhuma cena possui imagem gerada");
+      return { valid: false, warnings, errors };
+    }
+    
+    // Verificar numeração quebrada (ex: pula do 018 para 020)
+    const sceneNumbers = scenesWithImages.map(s => s.number).sort((a, b) => a - b);
+    const missingNumbers: number[] = [];
+    for (let i = 0; i < sceneNumbers.length - 1; i++) {
+      const current = sceneNumbers[i];
+      const next = sceneNumbers[i + 1];
+      for (let j = current + 1; j < next; j++) {
+        missingNumbers.push(j);
+      }
+    }
+    if (missingNumbers.length > 0) {
+      const missing = missingNumbers.length > 5 
+        ? `${missingNumbers.slice(0, 5).join(', ')}... (+${missingNumbers.length - 5} mais)`
+        : missingNumbers.join(', ');
+      warnings.push(`Numeração quebrada: cenas ${missing} não possuem imagem`);
+    }
+    
+    // Verificar se a numeração começa do 1
+    if (sceneNumbers.length > 0 && sceneNumbers[0] > 1) {
+      const firstMissing = Array.from({ length: sceneNumbers[0] - 1 }, (_, i) => i + 1);
+      const missing = firstMissing.length > 3
+        ? `${firstMissing.slice(0, 3).join(', ')}...`
+        : firstMissing.join(', ');
+      warnings.push(`Cenas iniciais ${missing} não possuem imagem`);
+    }
+    
+    // Verificar % de cenas com imagem
+    const totalScenes = scenes.length;
+    const withImages = scenesWithImages.length;
+    const percentage = Math.round((withImages / totalScenes) * 100);
+    if (percentage < 100) {
+      warnings.push(`Apenas ${percentage}% das cenas (${withImages}/${totalScenes}) possuem imagem`);
+    }
+    
+    return { valid: true, warnings, errors };
+  };
+
   // Exportar EDL para DaVinci Resolve
   const handleExportEdl = () => {
     const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
     
-    if (scenesWithImages.length === 0) {
+    // Validação
+    const validation = validateScenesForEdl(generatedScenes);
+    
+    if (!validation.valid) {
       toast({ 
-        title: "Nenhuma imagem disponível", 
-        description: "Gere as imagens primeiro antes de exportar o EDL.",
+        title: "❌ Não é possível exportar", 
+        description: validation.errors.join(". "),
         variant: "destructive" 
       });
       return;
+    }
+    
+    // Mostrar warnings se houver
+    if (validation.warnings.length > 0) {
+      toast({ 
+        title: "⚠️ Atenção", 
+        description: validation.warnings.join(" | "),
+        variant: "default",
+        duration: 6000
+      });
     }
 
     const scenesForEdl = getScenesForEdl();
@@ -1569,7 +1631,7 @@ echo "Agora importe o video no CapCut!"
 
     toast({ 
       title: "✅ EDL exportado!", 
-      description: "Importe no DaVinci Resolve: File > Import > Timeline > Import AAF, EDL, XML..." 
+      description: `${scenesWithImages.length} cenas incluídas. Importe no DaVinci: File > Import > Timeline...` 
     });
   };
 
