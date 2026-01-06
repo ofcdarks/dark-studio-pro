@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Film, Copy, Check, Image, Images, Download, ArrowRight, Upload, FileText, Sparkles, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { addBrandingFooter } from "@/lib/utils";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
 import BatchImageGenerator from "@/components/scenes/BatchImageGenerator";
@@ -240,7 +241,7 @@ const SceneGenerator = () => {
   };
 
   const downloadTxt = () => {
-    const content = scenes.map(s => s.imagePrompt).join("\n\n");
+    const content = addBrandingFooter(scenes.map(s => s.imagePrompt).join("\n\n"));
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

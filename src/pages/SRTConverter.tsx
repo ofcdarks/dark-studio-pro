@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Subtitles, Scissors, Play, Split, Clock, History, Trash2, Copy, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
+import { addBrandingFooter } from "@/lib/utils";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
 import { generateNarrationSrt, countSrtBlocks } from "@/lib/srtGenerator";
@@ -265,7 +266,7 @@ const SRTConverter = () => {
       toast.error('Nenhum conteúdo para baixar');
       return;
     }
-    const blob = new Blob([divisorOutputText], { type: 'text/plain' });
+    const blob = new Blob([addBrandingFooter(divisorOutputText)], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

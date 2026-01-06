@@ -17,6 +17,7 @@ import { generateNarrationSrt } from "@/lib/srtGenerator";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { toast } from "sonner";
+import { addBrandingFooter } from "@/lib/utils";
 
 const AI_MODELS = [
   { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", description: "Rápido e inteligente" },
