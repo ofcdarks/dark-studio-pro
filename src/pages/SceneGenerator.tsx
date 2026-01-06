@@ -39,6 +39,7 @@ const WORDS_PER_SCENE_OPTIONS = [
   { value: "60", label: "60 palavras" },
   { value: "75", label: "75 palavras" },
   { value: "100", label: "100 palavras" },
+  { value: "custom", label: "Personalizado..." },
 ];
 
 const SceneGenerator = () => {
@@ -58,7 +59,34 @@ const SceneGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showCustomWps, setShowCustomWps] = useState(false);
+  const [customWps, setCustomWps] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if current value is custom
+  const isCustomValue = !WORDS_PER_SCENE_OPTIONS.some(opt => opt.value === wordsPerScene && opt.value !== "custom");
+
+  // Handle words per scene selection
+  const handleWordsPerSceneChange = (value: string) => {
+    if (value === "custom") {
+      setShowCustomWps(true);
+      setCustomWps(wordsPerScene === "custom" ? "" : wordsPerScene);
+    } else {
+      setWordsPerScene(value);
+      setShowCustomWps(false);
+    }
+  };
+
+  // Apply custom WPS
+  const applyCustomWps = () => {
+    const num = parseInt(customWps);
+    if (num >= 10 && num <= 500) {
+      setWordsPerScene(customWps);
+      setShowCustomWps(false);
+    } else {
+      toast.error("Digite um valor entre 10 e 500 palavras");
+    }
+  };
 
   // Handle TXT file - shared logic for upload and drop
   const processFile = (file: File) => {
@@ -287,18 +315,52 @@ const SceneGenerator = () => {
                         </div>
                         <div>
                           <Label>Palavras por Cena</Label>
-                          <Select value={wordsPerScene} onValueChange={setWordsPerScene}>
-                            <SelectTrigger className="mt-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {WORDS_PER_SCENE_OPTIONS.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          {showCustomWps ? (
+                            <div className="flex gap-2 mt-1">
+                              <Input
+                                type="number"
+                                min="10"
+                                max="500"
+                                placeholder="Ex: 45"
+                                value={customWps}
+                                onChange={(e) => setCustomWps(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") applyCustomWps();
+                                  if (e.key === "Escape") setShowCustomWps(false);
+                                }}
+                                className="flex-1"
+                                autoFocus
+                              />
+                              <Button size="sm" onClick={applyCustomWps}>
+                                OK
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => setShowCustomWps(false)}
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                          ) : (
+                            <Select 
+                              value={isCustomValue ? "custom" : wordsPerScene} 
+                              onValueChange={handleWordsPerSceneChange}
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue>
+                                  {isCustomValue ? `${wordsPerScene} palavras` : undefined}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {WORDS_PER_SCENE_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
                         </div>
                       </div>
 
