@@ -231,11 +231,19 @@ export const analyzeSceneForKenBurns = (
 
 /**
  * Aplica análise Ken Burns a todas as cenas
+ * Respeita movimentos já configurados manualmente
  */
 export const applyKenBurnsToScenes = (scenes: SceneForXml[]): SceneForXml[] => {
   let previousMotion: KenBurnsMotionType | undefined;
   
   return scenes.map((scene, index) => {
+    // Se já tem Ken Burns configurado manualmente, manter
+    if (scene.kenBurnsMotion) {
+      previousMotion = scene.kenBurnsMotion.type;
+      return scene;
+    }
+    
+    // Caso contrário, analisar automaticamente
     const motion = analyzeSceneForKenBurns(scene.text, index, scenes.length, previousMotion);
     previousMotion = motion.type;
     
