@@ -4,9 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { HardDrive, Image, Database, Loader2, RefreshCw, Search } from "lucide-react";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { HardDrive, Image, Database, Loader2, RefreshCw, Search, FolderOpen, Trash2, FileImage, FileText, File } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface UserStorage {
   id: string;
@@ -15,6 +23,15 @@ interface UserStorage {
   whatsapp: string | null;
   storage_used: number | null;
   storage_limit: number | null;
+}
+
+interface UserFile {
+  id: string;
+  bucket_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string | null;
+  created_at: string;
 }
 
 export function AdminStorageTab() {
@@ -27,6 +44,13 @@ export function AdminStorageTab() {
     freeSpace: 0,
     imagesSize: 0,
   });
+
+  // Files modal state
+  const [filesModalOpen, setFilesModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserStorage | null>(null);
+  const [userFiles, setUserFiles] = useState<UserFile[]>([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStorageData();
@@ -122,6 +146,74 @@ export function AdminStorageTab() {
       toast.success("Limite atualizado!");
       fetchStorageData();
     }
+  };
+
+  const handleViewFiles = async (user: UserStorage) => {
+    setSelectedUser(user);
+    setFilesModalOpen(true);
+    setLoadingFiles(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from("user_file_uploads")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setUserFiles(data || []);
+    } catch (error) {
+      console.error("Error fetching user files:", error);
+      toast.error("Erro ao carregar arquivos");
+    } finally {
+      setLoadingFiles(false);
+    }
+  };
+
+  const handleDeleteFile = async (file: UserFile) => {
+    if (!selectedUser) return;
+    
+    setDeletingFileId(file.id);
+    try {
+      // Delete from storage bucket
+      await supabase.storage.from(file.bucket_name).remove([file.file_path]);
+
+      // Delete from tracking table
+      const { error } = await supabase
+        .from("user_file_uploads")
+        .delete()
+        .eq("id", file.id);
+
+      if (error) throw error;
+
+      setUserFiles(prev => prev.filter(f => f.id !== file.id));
+      toast.success("Arquivo excluído!");
+      fetchStorageData();
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast.error("Erro ao excluir arquivo");
+    } finally {
+      setDeletingFileId(null);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  };
+
+  const getFileIcon = (fileType: string | null) => {
+    if (!fileType) return <File className="w-4 h-4 text-muted-foreground" />;
+    if (fileType.startsWith("image/")) return <FileImage className="w-4 h-4 text-primary" />;
+    if (fileType.includes("pdf") || fileType.includes("document")) return <FileText className="w-4 h-4 text-blue-400" />;
+    return <File className="w-4 h-4 text-muted-foreground" />;
+  };
+
+  const getFileName = (filePath: string) => {
+    const parts = filePath.split("/");
+    return parts[parts.length - 1];
   };
 
   return (
@@ -231,6 +323,14 @@ export function AdminStorageTab() {
                         <div className="flex gap-1">
                           <Button 
                             size="sm" 
+                            variant="ghost"
+                            className="text-primary"
+                            onClick={() => handleViewFiles(user)}
+                          >
+                            <FolderOpen className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
                             variant="outline"
                             onClick={() => handleResetStorage(user.id)}
                           >
@@ -256,6 +356,90 @@ export function AdminStorageTab() {
           </Table>
         )}
       </Card>
+
+      {/* Files Modal */}
+      <Dialog open={filesModalOpen} onOpenChange={setFilesModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderOpen className="w-5 h-5 text-primary" />
+              Arquivos de {selectedUser?.full_name || selectedUser?.email}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-auto">
+            {loadingFiles ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : userFiles.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <FolderOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Nenhum arquivo encontrado</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>{userFiles.length} arquivo(s)</span>
+                  <span>
+                    Total: {formatFileSize(userFiles.reduce((acc, f) => acc + f.file_size, 0))}
+                  </span>
+                </div>
+                
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ARQUIVO</TableHead>
+                      <TableHead>BUCKET</TableHead>
+                      <TableHead>TAMANHO</TableHead>
+                      <TableHead>DATA</TableHead>
+                      <TableHead>AÇÕES</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userFiles.map((file) => (
+                      <TableRow key={file.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getFileIcon(file.file_type)}
+                            <span className="truncate max-w-[200px]" title={file.file_path}>
+                              {getFileName(file.file_path)}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {file.bucket_name}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{formatFileSize(file.file_size)}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {format(new Date(file.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteFile(file)}
+                            disabled={deletingFileId === file.id}
+                          >
+                            {deletingFileId === file.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
