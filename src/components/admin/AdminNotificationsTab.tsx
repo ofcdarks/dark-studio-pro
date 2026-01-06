@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ interface FakeUser {
   type: "purchase" | "new_user";
 }
 
-export const AdminNotificationsTab = forwardRef<HTMLDivElement>((props, ref) => {
+export const AdminNotificationsTab = () => {
   const [purchaseEnabled, setPurchaseEnabled] = useState(true);
   const [newUserEnabled, setNewUserEnabled] = useState(true);
   const [purchaseMessage, setPurchaseMessage] = useState("");
@@ -154,7 +154,7 @@ export const AdminNotificationsTab = forwardRef<HTMLDivElement>((props, ref) => 
   };
 
   return (
-    <div ref={ref} className="space-y-6">
+    <div className="space-y-6">
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Bell className="w-5 h-5 text-primary" />
@@ -386,6 +386,4 @@ export const AdminNotificationsTab = forwardRef<HTMLDivElement>((props, ref) => 
       </Dialog>
     </div>
   );
-});
-
-AdminNotificationsTab.displayName = "AdminNotificationsTab";
+};
