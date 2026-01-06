@@ -1,14 +1,23 @@
 // IndexedDB helper for caching generated scene images
 
 const DB_NAME = 'scene-images-cache';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'images';
+const BATCH_STORE_NAME = 'batch-images';
 
 interface CachedImage {
   sceneNumber: number;
   imageData: string; // base64
   prompt: string;
   timestamp: number;
+}
+
+interface BatchCachedImage {
+  id: string;
+  imageData: string;
+  prompt: string;
+  timestamp: number;
+  wasRewritten?: boolean;
 }
 
 const openDB = (): Promise<IDBDatabase> => {
@@ -23,6 +32,10 @@ const openDB = (): Promise<IDBDatabase> => {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'sceneNumber' });
         store.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+      if (!db.objectStoreNames.contains(BATCH_STORE_NAME)) {
+        const batchStore = db.createObjectStore(BATCH_STORE_NAME, { keyPath: 'id' });
+        batchStore.createIndex('timestamp', 'timestamp', { unique: false });
       }
     };
   });
@@ -181,5 +194,107 @@ export const cleanupOldCacheEntries = async (): Promise<number> => {
   } catch (error) {
     console.error('Error cleaning up old cache entries:', error);
     return 0;
+  }
+};
+
+// ========== BATCH IMAGE CACHE FUNCTIONS ==========
+
+export const saveBatchImageToCache = async (id: string, imageData: string, prompt: string, wasRewritten?: boolean): Promise<void> => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(BATCH_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(BATCH_STORE_NAME);
+    
+    const cachedImage: BatchCachedImage = {
+      id,
+      imageData,
+      prompt,
+      timestamp: Date.now(),
+      wasRewritten,
+    };
+    
+    await new Promise<void>((resolve, reject) => {
+      const request = store.put(cachedImage);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    
+    db.close();
+  } catch (error) {
+    console.error('Error saving batch image to cache:', error);
+  }
+};
+
+export const getAllBatchCachedImages = async (): Promise<BatchCachedImage[]> => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(BATCH_STORE_NAME, 'readonly');
+    const store = tx.objectStore(BATCH_STORE_NAME);
+    
+    const results = await new Promise<BatchCachedImage[]>((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+    
+    db.close();
+    
+    // Sort by timestamp to maintain order
+    return results.sort((a, b) => {
+      // Extract index from id (img-timestamp-index)
+      const indexA = parseInt(a.id.split('-').pop() || '0');
+      const indexB = parseInt(b.id.split('-').pop() || '0');
+      return indexA - indexB;
+    });
+  } catch (error) {
+    console.error('Error getting batch cached images:', error);
+    return [];
+  }
+};
+
+export const getBatchCacheStats = async (): Promise<{ count: number; lastUpdated: Date | null }> => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(BATCH_STORE_NAME, 'readonly');
+    const store = tx.objectStore(BATCH_STORE_NAME);
+    
+    const results = await new Promise<BatchCachedImage[]>((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+    
+    db.close();
+    
+    if (results.length === 0) {
+      return { count: 0, lastUpdated: null };
+    }
+    
+    const latestTimestamp = Math.max(...results.map(r => r.timestamp));
+    return { 
+      count: results.length, 
+      lastUpdated: new Date(latestTimestamp) 
+    };
+  } catch (error) {
+    console.error('Error getting batch cache stats:', error);
+    return { count: 0, lastUpdated: null };
+  }
+};
+
+export const clearBatchImageCache = async (): Promise<void> => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(BATCH_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(BATCH_STORE_NAME);
+    
+    await new Promise<void>((resolve, reject) => {
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    
+    db.close();
+  } catch (error) {
+    console.error('Error clearing batch image cache:', error);
   }
 };

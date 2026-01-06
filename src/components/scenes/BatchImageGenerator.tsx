@@ -3,17 +3,21 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Sparkles, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Sparkles, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
 import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES, getStylesByCategory } from "@/lib/thumbnailStyles";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { saveBatchImageToCache, getAllBatchCachedImages, getBatchCacheStats, clearBatchImageCache } from "@/lib/imageCache";
 
 interface GeneratedImage {
   id: string;
@@ -56,6 +60,24 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<BatchHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  
+  // Edit prompt state
+  const [editingImage, setEditingImage] = useState<GeneratedImage | null>(null);
+  const [editPromptText, setEditPromptText] = useState("");
+  const [isRegeneratingEdit, setIsRegeneratingEdit] = useState(false);
+  
+  // Cache state
+  const [cacheStats, setCacheStats] = useState<{ count: number; lastUpdated: Date | null }>({ count: 0, lastUpdated: null });
+  const [loadingCache, setLoadingCache] = useState(false);
+
+  // Load cache stats on mount
+  useEffect(() => {
+    const loadCacheStats = async () => {
+      const stats = await getBatchCacheStats();
+      setCacheStats(stats);
+    };
+    loadCacheStats();
+  }, []);
 
   // Update promptsText when initialPrompts changes
   useEffect(() => {
@@ -312,9 +334,15 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
         // Update immediately when each image completes
         if (result.success && result.imageUrl) {
           successCount++;
+          const imageId = initialImages[result.index].id;
           setImages(prev => prev.map((img, i) => 
             i === result.index ? { ...img, status: "success", imageUrl: result.imageUrl, wasRewritten: result.wasRewritten } : img
           ));
+          
+          // Save to cache
+          saveBatchImageToCache(imageId, result.imageUrl, initialImages[result.index].prompt, result.wasRewritten).catch(err => {
+            console.warn('Failed to save to cache:', err);
+          });
         } else {
           setImages(prev => prev.map((img, i) => 
             i === result.index ? { ...img, status: "error", error: "Falha após várias tentativas" } : img
@@ -328,6 +356,10 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
     }
 
     setIsGenerating(false);
+    
+    // Update cache stats
+    const stats = await getBatchCacheStats();
+    setCacheStats(stats);
     
     // Save to history with actual success count
     await saveToHistory(successCount);
@@ -407,6 +439,59 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
     toast.success(`${successImages.length} imagens baixadas!`);
   };
 
+  // Download all as ZIP
+  const handleDownloadZip = async () => {
+    const successImages = images.filter(img => img.status === "success" && img.imageUrl);
+    if (successImages.length === 0) {
+      toast.error("Nenhuma imagem para baixar");
+      return;
+    }
+
+    toast.info("Preparando ZIP...");
+
+    try {
+      const zip = new JSZip();
+      const imgFolder = zip.folder("imagens");
+
+      for (let i = 0; i < successImages.length; i++) {
+        const img = successImages[i];
+        if (!img.imageUrl) continue;
+
+        let base64Data = img.imageUrl;
+        
+        // If it's a URL, fetch it
+        if (img.imageUrl.startsWith("http")) {
+          const response = await fetch(img.imageUrl);
+          const blob = await response.blob();
+          base64Data = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        }
+
+        // Remove data URL prefix if present
+        const base64Content = base64Data.replace(/^data:image\/\w+;base64,/, "");
+        imgFolder?.file(`imagem_${String(i + 1).padStart(3, "0")}.png`, base64Content, { base64: true });
+      }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = window.URL.createObjectURL(content);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `imagens_lote_${format(new Date(), "yyyy-MM-dd_HH-mm")}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`ZIP com ${successImages.length} imagens baixado!`);
+    } catch (error) {
+      console.error("Error creating ZIP:", error);
+      toast.error("Erro ao criar ZIP");
+    }
+  };
+
   const handleCopyPrompt = (prompt: string, id: string) => {
     navigator.clipboard.writeText(prompt);
     setCopiedId(id);
@@ -418,6 +503,83 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
     setImages([]);
     setPromptsText("");
     setSelectedStyle("");
+  };
+
+  // Edit prompt and regenerate
+  const openEditPrompt = (image: GeneratedImage) => {
+    setEditingImage(image);
+    setEditPromptText(image.prompt);
+  };
+
+  const handleEditAndRegenerate = async () => {
+    if (!editingImage || !editPromptText.trim()) return;
+
+    setIsRegeneratingEdit(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-imagefx", {
+        body: { 
+          prompt: editPromptText,
+          aspectRatio: "LANDSCAPE",
+          numberOfImages: 1
+        }
+      });
+
+      if (error) throw error;
+
+      const imageUrl = data.imageUrl || data.images?.[0]?.url;
+      const wasRewritten = data.images?.[0]?.wasRewritten || false;
+      
+      if (data.success && imageUrl) {
+        setImages(prev => prev.map(img => 
+          img.id === editingImage.id 
+            ? { ...img, status: "success", imageUrl, prompt: editPromptText, wasRewritten } 
+            : img
+        ));
+        
+        // Save to cache
+        await saveBatchImageToCache(editingImage.id, imageUrl, editPromptText, wasRewritten);
+        
+        toast.success(wasRewritten ? "Imagem regenerada com prompt adaptado!" : "Imagem regenerada!");
+        setEditingImage(null);
+      } else {
+        throw new Error(data.error || "Falha ao gerar imagem");
+      }
+    } catch (error: any) {
+      toast.error("Erro ao regenerar: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setIsRegeneratingEdit(false);
+    }
+  };
+
+  // Recover images from cache
+  const handleRecoverFromCache = async () => {
+    setLoadingCache(true);
+    try {
+      const cachedImages = await getAllBatchCachedImages();
+      
+      if (cachedImages.length === 0) {
+        toast.info("Nenhuma imagem em cache");
+        setLoadingCache(false);
+        return;
+      }
+
+      const recoveredImages: GeneratedImage[] = cachedImages.map((cached, index) => ({
+        id: cached.id,
+        prompt: cached.prompt,
+        imageUrl: cached.imageData,
+        status: "success" as const,
+        wasRewritten: cached.wasRewritten,
+      }));
+
+      setImages(recoveredImages);
+      toast.success(`${recoveredImages.length} imagens recuperadas do cache!`);
+    } catch (error) {
+      console.error("Error recovering from cache:", error);
+      toast.error("Erro ao recuperar imagens do cache");
+    } finally {
+      setLoadingCache(false);
+    }
   };
 
   const openPreview = (index: number) => {
@@ -437,6 +599,7 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
   const promptCount = parsePrompts().length;
   const successCount = successImages.length;
   const errorCount = images.filter(img => img.status === "error").length;
+  const rewrittenCount = images.filter(img => img.wasRewritten).length;
 
   return (
     <>
@@ -561,6 +724,19 @@ Um carro esportivo na montanha`}
                   <Badge variant="outline" className="text-xs">
                     {successCount}/{images.length} ✓
                   </Badge>
+                  {rewrittenCount > 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="secondary" className="text-xs bg-amber-500/20 text-amber-600 border-amber-500/30">
+                          <Wand2 className="w-2.5 h-2.5 mr-0.5" />
+                          {rewrittenCount} adaptados
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Prompts reescritos automaticamente para segurança</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                   {errorCount > 0 && (
                     <Badge variant="destructive" className="text-xs">
                       {errorCount} erros
@@ -569,17 +745,51 @@ Um carro esportivo na montanha`}
                 </div>
               )}
             </div>
-            {successCount > 0 && (
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleDownloadAll}>
-                  <Download className="w-3 h-3 mr-1" />
-                  Baixar Todas
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleClear}>
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-2">
+              {/* Cache Recovery Button */}
+              {cacheStats.count > 0 && images.length === 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleRecoverFromCache}
+                      disabled={loadingCache}
+                    >
+                      {loadingCache ? (
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      ) : (
+                        <RotateCcw className="w-3 h-3 mr-1" />
+                      )}
+                      Recuperar ({cacheStats.count})
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Recuperar {cacheStats.count} imagens do cache</p>
+                    {cacheStats.lastUpdated && (
+                      <p className="text-xs text-muted-foreground">
+                        Último: {format(cacheStats.lastUpdated, "dd/MM HH:mm")}
+                      </p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {successCount > 0 && (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleDownloadZip}>
+                    <FolderDown className="w-3 h-3 mr-1" />
+                    ZIP
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleDownloadAll}>
+                    <Download className="w-3 h-3 mr-1" />
+                    Baixar Todas
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleClear}>
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
           {images.length === 0 ? (
@@ -588,9 +798,25 @@ Um carro esportivo na montanha`}
               <p className="text-muted-foreground mb-2">
                 Cole seus prompts e clique em gerar
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mb-4">
                 As imagens serão geradas em lote usando o ImageFX
               </p>
+              {cacheStats.count > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRecoverFromCache}
+                  disabled={loadingCache}
+                  className="mx-auto"
+                >
+                  {loadingCache ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                  )}
+                  Recuperar {cacheStats.count} imagens do cache
+                </Button>
+              )}
             </div>
           ) : (
             <ScrollArea className="h-[500px] pr-2">
@@ -644,17 +870,35 @@ Um carro esportivo na montanha`}
                       {/* Action Buttons */}
                       <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {image.status === "success" && image.imageUrl && (
-                          <Button
-                            size="icon"
-                            variant="secondary"
-                            className="h-6 w-6"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownload(image.imageUrl!, index);
-                            }}
-                          >
-                            <Download className="w-3 h-3" />
-                          </Button>
+                          <>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="secondary"
+                                  className="h-6 w-6"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditPrompt(image);
+                                  }}
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Editar prompt e regenerar</TooltipContent>
+                            </Tooltip>
+                            <Button
+                              size="icon"
+                              variant="secondary"
+                              className="h-6 w-6"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload(image.imageUrl!, index);
+                              }}
+                            >
+                              <Download className="w-3 h-3" />
+                            </Button>
+                          </>
                         )}
                         {image.status === "error" && (
                           <Button
@@ -875,6 +1119,69 @@ Um carro esportivo na montanha`}
               </div>
             </ScrollArea>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Prompt Modal */}
+      <Dialog open={!!editingImage} onOpenChange={(open) => !open && setEditingImage(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-primary" />
+              Editar Prompt e Regenerar
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {editingImage?.imageUrl && (
+              <div className="aspect-video rounded-lg overflow-hidden border border-border">
+                <img 
+                  src={editingImage.imageUrl} 
+                  alt="Imagem atual" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            
+            <div>
+              <Label>Prompt</Label>
+              <Textarea
+                value={editPromptText}
+                onChange={(e) => setEditPromptText(e.target.value)}
+                placeholder="Descreva a imagem desejada..."
+                className="mt-1.5 min-h-[120px]"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Modifique o prompt e clique em regenerar para criar uma nova imagem
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setEditingImage(null)}
+              disabled={isRegeneratingEdit}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleEditAndRegenerate}
+              disabled={isRegeneratingEdit || !editPromptText.trim()}
+            >
+              {isRegeneratingEdit ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Regenerando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Regenerar Imagem
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
