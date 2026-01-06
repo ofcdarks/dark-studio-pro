@@ -10,10 +10,13 @@ import {
   CheckCircle, 
   XCircle, 
   Loader2,
-  Save 
+  Save,
+  ExternalLink,
+  Settings2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PlanConfig {
   id: string;
@@ -24,6 +27,7 @@ interface PlanConfig {
 }
 
 export function AdminPaymentsTab() {
+  const { session } = useAuth();
   const [publicKey, setPublicKey] = useState("");
   const [secretKey, setSecretKey] = useState("");
   const [webhookSecret, setWebhookSecret] = useState("");
@@ -31,6 +35,7 @@ export function AdminPaymentsTab() {
   const [plans, setPlans] = useState<PlanConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [openingPortal, setOpeningPortal] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -100,6 +105,36 @@ export function AdminPaymentsTab() {
     }
   };
 
+  const openCustomerPortal = async () => {
+    if (!session?.access_token) {
+      toast.error("Você precisa estar logado");
+      return;
+    }
+
+    setOpeningPortal(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("customer-portal", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, "_blank");
+        toast.success("Portal do Stripe aberto!");
+      } else {
+        throw new Error("URL do portal não retornada");
+      }
+    } catch (error) {
+      console.error("Error opening customer portal:", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao abrir portal");
+    } finally {
+      setOpeningPortal(false);
+    }
+  };
+
   const monthlyPlans = plans.filter((p) => !p.is_annual);
   const annualPlans = plans.filter((p) => p.is_annual);
 
@@ -113,6 +148,41 @@ export function AdminPaymentsTab() {
 
   return (
     <div className="space-y-6">
+      {/* Stripe Customer Portal */}
+      <Card className="p-6 border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Settings2 className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Portal de Gerenciamento Stripe</h3>
+              <p className="text-sm text-muted-foreground">
+                Gerencie assinaturas, altere planos, cancele ou atualize métodos de pagamento
+              </p>
+            </div>
+          </div>
+          <Button 
+            onClick={openCustomerPortal} 
+            disabled={openingPortal}
+            className="gap-2"
+          >
+            {openingPortal ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ExternalLink className="w-4 h-4" />
+            )}
+            Abrir Portal Stripe
+          </Button>
+        </div>
+        <Alert className="mt-4 border-amber-500/30 bg-amber-500/10">
+          <Info className="w-4 h-4 text-amber-500" />
+          <AlertDescription className="text-amber-200">
+            O portal permite que você (admin) gerencie sua própria assinatura. Para gerenciar assinaturas de outros usuários, acesse o Dashboard do Stripe diretamente.
+          </AlertDescription>
+        </Alert>
+      </Card>
+
       {/* Stripe Configuration */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
