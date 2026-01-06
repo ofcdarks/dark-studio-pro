@@ -50,3 +50,12 @@ verify_jwt = false
 
 [functions.customer-portal]
 verify_jwt = false
+
+[functions.send-test-email]
+verify_jwt = false
+
+[functions.send-template-test]
+verify_jwt = false
+
+[functions.send-renewal-reminders]
+verify_jwt = false
