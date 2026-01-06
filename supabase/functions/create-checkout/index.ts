@@ -66,7 +66,7 @@ serve(async (req) => {
         },
       ],
       mode: mode as "subscription" | "payment",
-      success_url: `${origin}/plans?success=true`,
+      success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/plans?canceled=true`,
       metadata: {
         user_id: user.id,

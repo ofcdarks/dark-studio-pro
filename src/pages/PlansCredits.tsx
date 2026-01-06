@@ -34,7 +34,7 @@ interface PlanData {
 const CREDIT_PACKAGES = [
   { credits: 1000, price: 99.90, label: "Alocação básica", priceId: "price_1SmiUTQlTxz1IgnVfJt8KkMC" },
   { credits: 2500, price: 149.90, label: "Expansão moderada", priceId: "price_1SmiV9QlTxz1IgnVu68cCwSn" },
-  { credits: 5000, price: 249.90, label: "Execução intensiva", priceId: "" },
+  { credits: 5000, price: 249.90, label: "Execução intensiva", priceId: "price_1SmicEQlTxz1IgnVvgjaHQ3A" },
   { credits: 10000, price: 399.90, label: "Escala prolongada", priceId: "price_1SZbb4QlTxz1IgnVQT2v1NvC" },
   { credits: 20000, price: 699.90, label: "Contínuo de alta demanda", priceId: "price_1SZbbfQlTxz1IgnVYfx2yxyU" },
 ];
