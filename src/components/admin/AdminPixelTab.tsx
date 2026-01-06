@@ -37,375 +37,459 @@ interface EmailTemplate {
   is_active: boolean;
 }
 
+// Email base template with header and footer
+const EMAIL_HEADER = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(180deg, #141414 0%, #0a0a0a 100%); border-radius: 20px; border: 1px solid rgba(245, 158, 11, 0.3); overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+          <!-- Logo Header -->
+          <tr>
+            <td style="padding: 32px 40px; text-align: center; border-bottom: 1px solid rgba(245, 158, 11, 0.15);">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 3px; display: inline-block;">
+                      <div style="width: 74px; height: 74px; border-radius: 50%; background: #0a0a0a; display: flex; align-items: center; justify-content: center;">
+                        <img src="https://kabnbvnephjifeazaiis.supabase.co/storage/v1/object/public/avatars/logo-email.png" alt="La Casa Dark Core" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;" onerror="this.style.display='none'"/>
+                      </div>
+                    </div>
+                    <h1 style="margin: 16px 0 0 0; color: #f59e0b; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">La Casa Dark Core</h1>
+                    <p style="margin: 6px 0 0 0; color: #71717a; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 2px;">Sistema Operacional de Viralização</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>`;
+
+const EMAIL_FOOTER = `
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 32px 40px; background: linear-gradient(180deg, #0f0f0f 0%, #0a0a0a 100%); border-top: 1px solid rgba(245, 158, 11, 0.15);">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <p style="color: #f59e0b; font-size: 16px; font-weight: 700; margin: 0 0 8px 0;">La Casa Dark Core®</p>
+                    <p style="color: #525252; font-size: 12px; margin: 0 0 4px 0; font-style: italic;">A infraestrutura por trás de canais dark profissionais</p>
+                    <p style="color: #404040; font-size: 11px; margin: 0 0 16px 0;">A revolução chegou. Não há espaço para amadores.</p>
+                    <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                      <tr>
+                        <td style="padding: 0 8px;">
+                          <a href="https://www.canaisdarks.com.br" style="color: #f59e0b; font-size: 12px; text-decoration: none;">www.canaisdarks.com.br</a>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="color: #404040; font-size: 11px; margin: 20px 0 0 0;">
+                      © ${new Date().getFullYear()} La Casa Dark Core. Todos os direitos reservados.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
 // Premium email templates with La Casa Dark Core branding
 const DEFAULT_TEMPLATES: Record<string, { subject: string; body: string }> = {
   welcome: {
     subject: "🚀 Bem-vindo à La Casa Dark Core!",
-    body: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0f; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0f; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(180deg, #1a1a1f 0%, #0f0f14 100%); border-radius: 16px; border: 1px solid #f59e0b33; overflow: hidden;">
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #0a0a0f; font-size: 28px; font-weight: 800;">La Casa Dark Core</h1>
-              <p style="margin: 8px 0 0 0; color: #0a0a0f99; font-size: 14px;">Sistema Operacional de Viralização</p>
-            </td>
-          </tr>
+    body: `${EMAIL_HEADER}
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 30px;">
-              <h2 style="color: #f59e0b; margin: 0 0 20px 0; font-size: 24px;">Olá, {{name}}! 🎉</h2>
-              <p style="color: #e5e5e5; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            <td style="padding: 40px;">
+              <!-- Badge -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <span style="display: inline-block; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px;">
+                      ✨ Novo Membro
+                    </span>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #ffffff; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
+                Olá, <span style="color: #f59e0b;">{{name}}</span>! 🎉
+              </h2>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 24px 0; text-align: center;">
                 Seja bem-vindo à <strong style="color: #f59e0b;">La Casa Dark Core</strong>! Sua conta foi ativada com sucesso e você já pode acessar todas as ferramentas da plataforma.
               </p>
-              <p style="color: #a1a1aa; font-size: 14px; line-height: 1.6; margin: 0 0 30px 0;">
-                Explore nosso arsenal de ferramentas para análise de vídeos, geração de roteiros, thumbnails e muito mais.
-              </p>
-              <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0a0a0f; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 16px;">
-                Acessar Plataforma →
-              </a>
+              
+              <!-- Features Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 12px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <p style="color: #f59e0b; font-size: 14px; font-weight: 600; margin: 0 0 16px 0;">🔥 O que você pode fazer agora:</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr><td style="color: #d4d4d4; font-size: 14px; padding: 6px 0;">✓ Analisar vídeos virais e identificar padrões</td></tr>
+                      <tr><td style="color: #d4d4d4; font-size: 14px; padding: 6px 0;">✓ Gerar roteiros otimizados com IA</td></tr>
+                      <tr><td style="color: #d4d4d4; font-size: 14px; padding: 6px 0;">✓ Criar thumbnails que convertem</td></tr>
+                      <tr><td style="color: #d4d4d4; font-size: 14px; padding: 6px 0;">✓ Monitorar canais concorrentes</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 0 0;">
+                <tr>
+                  <td align="center">
+                    <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0a0a0a; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);">
+                      Acessar Plataforma →
+                    </a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 30px; border-top: 1px solid #27272a; text-align: center;">
-              <p style="color: #71717a; font-size: 12px; margin: 0;">
-                © 2026 La Casa Dark Core. Todos os direitos reservados.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+${EMAIL_FOOTER}`
   },
   access_approved: {
     subject: "✅ Seu acesso foi liberado!",
-    body: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0f; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0f; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(180deg, #1a1a1f 0%, #0f0f14 100%); border-radius: 16px; border: 1px solid #22c55e33; overflow: hidden;">
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800;">Acesso Liberado!</h1>
-            </td>
-          </tr>
+    body: `${EMAIL_HEADER}
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 30px;">
-              <h2 style="color: #22c55e; margin: 0 0 20px 0; font-size: 24px;">Parabéns, {{name}}! 🎊</h2>
-              <p style="color: #e5e5e5; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            <td style="padding: 40px;">
+              <!-- Success Icon -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%); border: 2px solid #22c55e; display: inline-flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 40px;">✓</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #22c55e; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
+                Parabéns, {{name}}! 🎊
+              </h2>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 24px 0; text-align: center;">
                 Seu acesso ao plano <strong style="color: #f59e0b;">{{plan_name}}</strong> foi aprovado com sucesso!
               </p>
-              <div style="background: #22c55e15; border: 1px solid #22c55e33; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                <p style="color: #22c55e; font-size: 14px; margin: 0;">
-                  ✓ Todas as funcionalidades do seu plano estão ativas<br>
-                  ✓ Créditos disponíveis para uso imediato<br>
-                  ✓ Suporte prioritário habilitado
-                </p>
-              </div>
-              <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0a0a0f; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 16px;">
-                Começar Agora →
-              </a>
+              
+              <!-- Benefits Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr><td style="color: #22c55e; font-size: 14px; padding: 8px 0;">✓ Todas as funcionalidades do seu plano estão ativas</td></tr>
+                      <tr><td style="color: #22c55e; font-size: 14px; padding: 8px 0;">✓ Créditos disponíveis para uso imediato</td></tr>
+                      <tr><td style="color: #22c55e; font-size: 14px; padding: 8px 0;">✓ Suporte prioritário habilitado</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 0 0;">
+                <tr>
+                  <td align="center">
+                    <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);">
+                      Começar Agora →
+                    </a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 30px; border-top: 1px solid #27272a; text-align: center;">
-              <p style="color: #71717a; font-size: 12px; margin: 0;">
-                © 2026 La Casa Dark Core. Todos os direitos reservados.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+${EMAIL_FOOTER}`
   },
   password_recovery: {
-    subject: "🔐 Recuperação de Senha",
-    body: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0f; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0f; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(180deg, #1a1a1f 0%, #0f0f14 100%); border-radius: 16px; border: 1px solid #3b82f633; overflow: hidden;">
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800;">🔐 Recuperar Senha</h1>
-            </td>
-          </tr>
+    subject: "🔐 Recuperação de Senha - La Casa Dark Core",
+    body: `${EMAIL_HEADER}
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 30px;">
-              <h2 style="color: #e5e5e5; margin: 0 0 20px 0; font-size: 24px;">Olá, {{name}}</h2>
-              <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                Você solicitou a recuperação de senha da sua conta. Clique no botão abaixo para criar uma nova senha:
+            <td style="padding: 40px;">
+              <!-- Lock Icon -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%); border: 2px solid #3b82f6; display: inline-flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 40px;">🔐</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #ffffff; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
+                Recuperar Senha
+              </h2>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 8px 0; text-align: center;">
+                Olá, <strong style="color: #f59e0b;">{{name}}</strong>
               </p>
-              <a href="{{reset_link}}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 16px; margin: 20px 0;">
-                Redefinir Senha
-              </a>
-              <p style="color: #71717a; font-size: 13px; line-height: 1.6; margin: 30px 0 0 0;">
-                Se você não solicitou esta recuperação, ignore este email. O link expira em 24 horas.
+              
+              <p style="color: #737373; font-size: 15px; line-height: 1.7; margin: 0 0 32px 0; text-align: center;">
+                Você solicitou a recuperação de senha da sua conta. Clique no botão abaixo para criar uma nova senha segura:
               </p>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 32px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="{{reset_link}}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
+                      Redefinir Minha Senha
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Warning -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(113, 113, 122, 0.1); border: 1px solid rgba(113, 113, 122, 0.2); border-radius: 8px;">
+                <tr>
+                  <td style="padding: 16px;">
+                    <p style="color: #71717a; font-size: 13px; margin: 0; text-align: center;">
+                      ⚠️ Se você não solicitou esta recuperação, ignore este email.<br>
+                      O link expira em <strong>24 horas</strong>.
+                    </p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 30px; border-top: 1px solid #27272a; text-align: center;">
-              <p style="color: #71717a; font-size: 12px; margin: 0;">
-                © 2026 La Casa Dark Core. Todos os direitos reservados.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+${EMAIL_FOOTER}`
   },
   payment_confirmation: {
-    subject: "💳 Pagamento Confirmado!",
-    body: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0f; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0f; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(180deg, #1a1a1f 0%, #0f0f14 100%); border-radius: 16px; border: 1px solid #f59e0b33; overflow: hidden;">
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #0a0a0f; font-size: 28px; font-weight: 800;">Pagamento Confirmado!</h1>
-            </td>
-          </tr>
+    subject: "💳 Pagamento Confirmado - La Casa Dark Core",
+    body: `${EMAIL_HEADER}
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 30px;">
-              <h2 style="color: #22c55e; margin: 0 0 20px 0; font-size: 24px;">✓ Sucesso, {{name}}!</h2>
-              <p style="color: #e5e5e5; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                Seu pagamento foi processado com sucesso. Confira os detalhes:
+            <td style="padding: 40px;">
+              <!-- Success Badge -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%); border: 2px solid #22c55e; display: inline-flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 40px;">💳</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #22c55e; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
+                Pagamento Confirmado!
+              </h2>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 24px 0; text-align: center;">
+                Olá, <strong style="color: #f59e0b;">{{name}}</strong>! Seu pagamento foi processado com sucesso.
               </p>
-              <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                <table width="100%" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td style="color: #a1a1aa; font-size: 14px; padding: 8px 0;">Plano</td>
-                    <td style="color: #f59e0b; font-size: 14px; padding: 8px 0; text-align: right; font-weight: 600;">{{plan_name}}</td>
-                  </tr>
-                  <tr>
-                    <td style="color: #a1a1aa; font-size: 14px; padding: 8px 0;">Valor</td>
-                    <td style="color: #22c55e; font-size: 14px; padding: 8px 0; text-align: right; font-weight: 600;">{{amount}}</td>
-                  </tr>
-                  <tr>
-                    <td style="color: #a1a1aa; font-size: 14px; padding: 8px 0;">Status</td>
-                    <td style="color: #22c55e; font-size: 14px; padding: 8px 0; text-align: right; font-weight: 600;">{{status}}</td>
-                  </tr>
-                </table>
-              </div>
-              <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0a0a0f; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 16px;">
-                Acessar Plataforma →
-              </a>
+              
+              <!-- Receipt Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(20, 20, 20, 0.8); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 12px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <p style="color: #f59e0b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px 0;">Detalhes da Compra</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="color: #737373; font-size: 14px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">Plano</td>
+                        <td style="color: #f59e0b; font-size: 14px; padding: 10px 0; text-align: right; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.05);">{{plan_name}}</td>
+                      </tr>
+                      <tr>
+                        <td style="color: #737373; font-size: 14px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">Valor</td>
+                        <td style="color: #22c55e; font-size: 14px; padding: 10px 0; text-align: right; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.05);">{{amount}}</td>
+                      </tr>
+                      <tr>
+                        <td style="color: #737373; font-size: 14px; padding: 10px 0;">Status</td>
+                        <td style="padding: 10px 0; text-align: right;">
+                          <span style="background: rgba(34, 197, 94, 0.2); color: #22c55e; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px;">{{status}}</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 0 0;">
+                <tr>
+                  <td align="center">
+                    <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0a0a0a; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);">
+                      Acessar Plataforma →
+                    </a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 30px; border-top: 1px solid #27272a; text-align: center;">
-              <p style="color: #71717a; font-size: 12px; margin: 0;">
-                © 2026 La Casa Dark Core. Todos os direitos reservados.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+${EMAIL_FOOTER}`
   },
   credits_purchase: {
-    subject: "⚡ Créditos Adicionados!",
-    body: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0f; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0f; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(180deg, #1a1a1f 0%, #0f0f14 100%); border-radius: 16px; border: 1px solid #f59e0b33; overflow: hidden;">
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #0a0a0f; font-size: 28px; font-weight: 800;">⚡ Créditos Adicionados!</h1>
-            </td>
-          </tr>
+    subject: "⚡ Créditos Adicionados - La Casa Dark Core",
+    body: `${EMAIL_HEADER}
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 30px; text-align: center;">
-              <h2 style="color: #e5e5e5; margin: 0 0 20px 0; font-size: 24px;">Olá, {{name}}!</h2>
-              <div style="background: linear-gradient(135deg, #f59e0b15 0%, #d9770615 100%); border: 2px solid #f59e0b; border-radius: 16px; padding: 30px; margin: 20px 0; display: inline-block;">
-                <p style="color: #f59e0b; font-size: 48px; font-weight: 800; margin: 0;">+{{credits_amount}}</p>
-                <p style="color: #a1a1aa; font-size: 14px; margin: 8px 0 0 0;">créditos adicionados</p>
-              </div>
-              <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 20px 0;">
-                Sua compra de <strong style="color: #f59e0b;">{{amount}}</strong> foi processada com sucesso!
+            <td style="padding: 40px; text-align: center;">
+              <!-- Credits Badge -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <span style="display: inline-block; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px;">
+                      ⚡ Créditos Adicionados
+                    </span>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #ffffff; margin: 0 0 24px 0; font-size: 24px; font-weight: 700;">
+                Olá, <span style="color: #f59e0b;">{{name}}</span>!
+              </h2>
+              
+              <!-- Big Credits Display -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 auto 24px auto;">
+                <tr>
+                  <td align="center">
+                    <div style="display: inline-block; background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.05) 100%); border: 2px solid #f59e0b; border-radius: 20px; padding: 32px 48px;">
+                      <p style="color: #f59e0b; font-size: 56px; font-weight: 800; margin: 0; line-height: 1;">+{{credits_amount}}</p>
+                      <p style="color: #737373; font-size: 14px; margin: 8px 0 0 0; text-transform: uppercase; letter-spacing: 2px;">créditos</p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 32px 0;">
+                Sua compra de <strong style="color: #22c55e;">{{amount}}</strong> foi processada com sucesso!<br>
+                Os créditos já estão disponíveis na sua conta.
               </p>
-              <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0a0a0f; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 16px;">
-                Usar Créditos →
-              </a>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="{{login_url}}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0a0a0a; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);">
+                      Usar Meus Créditos →
+                    </a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 30px; border-top: 1px solid #27272a; text-align: center;">
-              <p style="color: #71717a; font-size: 12px; margin: 0;">
-                © 2026 La Casa Dark Core. Todos os direitos reservados.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+${EMAIL_FOOTER}`
   },
   plan_cancellation: {
-    subject: "📋 Cancelamento de Plano Recebido",
-    body: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0f; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0f; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(180deg, #1a1a1f 0%, #0f0f14 100%); border-radius: 16px; border: 1px solid #71717a33; overflow: hidden;">
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #71717a 0%, #52525b 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800;">Cancelamento Recebido</h1>
-            </td>
-          </tr>
+    subject: "📋 Cancelamento de Plano - La Casa Dark Core",
+    body: `${EMAIL_HEADER}
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 30px;">
-              <h2 style="color: #e5e5e5; margin: 0 0 20px 0; font-size: 24px;">Olá, {{name}}</h2>
-              <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                Recebemos sua solicitação de cancelamento do plano <strong style="color: #f59e0b;">{{plan_name}}</strong>.
+            <td style="padding: 40px;">
+              <!-- Icon -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(113, 113, 122, 0.1); border: 2px solid #71717a; display: inline-flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 40px;">📋</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #ffffff; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
+                Cancelamento Recebido
+              </h2>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 24px 0; text-align: center;">
+                Olá, <strong style="color: #f59e0b;">{{name}}</strong>. Recebemos sua solicitação de cancelamento do plano <strong style="color: #f59e0b;">{{plan_name}}</strong>.
               </p>
-              <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                <p style="color: #a1a1aa; font-size: 14px; margin: 0;">
-                  📅 <strong>Data do cancelamento:</strong> {{date_cancellation}}<br><br>
-                  ⏰ <strong>Acesso disponível até:</strong> {{date_end}}
-                </p>
-              </div>
-              <p style="color: #71717a; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0;">
-                Você continuará tendo acesso a todas as funcionalidades até a data de expiração. Sentiremos sua falta! 💛
+              
+              <!-- Info Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(20, 20, 20, 0.8); border: 1px solid rgba(113, 113, 122, 0.2); border-radius: 12px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="color: #737373; font-size: 14px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">📅 Data do cancelamento</td>
+                        <td style="color: #d4d4d4; font-size: 14px; padding: 10px 0; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.05);">{{date_cancellation}}</td>
+                      </tr>
+                      <tr>
+                        <td style="color: #737373; font-size: 14px; padding: 10px 0;">⏰ Acesso disponível até</td>
+                        <td style="color: #f59e0b; font-size: 14px; padding: 10px 0; text-align: right; font-weight: 600;">{{date_end}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #71717a; font-size: 14px; line-height: 1.7; margin: 0; text-align: center;">
+                Você continuará tendo acesso a todas as funcionalidades até a data de expiração.<br>
+                Sentiremos sua falta! 💛
               </p>
             </td>
           </tr>
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 30px; border-top: 1px solid #27272a; text-align: center;">
-              <p style="color: #71717a; font-size: 12px; margin: 0;">
-                © 2026 La Casa Dark Core. Todos os direitos reservados.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+${EMAIL_FOOTER}`
   },
   blocked_password: {
-    subject: "🔒 Senha Bloqueada por Segurança",
-    body: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0f; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0f; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(180deg, #1a1a1f 0%, #0f0f14 100%); border-radius: 16px; border: 1px solid #ef444433; overflow: hidden;">
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800;">🔒 Alerta de Segurança</h1>
-            </td>
-          </tr>
+    subject: "🔒 Alerta de Segurança - Senha Bloqueada",
+    body: `${EMAIL_HEADER}
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 30px;">
-              <h2 style="color: #ef4444; margin: 0 0 20px 0; font-size: 24px;">Olá, {{name}}</h2>
-              <p style="color: #e5e5e5; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            <td style="padding: 40px;">
+              <!-- Warning Icon -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%); border: 2px solid #ef4444; display: inline-flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 40px;">🔒</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #ef4444; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
+                Alerta de Segurança
+              </h2>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 8px 0; text-align: center;">
+                Olá, <strong style="color: #f59e0b;">{{name}}</strong>
+              </p>
+              
+              <p style="color: #737373; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0; text-align: center;">
                 Sua senha foi bloqueada por motivos de segurança devido a múltiplas tentativas de acesso incorretas.
               </p>
-              <p style="color: #a1a1aa; font-size: 14px; line-height: 1.6; margin: 0 0 30px 0;">
-                Para recuperar o acesso à sua conta, clique no botão abaixo e crie uma nova senha:
-              </p>
-              <a href="{{reset_link}}" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 16px;">
-                Redefinir Senha
-              </a>
-              <p style="color: #71717a; font-size: 13px; line-height: 1.6; margin: 30px 0 0 0;">
+              
+              <!-- Warning Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="color: #ef4444; font-size: 14px; margin: 0; text-align: center;">
+                      ⚠️ Para recuperar o acesso à sua conta, clique no botão abaixo e crie uma nova senha.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 32px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="{{reset_link}}" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);">
+                      Redefinir Senha Agora
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #525252; font-size: 13px; line-height: 1.6; margin: 0; text-align: center;">
                 Se você não reconhece esta atividade, entre em contato com nosso suporte imediatamente.
               </p>
             </td>
           </tr>
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 30px; border-top: 1px solid #27272a; text-align: center;">
-              <p style="color: #71717a; font-size: 12px; margin: 0;">
-                © 2026 La Casa Dark Core. Todos os direitos reservados.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+${EMAIL_FOOTER}`
   }
 };
 
