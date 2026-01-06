@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,7 @@ const FEATURES = [
   { key: "analytics", label: "Analytics" },
 ];
 
-export const AdminPermissionsTab = forwardRef<HTMLDivElement>((props, ref) => {
+export const AdminPermissionsTab = () => {
   const [plans, setPlans] = useState<PlanPermission[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -177,14 +177,14 @@ export const AdminPermissionsTab = forwardRef<HTMLDivElement>((props, ref) => {
 
   if (loading) {
     return (
-      <div ref={ref} className="flex justify-center py-12">
+      <div className="flex justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div ref={ref} className="space-y-6">
+    <div className="space-y-6">
       {/* Add Plan Button */}
       <div className="flex justify-end">
         <Button onClick={() => setAddPlanOpen(true)}>
@@ -349,6 +349,4 @@ export const AdminPermissionsTab = forwardRef<HTMLDivElement>((props, ref) => {
       </Dialog>
     </div>
   );
-});
-
-AdminPermissionsTab.displayName = "AdminPermissionsTab";
+};
