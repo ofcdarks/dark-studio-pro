@@ -180,21 +180,123 @@ export function GuidedTutorial({
             </svg>
           </motion.div>
 
-          {/* Highlight border around target element */}
+          {/* Highlight border around target element with pulse animations */}
           {targetRect && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="absolute pointer-events-none"
-              style={{
-                left: targetRect.left - 8,
-                top: targetRect.top - 8,
-                width: targetRect.width + 16,
-                height: targetRect.height + 16,
-              }}
-            >
-              <div className="w-full h-full rounded-lg border-2 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)] animate-pulse" />
-            </motion.div>
+            <>
+              {/* Outer expanding pulse ring */}
+              <motion.div
+                className="absolute pointer-events-none rounded-lg"
+                style={{
+                  left: targetRect.left - 16,
+                  top: targetRect.top - 16,
+                  width: targetRect.width + 32,
+                  height: targetRect.height + 32,
+                }}
+                initial={{ opacity: 0.6, scale: 1 }}
+                animate={{ 
+                  opacity: [0.6, 0.3, 0],
+                  scale: [1, 1.15, 1.25],
+                }}
+                transition={{ 
+                  duration: 1.5, 
+                  repeat: Infinity, 
+                  ease: "easeOut" 
+                }}
+              >
+                <div className="w-full h-full rounded-lg border-2 border-amber-500/60" />
+              </motion.div>
+
+              {/* Second pulse ring (delayed) */}
+              <motion.div
+                className="absolute pointer-events-none rounded-lg"
+                style={{
+                  left: targetRect.left - 12,
+                  top: targetRect.top - 12,
+                  width: targetRect.width + 24,
+                  height: targetRect.height + 24,
+                }}
+                initial={{ opacity: 0.5, scale: 1 }}
+                animate={{ 
+                  opacity: [0.5, 0.2, 0],
+                  scale: [1, 1.1, 1.2],
+                }}
+                transition={{ 
+                  duration: 1.5, 
+                  repeat: Infinity, 
+                  ease: "easeOut",
+                  delay: 0.5 
+                }}
+              >
+                <div className="w-full h-full rounded-lg border border-amber-400/40" />
+              </motion.div>
+
+              {/* Main highlight border with glow */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="absolute pointer-events-none"
+                style={{
+                  left: targetRect.left - 8,
+                  top: targetRect.top - 8,
+                  width: targetRect.width + 16,
+                  height: targetRect.height + 16,
+                }}
+              >
+                {/* Animated glow effect */}
+                <motion.div
+                  className="absolute inset-0 rounded-lg"
+                  animate={{
+                    boxShadow: [
+                      "0 0 20px 4px rgba(245, 158, 11, 0.3)",
+                      "0 0 35px 8px rgba(245, 158, 11, 0.5)",
+                      "0 0 20px 4px rgba(245, 158, 11, 0.3)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 1.2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+                
+                {/* Solid border */}
+                <div className="w-full h-full rounded-lg border-2 border-amber-500 bg-amber-500/5" />
+                
+                {/* Corner sparkles */}
+                <motion.div
+                  className="absolute -top-1 -left-1 w-2 h-2 bg-amber-400 rounded-full"
+                  animate={{ 
+                    scale: [1, 1.5, 1], 
+                    opacity: [0.8, 1, 0.8] 
+                  }}
+                  transition={{ duration: 0.8, repeat: Infinity }}
+                />
+                <motion.div
+                  className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full"
+                  animate={{ 
+                    scale: [1, 1.5, 1], 
+                    opacity: [0.8, 1, 0.8] 
+                  }}
+                  transition={{ duration: 0.8, repeat: Infinity, delay: 0.2 }}
+                />
+                <motion.div
+                  className="absolute -bottom-1 -left-1 w-2 h-2 bg-amber-400 rounded-full"
+                  animate={{ 
+                    scale: [1, 1.5, 1], 
+                    opacity: [0.8, 1, 0.8] 
+                  }}
+                  transition={{ duration: 0.8, repeat: Infinity, delay: 0.4 }}
+                />
+                <motion.div
+                  className="absolute -bottom-1 -right-1 w-2 h-2 bg-amber-400 rounded-full"
+                  animate={{ 
+                    scale: [1, 1.5, 1], 
+                    opacity: [0.8, 1, 0.8] 
+                  }}
+                  transition={{ duration: 0.8, repeat: Infinity, delay: 0.6 }}
+                />
+              </motion.div>
+            </>
           )}
 
           {/* Tooltip */}
