@@ -12,7 +12,10 @@ import {
   Loader2,
   Save,
   ExternalLink,
-  Settings2
+  Settings2,
+  Plus,
+  Trash2,
+  Pencil
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,6 +29,16 @@ interface PlanConfig {
   is_annual: boolean;
 }
 
+interface CreditPackage {
+  id: string;
+  credits: number;
+  price: number;
+  stripe_price_id: string | null;
+  label: string | null;
+  is_active: boolean;
+  display_order: number;
+}
+
 export function AdminPaymentsTab() {
   const { session } = useAuth();
   const [publicKey, setPublicKey] = useState("");
@@ -33,13 +46,16 @@ export function AdminPaymentsTab() {
   const [webhookSecret, setWebhookSecret] = useState("");
   const [webhookEmail, setWebhookEmail] = useState("");
   const [plans, setPlans] = useState<PlanConfig[]>([]);
+  const [creditPackages, setCreditPackages] = useState<CreditPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [openingPortal, setOpeningPortal] = useState(false);
+  const [editingPackage, setEditingPackage] = useState<string | null>(null);
 
   useEffect(() => {
     loadSettings();
     fetchPlans();
+    fetchCreditPackages();
   }, []);
 
   const loadSettings = async () => {
@@ -66,6 +82,14 @@ export function AdminPaymentsTab() {
       .order("is_annual")
       .order("price_amount");
     if (data) setPlans(data);
+  };
+
+  const fetchCreditPackages = async () => {
+    const { data } = await supabase
+      .from("credit_packages")
+      .select("*")
+      .order("display_order");
+    if (data) setCreditPackages(data as CreditPackage[]);
   };
 
   const saveStripeSettings = async () => {
@@ -103,6 +127,68 @@ export function AdminPaymentsTab() {
       toast.success("Price ID atualizado!");
       fetchPlans();
     }
+  };
+
+  const updateCreditPackage = async (pkg: CreditPackage) => {
+    const { error } = await supabase
+      .from("credit_packages")
+      .update({
+        credits: pkg.credits,
+        price: pkg.price,
+        stripe_price_id: pkg.stripe_price_id,
+        label: pkg.label,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", pkg.id);
+
+    if (error) {
+      toast.error("Erro ao atualizar pacote");
+    } else {
+      toast.success("Pacote atualizado!");
+      setEditingPackage(null);
+      fetchCreditPackages();
+    }
+  };
+
+  const deleteCreditPackage = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir este pacote?")) return;
+    
+    const { error } = await supabase
+      .from("credit_packages")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Erro ao excluir pacote");
+    } else {
+      toast.success("Pacote excluído!");
+      fetchCreditPackages();
+    }
+  };
+
+  const addNewCreditPackage = async () => {
+    const maxOrder = Math.max(...creditPackages.map(p => p.display_order), 0);
+    const { error } = await supabase
+      .from("credit_packages")
+      .insert({
+        credits: 1000,
+        price: 49.90,
+        label: "Novo pacote",
+        display_order: maxOrder + 1,
+      });
+
+    if (error) {
+      toast.error("Erro ao criar pacote");
+    } else {
+      toast.success("Pacote criado!");
+      fetchCreditPackages();
+    }
+  };
+
+  const handlePackageChange = (id: string, field: keyof CreditPackage, value: any) => {
+    setCreditPackages(prev => prev.map(pkg => 
+      pkg.id === id ? { ...pkg, [field]: value } : pkg
+    ));
   };
 
   const openCustomerPortal = async () => {
@@ -197,7 +283,7 @@ export function AdminPaymentsTab() {
             </label>
             <div className="flex gap-2">
               <Input
-                placeholder="pk_live_12h3gHu2gHm5g1f18sEqPa90jRg4jD/6h8sS0gEhs2aDy6sLHv9k8d0a7d5b"
+                placeholder="pk_live_..."
                 value={publicKey}
                 onChange={(e) => setPublicKey(e.target.value)}
                 className="bg-secondary border-border flex-1 font-mono text-sm"
@@ -263,7 +349,7 @@ export function AdminPaymentsTab() {
         <Alert className="mt-4 border-primary/50 bg-primary/10">
           <Info className="w-4 h-4 text-primary" />
           <AlertDescription className="text-primary">
-            Configure os preços nas tabelas abaixo com IDs retornados pelo API do Stripe. O webhook é necessário para processar pagamentos recorrentes automaticamente e sincronizar status da assinatura entre o Stripe e a plataforma.
+            Configure os preços nas tabelas abaixo com IDs retornados pelo API do Stripe.
           </AlertDescription>
         </Alert>
       </Card>
@@ -293,7 +379,7 @@ export function AdminPaymentsTab() {
           <h3 className="font-semibold text-foreground">Configuração de Planos</h3>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          Configure os Price IDs do Stripe para cada plano. Crie os preços no Stripe e cole os IDs aqui.
+          Configure os Price IDs do Stripe para cada plano.
         </p>
 
         {/* Monthly Plans */}
@@ -320,7 +406,7 @@ export function AdminPaymentsTab() {
               <label className="text-xs text-muted-foreground mb-1 block">Price ID do Stripe</label>
               <div className="flex gap-2">
                 <Input
-                  placeholder="price_1O5dvk2P4xRigLyP4We5v96b"
+                  placeholder="price_..."
                   defaultValue={plan.stripe_price_id || ""}
                   className="bg-secondary border-border text-xs font-mono"
                   onBlur={(e) => {
@@ -360,9 +446,7 @@ export function AdminPaymentsTab() {
                   <p className="text-sm text-muted-foreground mb-2">
                     R$ {plan.price_amount?.toFixed(2) || "0.00"} / ano
                   </p>
-                  <label className="text-xs text-muted-foreground mb-1 block">
-                    Price ID do Stripe
-                  </label>
+                  <label className="text-xs text-muted-foreground mb-1 block">Price ID do Stripe</label>
                   <div className="flex gap-2">
                     <Input
                       placeholder="price_..."
@@ -383,33 +467,123 @@ export function AdminPaymentsTab() {
             </div>
           </>
         )}
+      </Card>
 
-        {/* Credit Packages */}
-        <h4 className="text-sm font-semibold text-foreground mb-3">Pacotes de Créditos</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { credits: 1000, price: "9.90" },
-            { credits: 2500, price: "19.90" },
-            { credits: 5000, price: "34.90" },
-            { credits: 15000, price: "89.90" },
-            { credits: 35000, price: "179.90" },
-            { credits: 100000, price: "449.90" },
-          ].map((pkg) => (
-            <div key={pkg.credits} className="p-4 rounded-lg border border-border bg-secondary/30">
-              <p className="font-medium text-foreground mb-1">{pkg.credits.toLocaleString()} Créditos</p>
-              <p className="text-sm text-muted-foreground mb-2">R$ {pkg.price}</p>
-              <Input
-                placeholder="price_..."
-                className="bg-secondary border-border text-xs font-mono"
-              />
+      {/* Credit Packages */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground">Pacotes de Créditos</h3>
+          <Button onClick={addNewCreditPackage} size="sm" className="gap-2">
+            <Plus className="w-4 h-4" />
+            Adicionar Pacote
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Gerencie os pacotes de créditos disponíveis para compra.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {creditPackages.map((pkg) => (
+            <div 
+              key={pkg.id} 
+              className={`p-4 rounded-lg border transition-all ${
+                editingPackage === pkg.id 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border bg-secondary/30"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  {editingPackage === pkg.id ? (
+                    <Input
+                      value={pkg.label || ""}
+                      onChange={(e) => handlePackageChange(pkg.id, "label", e.target.value)}
+                      className="h-7 text-sm w-32"
+                      placeholder="Rótulo"
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">{pkg.label}</span>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  {editingPackage === pkg.id ? (
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => updateCreditPackage(pkg)}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Save className="w-3.5 h-3.5 text-success" />
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => setEditingPackage(pkg.id)}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => deleteCreditPackage(pkg.id)}
+                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-muted-foreground w-16">Créditos:</label>
+                  {editingPackage === pkg.id ? (
+                    <Input
+                      type="number"
+                      value={pkg.credits}
+                      onChange={(e) => handlePackageChange(pkg.id, "credits", parseInt(e.target.value) || 0)}
+                      className="h-7 text-sm flex-1"
+                    />
+                  ) : (
+                    <span className="font-semibold text-foreground">{pkg.credits.toLocaleString()}</span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-muted-foreground w-16">Preço:</label>
+                  {editingPackage === pkg.id ? (
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={pkg.price}
+                      onChange={(e) => handlePackageChange(pkg.id, "price", parseFloat(e.target.value) || 0)}
+                      className="h-7 text-sm flex-1"
+                    />
+                  ) : (
+                    <span className="text-foreground">R$ {Number(pkg.price).toFixed(2)}</span>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-border/50">
+                  <label className="text-xs text-muted-foreground block mb-1">Price ID Stripe:</label>
+                  <Input
+                    placeholder="price_..."
+                    value={pkg.stripe_price_id || ""}
+                    onChange={(e) => handlePackageChange(pkg.id, "stripe_price_id", e.target.value)}
+                    onBlur={() => {
+                      if (editingPackage !== pkg.id) {
+                        updateCreditPackage(pkg);
+                      }
+                    }}
+                    className="bg-secondary border-border text-xs font-mono h-7"
+                  />
+                </div>
+              </div>
             </div>
           ))}
         </div>
-
-        <Button className="w-full mt-6 bg-success text-success-foreground hover:bg-success/90">
-          <Save className="w-4 h-4 mr-2" />
-          Salvar Todas as Configurações de Planos
-        </Button>
       </Card>
     </div>
   );
