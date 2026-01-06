@@ -19,7 +19,8 @@ import {
   FPS_OPTIONS,
   FpsOption,
   CinematicSettings,
-  DEFAULT_CINEMATIC_SETTINGS
+  DEFAULT_CINEMATIC_SETTINGS,
+  generateColorGradingInstructions
 } from "@/lib/xmlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { TransitionPreview } from "@/components/transitions/TransitionPreview";
@@ -1629,7 +1630,9 @@ echo "Agora importe o video no CapCut!"
     const scenesForXml = getScenesForEdl(); // Reutiliza a mesma estrutura
     const aspectRatioConfig = ASPECT_RATIO_OPTIONS.find(a => a.id === cinematicSettings.aspectRatio) || ASPECT_RATIO_OPTIONS[0];
     const transitionFrames = Math.round(cinematicSettings.fps * cinematicSettings.transitionDuration);
+    const safeFileName = (projectName.trim() || "projeto").replace(/[^a-zA-Z0-9_-]/g, "_");
     
+    // 1. Exportar XML
     const xmlContent = generateFcp7XmlWithTransitions(scenesForXml, {
       title: projectName || "Projeto_Video",
       fps: cinematicSettings.fps,
@@ -1639,22 +1642,39 @@ echo "Agora importe o video no CapCut!"
       transitionType: cinematicSettings.transitionType
     });
 
-    const blob = new Blob([xmlContent], { type: "application/xml" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    const safeFileName = (projectName.trim() || "projeto").replace(/[^a-zA-Z0-9_-]/g, "_");
-    link.download = `${safeFileName}_davinci.xml`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const xmlBlob = new Blob([xmlContent], { type: "application/xml" });
+    const xmlUrl = URL.createObjectURL(xmlBlob);
+    const xmlLink = document.createElement("a");
+    xmlLink.href = xmlUrl;
+    xmlLink.download = `${safeFileName}_davinci.xml`;
+    document.body.appendChild(xmlLink);
+    xmlLink.click();
+    document.body.removeChild(xmlLink);
+    URL.revokeObjectURL(xmlUrl);
+
+    // 2. Exportar Color Grading Instructions (se não for neutro)
+    if (cinematicSettings.colorGrading !== 'neutral') {
+      setTimeout(() => {
+        const colorGradingContent = generateColorGradingInstructions(cinematicSettings.colorGrading, cinematicSettings);
+        const colorBlob = new Blob([colorGradingContent], { type: "text/plain" });
+        const colorUrl = URL.createObjectURL(colorBlob);
+        const colorLink = document.createElement("a");
+        colorLink.href = colorUrl;
+        colorLink.download = `${safeFileName}_COLOR_GRADING_${cinematicSettings.colorGrading.toUpperCase()}.txt`;
+        document.body.appendChild(colorLink);
+        colorLink.click();
+        document.body.removeChild(colorLink);
+        URL.revokeObjectURL(colorUrl);
+      }, 300);
+    }
 
     const transitionName = TRANSITION_OPTIONS.find(t => t.id === cinematicSettings.transitionType)?.name || 'Cross Dissolve';
     const colorGradingName = COLOR_GRADING_OPTIONS.find(c => c.id === cinematicSettings.colorGrading)?.name || 'Neutro';
     toast({ 
-      title: "✅ XML Cinematográfico exportado!", 
-      description: `${scenesWithImages.length} cenas • ${aspectRatioConfig.name} • ${cinematicSettings.fps}fps • ${transitionName}` 
+      title: "✅ Pacote Cinematográfico exportado!", 
+      description: cinematicSettings.colorGrading !== 'neutral' 
+        ? `XML + Instruções de ${colorGradingName} • ${scenesWithImages.length} cenas • ${aspectRatioConfig.name}`
+        : `${scenesWithImages.length} cenas • ${aspectRatioConfig.name} • ${cinematicSettings.fps}fps • ${transitionName}` 
     });
     
     setShowEdlValidationModal(false);

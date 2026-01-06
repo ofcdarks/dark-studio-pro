@@ -96,6 +96,417 @@ export const COLOR_GRADING_OPTIONS: ColorGradingOption[] = [
 ];
 
 /**
+ * Configurações detalhadas de Color Grading para DaVinci Resolve
+ */
+export interface ColorGradingConfig {
+  lift: { r: number; g: number; b: number; master: number };
+  gamma: { r: number; g: number; b: number; master: number };
+  gain: { r: number; g: number; b: number; master: number };
+  offset: { r: number; g: number; b: number; master: number };
+  saturation: number;
+  contrast: number;
+  pivot: number;
+  highlights: number;
+  shadows: number;
+  midtones: number;
+  colorTemp: number;
+  tint: number;
+  curves?: {
+    luma: string;
+    red: string;
+    green: string;
+    blue: string;
+  };
+  description: string;
+  references: string[];
+}
+
+export const COLOR_GRADING_CONFIGS: Record<ColorGrading, ColorGradingConfig> = {
+  neutral: {
+    lift: { r: 0, g: 0, b: 0, master: 0 },
+    gamma: { r: 0, g: 0, b: 0, master: 0 },
+    gain: { r: 1.0, g: 1.0, b: 1.0, master: 1.0 },
+    offset: { r: 0, g: 0, b: 0, master: 0 },
+    saturation: 1.0,
+    contrast: 1.0,
+    pivot: 0.435,
+    highlights: 0,
+    shadows: 0,
+    midtones: 0,
+    colorTemp: 0,
+    tint: 0,
+    description: 'Cores originais sem alteração. Ideal para material que já foi tratado ou requer fidelidade cromática.',
+    references: ['Documentários', 'Entrevistas', 'Conteúdo técnico'],
+  },
+  cinematic_warm: {
+    lift: { r: 0.02, g: 0.01, b: -0.01, master: -0.005 },
+    gamma: { r: 0.03, g: 0.02, b: -0.02, master: 0 },
+    gain: { r: 1.08, g: 1.02, b: 0.92, master: 1.0 },
+    offset: { r: 0.01, g: 0.005, b: -0.01, master: 0 },
+    saturation: 0.95,
+    contrast: 1.15,
+    pivot: 0.40,
+    highlights: 5,
+    shadows: -5,
+    midtones: 3,
+    colorTemp: 15,
+    tint: 3,
+    curves: {
+      luma: 'S-curve suave: Shadows (-8, -12), Mids (128, 130), Highlights (230, 225)',
+      red: 'Levante levemente os mids: (128, 135)',
+      green: 'Neutro ou leve boost: (128, 130)',
+      blue: 'Reduza em highlights: (200, 190)',
+    },
+    description: 'Look dourado e quente inspirado em Dune, Blade Runner 2049, e Mad Max. Transmite calor, nostalgia e épico.',
+    references: ['Dune (2021)', 'Blade Runner 2049', 'Mad Max: Fury Road', 'The Martian'],
+  },
+  cinematic_cool: {
+    lift: { r: -0.02, g: 0, b: 0.03, master: -0.01 },
+    gamma: { r: -0.01, g: 0, b: 0.02, master: 0 },
+    gain: { r: 0.95, g: 1.0, b: 1.08, master: 1.0 },
+    offset: { r: -0.01, g: 0, b: 0.01, master: 0 },
+    saturation: 0.85,
+    contrast: 1.20,
+    pivot: 0.42,
+    highlights: -3,
+    shadows: 8,
+    midtones: -2,
+    colorTemp: -20,
+    tint: -5,
+    curves: {
+      luma: 'S-curve moderado: Shadows (-10, -5), Highlights (235, 220)',
+      red: 'Reduza levemente: (128, 120)',
+      green: 'Neutro: (128, 128)',
+      blue: 'Boost em shadows e mids: (40, 50), (128, 140)',
+    },
+    description: 'Look frio e dramático inspirado em The Revenant, Interstellar. Transmite isolamento, tensão e grandeza.',
+    references: ['The Revenant', 'Interstellar', 'The Hateful Eight', 'Dunkirk'],
+  },
+  film_look: {
+    lift: { r: 0.01, g: 0.01, b: 0.02, master: 0.015 },
+    gamma: { r: 0, g: -0.01, b: 0.01, master: 0 },
+    gain: { r: 1.02, g: 1.0, b: 0.98, master: 0.98 },
+    offset: { r: 0.005, g: 0.003, b: 0.008, master: 0.005 },
+    saturation: 0.90,
+    contrast: 1.08,
+    pivot: 0.45,
+    highlights: -8,
+    shadows: 10,
+    midtones: 0,
+    colorTemp: 5,
+    tint: 2,
+    curves: {
+      luma: 'Levante shadows para look lavado: (0, 15), (255, 245)',
+      red: 'Leve S-curve: (50, 55), (200, 195)',
+      green: 'Quase neutro: (128, 126)',
+      blue: 'Boost em shadows: (30, 45)',
+    },
+    description: 'Simula película 35mm com pretos elevados, highlights suaves e grão sutil. Estética orgânica de cinema.',
+    references: ['La La Land', 'Moonlight', 'Her', 'Call Me By Your Name'],
+  },
+  teal_orange: {
+    lift: { r: -0.02, g: 0.01, b: 0.04, master: 0 },
+    gamma: { r: 0.02, g: -0.01, b: -0.02, master: 0 },
+    gain: { r: 1.10, g: 0.98, b: 0.88, master: 1.0 },
+    offset: { r: 0.01, g: 0, b: -0.01, master: 0 },
+    saturation: 1.10,
+    contrast: 1.25,
+    pivot: 0.38,
+    highlights: 8,
+    shadows: -8,
+    midtones: 5,
+    colorTemp: 0,
+    tint: 0,
+    curves: {
+      luma: 'S-curve agressivo: Shadows (-15, -25), Highlights (240, 220)',
+      red: 'Boost em highlights: (180, 200), (255, 255)',
+      green: 'Reduzir levemente: (128, 120)',
+      blue: 'Boost forte em shadows: (30, 60), Reduzir em highlights: (220, 190)',
+    },
+    description: 'Look clássico de Hollywood blockbuster com skin tones laranjas e backgrounds teal. Alto impacto visual.',
+    references: ['Transformers', 'Mad Max', 'Marvel MCU', 'Michael Bay films'],
+  },
+  noir: {
+    lift: { r: 0, g: 0, b: 0, master: -0.02 },
+    gamma: { r: 0, g: 0, b: 0, master: -0.05 },
+    gain: { r: 1.0, g: 1.0, b: 1.0, master: 1.15 },
+    offset: { r: 0, g: 0, b: 0, master: 0 },
+    saturation: 0.30,
+    contrast: 1.50,
+    pivot: 0.35,
+    highlights: 15,
+    shadows: -20,
+    midtones: -5,
+    colorTemp: 0,
+    tint: 0,
+    curves: {
+      luma: 'S-curve extremo: Shadows (0, 0), (40, 15), Highlights (200, 230), (255, 255)',
+      red: 'Igual ao Luma para B&W',
+      green: 'Igual ao Luma para B&W',
+      blue: 'Igual ao Luma para B&W',
+    },
+    description: 'Alto contraste dramático, quase P&B. Sombras profundas e highlights estourados. Tensão máxima.',
+    references: ['Sin City', 'The Dark Knight', 'Se7en', 'Mank'],
+  },
+  vintage: {
+    lift: { r: 0.03, g: 0.02, b: 0.01, master: 0.02 },
+    gamma: { r: 0.02, g: 0.01, b: -0.02, master: 0.01 },
+    gain: { r: 1.05, g: 1.02, b: 0.90, master: 0.95 },
+    offset: { r: 0.02, g: 0.01, b: -0.01, master: 0.01 },
+    saturation: 0.75,
+    contrast: 0.90,
+    pivot: 0.48,
+    highlights: -12,
+    shadows: 15,
+    midtones: 5,
+    colorTemp: 12,
+    tint: 5,
+    curves: {
+      luma: 'Comprimir range: (0, 20), (255, 235)',
+      red: 'Boost geral: (128, 140)',
+      green: 'Leve fade: (0, 10), (255, 245)',
+      blue: 'Reduzir bastante: (128, 100), (255, 220)',
+    },
+    description: 'Estilo desbotado anos 70-80 com pretos elevados, saturação reduzida e tint amarelado. Nostalgia.',
+    references: ['Stranger Things', 'Joker', 'Once Upon a Time in Hollywood', 'Mindhunter'],
+  },
+};
+
+/**
+ * Gera arquivo de instruções de Color Grading para DaVinci Resolve
+ */
+export const generateColorGradingInstructions = (
+  colorGrading: ColorGrading,
+  settings: CinematicSettings
+): string => {
+  const config = COLOR_GRADING_CONFIGS[colorGrading];
+  const option = COLOR_GRADING_OPTIONS.find(o => o.id === colorGrading);
+  
+  const formatValue = (v: number) => v >= 0 ? `+${v.toFixed(3)}` : v.toFixed(3);
+  const formatGain = (v: number) => v.toFixed(2);
+  
+  let instructions = `
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    INSTRUÇÕES DE COLOR GRADING - DAVINCI RESOLVE              ║
+║                              Preset: ${option?.name.toUpperCase().padEnd(20)}                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📋 INFORMAÇÕES DO PRESET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${config.description}
+
+🎬 Filmes de Referência:
+${config.references.map(r => `   • ${r}`).join('\n')}
+
+═══════════════════════════════════════════════════════════════════════════════
+                              VALORES EXATOS PARA APLICAR
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. COLOR WHEELS (Aba Color)                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  🔴 LIFT (Shadows/Sombras)
+  ├── Red:    ${formatValue(config.lift.r)}
+  ├── Green:  ${formatValue(config.lift.g)}
+  ├── Blue:   ${formatValue(config.lift.b)}
+  └── Master: ${formatValue(config.lift.master)}
+
+  🟡 GAMMA (Midtones/Meios-Tons)
+  ├── Red:    ${formatValue(config.gamma.r)}
+  ├── Green:  ${formatValue(config.gamma.g)}
+  ├── Blue:   ${formatValue(config.gamma.b)}
+  └── Master: ${formatValue(config.gamma.master)}
+
+  🔵 GAIN (Highlights/Altas-Luzes)
+  ├── Red:    ${formatGain(config.gain.r)}
+  ├── Green:  ${formatGain(config.gain.g)}
+  ├── Blue:   ${formatGain(config.gain.b)}
+  └── Master: ${formatGain(config.gain.master)}
+
+  ⚫ OFFSET (Geral)
+  ├── Red:    ${formatValue(config.offset.r)}
+  ├── Green:  ${formatValue(config.offset.g)}
+  ├── Blue:   ${formatValue(config.offset.b)}
+  └── Master: ${formatValue(config.offset.master)}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 2. PRIMARIES (Ajustes Primários)                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  📊 Saturation:    ${(config.saturation * 100).toFixed(0)}%  (valor: ${config.saturation.toFixed(2)})
+  📊 Contrast:      ${(config.contrast * 100 - 100).toFixed(0)}%  (valor: ${config.contrast.toFixed(2)})
+  📊 Pivot:         ${(config.pivot * 100).toFixed(1)}%  (valor: ${config.pivot.toFixed(3)})
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 3. SHADOW/HIGHLIGHT/MIDTONE ADJUSTMENTS                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  🌙 Shadows:       ${config.shadows >= 0 ? '+' : ''}${config.shadows}
+  ☀️  Highlights:    ${config.highlights >= 0 ? '+' : ''}${config.highlights}
+  🔆 Midtones:      ${config.midtones >= 0 ? '+' : ''}${config.midtones}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 4. WHITE BALANCE                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  🌡️  Color Temp:    ${config.colorTemp >= 0 ? '+' : ''}${config.colorTemp} (${config.colorTemp > 0 ? 'mais quente' : config.colorTemp < 0 ? 'mais frio' : 'neutro'})
+  💜 Tint:          ${config.tint >= 0 ? '+' : ''}${config.tint} (${config.tint > 0 ? 'mais magenta' : config.tint < 0 ? 'mais verde' : 'neutro'})
+
+`;
+
+  if (config.curves) {
+    instructions += `
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 5. CURVES (Curvas Personalizadas)                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  📈 Luma (Y):
+     ${config.curves.luma}
+
+  🔴 Red:
+     ${config.curves.red}
+
+  🟢 Green:
+     ${config.curves.green}
+
+  🔵 Blue:
+     ${config.curves.blue}
+
+`;
+  }
+
+  instructions += `
+═══════════════════════════════════════════════════════════════════════════════
+                           COMO APLICAR NO DAVINCI RESOLVE
+═══════════════════════════════════════════════════════════════════════════════
+
+📍 PASSO A PASSO:
+
+1. Vá para a aba "Color" (ícone de pincel colorido na parte inferior)
+
+2. Na seção "Color Wheels", digite os valores de LIFT, GAMMA e GAIN
+   • Clique no número abaixo de cada wheel para editar
+   • Use os valores RGB e Master listados acima
+
+3. Para ajustar Saturation e Contrast:
+   • No painel à direita, encontre "Primaries - Adjust"
+   • Digite os valores exatos
+
+4. Para as Curves:
+   • Clique na aba "Curves" no painel Color
+   • Adicione pontos de controle conforme especificado
+
+5. Para Color Temp e Tint:
+   • Use o painel "Primaries - Bars" ou "Primaries - Wheels"
+   • Ajuste os sliders de Temp e Tint
+
+💡 DICA PRO: Crie um Power Grade deste look para reusar em outros projetos!
+   • Clique direito no node → "Grab Still"
+   • Na Gallery, clique direito → "Create Power Grade"
+
+═══════════════════════════════════════════════════════════════════════════════
+                              CONFIGURAÇÕES DO PROJETO
+═══════════════════════════════════════════════════════════════════════════════
+
+  🎬 FPS:           ${settings.fps}
+  📐 Aspect Ratio:  ${settings.aspectRatio}
+  🔄 Transição:     ${TRANSITION_OPTIONS.find(t => t.id === settings.transitionType)?.name} (${settings.transitionDuration}s)
+  
+  Efeitos Cinematográficos:
+  ${settings.fadeInOut ? '  ✅ Fade In/Out' : '  ⬜ Fade In/Out'}
+  ${settings.kenBurnsEffect ? '  ✅ Ken Burns Effect' : '  ⬜ Ken Burns Effect'}
+  ${settings.addVignette ? '  ✅ Vignette' : '  ⬜ Vignette'}
+  ${settings.letterbox ? '  ✅ Letterbox' : '  ⬜ Letterbox'}
+
+═══════════════════════════════════════════════════════════════════════════════
+                              EFEITOS ADICIONAIS
+═══════════════════════════════════════════════════════════════════════════════
+`;
+
+  if (settings.addVignette) {
+    instructions += `
+🔲 VIGNETTE (Vinheta):
+   1. No node de Color, vá para "Window" → "Vignette"
+   2. Configurações sugeridas:
+      • Inner Radius: 0.75
+      • Outer Radius: 0.95
+      • Roundness: 0.7
+      • Soft Edge: 0.8
+   3. Reduza o Gain Master do node de Vignette para 0.85
+
+`;
+  }
+
+  if (settings.kenBurnsEffect) {
+    instructions += `
+📷 KEN BURNS EFFECT (Movimento em imagens):
+   1. Na aba "Edit", selecione o clip
+   2. Vá para "Inspector" → "Transform"
+   3. Para Zoom In suave:
+      • Frame 1: Zoom 1.00, Position X/Y: 0
+      • Último Frame: Zoom 1.08, Position: ajuste conforme composição
+   4. Use "Ease In/Out" nas keyframes para movimento orgânico
+
+`;
+  }
+
+  if (settings.letterbox) {
+    instructions += `
+🎬 LETTERBOX (Barras Cinematográficas):
+   1. Em "Effects Library" → "Open FX" → busque "Blanking Fill"
+   2. Ou crie manualmente:
+      • Adicione um "Solid Color" preto em track acima
+      • Faça crop para criar as barras (altura = diferença do aspect ratio)
+   3. Para ${settings.aspectRatio}:
+      ${settings.aspectRatio === '2.35:1' ? '• Barras de ~132px em cima e embaixo (1080p)' : ''}
+      ${settings.aspectRatio === '2.39:1' ? '• Barras de ~138px em cima e embaixo (1080p)' : ''}
+      ${settings.aspectRatio === '1.85:1' ? '• Barras de ~21px em cima e embaixo (1080p)' : ''}
+
+`;
+  }
+
+  if (settings.fadeInOut) {
+    instructions += `
+🌅 FADE IN/OUT:
+   1. No primeiro clip: clique direito → "Add Transition" → "Cross Dissolve"
+      • Ajuste duração para 1-2 segundos
+   2. No último clip: adicione "Cross Dissolve" no final
+   3. Alternativa: Use "Dip to Color" (preto) para efeito mais dramático
+
+`;
+  }
+
+  instructions += `
+═══════════════════════════════════════════════════════════════════════════════
+                              DICAS PROFISSIONAIS
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 WORKFLOW RECOMENDADO:
+   1. Primeiro normalize as imagens (exposure, balance)
+   2. Aplique o color grade como segundo node
+   3. Adicione vinheta/efeitos em nodes separados
+   4. Use "Qualifier" para ajustar skin tones se necessário
+
+📺 PARA YOUTUBE:
+   • Exporte em H.264 com bitrate 15-25 Mbps
+   • Mantenha níveis de vídeo em "Full" (0-255)
+   • Adicione 1-2% de saturação extra (YT comprime cores)
+
+🔧 TROUBLESHOOTING:
+   • Se as cores parecerem muito fortes, reduza Saturation para 0.85
+   • Se os pretos estiverem lavados, reduza Lift Master
+   • Se os brancos estiverem estourados, reduza Gain Master
+
+═══════════════════════════════════════════════════════════════════════════════
+  Gerado automaticamente pelo Viral Visions Pro • ${new Date().toLocaleDateString('pt-BR')}
+═══════════════════════════════════════════════════════════════════════════════
+`;
+
+  return instructions;
+};
+
+/**
  * FPS options
  */
 export type FpsOption = 24 | 25 | 30 | 60;
