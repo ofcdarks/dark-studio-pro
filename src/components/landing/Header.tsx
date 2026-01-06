@@ -25,7 +25,7 @@ const Header = () => {
             className="flex items-center gap-3"
             whileHover={{ scale: 1.02 }}
           >
-            <div className="h-14 w-14 rounded-full overflow-hidden">
+            <div className="h-16 w-16 rounded-full overflow-hidden">
               <img 
                 src={logo} 
                 alt="La Casa Dark CORE" 
