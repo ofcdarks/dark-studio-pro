@@ -15,6 +15,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useTutorial } from "@/hooks/useTutorial";
+import { TutorialModal, TutorialHelpButton } from "@/components/tutorial/TutorialModal";
+import { SRT_CONVERTER_TUTORIAL } from "@/lib/tutorialConfigs";
 
 interface SrtHistoryItem {
   id: string;
@@ -28,6 +31,9 @@ interface SrtHistoryItem {
 
 const SRTConverter = () => {
   const { user } = useAuth();
+  
+  // Tutorial
+  const { showTutorial, completeTutorial, openTutorial } = useTutorial(SRT_CONVERTER_TUTORIAL.id);
   
   // Conversor SRT states
   const [srtInputText, setSrtInputText] = usePersistedState("srt_conversor_input", "");
@@ -285,11 +291,14 @@ const SRTConverter = () => {
             }}
           />
 
-          <div className="mb-8 mt-4">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Conversor SRT + Divisor de Texto</h1>
-            <p className="text-muted-foreground">
-              Converta textos em legendas SRT e divida roteiros com contador de palavras e tempo.
-            </p>
+          <div className="mb-8 mt-4 flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Conversor SRT + Divisor de Texto</h1>
+              <p className="text-muted-foreground">
+                Converta textos em legendas SRT e divida roteiros com contador de palavras e tempo.
+              </p>
+            </div>
+            <TutorialHelpButton onClick={openTutorial} />
           </div>
 
           {/* Conversor de SRT */}
@@ -306,6 +315,7 @@ const SRTConverter = () => {
               <div>
                 <label className="text-sm font-medium text-foreground mb-2 block">Cole seu texto aqui</label>
                 <Textarea
+                  data-tutorial="srt-input"
                   placeholder="Cole o texto que deseja converter em SRT..."
                   value={srtInputText}
                   onChange={(e) => setSrtInputText(e.target.value)}
@@ -326,7 +336,7 @@ const SRTConverter = () => {
                       <Button variant="ghost" size="sm" onClick={handleCopySrt}>
                         <Copy className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={handleDownloadSrt}>
+                      <Button variant="ghost" size="sm" onClick={handleDownloadSrt} data-tutorial="download-srt">
                         <Download className="w-4 h-4" />
                       </Button>
                     </div>
@@ -363,7 +373,7 @@ const SRTConverter = () => {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-4" data-tutorial="wpm-setting">
                 <div className="bg-secondary/50 rounded-lg p-4 text-center border border-border">
                   <p className="text-xs text-muted-foreground mb-1">Palavras</p>
                   <p className="text-2xl font-bold text-foreground">{divisorStats.words}</p>
@@ -521,6 +531,16 @@ const SRTConverter = () => {
           )}
         </div>
       </div>
+      
+      {/* Tutorial Modal */}
+      <TutorialModal
+        open={showTutorial}
+        onOpenChange={(open) => !open && completeTutorial()}
+        title={SRT_CONVERTER_TUTORIAL.title}
+        description={SRT_CONVERTER_TUTORIAL.description}
+        steps={SRT_CONVERTER_TUTORIAL.steps}
+        onComplete={completeTutorial}
+      />
     </MainLayout>
   );
 };

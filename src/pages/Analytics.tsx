@@ -85,6 +85,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useTutorial } from "@/hooks/useTutorial";
+import { TutorialModal, TutorialHelpButton } from "@/components/tutorial/TutorialModal";
+import { ANALYTICS_TUTORIAL } from "@/lib/tutorialConfigs";
 
 interface YouTubeAnalytics {
   channel: {
@@ -168,6 +171,9 @@ const Analytics = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Tutorial
+  const { showTutorial, completeTutorial, openTutorial } = useTutorial(ANALYTICS_TUTORIAL.id);
   const [channelUrl, setChannelUrl] = usePersistedState("analytics_channel_url", "");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyticsData, setAnalyticsData] = usePersistedState<YouTubeAnalytics | null>("analytics_data", null);
@@ -1274,11 +1280,14 @@ const Analytics = () => {
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Analytics do YouTube</h1>
-            <p className="text-muted-foreground">
-              Estatísticas e métricas do seu canal do YouTube
-            </p>
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Analytics do YouTube</h1>
+              <p className="text-muted-foreground">
+                Estatísticas e métricas do seu canal do YouTube
+              </p>
+            </div>
+            <TutorialHelpButton onClick={openTutorial} />
           </div>
 
           {/* API Key Warning */}
@@ -4224,6 +4233,16 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
           )}
         </div>
       </div>
+      
+      {/* Tutorial Modal */}
+      <TutorialModal
+        open={showTutorial}
+        onOpenChange={(open) => !open && completeTutorial()}
+        title={ANALYTICS_TUTORIAL.title}
+        description={ANALYTICS_TUTORIAL.description}
+        steps={ANALYTICS_TUTORIAL.steps}
+        onComplete={completeTutorial}
+      />
     </MainLayout>
   );
 };
