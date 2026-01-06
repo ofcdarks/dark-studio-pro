@@ -1,6 +1,7 @@
 /**
  * Gerador de XML (Final Cut Pro 7 XML) para DaVinci Resolve
  * Formato compatível com DaVinci Resolve 16+ e outros NLEs
+ * Versão Cinematográfica Profissional
  */
 
 interface SceneForXml {
@@ -30,6 +31,114 @@ export const TRANSITION_OPTIONS: TransitionOption[] = [
   { id: 'push', name: 'Push', description: 'Empurra a cena anterior', icon: '👉' },
   { id: 'none', name: 'Sem Transição', description: 'Corte seco direto', icon: '✂️' },
 ];
+
+/**
+ * Durações de transição disponíveis
+ */
+export type TransitionDuration = 0.25 | 0.5 | 1 | 1.5 | 2;
+
+export interface TransitionDurationOption {
+  value: TransitionDuration;
+  label: string;
+  description: string;
+}
+
+export const TRANSITION_DURATION_OPTIONS: TransitionDurationOption[] = [
+  { value: 0.25, label: '0.25s', description: 'Corte rápido' },
+  { value: 0.5, label: '0.5s', description: 'Padrão' },
+  { value: 1, label: '1s', description: 'Suave' },
+  { value: 1.5, label: '1.5s', description: 'Dramático' },
+  { value: 2, label: '2s', description: 'Cinematográfico' },
+];
+
+/**
+ * Aspect Ratios cinematográficos
+ */
+export type AspectRatio = '16:9' | '2.35:1' | '2.39:1' | '1.85:1' | '4:3' | '9:16';
+
+export interface AspectRatioOption {
+  id: AspectRatio;
+  name: string;
+  description: string;
+  width: number;
+  height: number;
+}
+
+export const ASPECT_RATIO_OPTIONS: AspectRatioOption[] = [
+  { id: '16:9', name: '16:9 HD', description: 'YouTube/TV padrão', width: 1920, height: 1080 },
+  { id: '2.35:1', name: '2.35:1 Cinemascope', description: 'Cinema épico (Star Wars)', width: 1920, height: 817 },
+  { id: '2.39:1', name: '2.39:1 Anamórfico', description: 'Cinema moderno (Marvel)', width: 1920, height: 803 },
+  { id: '1.85:1', name: '1.85:1 Flat', description: 'Cinema clássico americano', width: 1920, height: 1038 },
+  { id: '4:3', name: '4:3 Academy', description: 'Estilo retrô/documentário', width: 1440, height: 1080 },
+  { id: '9:16', name: '9:16 Vertical', description: 'TikTok/Reels/Shorts', width: 1080, height: 1920 },
+];
+
+/**
+ * Presets de color grading
+ */
+export type ColorGrading = 'neutral' | 'cinematic_warm' | 'cinematic_cool' | 'film_look' | 'teal_orange' | 'noir' | 'vintage';
+
+export interface ColorGradingOption {
+  id: ColorGrading;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+export const COLOR_GRADING_OPTIONS: ColorGradingOption[] = [
+  { id: 'neutral', name: 'Neutro', description: 'Cores originais', icon: '⚪' },
+  { id: 'cinematic_warm', name: 'Cinematic Warm', description: 'Tons dourados (Dune, Blade Runner)', icon: '🌅' },
+  { id: 'cinematic_cool', name: 'Cinematic Cool', description: 'Tons azulados (The Revenant)', icon: '🌊' },
+  { id: 'film_look', name: 'Film Look', description: 'Estética de película 35mm', icon: '🎞️' },
+  { id: 'teal_orange', name: 'Teal & Orange', description: 'Hollywood blockbuster', icon: '🎬' },
+  { id: 'noir', name: 'Noir', description: 'Alto contraste dramático', icon: '🖤' },
+  { id: 'vintage', name: 'Vintage', description: 'Estilo anos 70-80', icon: '📼' },
+];
+
+/**
+ * FPS options
+ */
+export type FpsOption = 24 | 25 | 30 | 60;
+
+export interface FpsOptionConfig {
+  value: FpsOption;
+  name: string;
+  description: string;
+}
+
+export const FPS_OPTIONS: FpsOptionConfig[] = [
+  { value: 24, name: '24 fps', description: 'Cinema (padrão Netflix/Hollywood)' },
+  { value: 25, name: '25 fps', description: 'PAL (Europa/Brasil broadcast)' },
+  { value: 30, name: '30 fps', description: 'NTSC (YouTube otimizado)' },
+  { value: 60, name: '60 fps', description: 'Alta fluidez (gaming/esportes)' },
+];
+
+/**
+ * Configurações cinematográficas completas
+ */
+export interface CinematicSettings {
+  transitionType: TransitionType;
+  transitionDuration: TransitionDuration;
+  aspectRatio: AspectRatio;
+  colorGrading: ColorGrading;
+  fps: FpsOption;
+  fadeInOut: boolean; // Fade in no início e fade out no final
+  addVignette: boolean; // Adicionar vinheta cinematográfica
+  kenBurnsEffect: boolean; // Efeito de movimento suave nas imagens
+  letterbox: boolean; // Adicionar barras pretas para aspect ratio
+}
+
+export const DEFAULT_CINEMATIC_SETTINGS: CinematicSettings = {
+  transitionType: 'cross_dissolve',
+  transitionDuration: 0.5,
+  aspectRatio: '16:9',
+  colorGrading: 'neutral',
+  fps: 24,
+  fadeInOut: true,
+  addVignette: false,
+  kenBurnsEffect: true,
+  letterbox: false,
+};
 
 /**
  * Converte segundos para frames
