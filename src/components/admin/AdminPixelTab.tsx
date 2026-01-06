@@ -733,6 +733,90 @@ ${EMAIL_FOOTER}`
             </td>
           </tr>
 ${EMAIL_FOOTER}`
+  },
+  plan_expired: {
+    subject: "🚫 Seu Plano Expirou - Acesso Suspenso",
+    body: `${EMAIL_HEADER}
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <!-- Expired Icon -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.1) 100%); border: 2px solid #ef4444; display: inline-flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 40px;">🚫</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #ef4444; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
+                Seu Plano Expirou
+              </h2>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 8px 0; text-align: center;">
+                Olá, <strong style="color: #f59e0b;">{{name}}</strong>
+              </p>
+              
+              <p style="color: #737373; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0; text-align: center;">
+                Seu plano <strong style="color: #ef4444;">{{plan_name}}</strong> expirou e seu acesso foi suspenso. Não se preocupe, seus dados estão seguros!
+              </p>
+              
+              <!-- Warning Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 24px; text-align: center;">
+                    <p style="color: #ef4444; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px 0;">⚠️ Acesso Suspenso</p>
+                    <p style="color: #a3a3a3; font-size: 14px; margin: 0;">
+                      Você perdeu acesso às seguintes funcionalidades:
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Lost Features List -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+                <tr>
+                  <td>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr><td style="color: #ef4444; font-size: 14px; padding: 8px 0;">✗ Análise de vídeos virais</td></tr>
+                      <tr><td style="color: #ef4444; font-size: 14px; padding: 8px 0;">✗ Geração de scripts com IA</td></tr>
+                      <tr><td style="color: #ef4444; font-size: 14px; padding: 8px 0;">✗ Criação de thumbnails profissionais</td></tr>
+                      <tr><td style="color: #ef4444; font-size: 14px; padding: 8px 0;">✗ Suporte prioritário</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Recovery Message -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 20px; text-align: center;">
+                    <p style="color: #22c55e; font-size: 14px; margin: 0;">
+                      💡 Reative agora e recupere seu acesso instantaneamente!
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 0 0;">
+                <tr>
+                  <td align="center">
+                    <a href="{{renewal_link}}" style="display: inline-block; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);">
+                      Reativar Meu Plano →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #525252; font-size: 13px; line-height: 1.6; margin: 24px 0 0 0; text-align: center;">
+                Seus dados serão mantidos por 30 dias. Após esse período, poderão ser excluídos permanentemente.
+              </p>
+            </td>
+          </tr>
+${EMAIL_FOOTER}`
   }
 };
 
@@ -1158,6 +1242,7 @@ export function AdminPixelTab() {
       plan_start: "Plano Ativado",
       plan_renewal: "Plano Renovado",
       renewal_reminder: "Lembrete de Renovação",
+      plan_expired: "Plano Expirado",
     };
     return labels[type] || type;
   };
@@ -1175,6 +1260,7 @@ export function AdminPixelTab() {
       plan_start: "🎉",
       plan_renewal: "🔄",
       renewal_reminder: "⏰",
+      plan_expired: "🚫",
     };
     return icons[type] || "📧";
   };
