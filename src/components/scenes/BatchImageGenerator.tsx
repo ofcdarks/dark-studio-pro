@@ -6,11 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Sparkles, Copy, Check, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Sparkles, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES, getStylesByCategory } from "@/lib/thumbnailStyles";
+import { useAuth } from "@/hooks/useAuth";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface GeneratedImage {
   id: string;
@@ -20,11 +23,23 @@ interface GeneratedImage {
   error?: string;
 }
 
+interface BatchHistory {
+  id: string;
+  title: string | null;
+  prompts: string;
+  style_id: string | null;
+  style_name: string | null;
+  prompt_count: number;
+  success_count: number | null;
+  created_at: string;
+}
+
 interface BatchImageGeneratorProps {
   initialPrompts?: string;
 }
 
 const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) => {
+  const { user } = useAuth();
   const [promptsText, setPromptsText] = useState(initialPrompts);
   const [selectedStyle, setSelectedStyle] = useState("");
   const [images, setImages] = useState<GeneratedImage[]>([]);
@@ -35,6 +50,11 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
   // Preview modal state
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+  
+  // History state
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<BatchHistory[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Update promptsText when initialPrompts changes
   useEffect(() => {
@@ -61,6 +81,70 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [previewOpen, images]);
+
+  // Load history
+  const loadHistory = async () => {
+    if (!user) return;
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from("batch_generation_history")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      setHistory(data || []);
+    } catch (error) {
+      console.error("Error loading history:", error);
+      toast.error("Erro ao carregar histórico");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // Save to history
+  const saveToHistory = async (successCount: number) => {
+    if (!user) return;
+    
+    const style = THUMBNAIL_STYLES.find(s => s.id === selectedStyle);
+    
+    try {
+      await supabase.from("batch_generation_history").insert({
+        user_id: user.id,
+        prompts: promptsText,
+        style_id: selectedStyle || null,
+        style_name: style?.name || null,
+        prompt_count: parsePrompts().length,
+        success_count: successCount,
+      });
+    } catch (error) {
+      console.error("Error saving to history:", error);
+    }
+  };
+
+  // Load prompts from history
+  const loadFromHistory = (item: BatchHistory) => {
+    setPromptsText(item.prompts);
+    if (item.style_id) {
+      setSelectedStyle(item.style_id);
+    }
+    setHistoryOpen(false);
+    toast.success("Prompts carregados do histórico");
+  };
+
+  // Delete history item
+  const deleteHistoryItem = async (id: string) => {
+    try {
+      await supabase.from("batch_generation_history").delete().eq("id", id);
+      setHistory(prev => prev.filter(item => item.id !== id));
+      toast.success("Item removido do histórico");
+    } catch (error) {
+      console.error("Error deleting history item:", error);
+      toast.error("Erro ao remover item");
+    }
+  };
 
   const parsePrompts = () => {
     // Split by double newline or numbered lines
@@ -134,8 +218,17 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
     }
 
     setIsGenerating(false);
-    const successCount = images.filter(img => img.status === "success").length;
-    toast.success(`${successCount}/${prompts.length} imagens geradas!`);
+    
+    // Calculate final success count
+    const finalSuccessCount = initialImages.filter((_, idx) => {
+      const currentImages = images;
+      return currentImages[idx]?.status === "success";
+    }).length;
+    
+    // Save to history
+    await saveToHistory(finalSuccessCount);
+    
+    toast.success(`Geração concluída! Salvo no histórico.`);
   };
 
   const handleRetry = async (imageId: string) => {
@@ -235,9 +328,22 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Input Form */}
         <Card className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <Images className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-foreground">Prompts de Imagem</h3>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Images className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-foreground">Prompts de Imagem</h3>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                loadHistory();
+                setHistoryOpen(true);
+              }}
+            >
+              <History className="w-4 h-4 mr-1" />
+              Histórico
+            </Button>
           </div>
 
           <div className="space-y-4">
@@ -563,6 +669,88 @@ Um carro esportivo na montanha`}
                 </div>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* History Modal */}
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              Histórico de Gerações
+            </DialogTitle>
+          </DialogHeader>
+          
+          {loadingHistory ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-8">
+              <History className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-30" />
+              <p className="text-muted-foreground">Nenhuma geração no histórico</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                As gerações serão salvas automaticamente
+              </p>
+            </div>
+          ) : (
+            <ScrollArea className="max-h-[400px]">
+              <div className="space-y-2">
+                {history.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="text-xs">
+                            {item.prompt_count} prompts
+                          </Badge>
+                          {item.style_name && (
+                            <Badge variant="secondary" className="text-xs">
+                              {item.style_name}
+                            </Badge>
+                          )}
+                          {item.success_count !== null && (
+                            <Badge variant="outline" className="text-xs text-green-500 border-green-500/30">
+                              {item.success_count} ✓
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-1">
+                          {item.prompts.substring(0, 150)}...
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          {format(new Date(item.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => loadFromHistory(item)}
+                        >
+                          <Copy className="w-3 h-3 mr-1" />
+                          Carregar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => deleteHistoryItem(item.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>
