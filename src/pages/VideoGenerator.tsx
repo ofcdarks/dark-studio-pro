@@ -59,13 +59,30 @@ const VideoGenerator = () => {
       id: jobId,
       prompt: prompt.substring(0, 50) + (prompt.length > 50 ? '...' : ''),
       status: 'processing',
-      progress: 0,
+      progress: 5,
       model: model,
       resolution: resolution,
       aspect_ratio: aspectRatio,
     };
 
     setVideoJobs(prev => [newJob, ...prev]);
+    
+    // Iniciar progresso simulado IMEDIATAMENTE (geração de vídeo demora 1-3 minutos)
+    let currentProgress = 5;
+    const progressInterval = setInterval(() => {
+      currentProgress += Math.random() * 5 + 2; // Incremento aleatório entre 2-7%
+      if (currentProgress >= 95) {
+        currentProgress = 95; // Máximo 95% até receber resposta
+        clearInterval(progressInterval);
+      }
+      setVideoJobs(prev => prev.map(job => 
+        job.id === jobId && job.status === 'processing' 
+          ? { ...job, progress: Math.round(currentProgress) } 
+          : job
+      ));
+    }, 2000); // Atualiza a cada 2 segundos
+
+    toast.info('Gerando vídeo... Isso pode levar 1-3 minutos.');
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-video-laozhang', {
@@ -77,32 +94,15 @@ const VideoGenerator = () => {
         }
       });
 
+      clearInterval(progressInterval); // Parar progresso simulado
+
       if (error) throw error;
 
       if (data.error) {
         throw new Error(data.error);
       }
 
-      if (data.status === 'processing') {
-        // Vídeo está sendo processado
-        setVideoJobs(prev => prev.map(job => 
-          job.id === jobId ? { ...job, progress: 30 } : job
-        ));
-        toast.info('Vídeo está sendo gerado. Isso pode levar alguns minutos...');
-        
-        // Simular progresso enquanto processa
-        let progress = 30;
-        const interval = setInterval(() => {
-          progress += 10;
-          if (progress >= 90) {
-            clearInterval(interval);
-          }
-          setVideoJobs(prev => prev.map(job => 
-            job.id === jobId && job.status === 'processing' ? { ...job, progress } : job
-          ));
-        }, 3000);
-        
-      } else if (data.status === 'completed' && data.video_url) {
+      if (data.status === 'completed' && data.video_url) {
         setVideoJobs(prev => prev.map(job => 
           job.id === jobId ? { 
             ...job, 
@@ -112,6 +112,12 @@ const VideoGenerator = () => {
           } : job
         ));
         toast.success('Vídeo gerado com sucesso!');
+      } else if (data.status === 'processing') {
+        // Ainda processando - manter na fila
+        setVideoJobs(prev => prev.map(job => 
+          job.id === jobId ? { ...job, progress: 95 } : job
+        ));
+        toast.info('Vídeo ainda em processamento. Aguarde...');
       }
 
       setPrompt('');
