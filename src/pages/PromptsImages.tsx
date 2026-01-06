@@ -30,6 +30,7 @@ import {
 } from "@/lib/xmlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { TransitionPreview } from "@/components/transitions/TransitionPreview";
+import { PresetPreview } from "@/components/transitions/PresetPreview";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -5299,11 +5300,15 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
           </DialogHeader>
           
           <div className="space-y-5">
-            {/* Preview Animado da Transição */}
-            <div className="flex justify-center">
+            {/* Preview Visual Animado */}
+            <div className="flex justify-center gap-4">
+              <PresetPreview 
+                settings={cinematicSettings} 
+                className="w-48 flex-shrink-0"
+              />
               <TransitionPreview 
                 transitionType={cinematicSettings.transitionType} 
-                className="w-full max-w-sm"
+                className="w-48 flex-shrink-0"
               />
             </div>
 
