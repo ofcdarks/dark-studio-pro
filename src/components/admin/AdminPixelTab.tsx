@@ -554,14 +554,52 @@ export function AdminPixelTab() {
   };
 
   const testSmtpConnection = async () => {
-    setTestingSmtp(true);
-    // Simulate test - in production this would call an edge function
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    if (smtpHost && smtpEmail && smtpPassword) {
-      toast.success("Conexão SMTP testada com sucesso! Email de teste enviado.");
-    } else {
+    if (!smtpHost || !smtpEmail || !smtpPassword) {
       toast.error("Preencha todos os campos SMTP antes de testar.");
+      return;
     }
+
+    // First save the settings
+    const { error: saveError } = await supabase
+      .from("admin_settings")
+      .upsert({
+        key: "smtp_settings",
+        value: {
+          host: smtpHost,
+          port: parseInt(smtpPort) || 587,
+          email: smtpEmail,
+          password: smtpPassword,
+          useSsl: useSsl,
+          fromName: "La Casa Dark"
+        },
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'key' });
+
+    if (saveError) {
+      toast.error("Erro ao salvar configurações antes do teste");
+      return;
+    }
+
+    setTestingSmtp(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('send-test-email', {
+        body: { toEmail: smtpEmail }
+      });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        toast.error(error.message || "Erro ao enviar email de teste");
+      } else if (data?.success) {
+        toast.success(data.message || "Email de teste enviado com sucesso!");
+      } else {
+        toast.error(data?.error || "Erro ao enviar email de teste");
+      }
+    } catch (err: any) {
+      console.error("Test email error:", err);
+      toast.error(err.message || "Erro ao conectar com o serviço de email");
+    }
+    
     setTestingSmtp(false);
   };
 
