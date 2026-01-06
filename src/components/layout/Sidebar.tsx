@@ -78,7 +78,7 @@ const defaultNavItems: NavItem[] = [
   { id: "prompts", icon: Image, label: "Prompts e Imagens", href: "/prompts", category: "criacao" },
   // Produção
   { id: "voice", icon: Mic, label: "Gerador de Voz", href: "/voice", category: "producao" },
-  { id: "video-gen", icon: Film, label: "Gerador de Vídeo", href: "/video-gen", category: "producao" },
+  // { id: "video-gen", icon: Film, label: "Gerador de Vídeo", href: "/video-gen", category: "producao" }, // Em Breve
   { id: "srt", icon: FileText, label: "Conversor SRT", href: "/srt", category: "producao" },
   // Publicação
   { id: "youtube", icon: Youtube, label: "Integração YouTube", href: "/youtube", category: "publicacao" },
