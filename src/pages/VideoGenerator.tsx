@@ -47,6 +47,12 @@ const VideoGenerator = () => {
   const estimatedCost = MODEL_COSTS[model] || 10;
 
   const handleGenerateVideo = async () => {
+    // Evita consumir API com múltiplos cliques enquanto já existe um job em andamento
+    if (loading || videoJobs.some(j => j.status === 'processing')) {
+      toast.info('Aguarde a geração atual terminar antes de iniciar outra.');
+      return;
+    }
+
     if (!prompt.trim()) {
       toast.error('Descreva o vídeo que você quer criar');
       return;
@@ -54,6 +60,8 @@ const VideoGenerator = () => {
 
     setLoading(true);
     const jobId = Date.now().toString();
+
+    let progressInterval: ReturnType<typeof setInterval> | null = null;
     
     const newJob: VideoJob = {
       id: jobId,
@@ -69,15 +77,18 @@ const VideoGenerator = () => {
     
     // Iniciar progresso simulado IMEDIATAMENTE (geração de vídeo demora 1-3 minutos)
     let currentProgress = 5;
-    const progressInterval = setInterval(() => {
+    progressInterval = setInterval(() => {
       currentProgress += Math.random() * 5 + 2; // Incremento aleatório entre 2-7%
       if (currentProgress >= 95) {
         currentProgress = 95; // Máximo 95% até receber resposta
-        clearInterval(progressInterval);
+        if (progressInterval) {
+          clearInterval(progressInterval);
+          progressInterval = null;
+        }
       }
-      setVideoJobs(prev => prev.map(job => 
-        job.id === jobId && job.status === 'processing' 
-          ? { ...job, progress: Math.round(currentProgress) } 
+      setVideoJobs(prev => prev.map(job =>
+        job.id === jobId && job.status === 'processing'
+          ? { ...job, progress: Math.round(currentProgress) }
           : job
       ));
     }, 2000); // Atualiza a cada 2 segundos
@@ -94,9 +105,10 @@ const VideoGenerator = () => {
         }
       });
 
-      clearInterval(progressInterval); // Parar progresso simulado
-
-      if (error) throw error;
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
 
       if (data.error) {
         throw new Error(data.error);
@@ -138,6 +150,10 @@ const VideoGenerator = () => {
         toast.error(errorMessage);
       }
     } finally {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
       setLoading(false);
     }
   };
@@ -271,7 +287,7 @@ const VideoGenerator = () => {
               <Button 
                 className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={handleGenerateVideo}
-                disabled={loading || !prompt.trim()}
+                disabled={loading || !prompt.trim() || videoJobs.some(j => j.status === 'processing')}
               >
                 {loading ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
