@@ -10,7 +10,7 @@ import {
   DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog";
-import { HardDrive, Image, Database, Loader2, RefreshCw, Search, FolderOpen, Trash2, FileImage, FileText, File } from "lucide-react";
+import { HardDrive, Image, Database, Loader2, RefreshCw, Search, FolderOpen, Trash2, FileImage, FileText, File, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -194,6 +194,30 @@ export function AdminStorageTab() {
       toast.error("Erro ao excluir arquivo");
     } finally {
       setDeletingFileId(null);
+    }
+  };
+
+  const handleDownloadFile = async (file: UserFile) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from(file.bucket_name)
+        .download(file.file_path);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = getFileName(file.file_path);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success("Download iniciado!");
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("Erro ao baixar arquivo");
     }
   };
 
@@ -417,19 +441,29 @@ export function AdminStorageTab() {
                           {format(new Date(file.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteFile(file)}
-                            disabled={deletingFileId === file.id}
-                          >
-                            {deletingFileId === file.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-primary hover:text-primary"
+                              onClick={() => handleDownloadFile(file)}
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteFile(file)}
+                              disabled={deletingFileId === file.id}
+                            >
+                              {deletingFileId === file.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
