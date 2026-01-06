@@ -25,7 +25,7 @@ const Header = () => {
             className="flex items-center gap-3"
             whileHover={{ scale: 1.02 }}
           >
-            <div className="h-16 w-16 rounded-full overflow-hidden flex items-center justify-center">
+            <div className="h-16 w-16 rounded-full overflow-hidden flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.4)]">
               <img 
                 src={logo} 
                 alt="La Casa Dark CORE" 
