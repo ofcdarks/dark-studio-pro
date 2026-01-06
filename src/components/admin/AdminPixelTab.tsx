@@ -49,24 +49,75 @@ const getEmailHeader = (logoUrl: string) => `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    /* Mobile Responsive */
+    @media only screen and (max-width: 600px) {
+      .email-container {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      .email-content {
+        padding: 24px 16px !important;
+      }
+      .email-header {
+        padding: 24px 16px !important;
+      }
+      .email-footer {
+        padding: 24px 16px !important;
+      }
+      .email-title {
+        font-size: 22px !important;
+      }
+      .email-subtitle {
+        font-size: 11px !important;
+      }
+      .content-title {
+        font-size: 24px !important;
+      }
+      .content-text {
+        font-size: 14px !important;
+      }
+      .icon-container {
+        width: 70px !important;
+        height: 70px !important;
+      }
+      .icon-emoji {
+        font-size: 32px !important;
+        line-height: 70px !important;
+      }
+      .cta-button {
+        padding: 14px 28px !important;
+        font-size: 14px !important;
+      }
+      .details-box {
+        padding: 16px !important;
+      }
+      .details-label {
+        font-size: 12px !important;
+      }
+      .details-value {
+        font-size: 12px !important;
+      }
+    }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; padding: 20px 10px;" role="presentation">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(180deg, #141414 0%, #0a0a0a 100%); border-radius: 20px; border: 1px solid rgba(245, 158, 11, 0.3); overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+        <table class="email-container" width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(180deg, #141414 0%, #0a0a0a 100%); border-radius: 20px; border: 1px solid rgba(245, 158, 11, 0.3); overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); max-width: 600px;" role="presentation">
           <!-- Logo Header -->
           <tr>
-            <td style="padding: 32px 40px; text-align: center; border-bottom: 1px solid rgba(245, 158, 11, 0.15);">
-              <table width="100%" cellpadding="0" cellspacing="0">
+            <td class="email-header" style="padding: 32px 40px; text-align: center; border-bottom: 1px solid rgba(245, 158, 11, 0.15);">
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                 <tr>
                   <td align="center">
                     <img src="${logoUrl}" alt="La Casa Dark Core" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto;" onerror="this.style.display='none'"/>
-                    <h1 style="margin: 16px 0 0 0; color: #f59e0b; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">La Casa Dark Core</h1>
-                    <p style="margin: 6px 0 0 0; color: #71717a; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 2px;">Sistema Operacional de Viralização</p>
+                    <h1 class="email-title" style="margin: 16px 0 0 0; color: #f59e0b; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">La Casa Dark Core</h1>
+                    <p class="email-subtitle" style="margin: 6px 0 0 0; color: #71717a; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 2px;">Sistema Operacional de Viralização</p>
                   </td>
                 </tr>
               </table>
@@ -79,14 +130,14 @@ const EMAIL_HEADER = getEmailHeader(DEFAULT_EMAIL_LOGO);
 const EMAIL_FOOTER = `
           <!-- Footer -->
           <tr>
-            <td style="padding: 32px 40px; background: linear-gradient(180deg, #0f0f0f 0%, #0a0a0a 100%); border-top: 1px solid rgba(245, 158, 11, 0.15);">
-              <table width="100%" cellpadding="0" cellspacing="0">
+            <td class="email-footer" style="padding: 32px 40px; background: linear-gradient(180deg, #0f0f0f 0%, #0a0a0a 100%); border-top: 1px solid rgba(245, 158, 11, 0.15);">
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                 <tr>
                   <td align="center">
                     <p style="color: #f59e0b; font-size: 16px; font-weight: 700; margin: 0 0 8px 0;">La Casa Dark Core®</p>
                     <p style="color: #525252; font-size: 12px; margin: 0 0 4px 0; font-style: italic;">A infraestrutura por trás de canais dark profissionais</p>
                     <p style="color: #404040; font-size: 11px; margin: 0 0 16px 0;">A revolução chegou. Não há espaço para amadores.</p>
-                    <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                    <table cellpadding="0" cellspacing="0" style="margin: 0 auto;" role="presentation">
                       <tr>
                         <td style="padding: 0 8px;">
                           <a href="https://www.canaisdarks.com.br" style="color: #f59e0b; font-size: 12px; text-decoration: none;">www.canaisdarks.com.br</a>
@@ -107,6 +158,22 @@ const EMAIL_FOOTER = `
   </table>
 </body>
 </html>`;
+
+// Helper function to generate mobile-friendly icon circles
+const getIconCircle = (emoji: string, borderColor: string, bgGradient: string) => `
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;" role="presentation">
+                <tr>
+                  <td align="center">
+                    <table cellpadding="0" cellspacing="0" role="presentation">
+                      <tr>
+                        <td class="icon-container" style="width: 80px; height: 80px; border-radius: 50%; background: ${bgGradient}; border: 2px solid ${borderColor}; text-align: center; vertical-align: middle;">
+                          <span class="icon-emoji" style="font-size: 40px; line-height: 80px; display: block;">${emoji}</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>`;
 
 // Premium email templates with La Casa Dark Core branding
 const DEFAULT_TEMPLATES: Record<string, { subject: string; body: string }> = {
@@ -613,17 +680,9 @@ ${EMAIL_FOOTER}`
     body: `${EMAIL_HEADER}
           <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
+            <td class="email-content" style="padding: 40px;">
               <!-- Renewal Icon -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
-                <tr>
-                  <td align="center">
-                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%); border: 2px solid #3b82f6; display: inline-flex; align-items: center; justify-content: center;">
-                      <span style="font-size: 40px;">🔄</span>
-                    </div>
-                  </td>
-                </tr>
-              </table>
+              ${getIconCircle('🔄', '#3b82f6', 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%)')}
               
               <h2 style="color: #3b82f6; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
                 Plano Renovado!
@@ -667,17 +726,9 @@ ${EMAIL_FOOTER}`
     body: `${EMAIL_HEADER}
           <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
+            <td class="email-content" style="padding: 40px;">
               <!-- Warning Icon -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
-                <tr>
-                  <td align="center">
-                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(251, 146, 60, 0.2) 0%, rgba(234, 88, 12, 0.1) 100%); border: 2px solid #fb923c; display: inline-flex; align-items: center; justify-content: center;">
-                      <span style="font-size: 40px;">⏰</span>
-                    </div>
-                  </td>
-                </tr>
-              </table>
+              ${getIconCircle('⏰', '#fb923c', 'linear-gradient(135deg, rgba(251, 146, 60, 0.2) 0%, rgba(234, 88, 12, 0.1) 100%)')}
               
               <h2 style="color: #fb923c; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
                 Seu Plano Vence em Breve!
@@ -739,17 +790,9 @@ ${EMAIL_FOOTER}`
     body: `${EMAIL_HEADER}
           <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
+            <td class="email-content" style="padding: 40px;">
               <!-- Expired Icon -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
-                <tr>
-                  <td align="center">
-                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.1) 100%); border: 2px solid #ef4444; display: inline-flex; align-items: center; justify-content: center;">
-                      <span style="font-size: 40px;">🚫</span>
-                    </div>
-                  </td>
-                </tr>
-              </table>
+              ${getIconCircle('🚫', '#ef4444', 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.1) 100%)')}
               
               <h2 style="color: #ef4444; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
                 Seu Plano Expirou
