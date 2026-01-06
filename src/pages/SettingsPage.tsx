@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload, History, Video, FileText, Play, Rocket, Mic } from "lucide-react";
+import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload, History, Video, FileText, Play, Rocket, Mic, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +16,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { resetAllTutorials } from "@/hooks/useTutorial";
 
 type UserPlan = 'free' | 'pro' | 'admin' | 'master' | 'annual';
 
@@ -777,6 +778,28 @@ const SettingsPage = () => {
                   <Lock className="w-4 h-4 mr-2" />
                   Ativar 2FA (Em breve)
                 </Button>
+              </div>
+              
+              <div className="mt-6 pt-6 border-t border-border">
+                <h4 className="text-sm font-medium text-foreground mb-3">Tutoriais</h4>
+                <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-foreground">Resetar Tutoriais</p>
+                    <p className="text-sm text-muted-foreground">Ver novamente todos os tutoriais guiados</p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-border text-foreground hover:bg-secondary"
+                    onClick={() => {
+                      resetAllTutorials();
+                      toast.success('Tutoriais resetados! Eles aparecerão novamente ao visitar cada página.');
+                    }}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Resetar
+                  </Button>
+                </div>
               </div>
             </Card>
 
