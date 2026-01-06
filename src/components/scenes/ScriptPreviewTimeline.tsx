@@ -11,6 +11,27 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 
+interface KenBurnsMotion {
+  type: string;
+  intensity: 'subtle' | 'normal' | 'dramatic';
+  reason?: string;
+}
+
+// Mapeamento de ícones de Ken Burns por tipo
+const KEN_BURNS_ICONS: Record<string, { icon: string; label: string }> = {
+  zoom_in: { icon: '🔍', label: 'Zoom In' },
+  zoom_out: { icon: '🔭', label: 'Zoom Out' },
+  pan_left: { icon: '⬅️', label: 'Pan Esq' },
+  pan_right: { icon: '➡️', label: 'Pan Dir' },
+  pan_up: { icon: '⬆️', label: 'Pan Cima' },
+  pan_down: { icon: '⬇️', label: 'Pan Baixo' },
+  zoom_in_pan_right: { icon: '↗️', label: 'Zoom+Dir' },
+  zoom_in_pan_left: { icon: '↖️', label: 'Zoom+Esq' },
+  zoom_out_pan_right: { icon: '↘️', label: 'Out+Dir' },
+  zoom_out_pan_left: { icon: '↙️', label: 'Out+Esq' },
+  static: { icon: '⏸️', label: 'Estático' },
+};
+
 interface GeneratedScene {
   number: number;
   text: string;
@@ -20,6 +41,7 @@ interface GeneratedScene {
   emotion?: string;
   retentionTrigger?: string;
   motionRecommended?: boolean; // Indica se a cena se beneficia de movimento (até 11s)
+  kenBurnsMotion?: KenBurnsMotion; // Movimento Ken Burns configurado
 }
 
 interface ScriptPreviewTimelineProps {
@@ -45,6 +67,7 @@ interface PreviewScene {
   emotion?: string;
   retentionTrigger?: string;
   motionRecommended?: boolean;
+  kenBurnsMotion?: KenBurnsMotion;
 }
 
 // Mapeamento de emoções para cores
@@ -200,7 +223,8 @@ export function ScriptPreviewTimeline({
           generatedImage: scene.generatedImage,
           emotion: scene.emotion,
           retentionTrigger: scene.retentionTrigger,
-          motionRecommended
+          motionRecommended,
+          kenBurnsMotion: scene.kenBurnsMotion
         };
       });
     }
@@ -750,6 +774,8 @@ export function ScriptPreviewTimeline({
                 const sceneEmotion = previewScenes[index]?.emotion;
                 const sceneTrigger = previewScenes[index]?.retentionTrigger;
                 const sceneMotion = previewScenes[index]?.motionRecommended;
+                const sceneKenBurns = previewScenes[index]?.kenBurnsMotion;
+                const kenBurnsInfo = sceneKenBurns?.type ? KEN_BURNS_ICONS[sceneKenBurns.type] : null;
                 const emotionStyle = getEmotionStyle(sceneEmotion);
                 const triggerStyle = getTriggerStyle(sceneTrigger);
                 
@@ -817,10 +843,25 @@ export function ScriptPreviewTimeline({
                         )}
                         
                         {/* Indicador de movimento recomendado */}
-                        {sceneMotion && sceneImage && (
+                        {sceneMotion && sceneImage && !kenBurnsInfo && (
                           <div className="absolute top-1 right-1 z-20">
                             <span className="text-[8px] px-1 py-0.5 rounded bg-emerald-500/80 text-white font-medium">
                               🎬
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Indicador de Ken Burns configurado */}
+                        {kenBurnsInfo && (
+                          <div className="absolute top-1 right-1 z-20">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                              sceneKenBurns?.intensity === 'dramatic' 
+                                ? 'bg-rose-500/90 text-white' 
+                                : sceneKenBurns?.intensity === 'subtle'
+                                  ? 'bg-blue-500/80 text-white'
+                                  : 'bg-primary/90 text-white'
+                            }`}>
+                              {kenBurnsInfo.icon}
                             </span>
                           </div>
                         )}
@@ -897,8 +938,24 @@ export function ScriptPreviewTimeline({
                             </div>
                           )}
                           
-                          {/* Movimento recomendado */}
-                          {sceneMotion && (
+                          {/* Ken Burns configurado */}
+                          {kenBurnsInfo && (
+                            <div className="flex items-center gap-2 pt-1">
+                              <span className="text-xs text-muted-foreground">Ken Burns:</span>
+                              <span className={`text-xs px-2 py-1 rounded font-medium ${
+                                sceneKenBurns?.intensity === 'dramatic' 
+                                  ? 'bg-rose-500/30 text-rose-300' 
+                                  : sceneKenBurns?.intensity === 'subtle'
+                                    ? 'bg-blue-500/30 text-blue-300'
+                                    : 'bg-primary/30 text-primary'
+                              }`}>
+                                {kenBurnsInfo.icon} {kenBurnsInfo.label} • {sceneKenBurns?.intensity === 'subtle' ? 'Sutil' : sceneKenBurns?.intensity === 'dramatic' ? 'Dramático' : 'Normal'}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Movimento recomendado (apenas se não tiver Ken Burns) */}
+                          {sceneMotion && !kenBurnsInfo && (
                             <div className="flex items-center gap-2 pt-1">
                               <span className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-medium">
                                 🎬 Movimento até 11s recomendado

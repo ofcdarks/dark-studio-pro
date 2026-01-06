@@ -3229,7 +3229,8 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                         durationSeconds: (scene.wordCount / currentWpm) * 60,
                         generatedImage: scene.generatedImage,
                         emotion: scene.emotion,
-                        retentionTrigger: scene.retentionTrigger
+                        retentionTrigger: scene.retentionTrigger,
+                        kenBurnsMotion: scene.kenBurnsMotion
                       })) : []}
                     />
                   )}
