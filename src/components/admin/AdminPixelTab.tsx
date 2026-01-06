@@ -64,11 +64,7 @@ const getEmailHeader = (logoUrl: string) => `<!DOCTYPE html>
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 3px; display: inline-block;">
-                      <div style="width: 74px; height: 74px; border-radius: 50%; background: #0a0a0a; display: flex; align-items: center; justify-content: center;">
-                        <img src="${logoUrl}" alt="La Casa Dark Core" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;" onerror="this.style.display='none'"/>
-                      </div>
-                    </div>
+                    <img src="${logoUrl}" alt="La Casa Dark Core" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto;" onerror="this.style.display='none'"/>
                     <h1 style="margin: 16px 0 0 0; color: #f59e0b; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">La Casa Dark Core</h1>
                     <p style="margin: 6px 0 0 0; color: #71717a; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 2px;">Sistema Operacional de Viralização</p>
                   </td>
