@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload, History, Video, FileText, Play, Sparkles, Mic } from "lucide-react";
+import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload, History, Video, FileText, Play, Rocket, Mic } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
@@ -369,7 +369,7 @@ const SettingsPage = () => {
       case 'script_generated':
         return <FileText className="w-4 h-4 text-green-500" />;
       case 'image_generated':
-        return <Sparkles className="w-4 h-4 text-purple-500" />;
+        return <Rocket className="w-4 h-4 text-purple-500" />;
       case 'tts_generated':
         return <Mic className="w-4 h-4 text-blue-500" />;
       case 'scene_generated':

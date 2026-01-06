@@ -22,8 +22,7 @@ import {
   Target,
   Upload,
   File,
-  Download,
-  Sparkles
+  Download
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { AgentChatModal } from "@/components/agents/AgentChatModal";
@@ -893,7 +892,7 @@ const ViralAgents = () => {
                             </div>
                             {agent.preferred_model && (
                               <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-primary/10 border-primary/30 text-primary">
-                                <Sparkles className="w-2.5 h-2.5 mr-1" />
+                                <Rocket className="w-2.5 h-2.5 mr-1" />
                                 {agent.preferred_model === 'gpt-4o' ? 'GPT-4o' : 
                                  agent.preferred_model === 'claude-4-sonnet' ? 'Claude 4' : 
                                  agent.preferred_model === 'gemini-2.5-pro' ? 'Gemini Pro' : 

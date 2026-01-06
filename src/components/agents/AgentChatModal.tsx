@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, Loader2, User, Trash2, Sparkles, FileText, X, Zap, Copy, Pencil, Check, Brain, RefreshCw, Save, Download, AlertTriangle } from "lucide-react";
+import { Bot, Send, Loader2, User, Trash2, Rocket, FileText, X, Zap, Copy, Pencil, Check, Brain, RefreshCw, Save, Download, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import logoGif from "@/assets/logo.gif";
 import { supabase } from "@/integrations/supabase/client";
@@ -885,7 +885,7 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
             <div className="flex items-center gap-2 shrink-0">
               <Select value={selectedModel} onValueChange={handleModelChange}>
                 <SelectTrigger className="w-[140px] h-9 text-xs bg-background/50 border-border/50 rounded-lg">
-                  <Sparkles className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                  <Rocket className="w-3.5 h-3.5 mr-1.5 text-primary" />
                   <SelectValue placeholder="Modelo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1178,7 +1178,7 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3 h-3 mr-1" />
+                      <Rocket className="w-3 h-3 mr-1" />
                       Gerar
                     </>
                   )}

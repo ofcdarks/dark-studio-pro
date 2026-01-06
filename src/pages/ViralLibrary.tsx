@@ -23,7 +23,7 @@ import {
   Check,
   Clock,
   Calendar,
-  Sparkles,
+  Rocket,
   ChevronDown,
   ChevronUp
 } from "lucide-react";
@@ -698,7 +698,7 @@ const ViralLibrary = () => {
                                     <Badge variant="outline">{script.language}</Badge>
                                     {script.model_used && (
                                       <Badge className="bg-primary/20 text-primary border-0 gap-1">
-                                        <Sparkles className="w-3 h-3" />
+                                        <Rocket className="w-3 h-3" />
                                         {script.model_used}
                                       </Badge>
                                     )}
