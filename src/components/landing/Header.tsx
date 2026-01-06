@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import headerLogo from "@/assets/header-logo.png";
+import logo from "@/assets/logo.gif";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,11 +25,11 @@ const Header = () => {
             className="flex items-center gap-3"
             whileHover={{ scale: 1.02 }}
           >
-            <div className="h-14 w-14 rounded-full overflow-hidden flex items-center justify-center">
+            <div className="h-14 w-14 rounded-full overflow-hidden">
               <img 
-                src={headerLogo} 
+                src={logo} 
                 alt="La Casa Dark CORE" 
-                className="h-full w-full object-cover scale-[1.02]"
+                className="w-full h-full object-cover"
               />
             </div>
           </motion.div>
