@@ -263,12 +263,15 @@ const getKenBurnsKeyframeParams = (
 ): { startScale: number; endScale: number; startX: number; endX: number; startY: number; endY: number } => {
   const intensityMultiplier = motion.intensity === 'dramatic' ? 1.5 : motion.intensity === 'subtle' ? 0.5 : 1.0;
   
-  const baseZoom = 0.08 * intensityMultiplier;
-  const basePan = 0.1 * intensityMultiplier;
+  // IMPORTANTE: Usar escala base de 1.08 (108%) para garantir que a imagem sempre cubra a tela
+  // Isso evita bordas pretas durante qualquer movimento de zoom ou pan
+  const safeBaseScale = 1.08; // Margem de segurança de 8%
+  const baseZoom = 0.06 * intensityMultiplier; // Reduzido para manter dentro da margem de segurança
+  const basePan = 0.04 * intensityMultiplier; // Reduzido para evitar mostrar bordas
   
   let params = {
-    startScale: 1.0,
-    endScale: 1.0,
+    startScale: safeBaseScale,
+    endScale: safeBaseScale,
     startX: 0,
     endX: 0,
     startY: 0,
@@ -277,12 +280,13 @@ const getKenBurnsKeyframeParams = (
   
   switch (motion.type) {
     case 'zoom_in':
-      params.startScale = 1.0;
-      params.endScale = 1.0 + baseZoom;
+      params.startScale = safeBaseScale;
+      params.endScale = safeBaseScale + baseZoom;
       break;
     case 'zoom_out':
-      params.startScale = 1.0 + baseZoom;
-      params.endScale = 1.0;
+      // Zoom out: começa maior e termina na escala de segurança (nunca abaixo)
+      params.startScale = safeBaseScale + baseZoom;
+      params.endScale = safeBaseScale;
       break;
     case 'pan_left':
       params.startX = basePan;
@@ -301,37 +305,38 @@ const getKenBurnsKeyframeParams = (
       params.endY = basePan;
       break;
     case 'zoom_in_pan_right':
-      params.startScale = 1.0;
-      params.endScale = 1.0 + baseZoom;
+      params.startScale = safeBaseScale;
+      params.endScale = safeBaseScale + baseZoom;
       params.startX = -basePan * 0.5;
       params.endX = basePan * 0.5;
       break;
     case 'zoom_in_pan_left':
-      params.startScale = 1.0;
-      params.endScale = 1.0 + baseZoom;
+      params.startScale = safeBaseScale;
+      params.endScale = safeBaseScale + baseZoom;
       params.startX = basePan * 0.5;
       params.endX = -basePan * 0.5;
       break;
     case 'zoom_out_pan_right':
-      params.startScale = 1.0 + baseZoom;
-      params.endScale = 1.0;
+      params.startScale = safeBaseScale + baseZoom;
+      params.endScale = safeBaseScale;
       params.startX = -basePan * 0.5;
       params.endX = basePan * 0.5;
       break;
     case 'zoom_out_pan_left':
-      params.startScale = 1.0 + baseZoom;
-      params.endScale = 1.0;
+      params.startScale = safeBaseScale + baseZoom;
+      params.endScale = safeBaseScale;
       params.startX = basePan * 0.5;
       params.endX = -basePan * 0.5;
       break;
     case 'static':
     default:
-      // Sem movimento
+      // Sem movimento, mas mantém escala de segurança
       break;
   }
   
   return params;
 };
+
 
 /**
  * Gera XML de keyframes para efeito Ken Burns
@@ -1207,7 +1212,10 @@ export type IntroNiche =
   | 'fitness' 
   | 'cooking' 
   | 'music' 
-  | 'storytime';
+  | 'storytime'
+  | 'biblical'
+  | 'psychology'
+  | 'curiosities';
 
 export interface MusicRecommendation {
   name: string;
@@ -1725,6 +1733,102 @@ export const INTRO_PRESETS: IntroPreset[] = [
       { name: 'Emotional Piano', artist: 'Lesfm', source: 'Pixabay', genre: 'Piano', mood: 'Emotivo', url: 'https://pixabay.com/music/solo-piano-emotional-piano-138234/', duration: '3:30', bpm: 65, isPremium: false },
       { name: 'Dark Narrative', artist: 'AudioCoffee', source: 'Pixabay', genre: 'Ambiente', mood: 'Sombrio', url: 'https://pixabay.com/music/ambient-dark-narrative-141890/', duration: '4:00', bpm: 60, isPremium: false },
       { name: 'Tension Build', artist: 'Coma-Media', source: 'Pixabay', genre: 'Suspense', mood: 'Tenso', url: 'https://pixabay.com/music/suspense-tension-build-129876/', duration: '2:45', bpm: 80, isPremium: false }
+    ]
+  },
+  {
+    id: 'biblical',
+    name: 'Bíblico/Religioso',
+    icon: '✝️',
+    description: 'Reflexão espiritual com tom reverente',
+    introDuration: 8,
+    hookStructure: '[Versículo/Citação] + [Reflexão pessoal] + [Promessa de revelação]',
+    textAnimation: 'fade',
+    musicStyle: 'Coral, piano reverente ou orquestral suave',
+    transitionIn: 'fade_to_black',
+    transitionDuration: 1,
+    visualStyle: 'Paisagens naturais, luz dourada, imagens simbólicas',
+    colorTone: 'cinematic_warm',
+    effects: { vignette: true, kenBurns: true, letterbox: true, fadeIn: true },
+    hookExamples: [
+      '"Este versículo mudou minha vida para sempre..."',
+      '"Deus tem uma mensagem urgente para você hoje."',
+      '"Por que 90% dos cristãos ignoram isso na Bíblia?"'
+    ],
+    tipsPt: [
+      'Comece com versículo impactante',
+      'Use tom de voz calmo e reverente',
+      'Imagens de natureza e luz dourada',
+      'Música suave e crescente'
+    ],
+    recommendedMusic: [
+      { name: 'Sacred Worship', artist: 'Lesfm', source: 'Pixabay', genre: 'Worship', mood: 'Reverente', url: 'https://pixabay.com/music/worship-sacred-142567/', duration: '3:30', bpm: 70, isPremium: false },
+      { name: 'Peaceful Piano', artist: 'AlexiAction', source: 'Pixabay', genre: 'Piano', mood: 'Sereno', url: 'https://pixabay.com/music/solo-piano-peaceful-138234/', duration: '3:00', bpm: 60, isPremium: false },
+      { name: 'Heavenly Strings', artist: 'SoulProdMusic', source: 'Pixabay', genre: 'Orquestral', mood: 'Celestial', url: 'https://pixabay.com/music/orchestral-heavenly-141890/', duration: '4:00', bpm: 65, isPremium: false },
+      { name: 'Grace Ambient', artist: 'Coma-Media', source: 'Pixabay', genre: 'Ambiente', mood: 'Espiritual', url: 'https://pixabay.com/music/ambient-grace-129876/', duration: '3:15', bpm: 55, isPremium: false }
+    ]
+  },
+  {
+    id: 'psychology',
+    name: 'Psicologia/Mente',
+    icon: '🧠',
+    description: 'Insights sobre comportamento humano',
+    introDuration: 6,
+    hookStructure: '[Fenômeno psicológico] + [Exemplo prático] + [Solução/Descoberta]',
+    textAnimation: 'typewriter',
+    musicStyle: 'Ambiente introspectivo, piano minimalista',
+    transitionIn: 'cross_dissolve',
+    transitionDuration: 0.5,
+    visualStyle: 'Ilustrações abstratas, cérebro, silhuetas, simetria',
+    colorTone: 'film_look',
+    effects: { vignette: true, kenBurns: true, letterbox: false, fadeIn: true },
+    hookExamples: [
+      '"Seu cérebro está te sabotando agora mesmo..."',
+      '"Por que você sempre atrai o mesmo tipo de pessoa?"',
+      '"O viés cognitivo que 99% das pessoas não conhecem."'
+    ],
+    tipsPt: [
+      'Comece com insight contra-intuitivo',
+      'Use termos técnicos com explicação simples',
+      'Imagens simbólicas do cérebro/mente',
+      'Tom professoral mas acessível'
+    ],
+    recommendedMusic: [
+      { name: 'Mind Journey', artist: 'Lexin_Music', source: 'Pixabay', genre: 'Ambiente', mood: 'Introspectivo', url: 'https://pixabay.com/music/ambient-mind-journey-142567/', duration: '3:00', bpm: 75, isPremium: false },
+      { name: 'Deep Thoughts', artist: 'FASSounds', source: 'Pixabay', genre: 'Piano', mood: 'Reflexivo', url: 'https://pixabay.com/music/solo-piano-deep-thoughts-138234/', duration: '2:45', bpm: 70, isPremium: false },
+      { name: 'Neural Ambient', artist: 'AudioCoffee', source: 'Pixabay', genre: 'Eletrônico', mood: 'Misterioso', url: 'https://pixabay.com/music/ambient-neural-141890/', duration: '3:30', bpm: 80, isPremium: false },
+      { name: 'Cognitive Flow', artist: 'Coma-Media', source: 'Pixabay', genre: 'Lo-Fi', mood: 'Focado', url: 'https://pixabay.com/music/beats-cognitive-flow-129876/', duration: '2:30', bpm: 85, isPremium: false }
+    ]
+  },
+  {
+    id: 'curiosities',
+    name: 'Curiosidades/Fatos',
+    icon: '🤯',
+    description: 'Fatos surpreendentes que prendem a atenção',
+    introDuration: 4,
+    hookStructure: '[Fato chocante] + [Contexto rápido] + [Promessa de mais]',
+    textAnimation: 'zoom',
+    musicStyle: 'Upbeat intrigante, efeitos de suspense',
+    transitionIn: 'push',
+    transitionDuration: 0.25,
+    visualStyle: 'Imagens surpreendentes, comparações visuais, infográficos',
+    colorTone: 'teal_orange',
+    effects: { vignette: false, kenBurns: true, letterbox: false, fadeIn: false },
+    hookExamples: [
+      '"Você usa apenas 10% do cérebro? MENTIRA. A verdade é..."',
+      '"Isso é IMPOSSÍVEL, mas aconteceu 3 vezes!"',
+      '"O país onde é PROIBIDO morrer. Sim, é real."'
+    ],
+    tipsPt: [
+      'Fato impactante nos primeiros 2 segundos',
+      'Use dados e números específicos',
+      'Comparações visuais impressionantes',
+      'Energia alta e ritmo rápido'
+    ],
+    recommendedMusic: [
+      { name: 'Mind Blown', artist: 'SoulProdMusic', source: 'Pixabay', genre: 'Eletrônico', mood: 'Surpreendente', url: 'https://pixabay.com/music/beats-mind-blown-142567/', duration: '2:00', bpm: 120, isPremium: false },
+      { name: 'Curiosity', artist: 'RoyaltyFreeZone', source: 'Pixabay', genre: 'Pop', mood: 'Intrigante', url: 'https://pixabay.com/music/upbeat-curiosity-138234/', duration: '2:30', bpm: 110, isPremium: false },
+      { name: 'Amazing Facts', artist: 'Coma-Media', source: 'Pixabay', genre: 'Trailer', mood: 'Épico', url: 'https://pixabay.com/music/upbeat-amazing-facts-141890/', duration: '1:45', bpm: 130, isPremium: false },
+      { name: 'Discovery Channel', artist: 'AlexiAction', source: 'Pixabay', genre: 'Orquestral', mood: 'Maravilhado', url: 'https://pixabay.com/music/upbeat-discovery-channel-129876/', duration: '2:15', bpm: 100, isPremium: false }
     ]
   }
 ];
