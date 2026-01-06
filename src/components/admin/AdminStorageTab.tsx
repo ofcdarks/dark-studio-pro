@@ -85,16 +85,28 @@ export function AdminStorageTab() {
   };
 
   const handleResetStorage = async (userId: string) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ storage_used: 0 })
-      .eq("id", userId);
+    try {
+      // Delete all file upload records for this user
+      const { error: deleteError } = await supabase
+        .from("user_file_uploads")
+        .delete()
+        .eq("user_id", userId);
 
-    if (error) {
-      toast.error("Erro ao resetar armazenamento");
-    } else {
+      if (deleteError) throw deleteError;
+
+      // Reset storage in profile (trigger will also update this, but let's be explicit)
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ storage_used: 0 })
+        .eq("id", userId);
+
+      if (updateError) throw updateError;
+
       toast.success("Armazenamento resetado!");
       fetchStorageData();
+    } catch (error) {
+      console.error("Error resetting storage:", error);
+      toast.error("Erro ao resetar armazenamento");
     }
   };
 
