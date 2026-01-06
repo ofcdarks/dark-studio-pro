@@ -228,6 +228,42 @@ export type Database = {
         }
         Relationships: []
       }
+      batch_generation_history: {
+        Row: {
+          created_at: string
+          id: string
+          prompt_count: number
+          prompts: string
+          style_id: string | null
+          style_name: string | null
+          success_count: number | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prompt_count?: number
+          prompts: string
+          style_id?: string | null
+          style_name?: string | null
+          success_count?: number | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prompt_count?: number
+          prompts?: string
+          style_id?: string | null
+          style_name?: string | null
+          success_count?: number | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       channel_analyses: {
         Row: {
           analysis_result: Json | null
