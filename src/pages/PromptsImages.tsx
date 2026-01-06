@@ -324,8 +324,21 @@ const PromptsImages = () => {
   const [updatePresetSettings, setUpdatePresetSettings] = useState(false);
   
   // Hook para presets do usuário
-  const { userPresets, isSaving: isSavingPreset, savePreset: saveUserPreset, updatePreset: updateUserPreset, deletePreset: deleteUserPreset } = useUserCinematicPresets();
+  const { userPresets, isSaving: isSavingPreset, savePreset: saveUserPreset, updatePreset: updateUserPreset, deletePreset: deleteUserPreset, exportPresets, importPresets } = useUserCinematicPresets();
   
+  // Ref para input de importação
+  const importInputRef = useRef<HTMLInputElement>(null);
+  
+  // Handler para importar arquivo
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await importPresets(file);
+      if (importInputRef.current) {
+        importInputRef.current.value = "";
+      }
+    }
+  };
   // Função para aplicar preset (padrão ou do usuário)
   const applyPreset = (presetId: CinematicPreset | string) => {
     // Verificar se é um preset do usuário
@@ -5437,11 +5450,40 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               {/* Presets do Usuário */}
               {userPresets.length > 0 && (
                 <div className="mt-3">
-                  <p className="text-[10px] font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                    <Star className="w-3 h-3 text-amber-500" />
-                    Meus Presets Salvos
-                    <span className="text-[9px] text-muted-foreground/70 ml-1">(clique para aplicar, hover para editar/deletar)</span>
-                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+                      <Star className="w-3 h-3 text-amber-500" />
+                      Meus Presets Salvos ({userPresets.length})
+                    </p>
+                    <div className="flex gap-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 p-0"
+                            onClick={exportPresets}
+                          >
+                            <Download className="w-3 h-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Exportar presets (JSON)</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 p-0"
+                            onClick={() => importInputRef.current?.click()}
+                          >
+                            <DownloadCloud className="w-3 h-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Importar presets (JSON)</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-3 gap-2">
                     {userPresets.map((preset) => (
                       <div key={preset.id} className="relative group">
@@ -5477,6 +5519,31 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   </div>
                 </div>
               )}
+              
+              {/* Botão de importar quando não há presets */}
+              {userPresets.length === 0 && (
+                <div className="mt-3 p-3 border border-dashed border-border/50 rounded-lg text-center">
+                  <p className="text-[10px] text-muted-foreground mb-2">Nenhum preset salvo ainda</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => importInputRef.current?.click()}
+                  >
+                    <DownloadCloud className="w-3 h-3 mr-1" />
+                    Importar Presets
+                  </Button>
+                </div>
+              )}
+              
+              {/* Input oculto para importação */}
+              <input
+                ref={importInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleImportFile}
+                className="hidden"
+              />
             </div>
 
             {/* Grid de Configurações */}
