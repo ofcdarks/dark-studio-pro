@@ -1,4 +1,4 @@
-import { Video, Eye, Coins, TrendingUp, Type, Image, Crown, Sparkles } from "lucide-react";
+import { Video, Eye, Coins, TrendingUp, Type, Image, Crown, Rocket } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
@@ -83,7 +83,7 @@ export function Dashboard() {
                   {isSubscribed ? (
                     <Crown className="w-3.5 h-3.5" />
                   ) : (
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Rocket className="w-3.5 h-3.5" />
                   )}
                   <span className="font-semibold text-xs uppercase tracking-wide">{planName}</span>
                 </Badge>
