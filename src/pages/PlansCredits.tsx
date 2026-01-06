@@ -32,12 +32,26 @@ interface PlanData {
 }
 
 const CREDIT_PACKAGES = [
-  { credits: 1000, price: 99.90, label: "Alocação básica", priceId: "" },
-  { credits: 2500, price: 149.90, label: "Expansão moderada", priceId: "" },
+  { credits: 1000, price: 99.90, label: "Alocação básica", priceId: "price_1SmiUTQlTxz1IgnVfJt8KkMC" },
+  { credits: 2500, price: 149.90, label: "Expansão moderada", priceId: "price_1SmiV9QlTxz1IgnVu68cCwSn" },
   { credits: 5000, price: 249.90, label: "Execução intensiva", priceId: "" },
-  { credits: 10000, price: 399.90, label: "Escala prolongada", priceId: "" },
-  { credits: 20000, price: 699.90, label: "Contínuo de alta demanda", priceId: "" },
+  { credits: 10000, price: 399.90, label: "Escala prolongada", priceId: "price_1SZbb4QlTxz1IgnVQT2v1NvC" },
+  { credits: 20000, price: 699.90, label: "Contínuo de alta demanda", priceId: "price_1SZbbfQlTxz1IgnVYfx2yxyU" },
 ];
+
+// Stripe Price IDs for monthly plans
+const MONTHLY_PRICE_IDS: Record<string, string> = {
+  "START CREATOR": "price_1SZbVEQlTxz1IgnVPqVN8CBf",
+  "TURBO MAKER": "price_1SZbVnQlTxz1IgnVF9H4nqVX",
+  "MASTER PRO": "price_1SZbWbQlTxz1IgnVQptpKRDn",
+};
+
+// Stripe Price IDs for annual plans
+const ANNUAL_PRICE_IDS: Record<string, string> = {
+  "START CREATOR": "price_1SZbX3QlTxz1IgnVJFVAmaR3",
+  "TURBO MAKER": "price_1SZbXeQlTxz1IgnVfHPBr0PU",
+  "MASTER PRO": "price_1SZbY0QlTxz1IgnVIryfTa3O",
+};
 
 // Map plan names to their db keys for matching
 const PLAN_NAME_MAP: Record<string, string> = {
@@ -179,9 +193,19 @@ export default function PlansCredits() {
   const navigate = useNavigate();
   const [plans, setPlans] = useState<PlanData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPlans();
+    // Check for success/cancel params
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      toast.success("Pagamento realizado com sucesso! Sua assinatura está ativa.");
+      window.history.replaceState({}, '', '/plans');
+    } else if (params.get('canceled') === 'true') {
+      toast.info("Pagamento cancelado.");
+      window.history.replaceState({}, '', '/plans');
+    }
   }, []);
 
   const fetchPlans = async () => {
@@ -205,36 +229,68 @@ export default function PlansCredits() {
     }
   };
 
-  // Get plan from database by name and annual status
-  const getDbPlan = (planName: string, isAnnual: boolean = false): PlanData | undefined => {
-    const dbName = PLAN_NAME_MAP[planName] || planName;
-    return plans.find(p => p.plan_name === dbName && p.is_annual === isAnnual);
-  };
-
   // Handle plan subscription click
-  const handleSubscribe = (planName: string, isAnnual: boolean = false) => {
-    const dbPlan = getDbPlan(planName, isAnnual);
-    
-    if (!dbPlan) {
-      console.error("Plan not found:", planName, isAnnual);
-      toast.error("Plano não encontrado");
-      return;
-    }
-
-    if (dbPlan.price_amount === 0 || dbPlan.plan_name === "FREE") {
+  const handleSubscribe = async (planName: string, isAnnual: boolean = false) => {
+    if (planName === "Acesso Inicial" || planName === "FREE") {
       toast.success("Você já está no plano gratuito!");
       return;
     }
 
-    if (dbPlan.stripe_price_id) {
-      // Redirect to Stripe checkout with price ID
-      toast.info("Redirecionando para o checkout...");
-      // In production, this would integrate with Stripe Checkout
-      console.log("Subscribing to plan:", dbPlan.plan_name, "Price ID:", dbPlan.stripe_price_id);
-      // For now, show a message
-      toast.success(`Plano ${dbPlan.plan_name} selecionado! Integração de pagamento em breve.`);
-    } else {
-      toast.warning("Este plano ainda não está configurado para pagamento. Configure o Price ID no painel admin.");
+    const priceId = isAnnual ? ANNUAL_PRICE_IDS[planName] : MONTHLY_PRICE_IDS[planName];
+    
+    if (!priceId) {
+      toast.warning("Este plano ainda não está configurado para pagamento.");
+      return;
+    }
+
+    setCheckoutLoading(`${planName}-${isAnnual ? 'annual' : 'monthly'}`);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { priceId, mode: 'subscription' }
+      });
+
+      if (error) throw error;
+      
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('URL de checkout não retornada');
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      toast.error(error.message || "Erro ao iniciar checkout. Tente novamente.");
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
+
+  // Handle credit package purchase
+  const handleCreditPurchase = async (pkg: typeof CREDIT_PACKAGES[0]) => {
+    if (!pkg.priceId) {
+      toast.warning("Pacote ainda não configurado para compra.");
+      return;
+    }
+
+    setCheckoutLoading(`credits-${pkg.credits}`);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { priceId: pkg.priceId, mode: 'payment' }
+      });
+
+      if (error) throw error;
+      
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('URL de checkout não retornada');
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      toast.error(error.message || "Erro ao iniciar checkout. Tente novamente.");
+    } finally {
+      setCheckoutLoading(null);
     }
   };
 
@@ -478,9 +534,16 @@ export default function PlansCredits() {
                           className={`w-full transition-all duration-300 ${plan.highlighted ? "gradient-button text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/30" : "group-hover:border-primary group-hover:text-primary group-hover:bg-primary/10"}`}
                           variant={plan.highlighted ? "default" : "outline"}
                           onClick={() => handleSubscribe(plan.name, false)}
+                          disabled={checkoutLoading === `${plan.name}-monthly`}
                         >
-                          {plan.buttonLabel}
-                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+                          {checkoutLoading === `${plan.name}-monthly` ? (
+                            <>Processando...</>
+                          ) : (
+                            <>
+                              {plan.buttonLabel}
+                              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+                            </>
+                          )}
                         </Button>
                       </motion.div>
                     </CardContent>
@@ -630,9 +693,16 @@ export default function PlansCredits() {
                           className={`w-full transition-all duration-300 ${plan.highlighted ? "gradient-button text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/30" : "group-hover:border-primary group-hover:text-primary group-hover:bg-primary/10"}`}
                           variant={plan.highlighted ? "default" : "outline"}
                           onClick={() => handleSubscribe(plan.name, true)}
+                          disabled={checkoutLoading === `${plan.name}-annual`}
                         >
-                          {plan.buttonLabel}
-                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+                          {checkoutLoading === `${plan.name}-annual` ? (
+                            <>Processando...</>
+                          ) : (
+                            <>
+                              {plan.buttonLabel}
+                              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+                            </>
+                          )}
                         </Button>
                       </motion.div>
                     </CardContent>
@@ -705,8 +775,14 @@ export default function PlansCredits() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
-                        <Button variant="outline" size="sm" className="w-full text-xs border-primary/30 transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary">
-                          ALOCAR
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full text-xs border-primary/30 transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
+                          onClick={() => handleCreditPurchase(pkg)}
+                          disabled={checkoutLoading === `credits-${pkg.credits}`}
+                        >
+                          {checkoutLoading === `credits-${pkg.credits}` ? "Processando..." : "ALOCAR"}
                         </Button>
                       </motion.div>
                     </CardContent>
