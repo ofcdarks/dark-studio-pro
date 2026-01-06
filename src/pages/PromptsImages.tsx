@@ -5604,12 +5604,6 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               </p>
             </div>
 
-            {/* Preview de Comparação Ken Burns */}
-            {cinematicSettings.kenBurnsEffect && (
-              <div className="border border-amber-500/30 rounded-lg p-4 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
-                <KenBurnsComparisonPreview />
-              </div>
-            )}
 
             {/* Presets de Introdução por Nicho */}
             <div className="border-t border-border/50 pt-4">
