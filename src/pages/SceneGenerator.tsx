@@ -6,11 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Film, Copy, Check, Image } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Film, Copy, Check, Image, Images } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
+import BatchImageGenerator from "@/components/scenes/BatchImageGenerator";
 
 interface ScenePrompt {
   number: number;
@@ -29,6 +31,9 @@ const STYLES = [
 ];
 
 const SceneGenerator = () => {
+  // Tab state
+  const [activeTab, setActiveTab] = usePersistedState("scene_active_tab", "scenes");
+  
   // Persisted states
   const [script, setScript] = usePersistedState("scene_script", "");
   const [title, setTitle] = usePersistedState("scene_title", "");
@@ -106,168 +111,190 @@ const SceneGenerator = () => {
             }}
           />
 
-          <div className="mb-8 mt-4">
+          <div className="mb-6 mt-4">
             <h1 className="text-3xl font-bold text-foreground mb-2">Gerador de Cenas</h1>
             <p className="text-muted-foreground">
-              Gere prompts de imagem para cada cena do seu roteiro
+              Gere prompts de imagem para cada cena do seu roteiro ou imagens em lote
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Form */}
-            <div className="lg:col-span-2">
-              <Card className="p-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <Film className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold text-foreground">Roteiro</h3>
-                </div>
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="scenes" className="flex items-center gap-2">
+                <Film className="w-4 h-4" />
+                Prompts de Cenas
+              </TabsTrigger>
+              <TabsTrigger value="batch" className="flex items-center gap-2">
+                <Images className="w-4 h-4" />
+                Imagens em Lote
+              </TabsTrigger>
+            </TabsList>
 
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="title">Título do Vídeo</Label>
-                      <Input
-                        id="title"
-                        placeholder="Ex: Como ganhar dinheiro online"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className="mt-1"
-                      />
+            {/* Scenes Tab */}
+            <TabsContent value="scenes">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Form */}
+                <div className="lg:col-span-2">
+                  <Card className="p-6">
+                    <div className="flex items-center gap-2 mb-6">
+                      <Film className="w-5 h-5 text-primary" />
+                      <h3 className="font-semibold text-foreground">Roteiro</h3>
                     </div>
-                    <div>
-                      <Label htmlFor="niche">Nicho</Label>
-                      <Input
-                        id="niche"
-                        placeholder="Ex: Marketing Digital"
-                        value={niche}
-                        onChange={(e) => setNiche(e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Estilo Visual</Label>
-                      <Select value={style} onValueChange={setStyle}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {STYLES.map((s) => (
-                            <SelectItem key={s.value} value={s.value}>
-                              {s.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="scenes">Número de Cenas</Label>
-                      <Input
-                        id="scenes"
-                        type="number"
-                        min="2"
-                        max="30"
-                        value={estimatedScenes}
-                        onChange={(e) => setEstimatedScenes(e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="script">Roteiro Completo</Label>
-                    <Textarea
-                      id="script"
-                      placeholder="Cole seu roteiro aqui..."
-                      value={script}
-                      onChange={(e) => setScript(e.target.value)}
-                      className="mt-1 min-h-64"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {script.split(/\s+/).filter(w => w).length} palavras
-                    </p>
-                  </div>
-
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={isGenerating || !script.trim()}
-                    className="w-full"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Gerando prompts...
-                      </>
-                    ) : (
-                      <>
-                        <Image className="w-4 h-4 mr-2" />
-                        Gerar Prompts de Cenas
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </Card>
-            </div>
-
-            {/* Results */}
-            <div>
-              <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-foreground">Cenas Geradas</h3>
-                  {scenes.length > 0 && (
-                    <Button variant="outline" size="sm" onClick={copyAllPrompts}>
-                      <Copy className="w-3 h-3 mr-1" />
-                      Copiar Todos
-                    </Button>
-                  )}
-                </div>
-
-                {scenes.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Film className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">
-                      Os prompts de cenas aparecerão aqui
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                    {scenes.map((scene, index) => (
-                      <div
-                        key={index}
-                        className="p-3 bg-secondary/50 rounded-lg space-y-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-primary">
-                            Cena {scene.number}
-                          </span>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6"
-                            onClick={() => copyPrompt(scene.imagePrompt, index)}
-                          >
-                            {copiedIndex === index ? (
-                              <Check className="w-3 h-3 text-success" />
-                            ) : (
-                              <Copy className="w-3 h-3" />
-                            )}
-                          </Button>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="title">Título do Vídeo</Label>
+                          <Input
+                            id="title"
+                            placeholder="Ex: Como ganhar dinheiro online"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            className="mt-1"
+                          />
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {scene.text.substring(0, 100)}...
-                        </p>
-                        <p className="text-sm text-foreground">
-                          {scene.imagePrompt.substring(0, 150)}...
+                        <div>
+                          <Label htmlFor="niche">Nicho</Label>
+                          <Input
+                            id="niche"
+                            placeholder="Ex: Marketing Digital"
+                            value={niche}
+                            onChange={(e) => setNiche(e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Estilo Visual</Label>
+                          <Select value={style} onValueChange={setStyle}>
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {STYLES.map((s) => (
+                                <SelectItem key={s.value} value={s.value}>
+                                  {s.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="scenes">Número de Cenas</Label>
+                          <Input
+                            id="scenes"
+                            type="number"
+                            min="2"
+                            max="30"
+                            value={estimatedScenes}
+                            onChange={(e) => setEstimatedScenes(e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="script">Roteiro Completo</Label>
+                        <Textarea
+                          id="script"
+                          placeholder="Cole seu roteiro aqui..."
+                          value={script}
+                          onChange={(e) => setScript(e.target.value)}
+                          className="mt-1 min-h-64"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {script.split(/\s+/).filter(w => w).length} palavras
                         </p>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
-            </div>
-          </div>
+
+                      <Button
+                        onClick={handleGenerate}
+                        disabled={isGenerating || !script.trim()}
+                        className="w-full"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Gerando prompts...
+                          </>
+                        ) : (
+                          <>
+                            <Image className="w-4 h-4 mr-2" />
+                            Gerar Prompts de Cenas
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Results */}
+                <div>
+                  <Card className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-foreground">Cenas Geradas</h3>
+                      {scenes.length > 0 && (
+                        <Button variant="outline" size="sm" onClick={copyAllPrompts}>
+                          <Copy className="w-3 h-3 mr-1" />
+                          Copiar Todos
+                        </Button>
+                      )}
+                    </div>
+
+                    {scenes.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Film className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                        <p className="text-sm text-muted-foreground">
+                          Os prompts de cenas aparecerão aqui
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                        {scenes.map((scene, index) => (
+                          <div
+                            key={index}
+                            className="p-3 bg-secondary/50 rounded-lg space-y-2"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-primary">
+                                Cena {scene.number}
+                              </span>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6"
+                                onClick={() => copyPrompt(scene.imagePrompt, index)}
+                              >
+                                {copiedIndex === index ? (
+                                  <Check className="w-3 h-3 text-success" />
+                                ) : (
+                                  <Copy className="w-3 h-3" />
+                                )}
+                              </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {scene.text.substring(0, 100)}...
+                            </p>
+                            <p className="text-sm text-foreground">
+                              {scene.imagePrompt.substring(0, 150)}...
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Batch Image Generation Tab */}
+            <TabsContent value="batch">
+              <BatchImageGenerator />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </MainLayout>
