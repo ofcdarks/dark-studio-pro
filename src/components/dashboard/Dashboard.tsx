@@ -15,15 +15,18 @@ import { DailyQuoteCard } from "./DailyQuoteCard";
 import { RecentVideosCard } from "./RecentVideosCard";
 import { OperationalLogsCard } from "./OperationalLogsCard";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export function Dashboard() {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { balance: credits, loading: creditsLoading } = useCredits();
   const { stats, recentVideos, activityLogs, loading, refetch } = useDashboardData();
-  const { isSubscribed, planName, loading: subscriptionLoading } = useSubscription();
+  const { isSubscribed, planName, subscription, loading: subscriptionLoading } = useSubscription();
   const navigate = useNavigate();
   
   // Tutorial
@@ -72,21 +75,38 @@ export function Dashboard() {
             </div>
             <div className="flex items-center gap-3">
               {!subscriptionLoading && (
-                <Badge 
-                  variant={isSubscribed ? "default" : "secondary"}
-                  className={`flex items-center gap-1.5 px-3 py-1 ${
-                    isSubscribed 
-                      ? "bg-gradient-to-r from-primary/90 to-primary text-primary-foreground shadow-lg shadow-primary/20" 
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {isSubscribed ? (
-                    <Crown className="w-3.5 h-3.5" />
-                  ) : (
-                    <Rocket className="w-3.5 h-3.5" />
-                  )}
-                  <span className="font-semibold text-xs uppercase tracking-wide">{planName}</span>
-                </Badge>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge 
+                        variant={isSubscribed ? "default" : "secondary"}
+                        className={`flex items-center gap-1.5 px-3 py-1 cursor-default ${
+                          isSubscribed 
+                            ? "bg-gradient-to-r from-primary/90 to-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {isSubscribed ? (
+                          <Crown className="w-3.5 h-3.5" />
+                        ) : (
+                          <Rocket className="w-3.5 h-3.5" />
+                        )}
+                        <span className="font-semibold text-xs uppercase tracking-wide">{planName}</span>
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="bg-card border-border">
+                      {isSubscribed && subscription?.subscriptionEnd ? (
+                        <p className="text-sm">
+                          Expira em: <span className="font-semibold text-primary">
+                            {format(new Date(subscription.subscriptionEnd), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                          </span>
+                        </p>
+                      ) : (
+                        <p className="text-sm">Plano gratuito - Faça upgrade para desbloquear recursos</p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
               <TutorialHelpButton onClick={openTutorial} />
             </div>
