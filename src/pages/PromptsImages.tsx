@@ -118,12 +118,6 @@ interface ScenePrompt {
   kenBurnsMotion?: { type: string; intensity: 'subtle' | 'normal' | 'dramatic'; reason?: string }; // Movimento Ken Burns manual
 }
 
-// Opções de intensidade Ken Burns
-const KEN_BURNS_INTENSITY_OPTIONS = [
-  { value: 'subtle', label: 'Sutil', description: '5% de movimento' },
-  { value: 'normal', label: 'Normal', description: '10% de movimento' },
-  { value: 'dramatic', label: 'Dramático', description: '15% de movimento' },
-] as const;
 
 interface SceneHistory {
   id: string;
@@ -2716,20 +2710,6 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
     toast({ title: "Timecodes recalculados", description: `Usando ${currentWpm} palavras/minuto` });
   };
 
-  // Atualizar movimento Ken Burns de uma cena específica
-  const updateSceneKenBurns = (index: number, motionType: string, intensity: 'subtle' | 'normal' | 'dramatic') => {
-    const updatedScenes = [...generatedScenes];
-    const kenBurnsOption = KEN_BURNS_OPTIONS.find(o => o.id === motionType);
-    updatedScenes[index] = {
-      ...updatedScenes[index],
-      kenBurnsMotion: {
-        type: motionType,
-        intensity,
-        reason: `Configuração manual: ${kenBurnsOption?.name || motionType}`
-      }
-    };
-    updateScenes(updatedScenes);
-  };
 
   // Calcular WPM baseado na duração real do áudio (input: "MM:SS" ou segundos)
   const handleCalculateFromDuration = () => {
@@ -3906,78 +3886,6 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                                 ) : (
                                   <p className="text-sm text-foreground font-mono leading-relaxed">
                                     {scene.imagePrompt}
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* Controles Ken Burns */}
-                              <div className="mt-3 p-3 bg-background rounded border border-border">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Film className="w-4 h-4 text-primary" />
-                                  <p className="text-xs text-muted-foreground font-medium">Movimento Ken Burns</p>
-                                  {scene.kenBurnsMotion && (
-                                    <Badge variant="outline" className="text-xs ml-auto">
-                                      {KEN_BURNS_OPTIONS.find(o => o.id === scene.kenBurnsMotion?.type)?.icon} {scene.kenBurnsMotion.intensity}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                  {/* Dropdown de tipo */}
-                                  <div>
-                                    <Label className="text-xs text-muted-foreground mb-1 block">Tipo</Label>
-                                    <Select
-                                      value={scene.kenBurnsMotion?.type || 'zoom_in'}
-                                      onValueChange={(value) => updateSceneKenBurns(
-                                        index, 
-                                        value, 
-                                        scene.kenBurnsMotion?.intensity || 'normal'
-                                      )}
-                                    >
-                                      <SelectTrigger className="h-8 text-xs">
-                                        <SelectValue placeholder="Selecione o movimento" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {KEN_BURNS_OPTIONS.map(option => (
-                                          <SelectItem key={option.id} value={option.id}>
-                                            <span className="flex items-center gap-2">
-                                              <span>{option.icon}</span>
-                                              <span>{option.name}</span>
-                                            </span>
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-
-                                  {/* Slider de intensidade */}
-                                  <div>
-                                    <Label className="text-xs text-muted-foreground mb-1 block">
-                                      Intensidade: {KEN_BURNS_INTENSITY_OPTIONS.find(o => o.value === (scene.kenBurnsMotion?.intensity || 'normal'))?.label}
-                                    </Label>
-                                    <div className="flex items-center gap-2 h-8">
-                                      <Slider
-                                        value={[scene.kenBurnsMotion?.intensity === 'subtle' ? 0 : scene.kenBurnsMotion?.intensity === 'dramatic' ? 2 : 1]}
-                                        onValueChange={(value) => {
-                                          const intensityMap: Record<number, 'subtle' | 'normal' | 'dramatic'> = { 0: 'subtle', 1: 'normal', 2: 'dramatic' };
-                                          updateSceneKenBurns(
-                                            index,
-                                            scene.kenBurnsMotion?.type || 'zoom_in',
-                                            intensityMap[value[0]]
-                                          );
-                                        }}
-                                        max={2}
-                                        step={1}
-                                        className="flex-1"
-                                      />
-                                      <span className="text-xs text-muted-foreground w-16 text-right">
-                                        {scene.kenBurnsMotion?.intensity === 'subtle' ? '5%' : scene.kenBurnsMotion?.intensity === 'dramatic' ? '15%' : '10%'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                {scene.kenBurnsMotion?.reason && (
-                                  <p className="text-xs text-muted-foreground mt-2 italic">
-                                    {scene.kenBurnsMotion.reason}
                                   </p>
                                 )}
                               </div>
