@@ -310,21 +310,37 @@ const VideoGenerator = () => {
                             {getModelLabel(job.model)} • {job.aspect_ratio}
                           </span>
                         </div>
-                        <span className={`text-xs font-medium ${
-                          job.status === 'processing' ? 'text-primary' : 
-                          job.status === 'error' ? 'text-destructive' : 'text-muted-foreground'
-                        }`}>
-                          {job.status === 'processing' ? 'Processando...' : 
-                           job.status === 'error' ? 'Erro' : 'Pendente'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {job.status === 'processing' && (
+                            <span className="text-xs font-bold text-primary">
+                              {job.progress}%
+                            </span>
+                          )}
+                          <span className={`text-xs font-medium ${
+                            job.status === 'processing' ? 'text-primary' : 
+                            job.status === 'error' ? 'text-destructive' : 'text-muted-foreground'
+                          }`}>
+                            {job.status === 'processing' ? 'Processando...' : 
+                             job.status === 'error' ? 'Erro' : 'Pendente'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            job.status === 'error' ? 'bg-destructive' : 'bg-primary'
-                          }`}
-                          style={{ width: `${job.progress}%` }}
-                        />
+                      {/* Progress bar with percentage */}
+                      <div className="space-y-1">
+                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              job.status === 'error' ? 'bg-destructive' : 'bg-primary'
+                            }`}
+                            style={{ width: `${job.progress}%` }}
+                          />
+                        </div>
+                        {job.status === 'processing' && (
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Gerando vídeo...</span>
+                            <span className="font-medium text-primary">{job.progress}%</span>
+                          </div>
+                        )}
                       </div>
                       {job.status === 'error' && (
                         <Button 
