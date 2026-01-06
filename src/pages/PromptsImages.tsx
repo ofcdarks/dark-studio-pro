@@ -20,7 +20,9 @@ import {
   FpsOption,
   CinematicSettings,
   DEFAULT_CINEMATIC_SETTINGS,
-  generateColorGradingInstructions
+  generateColorGradingInstructions,
+  generateKenBurnsReport,
+  KEN_BURNS_OPTIONS
 } from "@/lib/xmlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { TransitionPreview } from "@/components/transitions/TransitionPreview";
@@ -1639,7 +1641,8 @@ echo "Agora importe o video no CapCut!"
       width: aspectRatioConfig.width,
       height: aspectRatioConfig.height,
       transitionFrames,
-      transitionType: cinematicSettings.transitionType
+      transitionType: cinematicSettings.transitionType,
+      enableKenBurns: cinematicSettings.kenBurnsEffect
     });
 
     const xmlBlob = new Blob([xmlContent], { type: "application/xml" });
@@ -1703,9 +1706,16 @@ echo "Agora importe o video no CapCut!"
       width: aspectRatioConfig.width,
       height: aspectRatioConfig.height,
       transitionFrames,
-      transitionType: cinematicSettings.transitionType
+      transitionType: cinematicSettings.transitionType,
+      enableKenBurns: cinematicSettings.kenBurnsEffect
     });
     zip.file(`${safeFileName}_davinci.xml`, xmlContent);
+    
+    // 2a. Relatório de Ken Burns (se habilitado)
+    if (cinematicSettings.kenBurnsEffect) {
+      const kenBurnsReport = generateKenBurnsReport(scenesForXml);
+      zip.file(`${safeFileName}_KEN_BURNS_MOVIMENTOS.txt`, kenBurnsReport);
+    }
     
     // 2. Tutorial de importação
     const tutorialContent = generateXmlTutorial(scenesForXml, projectName || "Meu Projeto");
@@ -1768,7 +1778,8 @@ echo "Agora importe o video no CapCut!"
   📖 ${safeFileName}_TUTORIAL_DAVINCI.txt
      → Guia passo-a-passo de importação e reconexão de mídia
 
-  ${cinematicSettings.colorGrading !== 'neutral' ? `🎨 ${safeFileName}_COLOR_GRADING_${cinematicSettings.colorGrading.toUpperCase()}.txt
+  ${cinematicSettings.kenBurnsEffect ? `🎬 ${safeFileName}_KEN_BURNS_MOVIMENTOS.txt
+     → Relatório detalhado de movimentos de câmera por cena (gerado por IA)\n` : ''}${cinematicSettings.colorGrading !== 'neutral' ? `🎨 ${safeFileName}_COLOR_GRADING_${cinematicSettings.colorGrading.toUpperCase()}.txt
      → Instruções detalhadas de color grading com valores exatos\n` : ''}
   📁 imagens/
      → ${scenesWithImages.length} imagens já renomeadas (cena_001.jpg, cena_002.jpg...)
@@ -1810,7 +1821,7 @@ echo "Agora importe o video no CapCut!"
 
   Efeitos:
   ${cinematicSettings.fadeInOut ? '  ✅' : '  ⬜'} Fade In/Out
-  ${cinematicSettings.kenBurnsEffect ? '  ✅' : '  ⬜'} Ken Burns Effect  
+  ${cinematicSettings.kenBurnsEffect ? '  ✅ Ken Burns Effect (com keyframes automáticos por IA!)' : '  ⬜ Ken Burns Effect'}  
   ${cinematicSettings.addVignette ? '  ✅' : '  ⬜'} Vignette
   ${cinematicSettings.letterbox ? '  ✅' : '  ⬜'} Letterbox
 
