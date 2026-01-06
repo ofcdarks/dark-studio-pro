@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff, Pencil, Trash2, Sparkles } from "lucide-react";
+import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff, Pencil, Trash2, Rocket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -424,7 +424,7 @@ export function AdminAPIsTab() {
       provider: "laozhang",
       validated: laozhangValidated,
       setValidated: setLaozhangValidated,
-      icon: <Sparkles className="w-5 h-5 text-yellow-500" />,
+      icon: <Rocket className="w-5 h-5 text-yellow-500" />,
       description: "Chave para API Laozhang AI. Gateway para modelos OpenAI, Claude e outros com custos reduzidos.",
       showPassword: laozhangShowPassword,
       setShowPassword: setLaozhangShowPassword,

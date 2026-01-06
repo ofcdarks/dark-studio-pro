@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Sparkles, Loader2, RefreshCw, ImagePlus, Video } from "lucide-react";
+import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Rocket, Loader2, RefreshCw, ImagePlus, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -659,7 +659,7 @@ export function ScriptPreviewTimeline({
                       </span>
                     </AlertDescription>
                     <p className="text-xs text-cyan-400 mt-1 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5" />
+                      <Rocket className="w-3.5 h-3.5" />
                       💡 {issue.suggestion}
                     </p>
                   </div>
@@ -689,7 +689,7 @@ export function ScriptPreviewTimeline({
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        {regenerateAfterImprove ? <RefreshCw className="w-4 h-4 mr-1.5" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
+                        {regenerateAfterImprove ? <RefreshCw className="w-4 h-4 mr-1.5" /> : <Rocket className="w-4 h-4 mr-1.5" />}
                         {regenerateAfterImprove ? 'Melhorar + Gerar' : 'Melhorar'}
                       </>
                     )}
@@ -724,7 +724,7 @@ export function ScriptPreviewTimeline({
                 ) : regenerateAfterImprove ? (
                   <RefreshCw className="w-4 h-4 mr-1.5" />
                 ) : (
-                  <Sparkles className="w-4 h-4 mr-1.5" />
+                  <Rocket className="w-4 h-4 mr-1.5" />
                 )}
                 {regenerateAfterImprove ? 'Melhorar + Regenerar Todas' : 'Melhorar Todas'} ({retentionAnalysis.issues.length})
               </Button>

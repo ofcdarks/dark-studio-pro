@@ -19,7 +19,7 @@ import {
   Film, 
   Clock, 
   FileText, 
-  Sparkles,
+  Rocket,
   ChevronDown,
   ChevronUp,
   ChevronLeft,
@@ -2765,7 +2765,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                         {generating ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
-                          <Sparkles className="w-4 h-4 mr-2" />
+                          <Rocket className="w-4 h-4 mr-2" />
                         )}
                         Analisar
                       </Button>
@@ -2823,7 +2823,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   {detectedCharacters.length > 0 && (
                     <Card className="p-4 border-primary/30 bg-primary/5">
                       <div className="flex items-center gap-2 mb-3">
-                        <Sparkles className="w-4 h-4 text-primary" />
+                        <Rocket className="w-4 h-4 text-primary" />
                         <h3 className="font-semibold text-sm text-foreground">
                           {detectedCharacters.length} Personagem(ns) Detectado(s)
                         </h3>

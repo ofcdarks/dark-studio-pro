@@ -1,4 +1,4 @@
-import { Zap, ClipboardList, Activity, Video, FileText, Image, Mic, Play, Sparkles, FolderOpen, Tag, Settings, Search, BarChart3 } from "lucide-react";
+import { Zap, ClipboardList, Activity, Video, FileText, Image, Mic, Play, Rocket, FolderOpen, Tag, Settings, Search, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -27,7 +27,7 @@ const getActionIcon = (action: string) => {
     case 'scene_generated':
       return Play;
     case 'thumbnail_generated':
-      return Sparkles;
+      return Rocket;
     case 'channel_analysis':
       return BarChart3;
     case 'title_generated':
