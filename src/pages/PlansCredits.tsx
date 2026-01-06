@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { 
   Check, 
   X, 
@@ -31,12 +32,20 @@ interface PlanData {
 }
 
 const CREDIT_PACKAGES = [
-  { credits: 1000, price: 99.90, label: "Alocação básica" },
-  { credits: 2500, price: 149.90, label: "Expansão moderada" },
-  { credits: 5000, price: 249.90, label: "Execução intensiva" },
-  { credits: 10000, price: 399.90, label: "Escala prolongada" },
-  { credits: 20000, price: 699.90, label: "Contínuo de alta demanda" },
+  { credits: 1000, price: 99.90, label: "Alocação básica", priceId: "" },
+  { credits: 2500, price: 149.90, label: "Expansão moderada", priceId: "" },
+  { credits: 5000, price: 249.90, label: "Execução intensiva", priceId: "" },
+  { credits: 10000, price: 399.90, label: "Escala prolongada", priceId: "" },
+  { credits: 20000, price: 699.90, label: "Contínuo de alta demanda", priceId: "" },
 ];
+
+// Map plan names to their db keys for matching
+const PLAN_NAME_MAP: Record<string, string> = {
+  "Acesso Inicial": "FREE",
+  "START CREATOR": "START CREATOR",
+  "TURBO MAKER": "TURBO MAKER", 
+  "MASTER PRO": "MASTER PRO",
+};
 
 const MONTHLY_PLANS = [
   {
@@ -180,6 +189,7 @@ export default function PlansCredits() {
       const { data, error } = await supabase
         .from("plan_permissions")
         .select("*")
+        .order("is_annual", { ascending: true })
         .order("monthly_credits", { ascending: true });
 
       if (error) throw error;
@@ -192,6 +202,39 @@ export default function PlansCredits() {
       console.error("Error fetching plans:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Get plan from database by name and annual status
+  const getDbPlan = (planName: string, isAnnual: boolean = false): PlanData | undefined => {
+    const dbName = PLAN_NAME_MAP[planName] || planName;
+    return plans.find(p => p.plan_name === dbName && p.is_annual === isAnnual);
+  };
+
+  // Handle plan subscription click
+  const handleSubscribe = (planName: string, isAnnual: boolean = false) => {
+    const dbPlan = getDbPlan(planName, isAnnual);
+    
+    if (!dbPlan) {
+      console.error("Plan not found:", planName, isAnnual);
+      toast.error("Plano não encontrado");
+      return;
+    }
+
+    if (dbPlan.price_amount === 0 || dbPlan.plan_name === "FREE") {
+      toast.success("Você já está no plano gratuito!");
+      return;
+    }
+
+    if (dbPlan.stripe_price_id) {
+      // Redirect to Stripe checkout with price ID
+      toast.info("Redirecionando para o checkout...");
+      // In production, this would integrate with Stripe Checkout
+      console.log("Subscribing to plan:", dbPlan.plan_name, "Price ID:", dbPlan.stripe_price_id);
+      // For now, show a message
+      toast.success(`Plano ${dbPlan.plan_name} selecionado! Integração de pagamento em breve.`);
+    } else {
+      toast.warning("Este plano ainda não está configurado para pagamento. Configure o Price ID no painel admin.");
     }
   };
 
@@ -434,6 +477,7 @@ export default function PlansCredits() {
                         <Button 
                           className={`w-full transition-all duration-300 ${plan.highlighted ? "gradient-button text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/30" : "group-hover:border-primary group-hover:text-primary group-hover:bg-primary/10"}`}
                           variant={plan.highlighted ? "default" : "outline"}
+                          onClick={() => handleSubscribe(plan.name, false)}
                         >
                           {plan.buttonLabel}
                           <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
@@ -585,6 +629,7 @@ export default function PlansCredits() {
                         <Button 
                           className={`w-full transition-all duration-300 ${plan.highlighted ? "gradient-button text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/30" : "group-hover:border-primary group-hover:text-primary group-hover:bg-primary/10"}`}
                           variant={plan.highlighted ? "default" : "outline"}
+                          onClick={() => handleSubscribe(plan.name, true)}
                         >
                           {plan.buttonLabel}
                           <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
