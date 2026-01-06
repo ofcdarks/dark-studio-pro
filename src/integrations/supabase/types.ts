@@ -345,6 +345,42 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_packages: {
+        Row: {
+          created_at: string | null
+          credits: number
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          label: string | null
+          price: number
+          stripe_price_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credits: number
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          price: number
+          stripe_price_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credits?: number
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          price?: number
+          stripe_price_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       credit_transactions: {
         Row: {
           amount: number
