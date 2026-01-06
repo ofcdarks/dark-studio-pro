@@ -1742,7 +1742,18 @@ echo "Agora importe o video no CapCut!"
       }
     }
     
-    // 5. Arquivo LEIA-ME com instruções rápidas
+    // 5. Estrutura de pastas de áudio com READMEs
+    const audioFolders = generateAudioFolderStructure();
+    for (const folder of audioFolders) {
+      const audioFolder = zip.folder(folder.path);
+      audioFolder?.file("LEIA-ME.txt", folder.readme);
+    }
+    
+    // 6. Guia completo de mixagem de áudio
+    const audioMixReadme = generateAudioMixReadme(audioMixSettings);
+    zip.file("Audio/GUIA_MIXAGEM_AUDIO.txt", audioMixReadme);
+    
+    // 7. Arquivo LEIA-ME principal com instruções rápidas
     const readmeContent = `
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                         PACOTE DE PRODUÇÃO - DAVINCI RESOLVE                 ║
@@ -1762,6 +1773,14 @@ echo "Agora importe o video no CapCut!"
   📁 imagens/
      → ${scenesWithImages.length} imagens já renomeadas (cena_001.jpg, cena_002.jpg...)
 
+  📁 Audio/
+     ├── Narracao/      → Coloque sua narração aqui
+     ├── Intro/         → Música de abertura
+     ├── Background/    → Música de fundo  
+     ├── Outro/         → Música de encerramento
+     ├── SFX/           → Efeitos sonoros
+     └── GUIA_MIXAGEM_AUDIO.txt → Instruções completas de mixagem
+
 ═══════════════════════════════════════════════════════════════════════════════
                               INÍCIO RÁPIDO
 ═══════════════════════════════════════════════════════════════════════════════
@@ -1775,7 +1794,9 @@ echo "Agora importe o video no CapCut!"
 4. Se pedir para reconectar mídias:
    → Clique em "Locate" e aponte para a pasta "imagens"
 
-5. ${cinematicSettings.colorGrading !== 'neutral' ? `Aplique o color grading seguindo as instruções do arquivo TXT` : 'Pronto! Seu projeto está montado'}
+5. Adicione seus áudios das pastas Audio/ na timeline
+
+6. ${cinematicSettings.colorGrading !== 'neutral' ? `Aplique o color grading seguindo as instruções do arquivo TXT` : 'Pronto! Seu projeto está montado'}
 
 ═══════════════════════════════════════════════════════════════════════════════
                            CONFIGURAÇÕES DO PROJETO
@@ -1792,6 +1813,18 @@ echo "Agora importe o video no CapCut!"
   ${cinematicSettings.kenBurnsEffect ? '  ✅' : '  ⬜'} Ken Burns Effect  
   ${cinematicSettings.addVignette ? '  ✅' : '  ⬜'} Vignette
   ${cinematicSettings.letterbox ? '  ✅' : '  ⬜'} Letterbox
+
+═══════════════════════════════════════════════════════════════════════════════
+                           🎵 VOLUMES DE ÁUDIO SUGERIDOS
+═══════════════════════════════════════════════════════════════════════════════
+
+   FAIXA             │ VOLUME  │ OBSERVAÇÃO
+  ───────────────────┼─────────┼────────────────────────────────
+   Narração          │  100%   │ Sempre prioridade máxima
+   Música de Intro   │  ${String(audioMixSettings.introVolume).padStart(3)}%   │ Fade out em ${audioMixSettings.introDuration}s
+   Música de Fundo   │  ${String(audioMixSettings.backgroundVolume).padStart(3)}%   │ ${audioMixSettings.backgroundDucking ? `Ducking: reduz para ${audioMixSettings.backgroundDuckingLevel}%` : 'Sem ducking'}
+   Música de Outro   │  ${String(audioMixSettings.outroVolume).padStart(3)}%   │ Após fim da narração
+   Efeitos Sonoros   │  ${String(audioMixSettings.sfxVolume).padStart(3)}%   │ Ajuste conforme necessidade
 
 ═══════════════════════════════════════════════════════════════════════════════
   Gerado por Viral Visions Pro • ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}
