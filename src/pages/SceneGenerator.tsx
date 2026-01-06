@@ -57,13 +57,11 @@ const SceneGenerator = () => {
   // Non-persisted states
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle TXT file upload
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  // Handle TXT file - shared logic for upload and drop
+  const processFile = (file: File) => {
     if (!file.name.endsWith('.txt')) {
       toast.error("Por favor, selecione um arquivo .txt");
       return;
@@ -81,10 +79,42 @@ const SceneGenerator = () => {
       toast.error("Erro ao ler o arquivo");
     };
     reader.readAsText(file);
+  };
+
+  // Handle TXT file upload via input
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    processFile(file);
     
     // Reset input to allow re-uploading same file
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      processFile(files[0]);
     }
   };
 
@@ -307,13 +337,28 @@ const SceneGenerator = () => {
                             </Button>
                           </div>
                         </div>
-                        <Textarea
-                          id="script"
-                          placeholder="Cole seu roteiro aqui ou carregue um arquivo .txt..."
-                          value={script}
-                          onChange={(e) => setScript(e.target.value)}
-                          className="mt-1 min-h-64"
-                        />
+                        <div
+                          className={`relative mt-1 ${isDragging ? "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-md" : ""}`}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                        >
+                          <Textarea
+                            id="script"
+                            placeholder="Cole seu roteiro aqui, carregue ou arraste um arquivo .txt..."
+                            value={script}
+                            onChange={(e) => setScript(e.target.value)}
+                            className={`min-h-64 transition-colors ${isDragging ? "bg-primary/5 border-primary" : ""}`}
+                          />
+                          {isDragging && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-md pointer-events-none">
+                              <div className="flex flex-col items-center gap-2 text-primary">
+                                <Upload className="w-8 h-8" />
+                                <span className="font-medium">Solte o arquivo .txt aqui</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground mt-1">
                           {wordCount} palavras
                         </p>
