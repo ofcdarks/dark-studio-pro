@@ -192,14 +192,20 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
 
       try {
         const { data, error } = await supabase.functions.invoke("generate-imagefx", {
-          body: { prompt: initialImages[i].prompt }
+          body: { 
+            prompt: initialImages[i].prompt,
+            aspectRatio: "LANDSCAPE" // 16:9 for scenes
+          }
         });
 
         if (error) throw error;
 
-        if (data.success && data.imageUrl) {
+        // Handle both response formats: data.imageUrl (legacy) or data.images[0].url (new)
+        const imageUrl = data.imageUrl || data.images?.[0]?.url;
+        
+        if (data.success && imageUrl) {
           setImages(prev => prev.map((img, idx) => 
-            idx === i ? { ...img, status: "success", imageUrl: data.imageUrl } : img
+            idx === i ? { ...img, status: "success", imageUrl } : img
           ));
         } else {
           throw new Error(data.error || "Falha ao gerar imagem");
@@ -241,14 +247,20 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-imagefx", {
-        body: { prompt: image.prompt }
+        body: { 
+          prompt: image.prompt,
+          aspectRatio: "LANDSCAPE"
+        }
       });
 
       if (error) throw error;
 
-      if (data.success && data.imageUrl) {
+      // Handle both response formats
+      const imageUrl = data.imageUrl || data.images?.[0]?.url;
+      
+      if (data.success && imageUrl) {
         setImages(prev => prev.map(img => 
-          img.id === imageId ? { ...img, status: "success", imageUrl: data.imageUrl } : img
+          img.id === imageId ? { ...img, status: "success", imageUrl } : img
         ));
         toast.success("Imagem regenerada!");
       } else {
