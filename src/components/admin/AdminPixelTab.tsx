@@ -41,7 +41,7 @@ interface EmailTemplate {
 }
 
 // Default email logo URL
-const DEFAULT_EMAIL_LOGO = "https://kabnbvnephjifeazaiis.supabase.co/storage/v1/object/public/avatars/logo-email.png";
+const DEFAULT_EMAIL_LOGO = "https://kabnbvnephjifeazaiis.supabase.co/storage/v1/object/public/avatars/logo-email.gif";
 
 // Function to generate email header with dynamic logo
 const getEmailHeader = (logoUrl: string) => `<!DOCTYPE html>
@@ -612,11 +612,12 @@ export function AdminPixelTab() {
     setUploadingLogo(true);
 
     try {
-      // Upload to avatars bucket with fixed name
-      const fileName = "logo-email.png";
+      // Get file extension
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'png';
+      const fileName = `logo-email.${fileExt}`;
       
-      // Delete existing logo if exists
-      await supabase.storage.from("avatars").remove([fileName]);
+      // Delete existing logos (try all extensions)
+      await supabase.storage.from("avatars").remove(["logo-email.png", "logo-email.gif", "logo-email.jpg", "logo-email.jpeg", "logo-email.webp"]);
 
       // Upload new logo
       const { error: uploadError } = await supabase.storage
