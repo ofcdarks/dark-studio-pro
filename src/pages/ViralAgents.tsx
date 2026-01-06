@@ -28,6 +28,7 @@ import { useState, useEffect, useRef } from "react";
 import { AgentChatModal } from "@/components/agents/AgentChatModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useStorage } from "@/hooks/useStorage";
 import { toast } from "sonner";
 import { useTutorial } from "@/hooks/useTutorial";
 import { TutorialModal, TutorialHelpButton } from "@/components/tutorial/TutorialModal";
@@ -77,6 +78,7 @@ interface AgentFile {
 
 const ViralAgents = () => {
   const { user } = useAuth();
+  const { registerUpload, unregisterUpload, canUpload } = useStorage();
   const [agents, setAgents] = useState<ScriptAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<ScriptAgent | null>(null);
@@ -181,6 +183,13 @@ const ViralAgents = () => {
       return;
     }
 
+    // Check storage limit
+    const hasSpace = await canUpload(file.size);
+    if (!hasSpace) {
+      toast.error("Limite de armazenamento atingido! Faça upgrade do seu plano.");
+      return;
+    }
+
     setUploadingFile(true);
     try {
       const filePath = `${user.id}/${selectedAgent.id}/${Date.now()}_${file.name}`;
@@ -190,6 +199,14 @@ const ViralAgents = () => {
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
+
+      // Register upload for storage tracking
+      await registerUpload({
+        bucket_name: 'agent-files',
+        file_path: filePath,
+        file_size: file.size,
+        file_type: file.type || undefined
+      });
 
       const { data, error: dbError } = await supabase
         .from('agent_files')
@@ -223,6 +240,9 @@ const ViralAgents = () => {
     setDeletingFileId(fileId);
     try {
       await supabase.storage.from('agent-files').remove([filePath]);
+
+      // Unregister upload for storage tracking
+      await unregisterUpload('agent-files', filePath);
 
       const { error } = await supabase
         .from('agent_files')
