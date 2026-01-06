@@ -22,15 +22,15 @@ interface VideoJob {
   task_id?: string;
 }
 
-// Custos por modelo
+// Custos por modelo (baseado na API Laozhang)
 const MODEL_COSTS: Record<string, number> = {
-  'vo3': 10,
-  'sora2': 15,
+  'sora2': 10,        // $0.15/video ≈ 10 créditos
+  'kling': 15,        // Kling API
 };
 
 const VideoGenerator = () => {
   const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState<"vo3" | "sora2">("vo3");
+  const [model, setModel] = useState<"sora2" | "kling">("sora2");
   const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16" | "1:1">("16:9");
   const [resolution, setResolution] = useState<"720p" | "1080p">("720p");
   const [loading, setLoading] = useState(false);
@@ -123,7 +123,7 @@ const VideoGenerator = () => {
 
   const handleClearAll = () => {
     setPrompt('');
-    setModel('vo3');
+    setModel('sora2');
     setAspectRatio('16:9');
     setResolution('720p');
   };
@@ -132,7 +132,7 @@ const VideoGenerator = () => {
     setVideoJobs(prev => prev.filter(job => job.id !== jobId));
   };
 
-  const handleDownload = (videoUrl: string, jobId: string) => {
+  const handleDownload = (videoUrl: string) => {
     window.open(videoUrl, '_blank');
   };
 
@@ -146,7 +146,7 @@ const VideoGenerator = () => {
             <div>
               <h1 className="text-3xl font-bold text-foreground">Gerador de Vídeo</h1>
               <p className="text-muted-foreground">
-                Crie vídeos incríveis com IA usando Vo3 e Sora2
+                Crie vídeos incríveis com IA usando Sora 2 e Kling
               </p>
             </div>
           </div>
@@ -190,13 +190,13 @@ const VideoGenerator = () => {
                         Custo estimado: {estimatedCost} créditos
                       </Badge>
                     </div>
-                    <Select value={model} onValueChange={(v: "vo3" | "sora2") => setModel(v)}>
+                    <Select value={model} onValueChange={(v: "sora2" | "kling") => setModel(v)}>
                       <SelectTrigger className="bg-secondary/50 border-border">
                         <SelectValue placeholder="Selecione o modelo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="vo3">Vo3 (Rápido)</SelectItem>
                         <SelectItem value="sora2">Sora 2 (Alta Qualidade)</SelectItem>
+                        <SelectItem value="kling">Kling (Rápido)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -356,7 +356,7 @@ const VideoGenerator = () => {
                               variant="ghost" 
                               size="icon" 
                               className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                              onClick={() => handleDownload(job.video_url!, job.id)}
+                              onClick={() => handleDownload(job.video_url!)}
                             >
                               <Download className="w-4 h-4" />
                             </Button>

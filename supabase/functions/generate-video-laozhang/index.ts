@@ -8,10 +8,15 @@ const corsHeaders = {
 
 interface VideoRequest {
   prompt: string;
-  model: "vo3" | "sora2";
+  model: "sora2" | "sora2-landscape" | "kling";
   aspect_ratio: "16:9" | "9:16" | "1:1";
   resolution: "720p" | "1080p";
 }
+
+// Modelos disponíveis na Laozhang API para vídeo
+// sora_video2: 704×1280 (vertical)
+// sora_video2-landscape: 1280×704 (horizontal)
+// kling-video: API Kling para vídeo
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -69,47 +74,42 @@ serve(async (req) => {
       });
     }
 
-    // Mapear modelo para o endpoint correto da Laozhang
-    const modelEndpoint = model === 'vo3' 
-      ? 'video/generations' 
-      : 'video/generations';
-
-    // Mapear resolução
-    const resolutionMap: Record<string, { width: number; height: number }> = {
-      '720p': { width: 1280, height: 720 },
-      '1080p': { width: 1920, height: 1080 },
-    };
-
-    const { width, height } = resolutionMap[resolution] || resolutionMap['1080p'];
-
-    // Ajustar dimensões baseado no aspect ratio
-    let finalWidth = width;
-    let finalHeight = height;
+    // Mapear modelo para nome correto da API Laozhang
+    // Sora 2: sora_video2 (vertical 704x1280), sora_video2-landscape (horizontal 1280x704)
+    let modelName = 'sora_video2-landscape'; // default horizontal
     
-    if (aspect_ratio === '9:16') {
-      finalWidth = resolution === '1080p' ? 1080 : 720;
-      finalHeight = resolution === '1080p' ? 1920 : 1280;
-    } else if (aspect_ratio === '1:1') {
-      finalWidth = resolution === '1080p' ? 1080 : 720;
-      finalHeight = resolution === '1080p' ? 1080 : 720;
+    if (model === 'sora2') {
+      // Baseado no aspect_ratio escolhido
+      if (aspect_ratio === '9:16') {
+        modelName = 'sora_video2'; // Vertical
+      } else {
+        modelName = 'sora_video2-landscape'; // Horizontal (16:9 ou 1:1)
+      }
+    } else if (model === 'sora2-landscape') {
+      modelName = 'sora_video2-landscape';
+    } else if (model === 'kling') {
+      modelName = 'kling-video';
     }
 
-    console.log(`[Video Generation] Model: ${model}, Resolution: ${resolution}, Aspect: ${aspect_ratio}`);
-    console.log(`[Video Generation] Dimensions: ${finalWidth}x${finalHeight}`);
+    console.log(`[Video Generation] Model: ${modelName}, Aspect: ${aspect_ratio}, Resolution: ${resolution}`);
     console.log(`[Video Generation] Prompt: ${prompt.substring(0, 100)}...`);
 
-    // Chamar a API Laozhang para geração de vídeo
-    const laozhangResponse = await fetch('https://api.laozhang.ai/v1/video/generations', {
+    // Chamar a API Laozhang usando o endpoint de chat completions (formato OpenAI)
+    const laozhangResponse = await fetch('https://api.laozhang.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${laozhangApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: model === 'vo3' ? 'veo3' : 'sora-2',
-        prompt: prompt,
-        size: `${finalWidth}x${finalHeight}`,
-        duration: 5, // duração padrão em segundos
+        model: modelName,
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        stream: false,
       }),
     });
 
@@ -126,8 +126,18 @@ serve(async (req) => {
         });
       }
 
+      if (laozhangResponse.status === 503) {
+        return new Response(JSON.stringify({ 
+          error: 'Modelo temporariamente indisponível. Tente outro modelo ou aguarde.' 
+        }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       return new Response(JSON.stringify({ 
-        error: 'Erro ao gerar vídeo. Tente novamente.' 
+        error: 'Erro ao gerar vídeo. Tente novamente.',
+        details: errorText
       }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -135,29 +145,39 @@ serve(async (req) => {
     }
 
     const responseData = await laozhangResponse.json();
-    console.log('[Video Generation] Response:', JSON.stringify(responseData).substring(0, 200));
+    console.log('[Video Generation] Response:', JSON.stringify(responseData).substring(0, 500));
 
-    // A resposta pode conter um task_id para polling ou o vídeo diretamente
-    if (responseData.task_id) {
-      return new Response(JSON.stringify({
-        success: true,
-        status: 'processing',
-        task_id: responseData.task_id,
-        message: 'Vídeo está sendo gerado. Use o task_id para verificar o status.',
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Extrair URL do vídeo da resposta
+    // O formato pode variar: pode estar em choices[0].message.content ou em um campo video_url
+    const content = responseData.choices?.[0]?.message?.content;
+    
+    // Verificar se é uma URL de vídeo
+    let videoUrl = null;
+    
+    if (typeof content === 'string') {
+      // Tentar extrair URL de vídeo do conteúdo
+      const urlMatch = content.match(/https?:\/\/[^\s]+\.(mp4|webm|mov)/i);
+      if (urlMatch) {
+        videoUrl = urlMatch[0];
+      } else if (content.startsWith('http')) {
+        videoUrl = content.trim();
+      }
     }
 
-    // Se tiver o vídeo diretamente
-    const videoUrl = responseData.data?.[0]?.url || responseData.video_url || responseData.url;
+    // Verificar campos alternativos de resposta
+    if (!videoUrl) {
+      videoUrl = responseData.video_url || 
+                 responseData.data?.[0]?.url || 
+                 responseData.url ||
+                 responseData.choices?.[0]?.message?.video_url;
+    }
 
     if (videoUrl) {
       return new Response(JSON.stringify({
         success: true,
         status: 'completed',
         video_url: videoUrl,
-        model: model,
+        model: modelName,
         resolution: resolution,
         aspect_ratio: aspect_ratio,
       }), {
@@ -165,11 +185,27 @@ serve(async (req) => {
       });
     }
 
+    // Se não tiver URL direta, pode ser um processo assíncrono
+    const taskId = responseData.id || responseData.task_id;
+    
+    if (taskId) {
+      return new Response(JSON.stringify({
+        success: true,
+        status: 'processing',
+        task_id: taskId,
+        message: 'Vídeo está sendo gerado. Pode levar alguns minutos.',
+        response: content,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Retornar a resposta completa para debugging
     return new Response(JSON.stringify({
       success: true,
       status: 'processing',
-      data: responseData,
       message: 'Vídeo em processamento.',
+      response: content || responseData,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
