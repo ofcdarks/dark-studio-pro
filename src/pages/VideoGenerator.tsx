@@ -117,11 +117,20 @@ const VideoGenerator = () => {
       setPrompt('');
     } catch (error) {
       console.error('Error generating video:', error);
-      setVideoJobs(prev => prev.map(job => 
-        job.id === jobId ? { ...job, status: 'error' } : job
-      ));
       const errorMessage = error instanceof Error ? error.message : 'Erro ao gerar vídeo';
-      toast.error(errorMessage);
+      
+      // Check if it's a retry-able error (server busy)
+      if (errorMessage.includes('ocupados') || errorMessage.includes('heavy load') || errorMessage.includes('try again')) {
+        setVideoJobs(prev => prev.map(job => 
+          job.id === jobId ? { ...job, status: 'pending', progress: 0 } : job
+        ));
+        toast.warning('Servidores ocupados. Tente novamente em alguns segundos.');
+      } else {
+        setVideoJobs(prev => prev.map(job => 
+          job.id === jobId ? { ...job, status: 'error' } : job
+        ));
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
