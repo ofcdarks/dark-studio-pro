@@ -163,6 +163,17 @@ serve(async (req) => {
         // Keep original text
       }
 
+      // Check if it's a heavy load / temporary error
+      if (errorDetails.includes('heavy load') || errorDetails.includes('try again later')) {
+        return new Response(JSON.stringify({ 
+          error: 'Servidores ocupados. Por favor, tente novamente em alguns segundos.',
+          retry: true
+        }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       return new Response(JSON.stringify({ 
         error: 'Erro ao gerar vídeo.',
         details: errorDetails
