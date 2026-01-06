@@ -165,9 +165,59 @@ export const IntroPresetSelector = ({
                   <p className="text-[10px] text-muted-foreground">{selectedPreset.visualStyle}</p>
                 </div>
                 <div className="bg-background/50 rounded-lg p-2">
-                  <p className="text-[10px] font-medium text-amber-500 mb-1">🎵 Música:</p>
+                  <p className="text-[10px] font-medium text-amber-500 mb-1">🎵 Estilo:</p>
                   <p className="text-[10px] text-muted-foreground">{selectedPreset.musicStyle}</p>
                 </div>
+              </div>
+
+              {/* Biblioteca de Músicas Royalty-Free */}
+              <div>
+                <p className="text-xs font-medium text-amber-500 mb-2 flex items-center gap-1">
+                  <Music className="w-3 h-3" />
+                  Músicas Recomendadas (Royalty-Free):
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {selectedPreset.recommendedMusic.map((music, i) => (
+                    <a
+                      key={i}
+                      href={music.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-2 p-2 bg-background/50 rounded-lg hover:bg-amber-500/10 transition-colors group border border-transparent hover:border-amber-500/30"
+                    >
+                      <div className="w-8 h-8 rounded bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center flex-shrink-0">
+                        <Music className="w-4 h-4 text-amber-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-medium text-foreground truncate group-hover:text-amber-500">{music.name}</p>
+                        <p className="text-[8px] text-muted-foreground">{music.artist}</p>
+                        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                          <Badge variant="outline" className="text-[7px] px-1 py-0 border-border/50">
+                            {music.genre}
+                          </Badge>
+                          <Badge variant="outline" className="text-[7px] px-1 py-0 border-border/50">
+                            {music.mood}
+                          </Badge>
+                          {music.bpm && music.bpm > 0 && (
+                            <span className="text-[7px] text-muted-foreground">{music.bpm} BPM</span>
+                          )}
+                          <Badge 
+                            variant="outline" 
+                            className={cn(
+                              "text-[7px] px-1 py-0",
+                              music.isPremium ? "border-orange-500/50 text-orange-500" : "border-green-500/50 text-green-500"
+                            )}
+                          >
+                            {music.isPremium ? 'Premium' : 'Grátis'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+                <p className="text-[8px] text-muted-foreground mt-2 text-center">
+                  🔗 Clique para abrir no site original • Verifique a licença antes de usar
+                </p>
               </div>
             </div>
           </motion.div>

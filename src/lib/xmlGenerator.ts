@@ -1209,6 +1209,18 @@ export type IntroNiche =
   | 'music' 
   | 'storytime';
 
+export interface MusicRecommendation {
+  name: string;
+  artist: string;
+  source: 'Pixabay' | 'YouTube Audio Library' | 'Epidemic Sound' | 'Artlist' | 'Uppbeat' | 'Mixkit' | 'Free Music Archive';
+  genre: string;
+  mood: string;
+  url: string;
+  duration?: string;
+  bpm?: number;
+  isPremium: boolean;
+}
+
 export interface IntroPreset {
   id: IntroNiche;
   name: string;
@@ -1230,6 +1242,7 @@ export interface IntroPreset {
   };
   hookExamples: string[];
   tipsPt: string[];
+  recommendedMusic: MusicRecommendation[];
 }
 
 export const INTRO_PRESETS: IntroPreset[] = [
@@ -1257,6 +1270,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Comece com imagem de impacto visual',
       'Crie mistério nos primeiros 3 segundos',
       'Som ambiente + música crescente'
+    ],
+    recommendedMusic: [
+      { name: 'Epic Cinematic', artist: 'Audiorezout', source: 'Pixabay', genre: 'Orquestral', mood: 'Épico', url: 'https://pixabay.com/music/beats-epic-cinematic-trailer-117669/', duration: '2:30', bpm: 100, isPremium: false },
+      { name: 'Documentary', artist: 'AlexiAction', source: 'Pixabay', genre: 'Ambiente', mood: 'Introspectivo', url: 'https://pixabay.com/music/ambient-documentary-11052/', duration: '3:15', bpm: 80, isPremium: false },
+      { name: 'Emotional Piano', artist: 'Lesfm', source: 'Pixabay', genre: 'Piano', mood: 'Emotivo', url: 'https://pixabay.com/music/solo-piano-emotional-piano-115672/', duration: '2:45', bpm: 70, isPremium: false },
+      { name: 'Inspiring Cinematic', artist: 'Lexin_Music', source: 'Pixabay', genre: 'Orquestral', mood: 'Inspirador', url: 'https://pixabay.com/music/upbeat-inspiring-cinematic-ambient-116199/', duration: '3:00', bpm: 90, isPremium: false }
     ]
   },
   {
@@ -1283,6 +1302,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Use marcadores visuais (setas, círculos)',
       'Ritmo acelerado, sem enrolação',
       'Fale o benefício principal imediatamente'
+    ],
+    recommendedMusic: [
+      { name: 'Lo-Fi Chill', artist: 'FASSounds', source: 'Pixabay', genre: 'Lo-Fi', mood: 'Relaxado', url: 'https://pixabay.com/music/beats-lofi-chill-medium-version-159456/', duration: '2:00', bpm: 85, isPremium: false },
+      { name: 'Tech Corporate', artist: 'SoulProdMusic', source: 'Pixabay', genre: 'Eletrônico', mood: 'Moderno', url: 'https://pixabay.com/music/upbeat-tech-house-vibes-130553/', duration: '2:30', bpm: 120, isPremium: false },
+      { name: 'Upbeat Tutorial', artist: 'Coma-Media', source: 'Pixabay', genre: 'Pop', mood: 'Positivo', url: 'https://pixabay.com/music/upbeat-uplifting-day-124017/', duration: '2:15', bpm: 110, isPremium: false },
+      { name: 'Digital Technology', artist: 'LiteSaturation', source: 'Pixabay', genre: 'Eletrônico', mood: 'Futurístico', url: 'https://pixabay.com/music/beats-digital-technology-140090/', duration: '2:45', bpm: 95, isPremium: false }
     ]
   },
   {
@@ -1309,6 +1334,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Use efeitos sonoros de impacto',
       'Texto grande e animado',
       'Energia e emoção na voz'
+    ],
+    recommendedMusic: [
+      { name: 'Gaming Dubstep', artist: 'RoyaltyFreeZone', source: 'Pixabay', genre: 'Dubstep', mood: 'Intenso', url: 'https://pixabay.com/music/beats-dubstep-gaming-141909/', duration: '2:30', bpm: 140, isPremium: false },
+      { name: 'Epic Gaming', artist: 'Vivaleum', source: 'Pixabay', genre: 'EDM', mood: 'Épico', url: 'https://pixabay.com/music/beats-epic-gaming-122307/', duration: '3:00', bpm: 150, isPremium: false },
+      { name: 'Electro Sport', artist: 'Coma-Media', source: 'Pixabay', genre: 'Eletrônico', mood: 'Energético', url: 'https://pixabay.com/music/beats-electro-sport-111124/', duration: '2:00', bpm: 130, isPremium: false },
+      { name: 'Powerful Action', artist: 'Lexin_Music', source: 'Pixabay', genre: 'Trailer', mood: 'Poderoso', url: 'https://pixabay.com/music/beats-powerful-action-141892/', duration: '2:15', bpm: 145, isPremium: false }
     ]
   },
   {
@@ -1335,6 +1366,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Comece com emoção genuína',
       'Use B-roll do dia/momento',
       'Seja você mesmo, autenticidade vende'
+    ],
+    recommendedMusic: [
+      { name: 'Acoustic Indie', artist: 'FASSounds', source: 'Pixabay', genre: 'Indie', mood: 'Leve', url: 'https://pixabay.com/music/acoustic-group-acoustic-indie-126189/', duration: '2:30', bpm: 100, isPremium: false },
+      { name: 'Happy Vlog', artist: 'AShamaluevMusic', source: 'Pixabay', genre: 'Pop', mood: 'Alegre', url: 'https://pixabay.com/music/beats-happy-vlog-music-141908/', duration: '2:45', bpm: 110, isPremium: false },
+      { name: 'Chill Day', artist: 'Lesfm', source: 'Pixabay', genre: 'Acústico', mood: 'Relaxado', url: 'https://pixabay.com/music/acoustic-group-chill-day-127935/', duration: '3:00', bpm: 90, isPremium: false },
+      { name: 'Positive Vibes', artist: 'SoulProdMusic', source: 'Pixabay', genre: 'Pop', mood: 'Positivo', url: 'https://pixabay.com/music/beats-positive-vibes-129489/', duration: '2:15', bpm: 105, isPremium: false }
     ]
   },
   {
@@ -1361,6 +1398,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Vista-se de forma profissional',
       'Use gráficos animados',
       'Fale com confiança e autoridade'
+    ],
+    recommendedMusic: [
+      { name: 'Corporate Inspiring', artist: 'Coma-Media', source: 'Pixabay', genre: 'Corporativo', mood: 'Profissional', url: 'https://pixabay.com/music/upbeat-corporate-inspiring-135929/', duration: '2:30', bpm: 100, isPremium: false },
+      { name: 'Business Innovation', artist: 'AlexiAction', source: 'Pixabay', genre: 'Corporativo', mood: 'Moderno', url: 'https://pixabay.com/music/upbeat-business-innovation-138131/', duration: '2:45', bpm: 110, isPremium: false },
+      { name: 'Motivational Piano', artist: 'Lesfm', source: 'Pixabay', genre: 'Piano', mood: 'Inspirador', url: 'https://pixabay.com/music/solo-piano-motivational-piano-115672/', duration: '3:00', bpm: 80, isPremium: false },
+      { name: 'Success Technology', artist: 'SoulProdMusic', source: 'Pixabay', genre: 'Eletrônico', mood: 'Confiante', url: 'https://pixabay.com/music/upbeat-technology-success-140090/', duration: '2:00', bpm: 95, isPremium: false }
     ]
   },
   {
@@ -1387,6 +1430,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Iluminação baixa e sombras',
       'Narração sussurrada ou grave',
       'Build-up lento da tensão'
+    ],
+    recommendedMusic: [
+      { name: 'Dark Ambient', artist: 'Lexin_Music', source: 'Pixabay', genre: 'Ambiente', mood: 'Tenso', url: 'https://pixabay.com/music/ambient-dark-ambient-horror-118564/', duration: '3:30', bpm: 60, isPremium: false },
+      { name: 'Suspense Horror', artist: 'Coma-Media', source: 'Pixabay', genre: 'Suspense', mood: 'Assustador', url: 'https://pixabay.com/music/suspense-suspense-horror-142134/', duration: '2:45', bpm: 70, isPremium: false },
+      { name: 'Creepy Drone', artist: 'AudioCoffee', source: 'Pixabay', genre: 'Drone', mood: 'Perturbador', url: 'https://pixabay.com/music/ambient-creepy-drone-atmosphere-138221/', duration: '4:00', bpm: 0, isPremium: false },
+      { name: 'Tension Building', artist: 'RoyaltyFreeZone', source: 'Pixabay', genre: 'Suspense', mood: 'Intenso', url: 'https://pixabay.com/music/suspense-tension-building-120989/', duration: '2:30', bpm: 80, isPremium: false }
     ]
   },
   {
@@ -1413,6 +1462,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Use expressões faciais exageradas',
       'Efeitos sonoros de comédia',
       'Cortes rápidos e timing perfeito'
+    ],
+    recommendedMusic: [
+      { name: 'Funny Comedy', artist: 'FASSounds', source: 'Pixabay', genre: 'Comédia', mood: 'Engraçado', url: 'https://pixabay.com/music/funny-comedy-funny-background-129876/', duration: '1:30', bpm: 120, isPremium: false },
+      { name: 'Happy Ukulele', artist: 'Lesfm', source: 'Pixabay', genre: 'Ukulele', mood: 'Alegre', url: 'https://pixabay.com/music/acoustic-group-happy-ukulele-122908/', duration: '2:00', bpm: 110, isPremium: false },
+      { name: 'Quirky Fun', artist: 'Coma-Media', source: 'Pixabay', genre: 'Comédia', mood: 'Travesso', url: 'https://pixabay.com/music/funny-comedy-quirky-fun-141234/', duration: '1:45', bpm: 130, isPremium: false },
+      { name: 'Cartoon Comedy', artist: 'SoulProdMusic', source: 'Pixabay', genre: 'Comédia', mood: 'Divertido', url: 'https://pixabay.com/music/funny-comedy-cartoon-140567/', duration: '1:30', bpm: 140, isPremium: false }
     ]
   },
   {
@@ -1439,6 +1494,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Use imagens de conquista/superação',
       'Música crescente emocionalmente',
       'Energia na voz, pausas dramáticas'
+    ],
+    recommendedMusic: [
+      { name: 'Epic Motivation', artist: 'AlexiAction', source: 'Pixabay', genre: 'Épico', mood: 'Inspirador', url: 'https://pixabay.com/music/upbeat-epic-motivation-142567/', duration: '3:00', bpm: 100, isPremium: false },
+      { name: 'Inspiring Success', artist: 'Lexin_Music', source: 'Pixabay', genre: 'Orquestral', mood: 'Triunfante', url: 'https://pixabay.com/music/upbeat-inspiring-success-135671/', duration: '2:45', bpm: 90, isPremium: false },
+      { name: 'Rise Up', artist: 'Coma-Media', source: 'Pixabay', genre: 'Épico', mood: 'Poderoso', url: 'https://pixabay.com/music/upbeat-rise-up-inspiring-128976/', duration: '2:30', bpm: 95, isPremium: false },
+      { name: 'Emotional Cinematic', artist: 'AShamaluevMusic', source: 'Pixabay', genre: 'Orquestral', mood: 'Emotivo', url: 'https://pixabay.com/music/upbeat-emotional-cinematic-141890/', duration: '3:15', bpm: 85, isPremium: false }
     ]
   },
   {
@@ -1465,6 +1526,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Use texto na tela (lower thirds)',
       'Tom de voz urgente mas claro',
       'Imagens de apoio relevantes'
+    ],
+    recommendedMusic: [
+      { name: 'Breaking News', artist: 'RoyaltyFreeZone', source: 'Pixabay', genre: 'Notícias', mood: 'Urgente', url: 'https://pixabay.com/music/upbeat-breaking-news-141234/', duration: '1:00', bpm: 120, isPremium: false },
+      { name: 'News Intro', artist: 'SoulProdMusic', source: 'Pixabay', genre: 'Notícias', mood: 'Profissional', url: 'https://pixabay.com/music/upbeat-news-intro-138765/', duration: '0:30', bpm: 130, isPremium: false },
+      { name: 'Corporate News', artist: 'Coma-Media', source: 'Pixabay', genre: 'Corporativo', mood: 'Sério', url: 'https://pixabay.com/music/upbeat-corporate-news-142890/', duration: '1:30', bpm: 110, isPremium: false },
+      { name: 'Tension News', artist: 'AudioCoffee', source: 'Pixabay', genre: 'Suspense', mood: 'Tenso', url: 'https://pixabay.com/music/suspense-tension-news-139876/', duration: '2:00', bpm: 100, isPremium: false }
     ]
   },
   {
@@ -1491,6 +1558,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Use analogias visuais',
       'Tom de voz curioso e acessível',
       'Animações explicativas simples'
+    ],
+    recommendedMusic: [
+      { name: 'Science Documentary', artist: 'AlexiAction', source: 'Pixabay', genre: 'Ambiente', mood: 'Curioso', url: 'https://pixabay.com/music/ambient-science-documentary-124567/', duration: '3:00', bpm: 80, isPremium: false },
+      { name: 'Curious Mind', artist: 'Lesfm', source: 'Pixabay', genre: 'Piano', mood: 'Reflexivo', url: 'https://pixabay.com/music/solo-piano-curious-mind-138900/', duration: '2:45', bpm: 75, isPremium: false },
+      { name: 'Discovery', artist: 'Lexin_Music', source: 'Pixabay', genre: 'Orquestral', mood: 'Maravilhado', url: 'https://pixabay.com/music/ambient-discovery-141234/', duration: '2:30', bpm: 85, isPremium: false },
+      { name: 'Learning Journey', artist: 'FASSounds', source: 'Pixabay', genre: 'Eletrônico', mood: 'Inspirador', url: 'https://pixabay.com/music/upbeat-learning-journey-129876/', duration: '2:15', bpm: 90, isPremium: false }
     ]
   },
   {
@@ -1517,6 +1590,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Use drone shots para impacto',
       'Música que evoque aventura',
       'Cores vibrantes e quentes'
+    ],
+    recommendedMusic: [
+      { name: 'Adventure Travel', artist: 'Coma-Media', source: 'Pixabay', genre: 'Épico', mood: 'Aventureiro', url: 'https://pixabay.com/music/upbeat-adventure-travel-142567/', duration: '2:45', bpm: 100, isPremium: false },
+      { name: 'World Explorer', artist: 'AShamaluevMusic', source: 'Pixabay', genre: 'World', mood: 'Exótico', url: 'https://pixabay.com/music/world-world-explorer-138234/', duration: '3:00', bpm: 90, isPremium: false },
+      { name: 'Summer Vibes', artist: 'FASSounds', source: 'Pixabay', genre: 'Pop', mood: 'Alegre', url: 'https://pixabay.com/music/upbeat-summer-vibes-141890/', duration: '2:30', bpm: 110, isPremium: false },
+      { name: 'Cinematic Journey', artist: 'Lexin_Music', source: 'Pixabay', genre: 'Orquestral', mood: 'Inspirador', url: 'https://pixabay.com/music/upbeat-cinematic-journey-129876/', duration: '3:15', bpm: 85, isPremium: false }
     ]
   },
   {
@@ -1543,6 +1622,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Energia alta na voz e corpo',
       'Música motivacional de treino',
       'Demonstre o movimento brevemente'
+    ],
+    recommendedMusic: [
+      { name: 'Workout Power', artist: 'SoulProdMusic', source: 'Pixabay', genre: 'EDM', mood: 'Energético', url: 'https://pixabay.com/music/beats-workout-power-142567/', duration: '2:30', bpm: 140, isPremium: false },
+      { name: 'Gym Motivation', artist: 'RoyaltyFreeZone', source: 'Pixabay', genre: 'Hip-Hop', mood: 'Poderoso', url: 'https://pixabay.com/music/beats-gym-motivation-138234/', duration: '2:45', bpm: 130, isPremium: false },
+      { name: 'Sports Action', artist: 'Coma-Media', source: 'Pixabay', genre: 'Eletrônico', mood: 'Intenso', url: 'https://pixabay.com/music/beats-sports-action-141890/', duration: '2:00', bpm: 145, isPremium: false },
+      { name: 'Training Beast', artist: 'Lexin_Music', source: 'Pixabay', genre: 'EDM', mood: 'Agressivo', url: 'https://pixabay.com/music/beats-training-beast-129876/', duration: '2:15', bpm: 150, isPremium: false }
     ]
   },
   {
@@ -1569,6 +1654,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Close-ups do corte, vapor, texturas',
       'Iluminação quente e apetitosa',
       'Sons de cozinha (ASMR culinário)'
+    ],
+    recommendedMusic: [
+      { name: 'Cooking Jazz', artist: 'FASSounds', source: 'Pixabay', genre: 'Jazz', mood: 'Relaxado', url: 'https://pixabay.com/music/jazz-blues-cooking-jazz-138234/', duration: '3:00', bpm: 90, isPremium: false },
+      { name: 'Happy Kitchen', artist: 'Lesfm', source: 'Pixabay', genre: 'Acústico', mood: 'Alegre', url: 'https://pixabay.com/music/acoustic-group-happy-kitchen-141890/', duration: '2:30', bpm: 100, isPremium: false },
+      { name: 'Italian Restaurant', artist: 'AlexiAction', source: 'Pixabay', genre: 'World', mood: 'Aconchegante', url: 'https://pixabay.com/music/world-italian-restaurant-129876/', duration: '2:45', bpm: 85, isPremium: false },
+      { name: 'Food Documentary', artist: 'Coma-Media', source: 'Pixabay', genre: 'Ambiente', mood: 'Sofisticado', url: 'https://pixabay.com/music/ambient-food-documentary-142567/', duration: '3:15', bpm: 80, isPremium: false }
     ]
   },
   {
@@ -1595,6 +1686,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Sincronia visual com a batida',
       'Iluminação dramática',
       'Mostre habilidade logo de cara'
+    ],
+    recommendedMusic: [
+      { name: 'Beat Drop', artist: 'SoulProdMusic', source: 'Pixabay', genre: 'EDM', mood: 'Energético', url: 'https://pixabay.com/music/beats-beat-drop-142567/', duration: '2:00', bpm: 128, isPremium: false },
+      { name: 'Guitar Solo', artist: 'AlexiAction', source: 'Pixabay', genre: 'Rock', mood: 'Intenso', url: 'https://pixabay.com/music/rock-guitar-solo-138234/', duration: '2:30', bpm: 120, isPremium: false },
+      { name: 'Hip Hop Beat', artist: 'RoyaltyFreeZone', source: 'Pixabay', genre: 'Hip-Hop', mood: 'Groove', url: 'https://pixabay.com/music/beats-hip-hop-beat-141890/', duration: '2:45', bpm: 95, isPremium: false },
+      { name: 'Electronic Vibes', artist: 'Coma-Media', source: 'Pixabay', genre: 'Eletrônico', mood: 'Moderno', url: 'https://pixabay.com/music/beats-electronic-vibes-129876/', duration: '2:15', bpm: 125, isPremium: false }
     ]
   },
   {
@@ -1621,6 +1718,12 @@ export const INTRO_PRESETS: IntroPreset[] = [
       'Crie suspense com pausas',
       'Use expressões faciais',
       'B-roll para ilustrar a história'
+    ],
+    recommendedMusic: [
+      { name: 'Mystery Story', artist: 'Lexin_Music', source: 'Pixabay', genre: 'Suspense', mood: 'Misterioso', url: 'https://pixabay.com/music/suspense-mystery-story-142567/', duration: '3:00', bpm: 70, isPremium: false },
+      { name: 'Emotional Piano', artist: 'Lesfm', source: 'Pixabay', genre: 'Piano', mood: 'Emotivo', url: 'https://pixabay.com/music/solo-piano-emotional-piano-138234/', duration: '3:30', bpm: 65, isPremium: false },
+      { name: 'Dark Narrative', artist: 'AudioCoffee', source: 'Pixabay', genre: 'Ambiente', mood: 'Sombrio', url: 'https://pixabay.com/music/ambient-dark-narrative-141890/', duration: '4:00', bpm: 60, isPremium: false },
+      { name: 'Tension Build', artist: 'Coma-Media', source: 'Pixabay', genre: 'Suspense', mood: 'Tenso', url: 'https://pixabay.com/music/suspense-tension-build-129876/', duration: '2:45', bpm: 80, isPremium: false }
     ]
   }
 ];
