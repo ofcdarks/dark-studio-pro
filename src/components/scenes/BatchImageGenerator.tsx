@@ -185,12 +185,15 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
     let successCount = 0;
 
     // Helper function to generate a single image with retries
-    const generateSingleImage = async (imageData: GeneratedImage, index: number): Promise<{ index: number; success: boolean; imageUrl?: string }> => {
-      const maxRetries = 3;
+    // The backend already handles prompt rewriting for blocked content
+    const generateSingleImage = async (imageData: GeneratedImage, index: number): Promise<{ index: number; success: boolean; imageUrl?: string; wasRewritten?: boolean }> => {
+      const maxRetries = 4; // More retries to allow backend rewriting
       let retries = 0;
+      let lastError = "";
       
       while (retries <= maxRetries) {
         try {
+          // Invoke with longer timeout for rewriting scenarios
           const { data, error } = await supabase.functions.invoke("generate-imagefx", {
             body: { 
               prompt: imageData.prompt,
@@ -208,47 +211,83 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
                 errMsg = parsed?.error || error.message;
               } catch {}
             }
+            lastError = errMsg;
             
-            // Check for rate limit
+            // Check for rate limit - wait longer
             if (errMsg.includes("Limite de requisições") || errMsg.includes("429")) {
-              const waitTime = 5000 + retries * 3000;
+              const waitTime = 6000 + retries * 4000; // 6s, 10s, 14s, 18s
+              console.log(`[Batch] Rate limited on image ${index + 1}, waiting ${waitTime}ms...`);
               await new Promise(resolve => setTimeout(resolve, waitTime));
               retries++;
               continue;
             }
             
+            // Content blocked - backend should handle rewrite, give it time
+            if (errMsg.includes("bloqueado") || errMsg.includes("inseguro")) {
+              console.log(`[Batch] Prompt blocked for image ${index + 1}, backend will rewrite...`);
+              // Give backend more time to rewrite (it does 2 attempts internally)
+              const waitTime = 4000 + retries * 2000;
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              retries++;
+              continue;
+            }
+            
+            // Auth error - don't retry
+            if (errMsg.includes("autenticação") || errMsg.includes("cookies")) {
+              console.error(`[Batch] Auth error for image ${index + 1}:`, errMsg);
+              return { index, success: false };
+            }
+            
             retries++;
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 3000));
             continue;
           }
 
           if ((data as any)?.error) {
             const errMsg = (data as any).error;
+            lastError = errMsg;
+            
             if (errMsg.includes("Limite de requisições")) {
-              const waitTime = 5000 + retries * 3000;
+              const waitTime = 6000 + retries * 4000;
               await new Promise(resolve => setTimeout(resolve, waitTime));
               retries++;
               continue;
             }
+            
+            // Content blocked
+            if (errMsg.includes("bloqueado") || errMsg.includes("inseguro")) {
+              const waitTime = 4000 + retries * 2000;
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              retries++;
+              continue;
+            }
+            
             retries++;
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 3000));
             continue;
           }
 
           // Handle both response formats
           const imageUrl = data.imageUrl || data.images?.[0]?.url;
+          const wasRewritten = data.images?.[0]?.wasRewritten || false;
+          
           if (imageUrl) {
-            return { index, success: true, imageUrl };
+            if (wasRewritten) {
+              console.log(`[Batch] Image ${index + 1} generated with rewritten prompt`);
+            }
+            return { index, success: true, imageUrl, wasRewritten };
           }
           
           retries++;
-          await new Promise(resolve => setTimeout(resolve, 1500));
-        } catch (error) {
-          retries++;
           await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (error: any) {
+          lastError = error?.message || "Erro desconhecido";
+          retries++;
+          await new Promise(resolve => setTimeout(resolve, 3000));
         }
       }
       
+      console.warn(`[Batch] Image ${index + 1} failed after ${maxRetries} retries: ${lastError}`);
       return { index, success: false };
     };
 
