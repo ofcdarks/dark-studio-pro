@@ -1,9 +1,10 @@
-import { Video, Eye, Coins, TrendingUp, Type, Image, Rocket } from "lucide-react";
+import { Video, Eye, Coins, TrendingUp, Type, Image, Crown, Sparkles } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useTutorial } from "@/hooks/useTutorial";
+import { useSubscription } from "@/hooks/useSubscription";
 import { TutorialModal, TutorialHelpButton } from "@/components/tutorial/TutorialModal";
 import { DASHBOARD_TUTORIAL } from "@/lib/tutorialConfigs";
 import { StatsCard } from "./StatsCard";
@@ -13,7 +14,7 @@ import { NextStepsCard } from "./NextStepsCard";
 import { DailyQuoteCard } from "./DailyQuoteCard";
 import { RecentVideosCard } from "./RecentVideosCard";
 import { OperationalLogsCard } from "./OperationalLogsCard";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
@@ -22,6 +23,7 @@ export function Dashboard() {
   const { profile } = useProfile();
   const { balance: credits, loading: creditsLoading } = useCredits();
   const { stats, recentVideos, activityLogs, loading, refetch } = useDashboardData();
+  const { isSubscribed, planName, loading: subscriptionLoading } = useSubscription();
   const navigate = useNavigate();
   
   // Tutorial
@@ -68,7 +70,26 @@ export function Dashboard() {
               <motion.div className="w-2 h-2 rounded-full bg-primary" animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }} transition={{ duration: 2, repeat: Infinity }} />
               <span className="text-xs font-medium text-primary uppercase tracking-wider">Painel de Controle</span>
             </div>
-            <TutorialHelpButton onClick={openTutorial} />
+            <div className="flex items-center gap-3">
+              {!subscriptionLoading && (
+                <Badge 
+                  variant={isSubscribed ? "default" : "secondary"}
+                  className={`flex items-center gap-1.5 px-3 py-1 ${
+                    isSubscribed 
+                      ? "bg-gradient-to-r from-primary/90 to-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {isSubscribed ? (
+                    <Crown className="w-3.5 h-3.5" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5" />
+                  )}
+                  <span className="font-semibold text-xs uppercase tracking-wide">{planName}</span>
+                </Badge>
+              )}
+              <TutorialHelpButton onClick={openTutorial} />
+            </div>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
             Bem-vindo, <span className="text-primary">{displayName}</span>
