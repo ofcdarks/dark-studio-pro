@@ -24,7 +24,9 @@ import {
   generateCinematicEffectsInstructions,
   generateKenBurnsReport,
   KEN_BURNS_OPTIONS,
-  KenBurnsMotionType
+  KenBurnsMotionType,
+  CINEMATIC_PRESETS,
+  CinematicPreset
 } from "@/lib/xmlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { TransitionPreview } from "@/components/transitions/TransitionPreview";
@@ -298,6 +300,25 @@ const PromptsImages = () => {
   const [showEdlValidationModal, setShowEdlValidationModal] = useState(false);
   const [edlValidationData, setEdlValidationData] = useState<{ missingScenes: number[]; percentage: number; totalScenes: number; withImages: number } | null>(null);
   const [cinematicSettings, setCinematicSettings] = useState<CinematicSettings>(DEFAULT_CINEMATIC_SETTINGS);
+  const [selectedPreset, setSelectedPreset] = useState<CinematicPreset>('custom');
+  
+  // Função para aplicar preset
+  const applyPreset = (presetId: CinematicPreset) => {
+    setSelectedPreset(presetId);
+    const preset = CINEMATIC_PRESETS.find(p => p.id === presetId);
+    if (preset) {
+      setCinematicSettings(preset.settings);
+    }
+  };
+  
+  // Função para atualizar configuração e mudar para preset 'custom'
+  const updateCinematicSetting = <K extends keyof CinematicSettings>(
+    key: K,
+    value: CinematicSettings[K]
+  ) => {
+    setSelectedPreset('custom');
+    setCinematicSettings(prev => ({ ...prev, [key]: value }));
+  };
   
   // FFmpeg hook
   const { generateVideo, downloadVideo, isGenerating: isGeneratingVideo, progress: videoProgress } = useFFmpegVideoGenerator();
@@ -5286,6 +5307,32 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               />
             </div>
 
+            {/* Presets Cinematográficos */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">🎬 Preset Rápido</p>
+              <div className="grid grid-cols-3 gap-2">
+                {CINEMATIC_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => applyPreset(preset.id)}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-lg border text-center transition-all group",
+                      selectedPreset === preset.id
+                        ? "border-amber-500 bg-gradient-to-br from-amber-500/20 to-orange-500/10 text-foreground shadow-lg shadow-amber-500/10"
+                        : "border-border/50 bg-secondary/30 text-muted-foreground hover:bg-secondary/50 hover:border-amber-500/30"
+                    )}
+                  >
+                    <span className={cn(
+                      "text-2xl transition-transform",
+                      selectedPreset === preset.id && "scale-110"
+                    )}>{preset.icon}</span>
+                    <p className="text-xs font-medium">{preset.name}</p>
+                    <p className="text-[9px] text-muted-foreground leading-tight">{preset.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Grid de Configurações */}
             <div className="grid grid-cols-2 gap-4">
               {/* Tipo de Transição */}
@@ -5295,7 +5342,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   {TRANSITION_OPTIONS.map((transition) => (
                     <button
                       key={transition.id}
-                      onClick={() => setCinematicSettings(prev => ({ ...prev, transitionType: transition.id }))}
+                      onClick={() => updateCinematicSetting('transitionType', transition.id)}
                       className={cn(
                         "flex flex-col items-center gap-1 p-2 rounded-lg border text-center transition-all",
                         cinematicSettings.transitionType === transition.id
@@ -5317,7 +5364,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   {TRANSITION_DURATION_OPTIONS.map((dur) => (
                     <button
                       key={dur.value}
-                      onClick={() => setCinematicSettings(prev => ({ ...prev, transitionDuration: dur.value }))}
+                      onClick={() => updateCinematicSetting('transitionDuration', dur.value)}
                       className={cn(
                         "px-3 py-1.5 rounded-lg border text-xs font-medium transition-all",
                         cinematicSettings.transitionDuration === dur.value
@@ -5338,7 +5385,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   {FPS_OPTIONS.map((fps) => (
                     <button
                       key={fps.value}
-                      onClick={() => setCinematicSettings(prev => ({ ...prev, fps: fps.value }))}
+                      onClick={() => updateCinematicSetting('fps', fps.value)}
                       className={cn(
                         "px-3 py-1.5 rounded-lg border text-xs font-medium transition-all",
                         cinematicSettings.fps === fps.value
@@ -5359,7 +5406,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   {ASPECT_RATIO_OPTIONS.map((ar) => (
                     <button
                       key={ar.id}
-                      onClick={() => setCinematicSettings(prev => ({ ...prev, aspectRatio: ar.id }))}
+                      onClick={() => updateCinematicSetting('aspectRatio', ar.id)}
                       className={cn(
                         "flex flex-col items-center gap-1 p-2 rounded-lg border text-center transition-all",
                         cinematicSettings.aspectRatio === ar.id
@@ -5391,7 +5438,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   {COLOR_GRADING_OPTIONS.map((cg) => (
                     <button
                       key={cg.id}
-                      onClick={() => setCinematicSettings(prev => ({ ...prev, colorGrading: cg.id }))}
+                      onClick={() => updateCinematicSetting('colorGrading', cg.id)}
                       className={cn(
                         "flex flex-col items-center gap-1 p-2 rounded-lg border text-center transition-all",
                         cinematicSettings.colorGrading === cg.id
@@ -5413,7 +5460,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   <label className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-secondary/20 cursor-pointer hover:bg-secondary/40 transition-all">
                     <Checkbox 
                       checked={cinematicSettings.fadeInOut}
-                      onCheckedChange={(checked) => setCinematicSettings(prev => ({ ...prev, fadeInOut: !!checked }))}
+                      onCheckedChange={(checked) => updateCinematicSetting('fadeInOut', !!checked)}
                     />
                     <div>
                       <p className="text-xs font-medium">Fade In/Out</p>
@@ -5423,7 +5470,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   <label className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-secondary/20 cursor-pointer hover:bg-secondary/40 transition-all">
                     <Checkbox 
                       checked={cinematicSettings.kenBurnsEffect}
-                      onCheckedChange={(checked) => setCinematicSettings(prev => ({ ...prev, kenBurnsEffect: !!checked }))}
+                      onCheckedChange={(checked) => updateCinematicSetting('kenBurnsEffect', !!checked)}
                     />
                     <div>
                       <p className="text-xs font-medium">Ken Burns</p>
@@ -5433,7 +5480,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   <label className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-secondary/20 cursor-pointer hover:bg-secondary/40 transition-all">
                     <Checkbox 
                       checked={cinematicSettings.addVignette}
-                      onCheckedChange={(checked) => setCinematicSettings(prev => ({ ...prev, addVignette: !!checked }))}
+                      onCheckedChange={(checked) => updateCinematicSetting('addVignette', !!checked)}
                     />
                     <div>
                       <p className="text-xs font-medium">Vinheta</p>
@@ -5443,7 +5490,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   <label className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-secondary/20 cursor-pointer hover:bg-secondary/40 transition-all">
                     <Checkbox 
                       checked={cinematicSettings.letterbox}
-                      onCheckedChange={(checked) => setCinematicSettings(prev => ({ ...prev, letterbox: !!checked }))}
+                      onCheckedChange={(checked) => updateCinematicSetting('letterbox', !!checked)}
                     />
                     <div>
                       <p className="text-xs font-medium">Letterbox</p>
@@ -5456,7 +5503,14 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
             {/* Resumo das configurações */}
             <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-lg p-3">
-              <p className="text-xs font-medium text-amber-500 mb-1">📋 Configuração Final:</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-xs font-medium text-amber-500">📋 Configuração Final</p>
+                {selectedPreset !== 'custom' && (
+                  <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-500">
+                    {CINEMATIC_PRESETS.find(p => p.id === selectedPreset)?.icon} {CINEMATIC_PRESETS.find(p => p.id === selectedPreset)?.name}
+                  </Badge>
+                )}
+              </div>
               <p className="text-[10px] text-muted-foreground">
                 {ASPECT_RATIO_OPTIONS.find(a => a.id === cinematicSettings.aspectRatio)?.name} • {cinematicSettings.fps}fps • {TRANSITION_OPTIONS.find(t => t.id === cinematicSettings.transitionType)?.name} ({cinematicSettings.transitionDuration}s) • {COLOR_GRADING_OPTIONS.find(c => c.id === cinematicSettings.colorGrading)?.name}
                 {cinematicSettings.fadeInOut && ' • Fade In/Out'}

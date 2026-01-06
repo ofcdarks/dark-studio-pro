@@ -1082,6 +1082,114 @@ export const DEFAULT_CINEMATIC_SETTINGS: CinematicSettings = {
 };
 
 /**
+ * Presets cinematográficos para diferentes gêneros de vídeo
+ */
+export type CinematicPreset = 'custom' | 'documentary' | 'action' | 'drama' | 'horror' | 'comedy';
+
+export interface CinematicPresetOption {
+  id: CinematicPreset;
+  name: string;
+  icon: string;
+  description: string;
+  settings: CinematicSettings;
+}
+
+export const CINEMATIC_PRESETS: CinematicPresetOption[] = [
+  {
+    id: 'custom',
+    name: 'Personalizado',
+    icon: '⚙️',
+    description: 'Configure cada opção manualmente',
+    settings: DEFAULT_CINEMATIC_SETTINGS,
+  },
+  {
+    id: 'documentary',
+    name: 'Documentário',
+    icon: '🎥',
+    description: 'Ken Burns suave, cores naturais, transições lentas',
+    settings: {
+      transitionType: 'cross_dissolve',
+      transitionDuration: 1,
+      aspectRatio: '16:9',
+      colorGrading: 'neutral',
+      fps: 24,
+      fadeInOut: true,
+      addVignette: false,
+      kenBurnsEffect: true,
+      letterbox: false,
+    },
+  },
+  {
+    id: 'action',
+    name: 'Ação',
+    icon: '💥',
+    description: 'Cortes rápidos, alto contraste, ritmo intenso',
+    settings: {
+      transitionType: 'push',
+      transitionDuration: 0.25,
+      aspectRatio: '2.39:1',
+      colorGrading: 'teal_orange',
+      fps: 30,
+      fadeInOut: false,
+      addVignette: true,
+      kenBurnsEffect: true,
+      letterbox: true,
+    },
+  },
+  {
+    id: 'drama',
+    name: 'Drama',
+    icon: '🎭',
+    description: 'Tons quentes, vinheta profunda, cinematográfico',
+    settings: {
+      transitionType: 'fade_to_black',
+      transitionDuration: 1,
+      aspectRatio: '2.35:1',
+      colorGrading: 'cinematic_warm',
+      fps: 24,
+      fadeInOut: true,
+      addVignette: true,
+      kenBurnsEffect: true,
+      letterbox: true,
+    },
+  },
+  {
+    id: 'horror',
+    name: 'Terror/Suspense',
+    icon: '👻',
+    description: 'Tons frios, alto contraste, atmosfera tensa',
+    settings: {
+      transitionType: 'dip_to_color',
+      transitionDuration: 0.5,
+      aspectRatio: '2.35:1',
+      colorGrading: 'cinematic_cool',
+      fps: 24,
+      fadeInOut: true,
+      addVignette: true,
+      kenBurnsEffect: true,
+      letterbox: true,
+    },
+  },
+  {
+    id: 'comedy',
+    name: 'Comédia/Leve',
+    icon: '😄',
+    description: 'Cores vibrantes, transições suaves, sem barras',
+    settings: {
+      transitionType: 'cross_dissolve',
+      transitionDuration: 0.5,
+      aspectRatio: '16:9',
+      colorGrading: 'neutral',
+      fps: 30,
+      fadeInOut: true,
+      addVignette: false,
+      kenBurnsEffect: true,
+      letterbox: false,
+    },
+  },
+];
+
+/**
  * Converte segundos para frames
  */
 const secondsToFrames = (seconds: number, fps: number): number => {
