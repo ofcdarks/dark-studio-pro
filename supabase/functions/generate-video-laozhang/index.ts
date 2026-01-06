@@ -51,16 +51,18 @@ serve(async (req) => {
       });
     }
 
-    // Buscar chave da Laozhang API
+    // Buscar chave da Laozhang API do admin_settings (formato: api_keys.laozhang)
     const { data: adminSettings } = await supabase
       .from('admin_settings')
       .select('value')
-      .eq('key', 'laozhang_api_key')
+      .eq('key', 'api_keys')
       .maybeSingle();
 
-    const laozhangApiKey = adminSettings?.value?.api_key || Deno.env.get('LAOZHANG_API_KEY');
+    const apiKeysValue = adminSettings?.value as Record<string, string> | null;
+    const laozhangApiKey = apiKeysValue?.laozhang || Deno.env.get('LAOZHANG_API_KEY');
 
     if (!laozhangApiKey) {
+      console.error('[Video Generation] Laozhang API key not found in admin_settings or env');
       return new Response(JSON.stringify({ error: 'API Laozhang não configurada' }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
