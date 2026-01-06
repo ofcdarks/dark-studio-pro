@@ -56,20 +56,19 @@ export const generateEdl = (
     const recordIn = formatEdlTimecode(currentTimeSeconds, fps);
     const recordOut = formatEdlTimecode(currentTimeSeconds + scene.durationSeconds, fps);
     
-    // Nome do reel/clip baseado na imagem ou número da cena
-    const reelName = scene.imagePath 
-      ? scene.imagePath.split('/').pop()?.replace(/\.[^/.]+$/, '')?.substring(0, 8).toUpperCase() || `CENA_${String(scene.number).padStart(2, '0')}`
-      : `CENA_${String(scene.number).padStart(2, '0')}`;
+    // Nome do arquivo - DEVE corresponder EXATAMENTE ao nome do arquivo real
+    // DaVinci usa este nome para reconectar as mídias
+    const fileName = `cena_${String(scene.number).padStart(3, '0')}.jpg`;
+    
+    // Para o reel, usamos um identificador curto (máx 8 chars) mas padronizado
+    const reelName = `CENA${String(scene.number).padStart(3, '0')}`;
     
     // Linha principal do EDL
     // Formato: EDIT# REEL TRACK TRANS SOURCE_IN SOURCE_OUT REC_IN REC_OUT
     edl += `${editNumber}  ${reelName.padEnd(8, ' ')} V     C        ${sourceIn} ${sourceOut} ${recordIn} ${recordOut}\n`;
     
-    // Comentário com o nome do arquivo original (FROM CLIP NAME)
-    if (scene.imagePath) {
-      const fileName = scene.imagePath.split('/').pop() || `cena_${scene.number}.jpg`;
-      edl += `* FROM CLIP NAME: ${fileName}\n`;
-    }
+    // FROM CLIP NAME - Este é o campo que o DaVinci usa para reconectar mídias!
+    edl += `* FROM CLIP NAME: ${fileName}\n`;
     
     // Comentário com texto da cena (opcional, para referência)
     if (scene.text) {
@@ -118,20 +117,17 @@ export const generateEdlWithTransitions = (
     const recordIn = formatEdlTimecode(currentTimeSeconds, fps);
     const recordOut = formatEdlTimecode(currentTimeSeconds + scene.durationSeconds, fps);
     
-    // Nome do reel
-    const reelName = scene.imagePath 
-      ? scene.imagePath.split('/').pop()?.replace(/\.[^/.]+$/, '')?.substring(0, 8).toUpperCase() || `CENA_${String(scene.number).padStart(2, '0')}`
-      : `CENA_${String(scene.number).padStart(2, '0')}`;
+    // Nome do arquivo padronizado
+    const fileName = `cena_${String(scene.number).padStart(3, '0')}.jpg`;
+    const reelName = `CENA${String(scene.number).padStart(3, '0')}`;
     
     // Tipo de transição: C = Cut, D = Dissolve
     const transType = index === 0 ? 'C' : `D    ${String(transitionFrames).padStart(3, '0')}`;
     
     edl += `${editNumber}  ${reelName.padEnd(8, ' ')} V     ${transType.padEnd(9, ' ')} ${sourceIn} ${sourceOut} ${recordIn} ${recordOut}\n`;
     
-    if (scene.imagePath) {
-      const fileName = scene.imagePath.split('/').pop() || `cena_${scene.number}.jpg`;
-      edl += `* FROM CLIP NAME: ${fileName}\n`;
-    }
+    // FROM CLIP NAME - Campo usado para reconectar mídias
+    edl += `* FROM CLIP NAME: ${fileName}\n`;
     
     edl += '\n';
     
@@ -160,11 +156,9 @@ export const generateEdlTutorial = (
   const minutes = Math.floor(totalDuration / 60);
   const seconds = Math.round(totalDuration % 60);
 
-  // Lista de arquivos de mídia esperados
+  // Lista de arquivos de mídia esperados - nomes EXATOS que devem ser usados
   const mediaFiles = scenes.map((scene, index) => {
-    const fileName = scene.imagePath 
-      ? scene.imagePath.split('/').pop() || `cena_${String(scene.number).padStart(2, '0')}.jpg`
-      : `cena_${String(scene.number).padStart(2, '0')}.jpg`;
+    const fileName = `cena_${String(scene.number).padStart(3, '0')}.jpg`;
     return `   ${index + 1}. ${fileName}`;
   }).join('\n');
 
@@ -188,7 +182,11 @@ Crie uma pasta no seu computador e coloque TODAS as imagens/vídeos das cenas.
 Arquivos necessários (na ordem):
 ${mediaFiles}
 
-⚠️ IMPORTANTE: Os nomes dos arquivos devem corresponder EXATAMENTE aos listados acima!
+⚠️ IMPORTANTE: 
+   - Os nomes dos arquivos DEVEM ser EXATAMENTE como listados acima!
+   - Use underline (_) e não hífen (-)
+   - Use 3 dígitos: cena_001.jpg, cena_002.jpg, etc.
+   - Extensão .jpg (minúsculo)
 
 
 📂 PASSO 2: IMPORTAR MÍDIAS NO DAVINCI RESOLVE
