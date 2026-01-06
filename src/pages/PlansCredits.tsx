@@ -31,13 +31,15 @@ interface PlanData {
   stripe_price_id: string | null;
 }
 
-const CREDIT_PACKAGES = [
-  { credits: 1000, price: 99.90, label: "Alocação básica", priceId: "price_1SmiUTQlTxz1IgnVfJt8KkMC" },
-  { credits: 2500, price: 149.90, label: "Expansão moderada", priceId: "price_1SmiV9QlTxz1IgnVu68cCwSn" },
-  { credits: 5000, price: 249.90, label: "Execução intensiva", priceId: "price_1SmicEQlTxz1IgnVvgjaHQ3A" },
-  { credits: 10000, price: 399.90, label: "Escala prolongada", priceId: "price_1SZbb4QlTxz1IgnVQT2v1NvC" },
-  { credits: 20000, price: 699.90, label: "Contínuo de alta demanda", priceId: "price_1SZbbfQlTxz1IgnVYfx2yxyU" },
-];
+interface CreditPackage {
+  id: string;
+  credits: number;
+  price: number;
+  stripe_price_id: string | null;
+  label: string | null;
+  is_active: boolean;
+  display_order: number;
+}
 
 // Stripe Price IDs for monthly plans
 const MONTHLY_PRICE_IDS: Record<string, string> = {
@@ -192,11 +194,13 @@ const COMPARISON_DATA = [
 export default function PlansCredits() {
   const navigate = useNavigate();
   const [plans, setPlans] = useState<PlanData[]>([]);
+  const [creditPackages, setCreditPackages] = useState<CreditPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPlans();
+    fetchCreditPackages();
     // Check for success/cancel params
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
@@ -226,6 +230,21 @@ export default function PlansCredits() {
       console.error("Error fetching plans:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCreditPackages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("credit_packages")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order");
+
+      if (error) throw error;
+      setCreditPackages((data || []) as CreditPackage[]);
+    } catch (error) {
+      console.error("Error fetching credit packages:", error);
     }
   };
 
@@ -266,8 +285,8 @@ export default function PlansCredits() {
   };
 
   // Handle credit package purchase
-  const handleCreditPurchase = async (pkg: typeof CREDIT_PACKAGES[0]) => {
-    if (!pkg.priceId) {
+  const handleCreditPurchase = async (pkg: CreditPackage) => {
+    if (!pkg.stripe_price_id) {
       toast.warning("Pacote ainda não configurado para compra.");
       return;
     }
@@ -276,7 +295,7 @@ export default function PlansCredits() {
     
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId: pkg.priceId, mode: 'payment' }
+        body: { priceId: pkg.stripe_price_id, mode: 'payment' }
       });
 
       if (error) throw error;
@@ -728,9 +747,9 @@ export default function PlansCredits() {
             </motion.div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {CREDIT_PACKAGES.map((pkg, idx) => (
+              {creditPackages.map((pkg, idx) => (
                 <motion.div
-                  key={idx}
+                  key={pkg.id}
                   initial={{ opacity: 0, scale: 0.9 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
@@ -744,7 +763,7 @@ export default function PlansCredits() {
                   className="group cursor-pointer"
                 >
                   <Card 
-                    className={`text-center backdrop-blur-sm transition-all duration-400 ${idx === 4 ? "border-2 border-primary bg-card/80 shadow-lg shadow-primary/20 group-hover:shadow-2xl group-hover:shadow-primary/40" : "border-border/50 bg-card/60 group-hover:border-primary/50 group-hover:shadow-lg group-hover:shadow-primary/10"}`}
+                    className={`text-center backdrop-blur-sm transition-all duration-400 ${idx === creditPackages.length - 1 ? "border-2 border-primary bg-card/80 shadow-lg shadow-primary/20 group-hover:shadow-2xl group-hover:shadow-primary/40" : "border-border/50 bg-card/60 group-hover:border-primary/50 group-hover:shadow-lg group-hover:shadow-primary/10"}`}
                   >
                     {/* Hover glow */}
                     <motion.div 
@@ -768,7 +787,7 @@ export default function PlansCredits() {
                         className="text-2xl font-black text-foreground"
                         whileHover={{ scale: 1.05 }}
                       >
-                        R$ {pkg.price.toFixed(2).replace(".", ",")}
+                        R$ {Number(pkg.price).toFixed(2).replace(".", ",")}
                       </motion.div>
                       <p className="text-xs text-muted-foreground group-hover:text-foreground/70 transition-colors duration-200">{pkg.label}</p>
                       <motion.div
@@ -780,9 +799,9 @@ export default function PlansCredits() {
                           size="sm" 
                           className="w-full text-xs border-primary/30 transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
                           onClick={() => handleCreditPurchase(pkg)}
-                          disabled={checkoutLoading === `credits-${pkg.credits}`}
+                          disabled={checkoutLoading === `credits-${pkg.credits}` || !pkg.stripe_price_id}
                         >
-                          {checkoutLoading === `credits-${pkg.credits}` ? "Processando..." : "ALOCAR"}
+                          {checkoutLoading === `credits-${pkg.credits}` ? "Processando..." : pkg.stripe_price_id ? "ALOCAR" : "EM BREVE"}
                         </Button>
                       </motion.div>
                     </CardContent>
