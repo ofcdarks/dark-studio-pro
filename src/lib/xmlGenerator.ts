@@ -1216,6 +1216,7 @@ export interface MusicRecommendation {
   genre: string;
   mood: string;
   url: string;
+  previewUrl?: string; // URL direta para preview de áudio
   duration?: string;
   bpm?: number;
   isPremium: boolean;
