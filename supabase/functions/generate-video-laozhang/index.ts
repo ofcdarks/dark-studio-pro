@@ -8,15 +8,22 @@ const corsHeaders = {
 
 interface VideoRequest {
   prompt: string;
-  model: "sora2" | "sora2-landscape" | "kling";
+  model: "sora2" | "sora2-15s" | "veo31" | "veo31-fast";
   aspect_ratio: "16:9" | "9:16" | "1:1";
   resolution: "720p" | "1080p";
 }
 
 // Modelos disponíveis na Laozhang API para vídeo
-// sora_video2: 704×1280 (vertical)
-// sora_video2-landscape: 1280×704 (horizontal)
-// kling-video: API Kling para vídeo
+// Sora 2:
+//   - sora_video2: 704×1280 (vertical) 10s - $0.15
+//   - sora_video2-landscape: 1280×704 (horizontal) 10s - $0.15
+//   - sora_video2-15s: 704×1280 (vertical) 15s - $0.15
+//   - sora_video2-landscape-15s: 1280×704 (horizontal) 15s - $0.15
+// Veo 3.1:
+//   - veo-3.1: Standard - $0.25
+//   - veo-3.1-fast: Fast - $0.15
+//   - veo-3.1-landscape: Landscape - $0.25
+//   - veo-3.1-landscape-fast: Landscape Fast - $0.15
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -47,7 +54,7 @@ serve(async (req) => {
       });
     }
 
-    const { prompt, model, aspect_ratio, resolution } = await req.json() as VideoRequest;
+    const { prompt, model, aspect_ratio } = await req.json() as VideoRequest;
 
     if (!prompt || !model) {
       return new Response(JSON.stringify({ error: 'Prompt e modelo são obrigatórios' }), {
@@ -75,42 +82,54 @@ serve(async (req) => {
     }
 
     // Mapear modelo para nome correto da API Laozhang
-    // Sora 2: sora_video2 (vertical 704x1280), sora_video2-landscape (horizontal 1280x704)
-    let modelName = 'sora_video2-landscape'; // default horizontal
+    let modelName = '';
     
     if (model === 'sora2') {
-      // Baseado no aspect_ratio escolhido
-      if (aspect_ratio === '9:16') {
-        modelName = 'sora_video2'; // Vertical
-      } else {
-        modelName = 'sora_video2-landscape'; // Horizontal (16:9 ou 1:1)
-      }
-    } else if (model === 'sora2-landscape') {
+      // Sora 2 - 10 segundos
+      modelName = aspect_ratio === '9:16' ? 'sora_video2' : 'sora_video2-landscape';
+    } else if (model === 'sora2-15s') {
+      // Sora 2 - 15 segundos
+      modelName = aspect_ratio === '9:16' ? 'sora_video2-15s' : 'sora_video2-landscape-15s';
+    } else if (model === 'veo31') {
+      // Veo 3.1 Standard
+      modelName = aspect_ratio === '9:16' ? 'veo-3.1' : 'veo-3.1-landscape';
+    } else if (model === 'veo31-fast') {
+      // Veo 3.1 Fast
+      modelName = aspect_ratio === '9:16' ? 'veo-3.1-fast' : 'veo-3.1-landscape-fast';
+    } else {
+      // Default to Sora 2 landscape
       modelName = 'sora_video2-landscape';
-    } else if (model === 'kling') {
-      modelName = 'kling-video';
     }
 
-    console.log(`[Video Generation] Model: ${modelName}, Aspect: ${aspect_ratio}, Resolution: ${resolution}`);
+    console.log(`[Video Generation] Model: ${modelName}, Aspect: ${aspect_ratio}`);
     console.log(`[Video Generation] Prompt: ${prompt.substring(0, 100)}...`);
 
-    // Chamar a API Laozhang usando o endpoint de chat completions (formato OpenAI)
+    // Construir o corpo da requisição conforme documentação
+    // Usa formato OpenAI Chat Completions
+    const requestBody = {
+      model: modelName,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: prompt
+            }
+          ]
+        }
+      ],
+      stream: true, // Streaming para obter progresso
+    };
+
+    // Chamar a API Laozhang
     const laozhangResponse = await fetch('https://api.laozhang.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${laozhangApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: modelName,
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        stream: false,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!laozhangResponse.ok) {
@@ -135,42 +154,71 @@ serve(async (req) => {
         });
       }
 
+      // Parse error details
+      let errorDetails = errorText;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorDetails = errorJson.error?.message || errorText;
+      } catch {
+        // Keep original text
+      }
+
       return new Response(JSON.stringify({ 
-        error: 'Erro ao gerar vídeo. Tente novamente.',
-        details: errorText
+        error: 'Erro ao gerar vídeo.',
+        details: errorDetails
       }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const responseData = await laozhangResponse.json();
-    console.log('[Video Generation] Response:', JSON.stringify(responseData).substring(0, 500));
+    // Processar resposta de streaming
+    // Para vídeos, a API retorna chunks SSE com o progresso e URL final
+    const reader = laozhangResponse.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullContent = '';
+    let videoUrl = '';
 
-    // Extrair URL do vídeo da resposta
-    // O formato pode variar: pode estar em choices[0].message.content ou em um campo video_url
-    const content = responseData.choices?.[0]?.message?.content;
-    
-    // Verificar se é uma URL de vídeo
-    let videoUrl = null;
-    
-    if (typeof content === 'string') {
-      // Tentar extrair URL de vídeo do conteúdo
-      const urlMatch = content.match(/https?:\/\/[^\s]+\.(mp4|webm|mov)/i);
-      if (urlMatch) {
-        videoUrl = urlMatch[0];
-      } else if (content.startsWith('http')) {
-        videoUrl = content.trim();
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        fullContent += chunk;
+        
+        // Procurar por URLs de vídeo no streaming
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+            try {
+              const jsonStr = line.slice(6);
+              if (jsonStr.trim()) {
+                const data = JSON.parse(jsonStr);
+                const content = data.choices?.[0]?.delta?.content || data.choices?.[0]?.message?.content;
+                
+                if (content) {
+                  // Procurar URL de vídeo
+                  const urlMatch = content.match(/https?:\/\/[^\s"']+\.(mp4|webm|mov)/i);
+                  if (urlMatch) {
+                    videoUrl = urlMatch[0];
+                  }
+                  // Também verificar se é uma URL direta
+                  if (content.startsWith('http') && (content.includes('.mp4') || content.includes('video'))) {
+                    videoUrl = content.trim().split(/[\s"']/)[0];
+                  }
+                }
+              }
+            } catch {
+              // Continue processing
+            }
+          }
+        }
       }
     }
 
-    // Verificar campos alternativos de resposta
-    if (!videoUrl) {
-      videoUrl = responseData.video_url || 
-                 responseData.data?.[0]?.url || 
-                 responseData.url ||
-                 responseData.choices?.[0]?.message?.video_url;
-    }
+    console.log('[Video Generation] Full response length:', fullContent.length);
+    console.log('[Video Generation] Extracted video URL:', videoUrl);
 
     if (videoUrl) {
       return new Response(JSON.stringify({
@@ -178,34 +226,41 @@ serve(async (req) => {
         status: 'completed',
         video_url: videoUrl,
         model: modelName,
-        resolution: resolution,
         aspect_ratio: aspect_ratio,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Se não tiver URL direta, pode ser um processo assíncrono
-    const taskId = responseData.id || responseData.task_id;
-    
-    if (taskId) {
+    // Se não encontrou URL direta, verificar se há link no conteúdo
+    const urlPattern = /https?:\/\/[^\s"'<>]+/g;
+    const urls = fullContent.match(urlPattern);
+    const videoUrlFromContent = urls?.find(url => 
+      url.includes('video') || 
+      url.includes('.mp4') || 
+      url.includes('.webm') ||
+      url.includes('sora') ||
+      url.includes('veo')
+    );
+
+    if (videoUrlFromContent) {
       return new Response(JSON.stringify({
         success: true,
-        status: 'processing',
-        task_id: taskId,
-        message: 'Vídeo está sendo gerado. Pode levar alguns minutos.',
-        response: content,
+        status: 'completed',
+        video_url: videoUrlFromContent,
+        model: modelName,
+        aspect_ratio: aspect_ratio,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Retornar a resposta completa para debugging
+    // Se ainda não tiver URL, retornar status de processamento
     return new Response(JSON.stringify({
       success: true,
       status: 'processing',
-      message: 'Vídeo em processamento.',
-      response: content || responseData,
+      message: 'Vídeo em processamento. Pode levar alguns minutos.',
+      raw_response: fullContent.substring(0, 500),
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

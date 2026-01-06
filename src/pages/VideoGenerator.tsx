@@ -23,14 +23,21 @@ interface VideoJob {
 }
 
 // Custos por modelo (baseado na API Laozhang)
+// Sora 2: $0.15/video = ~10 créditos
+// Veo 3.1 Standard: $0.25/video = ~15 créditos
+// Veo 3.1 Fast: $0.15/video = ~10 créditos
 const MODEL_COSTS: Record<string, number> = {
-  'sora2': 10,        // $0.15/video ≈ 10 créditos
-  'kling': 15,        // Kling API
+  'sora2': 10,
+  'sora2-15s': 10,
+  'veo31': 15,
+  'veo31-fast': 10,
 };
+
+type ModelType = "sora2" | "sora2-15s" | "veo31" | "veo31-fast";
 
 const VideoGenerator = () => {
   const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState<"sora2" | "kling">("sora2");
+  const [model, setModel] = useState<ModelType>("sora2");
   const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16" | "1:1">("16:9");
   const [resolution, setResolution] = useState<"720p" | "1080p">("720p");
   const [loading, setLoading] = useState(false);
@@ -72,10 +79,14 @@ const VideoGenerator = () => {
 
       if (error) throw error;
 
-      if (data.status === 'processing' && data.task_id) {
-        // Vídeo está sendo processado - salvar task_id para polling
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      if (data.status === 'processing') {
+        // Vídeo está sendo processado
         setVideoJobs(prev => prev.map(job => 
-          job.id === jobId ? { ...job, task_id: data.task_id, progress: 30 } : job
+          job.id === jobId ? { ...job, progress: 30 } : job
         ));
         toast.info('Vídeo está sendo gerado. Isso pode levar alguns minutos...');
         
@@ -101,12 +112,6 @@ const VideoGenerator = () => {
           } : job
         ));
         toast.success('Vídeo gerado com sucesso!');
-      } else {
-        // Status intermediário
-        setVideoJobs(prev => prev.map(job => 
-          job.id === jobId ? { ...job, progress: 50 } : job
-        ));
-        toast.info('Vídeo em processamento...');
       }
 
       setPrompt('');
@@ -115,7 +120,8 @@ const VideoGenerator = () => {
       setVideoJobs(prev => prev.map(job => 
         job.id === jobId ? { ...job, status: 'error' } : job
       ));
-      toast.error('Erro ao gerar vídeo. Tente novamente.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao gerar vídeo';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -136,6 +142,16 @@ const VideoGenerator = () => {
     window.open(videoUrl, '_blank');
   };
 
+  const getModelLabel = (m: string) => {
+    const labels: Record<string, string> = {
+      'sora2': 'Sora 2 (10s)',
+      'sora2-15s': 'Sora 2 (15s)',
+      'veo31': 'Veo 3.1',
+      'veo31-fast': 'Veo 3.1 Fast',
+    };
+    return labels[m] || m;
+  };
+
   return (
     <MainLayout>
       <div className="flex-1 overflow-auto p-6 lg:p-8">
@@ -146,7 +162,7 @@ const VideoGenerator = () => {
             <div>
               <h1 className="text-3xl font-bold text-foreground">Gerador de Vídeo</h1>
               <p className="text-muted-foreground">
-                Crie vídeos incríveis com IA usando Sora 2 e Kling
+                Crie vídeos incríveis com IA usando Sora 2 e Veo 3.1
               </p>
             </div>
           </div>
@@ -187,16 +203,18 @@ const VideoGenerator = () => {
                       <label className="text-sm text-muted-foreground">Modelo</label>
                       <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
                         <Zap className="w-3 h-3 mr-1" />
-                        Custo estimado: {estimatedCost} créditos
+                        Custo: {estimatedCost} créditos
                       </Badge>
                     </div>
-                    <Select value={model} onValueChange={(v: "sora2" | "kling") => setModel(v)}>
+                    <Select value={model} onValueChange={(v: ModelType) => setModel(v)}>
                       <SelectTrigger className="bg-secondary/50 border-border">
                         <SelectValue placeholder="Selecione o modelo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="sora2">Sora 2 (Alta Qualidade)</SelectItem>
-                        <SelectItem value="kling">Kling (Rápido)</SelectItem>
+                        <SelectItem value="sora2">Sora 2 (10s) - OpenAI</SelectItem>
+                        <SelectItem value="sora2-15s">Sora 2 (15s) - OpenAI</SelectItem>
+                        <SelectItem value="veo31">Veo 3.1 - Google</SelectItem>
+                        <SelectItem value="veo31-fast">Veo 3.1 Fast - Google</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -280,7 +298,7 @@ const VideoGenerator = () => {
                             {job.prompt}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {job.model.toUpperCase()} • {job.resolution} • {job.aspect_ratio}
+                            {getModelLabel(job.model)} • {job.aspect_ratio}
                           </span>
                         </div>
                         <span className={`text-xs font-medium ${
@@ -347,7 +365,7 @@ const VideoGenerator = () => {
                             {job.prompt}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {job.model.toUpperCase()} • {job.resolution}
+                            {getModelLabel(job.model)} • {job.aspect_ratio}
                           </span>
                         </div>
                         <div className="flex gap-1">
