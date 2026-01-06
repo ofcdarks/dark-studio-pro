@@ -147,3 +147,161 @@ export const generateEdlWithTransitions = (
 export const calculateEdlDuration = (scenes: SceneForEdl[]): number => {
   return scenes.reduce((total, scene) => total + scene.durationSeconds, 0);
 };
+
+/**
+ * Gera tutorial de como usar o EDL no DaVinci Resolve
+ */
+export const generateEdlTutorial = (
+  scenes: SceneForEdl[],
+  projectTitle: string = 'MEU_PROJETO'
+): string => {
+  const totalScenes = scenes.length;
+  const totalDuration = calculateEdlDuration(scenes);
+  const minutes = Math.floor(totalDuration / 60);
+  const seconds = Math.round(totalDuration % 60);
+
+  // Lista de arquivos de mídia esperados
+  const mediaFiles = scenes.map((scene, index) => {
+    const fileName = scene.imagePath 
+      ? scene.imagePath.split('/').pop() || `cena_${String(scene.number).padStart(2, '0')}.jpg`
+      : `cena_${String(scene.number).padStart(2, '0')}.jpg`;
+    return `   ${index + 1}. ${fileName}`;
+  }).join('\n');
+
+  return `
+================================================================================
+                    TUTORIAL: IMPORTAR EDL NO DAVINCI RESOLVE
+================================================================================
+
+Projeto: ${projectTitle.toUpperCase()}
+Total de Cenas: ${totalScenes}
+Duração Estimada: ${minutes}m ${seconds}s
+
+================================================================================
+                              PASSO A PASSO
+================================================================================
+
+📁 PASSO 1: PREPARAR AS MÍDIAS
+-------------------------------
+Crie uma pasta no seu computador e coloque TODAS as imagens/vídeos das cenas.
+
+Arquivos necessários (na ordem):
+${mediaFiles}
+
+⚠️ IMPORTANTE: Os nomes dos arquivos devem corresponder EXATAMENTE aos listados acima!
+
+
+📂 PASSO 2: IMPORTAR MÍDIAS NO DAVINCI RESOLVE
+-----------------------------------------------
+1. Abra o DaVinci Resolve
+2. Crie um novo projeto ou abra um existente
+3. Vá para a aba "Media" (canto inferior esquerdo)
+4. Navegue até a pasta onde salvou as imagens
+5. Selecione todas as mídias e arraste para o Media Pool
+
+
+⚙️ PASSO 3: CONFIGURAR O PROJETO
+----------------------------------
+1. Clique em File → Project Settings (Shift+9)
+2. Em "Master Settings", configure:
+   - Timeline Resolution: 1920x1080 (ou sua preferência)
+   - Timeline Frame Rate: 24 fps (mesmo FPS do EDL)
+   - Playback Frame Rate: 24 fps
+3. Clique em "Save"
+
+
+📥 PASSO 4: IMPORTAR O ARQUIVO EDL
+-----------------------------------
+1. Vá para File → Import → Timeline...
+2. Selecione o arquivo .edl que você baixou
+3. Na janela que aparecer:
+   - Marque "Automatically import source clips into media pool"
+   - Escolha "Use sizing information" se disponível
+4. Clique em "OK"
+
+
+🔗 PASSO 5: RECONECTAR MÍDIAS (SE NECESSÁRIO)
+----------------------------------------------
+Se as mídias aparecerem offline (ícone vermelho):
+
+1. Na timeline, clique com botão direito em um clipe offline
+2. Selecione "Relink Selected Clips..."
+3. Navegue até a pasta onde estão suas mídias
+4. O DaVinci irá reconectar automaticamente pelos nomes dos arquivos
+
+
+✅ PASSO 6: VERIFICAR E AJUSTAR
+--------------------------------
+1. Verifique se todas as cenas estão na ordem correta
+2. Cada imagem deve ter a duração correta conforme o roteiro
+3. Ajuste transições se necessário (as dissolves já estão configuradas)
+
+
+================================================================================
+                              DICAS EXTRAS
+================================================================================
+
+🎬 ADICIONAR NARRAÇÃO:
+   - Importe seu arquivo de áudio para o Media Pool
+   - Arraste para a track de áudio abaixo do vídeo
+   - Use a sincronização de WPM definida no projeto
+
+🎨 APLICAR EFEITO KEN BURNS:
+   - Selecione um clipe na timeline
+   - Vá para Inspector → Transform
+   - Use keyframes em Position e Zoom para criar movimento
+
+📝 ADICIONAR LEGENDAS:
+   - Importe o arquivo .srt gerado
+   - File → Import → Subtitle...
+   - As legendas serão sincronizadas automaticamente
+
+🎵 ADICIONAR TRILHA SONORA:
+   - Importe a música para o Media Pool
+   - Arraste para uma track de áudio separada
+   - Ajuste o volume para não competir com a narração
+
+
+================================================================================
+                           RESOLUÇÃO DE PROBLEMAS
+================================================================================
+
+❌ "Clips not found":
+   → Verifique se os nomes dos arquivos estão corretos
+   → Use "Relink Clips" para reconectar manualmente
+
+❌ "Wrong frame rate":
+   → Ajuste o frame rate do projeto para 24fps
+   → Reimporte o EDL
+
+❌ "Clips too short/long":
+   → O EDL define duração exata - ajuste as mídias se necessário
+   → Imagens são automaticamente estendidas para a duração definida
+
+❌ "Black frames":
+   → Algumas mídias podem estar faltando
+   → Verifique se todas as imagens foram importadas
+
+
+================================================================================
+                              EXPORTAÇÃO FINAL
+================================================================================
+
+Quando a edição estiver pronta:
+
+1. Vá para a aba "Deliver"
+2. Escolha um preset (YouTube, Vimeo, etc.) ou configure:
+   - Format: MP4
+   - Codec: H.264 ou H.265
+   - Resolution: 1920x1080
+   - Frame Rate: 24fps
+3. Defina o local de saída
+4. Clique em "Add to Render Queue"
+5. Clique em "Render All"
+
+
+================================================================================
+              Gerado automaticamente | ${new Date().toLocaleDateString('pt-BR')}
+================================================================================
+`;
+};
