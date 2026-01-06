@@ -29,6 +29,9 @@ import { AgentChatModal } from "@/components/agents/AgentChatModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useTutorial } from "@/hooks/useTutorial";
+import { TutorialModal, TutorialHelpButton } from "@/components/tutorial/TutorialModal";
+import { VIRAL_AGENTS_TUTORIAL } from "@/lib/tutorialConfigs";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -83,6 +86,9 @@ const ViralAgents = () => {
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [savingName, setSavingName] = useState(false);
+  
+  // Tutorial hook
+  const { showTutorial, completeTutorial, openTutorial } = useTutorial(VIRAL_AGENTS_TUTORIAL.id);
 
   // New agent form
   const [newAgentName, setNewAgentName] = useState("");
@@ -497,6 +503,7 @@ const ViralAgents = () => {
                   Crie e gerencie agentes de IA personalizados com memória, instruções e arquivos
                 </p>
               </div>
+              <TutorialHelpButton onClick={openTutorial} />
             </div>
             <Button
               onClick={() => setShowNewAgentModal(true)}
@@ -1206,6 +1213,15 @@ const ViralAgents = () => {
           }}
         />
       )}
+      {/* Tutorial Modal */}
+      <TutorialModal
+        open={showTutorial}
+        onOpenChange={(open) => !open && completeTutorial()}
+        title={VIRAL_AGENTS_TUTORIAL.title}
+        description={VIRAL_AGENTS_TUTORIAL.description}
+        steps={VIRAL_AGENTS_TUTORIAL.steps}
+        onComplete={completeTutorial}
+      />
     </MainLayout>
   );
 };

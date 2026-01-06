@@ -86,6 +86,9 @@ import { usePersistedState } from "@/hooks/usePersistedState";
 import { useBackgroundImageGeneration } from "@/hooks/useBackgroundImageGeneration";
 import { useFFmpegVideoGenerator } from "@/hooks/useFFmpegVideoGenerator";
 import { useUserCinematicPresets } from "@/hooks/useUserCinematicPresets";
+import { useTutorial } from "@/hooks/useTutorial";
+import { TutorialModal, TutorialHelpButton } from "@/components/tutorial/TutorialModal";
+import { PROMPTS_IMAGES_TUTORIAL } from "@/lib/tutorialConfigs";
 import { SessionIndicator } from "@/components/ui/session-indicator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -433,6 +436,9 @@ const PromptsImages = () => {
   
   // FFmpeg hook
   const { generateVideo, downloadVideo, isGenerating: isGeneratingVideo, progress: videoProgress } = useFFmpegVideoGenerator();
+  
+  // Tutorial hook
+  const { showTutorial, completeTutorial, openTutorial } = useTutorial(PROMPTS_IMAGES_TUTORIAL.id);
   
   // Derivar estados de geração do background
   const generatingImages = bgState.isGenerating;
@@ -3158,11 +3164,14 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
             }}
           />
 
-          <div className="mb-8 mt-4">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Prompts para Cenas</h1>
-            <p className="text-muted-foreground">
-              Analise seu roteiro e gere prompts de imagem otimizados para cada cena com direção de produção audiovisual
-            </p>
+          <div className="mb-8 mt-4 flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Prompts para Cenas</h1>
+              <p className="text-muted-foreground">
+                Analise seu roteiro e gere prompts de imagem otimizados para cada cena com direção de produção audiovisual
+              </p>
+            </div>
+            <TutorialHelpButton onClick={openTutorial} />
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -6066,6 +6075,15 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
           </div>
         </DialogContent>
       </Dialog>
+      {/* Tutorial Modal */}
+      <TutorialModal
+        open={showTutorial}
+        onOpenChange={(open) => !open && completeTutorial()}
+        title={PROMPTS_IMAGES_TUTORIAL.title}
+        description={PROMPTS_IMAGES_TUTORIAL.description}
+        steps={PROMPTS_IMAGES_TUTORIAL.steps}
+        onComplete={completeTutorial}
+      />
     </MainLayout>
   );
 };

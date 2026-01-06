@@ -32,6 +32,9 @@ import { CreateAgentModal } from "@/components/analyzer/CreateAgentModal";
 import { ThumbnailLibrary } from "@/components/analyzer/ThumbnailLibrary";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
+import { useTutorial } from "@/hooks/useTutorial";
+import { TutorialModal, TutorialHelpButton } from "@/components/tutorial/TutorialModal";
+import { VIDEO_ANALYZER_TUTORIAL } from "@/lib/tutorialConfigs";
 
 interface GeneratedTitle {
   id: string;
@@ -105,6 +108,9 @@ const VideoAnalyzer = () => {
   // Non-persisted states (transient)
   const [analyzing, setAnalyzing] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(LOADING_MESSAGES[0]);
+  
+  // Tutorial hook
+  const { showTutorial, completeTutorial, openTutorial } = useTutorial(VIDEO_ANALYZER_TUTORIAL.id);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showAgentModal, setShowAgentModal] = useState(false);
@@ -755,13 +761,16 @@ const VideoAnalyzer = () => {
           />
 
           {/* Header */}
-          <div className="mb-8 mt-4">
-            <h1 className="text-4xl font-bold text-foreground mb-3">
-              Analisador de Títulos Virais
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              Cole uma URL de vídeo e o motor de IA para gerar títulos.
-            </p>
+          <div className="mb-8 mt-4 flex items-start justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-foreground mb-3">
+                Analisador de Títulos Virais
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                Cole uma URL de vídeo e o motor de IA para gerar títulos.
+              </p>
+            </div>
+            <TutorialHelpButton onClick={openTutorial} />
           </div>
 
           {/* Input Section */}
@@ -1202,6 +1211,15 @@ const VideoAnalyzer = () => {
         videoTitle={videoInfo?.title || ""}
         niche={videoInfo?.niche || ""}
         subNiche={videoInfo?.subNiche || ""}
+      />
+      {/* Tutorial Modal */}
+      <TutorialModal
+        open={showTutorial}
+        onOpenChange={(open) => !open && completeTutorial()}
+        title={VIDEO_ANALYZER_TUTORIAL.title}
+        description={VIDEO_ANALYZER_TUTORIAL.description}
+        steps={VIDEO_ANALYZER_TUTORIAL.steps}
+        onComplete={completeTutorial}
       />
     </MainLayout>
   );
