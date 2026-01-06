@@ -1624,10 +1624,10 @@ echo "Agora importe o video no CapCut!"
     return { valid: true, warnings, errors, missingScenes, percentage, totalScenes, withImages };
   };
 
-  // Função para executar a exportação XML de fato
+  // Função para executar a exportação XML de fato (arquivos separados)
   const executeXmlExport = () => {
     const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
-    const scenesForXml = getScenesForEdl(); // Reutiliza a mesma estrutura
+    const scenesForXml = getScenesForEdl();
     const aspectRatioConfig = ASPECT_RATIO_OPTIONS.find(a => a.id === cinematicSettings.aspectRatio) || ASPECT_RATIO_OPTIONS[0];
     const transitionFrames = Math.round(cinematicSettings.fps * cinematicSettings.transitionDuration);
     const safeFileName = (projectName.trim() || "projeto").replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -1676,6 +1676,159 @@ echo "Agora importe o video no CapCut!"
         ? `XML + Instruções de ${colorGradingName} • ${scenesWithImages.length} cenas • ${aspectRatioConfig.name}`
         : `${scenesWithImages.length} cenas • ${aspectRatioConfig.name} • ${cinematicSettings.fps}fps • ${transitionName}` 
     });
+    
+    setShowEdlValidationModal(false);
+  };
+
+  // Função para exportar ZIP completo com tudo para produção
+  const executeZipExport = async () => {
+    const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
+    const scenesForXml = getScenesForEdl();
+    const aspectRatioConfig = ASPECT_RATIO_OPTIONS.find(a => a.id === cinematicSettings.aspectRatio) || ASPECT_RATIO_OPTIONS[0];
+    const transitionFrames = Math.round(cinematicSettings.fps * cinematicSettings.transitionDuration);
+    const safeFileName = (projectName.trim() || "projeto").replace(/[^a-zA-Z0-9_-]/g, "_");
+    
+    const zip = new JSZip();
+    
+    // Toast de progresso
+    toast({ 
+      title: "📦 Preparando pacote ZIP...", 
+      description: `Processando ${scenesWithImages.length} imagens e arquivos de projeto` 
+    });
+    
+    // 1. XML do projeto
+    const xmlContent = generateFcp7XmlWithTransitions(scenesForXml, {
+      title: projectName || "Projeto_Video",
+      fps: cinematicSettings.fps,
+      width: aspectRatioConfig.width,
+      height: aspectRatioConfig.height,
+      transitionFrames,
+      transitionType: cinematicSettings.transitionType
+    });
+    zip.file(`${safeFileName}_davinci.xml`, xmlContent);
+    
+    // 2. Tutorial de importação
+    const tutorialContent = generateXmlTutorial(scenesForXml, projectName || "Meu Projeto");
+    zip.file(`${safeFileName}_TUTORIAL_DAVINCI.txt`, tutorialContent);
+    
+    // 3. Instruções de Color Grading (se não for neutro)
+    if (cinematicSettings.colorGrading !== 'neutral') {
+      const colorGradingContent = generateColorGradingInstructions(cinematicSettings.colorGrading, cinematicSettings);
+      zip.file(`${safeFileName}_COLOR_GRADING_${cinematicSettings.colorGrading.toUpperCase()}.txt`, colorGradingContent);
+    }
+    
+    // 4. Pasta de imagens renomeadas
+    const imagesFolder = zip.folder("imagens");
+    
+    // Converter imagens para o ZIP
+    for (const scene of scenesWithImages) {
+      if (scene.generatedImage) {
+        try {
+          const fileName = `cena_${String(scene.number).padStart(3, '0')}.jpg`;
+          
+          // Se for base64, converter diretamente
+          if (scene.generatedImage.startsWith('data:')) {
+            const base64Data = scene.generatedImage.split(',')[1];
+            imagesFolder?.file(fileName, base64Data, { base64: true });
+          } else {
+            // Se for URL, fazer fetch
+            const response = await fetch(scene.generatedImage);
+            const blob = await response.blob();
+            imagesFolder?.file(fileName, blob);
+          }
+        } catch (error) {
+          console.error(`Erro ao processar imagem da cena ${scene.number}:`, error);
+        }
+      }
+    }
+    
+    // 5. Arquivo LEIA-ME com instruções rápidas
+    const readmeContent = `
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         PACOTE DE PRODUÇÃO - DAVINCI RESOLVE                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📁 CONTEÚDO DO PACOTE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  📄 ${safeFileName}_davinci.xml
+     → Arquivo de projeto para importar no DaVinci Resolve
+
+  📖 ${safeFileName}_TUTORIAL_DAVINCI.txt
+     → Guia passo-a-passo de importação e reconexão de mídia
+
+  ${cinematicSettings.colorGrading !== 'neutral' ? `🎨 ${safeFileName}_COLOR_GRADING_${cinematicSettings.colorGrading.toUpperCase()}.txt
+     → Instruções detalhadas de color grading com valores exatos\n` : ''}
+  📁 imagens/
+     → ${scenesWithImages.length} imagens já renomeadas (cena_001.jpg, cena_002.jpg...)
+
+═══════════════════════════════════════════════════════════════════════════════
+                              INÍCIO RÁPIDO
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Extraia todos os arquivos para uma pasta
+
+2. Abra DaVinci Resolve → File → Import → Timeline
+
+3. Selecione o arquivo XML (${safeFileName}_davinci.xml)
+
+4. Se pedir para reconectar mídias:
+   → Clique em "Locate" e aponte para a pasta "imagens"
+
+5. ${cinematicSettings.colorGrading !== 'neutral' ? `Aplique o color grading seguindo as instruções do arquivo TXT` : 'Pronto! Seu projeto está montado'}
+
+═══════════════════════════════════════════════════════════════════════════════
+                           CONFIGURAÇÕES DO PROJETO
+═══════════════════════════════════════════════════════════════════════════════
+
+  🎬 FPS:             ${cinematicSettings.fps}
+  📐 Resolução:       ${aspectRatioConfig.width}x${aspectRatioConfig.height} (${aspectRatioConfig.name})
+  🔄 Transição:       ${TRANSITION_OPTIONS.find(t => t.id === cinematicSettings.transitionType)?.name} (${cinematicSettings.transitionDuration}s)
+  🎨 Color Grading:   ${COLOR_GRADING_OPTIONS.find(c => c.id === cinematicSettings.colorGrading)?.name}
+  📊 Total de Cenas:  ${scenesWithImages.length}
+
+  Efeitos:
+  ${cinematicSettings.fadeInOut ? '  ✅' : '  ⬜'} Fade In/Out
+  ${cinematicSettings.kenBurnsEffect ? '  ✅' : '  ⬜'} Ken Burns Effect  
+  ${cinematicSettings.addVignette ? '  ✅' : '  ⬜'} Vignette
+  ${cinematicSettings.letterbox ? '  ✅' : '  ⬜'} Letterbox
+
+═══════════════════════════════════════════════════════════════════════════════
+  Gerado por Viral Visions Pro • ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}
+═══════════════════════════════════════════════════════════════════════════════
+`;
+    zip.file("LEIA-ME.txt", readmeContent);
+    
+    // Gerar e baixar o ZIP
+    try {
+      const zipBlob = await zip.generateAsync({ 
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: { level: 6 }
+      });
+      
+      const zipUrl = URL.createObjectURL(zipBlob);
+      const zipLink = document.createElement("a");
+      zipLink.href = zipUrl;
+      zipLink.download = `${safeFileName}_PACOTE_PRODUCAO.zip`;
+      document.body.appendChild(zipLink);
+      zipLink.click();
+      document.body.removeChild(zipLink);
+      URL.revokeObjectURL(zipUrl);
+      
+      const colorGradingName = COLOR_GRADING_OPTIONS.find(c => c.id === cinematicSettings.colorGrading)?.name || 'Neutro';
+      toast({ 
+        title: "✅ Pacote ZIP exportado com sucesso!", 
+        description: `${scenesWithImages.length} imagens + XML + Tutorial${cinematicSettings.colorGrading !== 'neutral' ? ` + ${colorGradingName}` : ''} • Pronto para DaVinci!` 
+      });
+    } catch (error) {
+      console.error("Erro ao gerar ZIP:", error);
+      toast({ 
+        title: "❌ Erro ao gerar ZIP", 
+        description: "Tente exportar os arquivos separadamente",
+        variant: "destructive" 
+      });
+    }
     
     setShowEdlValidationModal(false);
   };
@@ -5268,10 +5421,18 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                     </Button>
                     <Button
                       onClick={executeXmlExport}
-                      className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:opacity-90"
+                      variant="outline"
+                      className="flex-1"
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      Exportar XML Cinematográfico
+                      Só XML
+                    </Button>
+                    <Button
+                      onClick={executeZipExport}
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90"
+                    >
+                      <DownloadCloud className="w-4 h-4 mr-2" />
+                      ZIP Completo
                     </Button>
                   </div>
                 </div>
@@ -5280,20 +5441,30 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
             {/* Botões de ação - sem cenas faltantes */}
             {!edlValidationData && (
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowEdlValidationModal(false)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={executeXmlExport}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Só XML
+                  </Button>
+                </div>
                 <Button
-                  variant="outline"
-                  onClick={() => setShowEdlValidationModal(false)}
-                  className="flex-1"
+                  onClick={executeZipExport}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90"
                 >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={executeXmlExport}
-                  className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-90"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Exportar XML Cinematográfico
+                  <DownloadCloud className="w-4 h-4 mr-2" />
+                  📦 Exportar ZIP Completo (XML + Imagens + Tutorial)
                 </Button>
               </div>
             )}
