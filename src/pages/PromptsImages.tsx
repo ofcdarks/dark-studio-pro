@@ -5,7 +5,7 @@ import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
 import { CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
-import { generateEdl, generateEdlWithTransitions } from "@/lib/edlGenerator";
+import { generateEdl, generateEdlWithTransitions, generateEdlTutorial } from "@/lib/edlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -1518,6 +1518,22 @@ echo "Agora importe o video no CapCut!"
     await handleSaveToCapcutFolder();
   };
 
+  // Preparar dados para EDL
+  const getScenesForEdl = () => {
+    return generatedScenes.map(scene => {
+      const durationSeconds = Math.max(1, wordCountToSeconds(scene.wordCount));
+      const imagePath = scene.generatedImage 
+        ? `cena_${String(scene.number).padStart(3, "0")}.jpg`
+        : undefined;
+      return {
+        number: scene.number,
+        text: scene.text,
+        durationSeconds,
+        imagePath
+      };
+    });
+  };
+
   // Exportar EDL para DaVinci Resolve
   const handleExportEdl = () => {
     const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
@@ -1531,30 +1547,15 @@ echo "Agora importe o video no CapCut!"
       return;
     }
 
-    // Calcular durações das cenas
-    const scenesForEdl = generatedScenes.map(scene => {
-      const durationSeconds = Math.max(1, wordCountToSeconds(scene.wordCount));
-      const imagePath = scene.generatedImage 
-        ? `cena_${String(scene.number).padStart(3, "0")}.jpg`
-        : undefined;
-      return {
-        number: scene.number,
-        text: scene.text,
-        durationSeconds,
-        imagePath
-      };
-    });
-
-    // Gerar EDL com transições de dissolve
+    const scenesForEdl = getScenesForEdl();
     const fpsValue = parseInt(edlFps) || 24;
-    const transitionFrames = Math.round(fpsValue * 0.5); // 0.5s de dissolve
+    const transitionFrames = Math.round(fpsValue * 0.5);
     const edlContent = generateEdlWithTransitions(scenesForEdl, {
       title: projectName || "Projeto_Video",
       fps: fpsValue,
       transitionFrames
     });
 
-    // Baixar arquivo
     const blob = new Blob([edlContent], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -1569,6 +1570,28 @@ echo "Agora importe o video no CapCut!"
     toast({ 
       title: "✅ EDL exportado!", 
       description: "Importe no DaVinci Resolve: File > Import > Timeline > Import AAF, EDL, XML..." 
+    });
+  };
+
+  // Exportar Tutorial EDL
+  const handleExportEdlTutorial = () => {
+    const scenesForEdl = getScenesForEdl();
+    const tutorialContent = generateEdlTutorial(scenesForEdl, projectName || "Meu Projeto");
+
+    const blob = new Blob([tutorialContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const safeFileName = (projectName.trim() || "projeto").replace(/[^a-zA-Z0-9_-]/g, "_");
+    link.download = `${safeFileName}_TUTORIAL_DAVINCI.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({ 
+      title: "📖 Tutorial exportado!", 
+      description: "Guia completo para importar EDL no DaVinci Resolve" 
     });
   };
 
@@ -4272,10 +4295,10 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                 <Badge variant="outline" className="text-[9px] h-4">EDL</Badge>
               </div>
               
-              {/* Seletor de FPS + Botão */}
-              <div className="flex items-center gap-2">
+              {/* Seletor de FPS + Botões */}
+              <div className="flex items-center gap-2 mb-2">
                 <Select value={edlFps} onValueChange={setEdlFps}>
-                  <SelectTrigger className="h-7 w-28 bg-background border-border text-xs">
+                  <SelectTrigger className="h-7 w-24 bg-background border-border text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -4292,9 +4315,23 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   className="flex-1 h-7 text-xs"
                 >
                   <FileText className="w-3 h-3 mr-1" />
-                  Baixar EDL
+                  EDL
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportEdlTutorial}
+                  disabled={generatedScenes.length === 0}
+                  className="h-7 text-xs border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                  title="Tutorial passo a passo para importar no DaVinci"
+                >
+                  <Eye className="w-3 h-3 mr-1" />
+                  Tutorial
                 </Button>
               </div>
+              <p className="text-[10px] text-muted-foreground">
+                Baixe o Tutorial para ver como importar o EDL e as mídias
+              </p>
             </div>
 
             {/* Gerar MP4 com FFmpeg - Em Breve */}
