@@ -11,6 +11,27 @@ interface SceneForXml {
 }
 
 /**
+ * Tipos de transição disponíveis
+ */
+export type TransitionType = 'cross_dissolve' | 'fade_to_black' | 'dip_to_color' | 'wipe' | 'push' | 'none';
+
+export interface TransitionOption {
+  id: TransitionType;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+export const TRANSITION_OPTIONS: TransitionOption[] = [
+  { id: 'cross_dissolve', name: 'Cross Dissolve', description: 'Dissolução suave entre cenas', icon: '🔄' },
+  { id: 'fade_to_black', name: 'Fade to Black', description: 'Fade para preto entre cenas', icon: '⬛' },
+  { id: 'dip_to_color', name: 'Dip to White', description: 'Flash branco entre cenas', icon: '⬜' },
+  { id: 'wipe', name: 'Wipe', description: 'Cortina lateral entre cenas', icon: '➡️' },
+  { id: 'push', name: 'Push', description: 'Empurra a cena anterior', icon: '👉' },
+  { id: 'none', name: 'Sem Transição', description: 'Corte seco direto', icon: '✂️' },
+];
+
+/**
  * Converte segundos para frames
  */
 const secondsToFrames = (seconds: number, fps: number): number => {
@@ -28,6 +49,37 @@ const escapeXml = (text: string): string => {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 };
+
+/**
+ * Gera o XML da transição baseado no tipo
+ */
+const getTransitionXml = (transitionType: TransitionType, transitionFrames: number): string => {
+  if (transitionType === 'none') return '';
+  
+  const transitionConfigs: Record<Exclude<TransitionType, 'none'>, { name: string; effectId: string; category: string }> = {
+    cross_dissolve: { name: 'Cross Dissolve', effectId: 'Cross Dissolve', category: 'Dissolve' },
+    fade_to_black: { name: 'Fade In/Fade Out Dissolve', effectId: 'Fade In/Fade Out Dissolve', category: 'Dissolve' },
+    dip_to_color: { name: 'Dip to Color Dissolve', effectId: 'Dip to Color Dissolve', category: 'Dissolve' },
+    wipe: { name: 'Wipe', effectId: 'Wipe', category: 'Wipe' },
+    push: { name: 'Push', effectId: 'Push', category: 'Wipe' },
+  };
+  
+  const config = transitionConfigs[transitionType];
+  
+  return `                <transitionitem>
+                  <start>0</start>
+                  <end>${transitionFrames}</end>
+                  <alignment>start-black</alignment>
+                  <effect>
+                    <name>${config.name}</name>
+                    <effectid>${config.effectId}</effectid>
+                    <effectcategory>${config.category}</effectcategory>
+                    <effecttype>transition</effecttype>
+                    <mediatype>video</mediatype>
+                  </effect>
+                </transitionitem>
+`;
+}
 
 /**
  * Gera XML no formato FCP7 para DaVinci Resolve
@@ -192,7 +244,7 @@ export const generateFcp7Xml = (
 };
 
 /**
- * Gera XML com transições de cross dissolve entre cenas
+ * Gera XML com transições entre cenas
  */
 export const generateFcp7XmlWithTransitions = (
   scenes: SceneForXml[],
@@ -202,6 +254,7 @@ export const generateFcp7XmlWithTransitions = (
     width?: number;
     height?: number;
     transitionFrames?: number;
+    transitionType?: TransitionType;
   } = {}
 ): string => {
   const title = options.title || 'Projeto_Video';
@@ -209,6 +262,7 @@ export const generateFcp7XmlWithTransitions = (
   const width = options.width || 1920;
   const height = options.height || 1080;
   const transitionFrames = options.transitionFrames || Math.round(fps * 0.5); // 0.5s por padrão
+  const transitionType = options.transitionType || 'cross_dissolve';
   const safeTitle = escapeXml(title.replace(/[^a-zA-Z0-9_-]/g, '_'));
   
   // Calcular duração total em frames
@@ -305,20 +359,8 @@ export const generateFcp7XmlWithTransitions = (
 `;
     
     // Adicionar transição de entrada (exceto para o primeiro clip)
-    if (index > 0) {
-      xml += `                <transitionitem>
-                  <start>0</start>
-                  <end>${transitionFrames}</end>
-                  <alignment>start-black</alignment>
-                  <effect>
-                    <name>Cross Dissolve</name>
-                    <effectid>Cross Dissolve</effectid>
-                    <effectcategory>Dissolve</effectcategory>
-                    <effecttype>transition</effecttype>
-                    <mediatype>video</mediatype>
-                  </effect>
-                </transitionitem>
-`;
+    if (index > 0 && transitionType !== 'none') {
+      xml += getTransitionXml(transitionType, transitionFrames);
     }
     
     if (shortText) {
