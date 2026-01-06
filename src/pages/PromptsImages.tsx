@@ -5,7 +5,22 @@ import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
 import { CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
-import { generateFcp7XmlWithTransitions, generateXmlTutorial, TRANSITION_OPTIONS, TransitionType } from "@/lib/xmlGenerator";
+import { 
+  generateFcp7XmlWithTransitions, 
+  generateXmlTutorial, 
+  TRANSITION_OPTIONS, 
+  TransitionType,
+  TRANSITION_DURATION_OPTIONS,
+  TransitionDuration,
+  ASPECT_RATIO_OPTIONS,
+  AspectRatio,
+  COLOR_GRADING_OPTIONS,
+  ColorGrading,
+  FPS_OPTIONS,
+  FpsOption,
+  CinematicSettings,
+  DEFAULT_CINEMATIC_SETTINGS
+} from "@/lib/xmlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { TransitionPreview } from "@/components/transitions/TransitionPreview";
 import { Input } from "@/components/ui/input";
@@ -272,10 +287,10 @@ const PromptsImages = () => {
   const [showSrtPreview, setShowSrtPreview] = useState(false);
   const [srtPreviewData, setSrtPreviewData] = useState<{ content: string; blocks: Array<{ index: number; start: string; end: string; text: string; charCount: number }> } | null>(null);
   
-  // EDL Validation Modal
+  // EDL Validation Modal & Cinematic Settings
   const [showEdlValidationModal, setShowEdlValidationModal] = useState(false);
   const [edlValidationData, setEdlValidationData] = useState<{ missingScenes: number[]; percentage: number; totalScenes: number; withImages: number } | null>(null);
-  const [selectedTransition, setSelectedTransition] = useState<TransitionType>('cross_dissolve');
+  const [cinematicSettings, setCinematicSettings] = useState<CinematicSettings>(DEFAULT_CINEMATIC_SETTINGS);
   
   // FFmpeg hook
   const { generateVideo, downloadVideo, isGenerating: isGeneratingVideo, progress: videoProgress } = useFFmpegVideoGenerator();
@@ -1612,13 +1627,16 @@ echo "Agora importe o video no CapCut!"
   const executeXmlExport = () => {
     const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
     const scenesForXml = getScenesForEdl(); // Reutiliza a mesma estrutura
-    const fpsValue = parseInt(edlFps) || 24;
-    const transitionFrames = Math.round(fpsValue * 0.5);
+    const aspectRatioConfig = ASPECT_RATIO_OPTIONS.find(a => a.id === cinematicSettings.aspectRatio) || ASPECT_RATIO_OPTIONS[0];
+    const transitionFrames = Math.round(cinematicSettings.fps * cinematicSettings.transitionDuration);
+    
     const xmlContent = generateFcp7XmlWithTransitions(scenesForXml, {
       title: projectName || "Projeto_Video",
-      fps: fpsValue,
+      fps: cinematicSettings.fps,
+      width: aspectRatioConfig.width,
+      height: aspectRatioConfig.height,
       transitionFrames,
-      transitionType: selectedTransition
+      transitionType: cinematicSettings.transitionType
     });
 
     const blob = new Blob([xmlContent], { type: "application/xml" });
@@ -1632,10 +1650,11 @@ echo "Agora importe o video no CapCut!"
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    const transitionName = TRANSITION_OPTIONS.find(t => t.id === selectedTransition)?.name || 'Cross Dissolve';
+    const transitionName = TRANSITION_OPTIONS.find(t => t.id === cinematicSettings.transitionType)?.name || 'Cross Dissolve';
+    const colorGradingName = COLOR_GRADING_OPTIONS.find(c => c.id === cinematicSettings.colorGrading)?.name || 'Neutro';
     toast({ 
-      title: "✅ XML exportado!", 
-      description: `${scenesWithImages.length} cenas com ${transitionName}. Importe no DaVinci: File > Import > Timeline...` 
+      title: "✅ XML Cinematográfico exportado!", 
+      description: `${scenesWithImages.length} cenas • ${aspectRatioConfig.name} • ${cinematicSettings.fps}fps • ${transitionName}` 
     });
     
     setShowEdlValidationModal(false);
@@ -4990,108 +5009,227 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Validação EDL - Cenas Faltantes */}
+      {/* Modal de Exportação Cinematográfica XML */}
       <Dialog open={showEdlValidationModal} onOpenChange={setShowEdlValidationModal}>
-        <DialogContent className="max-w-lg max-h-[85vh] bg-card border-amber-500/30 rounded-xl shadow-xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-amber-500/30 rounded-xl shadow-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
               <Film className="w-5 h-5 text-amber-500" />
-              Exportar XML para DaVinci
+              Exportação Cinematográfica
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              {edlValidationData ? 'Algumas cenas não possuem imagem gerada' : 'Configure as transições do projeto'}
+              Configure seu projeto com qualidade de produção profissional
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* Preview Animado da Transição */}
             <div className="flex justify-center">
               <TransitionPreview 
-                transitionType={selectedTransition} 
-                className="w-full max-w-xs"
+                transitionType={cinematicSettings.transitionType} 
+                className="w-full max-w-sm"
               />
             </div>
 
-            {/* Seletor de Transição */}
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">Tipo de Transição:</p>
-              <div className="grid grid-cols-3 gap-2">
-                {TRANSITION_OPTIONS.map((transition) => (
-                  <button
-                    key={transition.id}
-                    onClick={() => setSelectedTransition(transition.id)}
-                    className={cn(
-                      "flex flex-col items-center gap-1 p-2 rounded-lg border text-center transition-all",
-                      selectedTransition === transition.id
-                        ? "border-amber-500 bg-amber-500/10 text-foreground"
-                        : "border-border/50 bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
-                    )}
-                  >
-                    <span className="text-xl">{transition.icon}</span>
-                    <p className="text-[10px] font-medium truncate w-full">{transition.name}</p>
-                  </button>
-                ))}
+            {/* Grid de Configurações */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Tipo de Transição */}
+              <div className="col-span-2">
+                <p className="text-xs font-medium text-muted-foreground mb-2">🎬 Tipo de Transição</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {TRANSITION_OPTIONS.map((transition) => (
+                    <button
+                      key={transition.id}
+                      onClick={() => setCinematicSettings(prev => ({ ...prev, transitionType: transition.id }))}
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-lg border text-center transition-all",
+                        cinematicSettings.transitionType === transition.id
+                          ? "border-amber-500 bg-amber-500/10 text-foreground"
+                          : "border-border/50 bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
+                      )}
+                    >
+                      <span className="text-xl">{transition.icon}</span>
+                      <p className="text-[10px] font-medium truncate w-full">{transition.name}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* Duração da Transição */}
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">⏱️ Duração da Transição</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {TRANSITION_DURATION_OPTIONS.map((dur) => (
+                    <button
+                      key={dur.value}
+                      onClick={() => setCinematicSettings(prev => ({ ...prev, transitionDuration: dur.value }))}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg border text-xs font-medium transition-all",
+                        cinematicSettings.transitionDuration === dur.value
+                          ? "border-amber-500 bg-amber-500/10 text-foreground"
+                          : "border-border/50 bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
+                      )}
+                    >
+                      {dur.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* FPS */}
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">🎞️ Frame Rate</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {FPS_OPTIONS.map((fps) => (
+                    <button
+                      key={fps.value}
+                      onClick={() => setCinematicSettings(prev => ({ ...prev, fps: fps.value }))}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg border text-xs font-medium transition-all",
+                        cinematicSettings.fps === fps.value
+                          ? "border-amber-500 bg-amber-500/10 text-foreground"
+                          : "border-border/50 bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
+                      )}
+                    >
+                      {fps.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Aspect Ratio */}
+              <div className="col-span-2">
+                <p className="text-xs font-medium text-muted-foreground mb-2">📐 Aspect Ratio</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {ASPECT_RATIO_OPTIONS.map((ar) => (
+                    <button
+                      key={ar.id}
+                      onClick={() => setCinematicSettings(prev => ({ ...prev, aspectRatio: ar.id }))}
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-lg border text-center transition-all",
+                        cinematicSettings.aspectRatio === ar.id
+                          ? "border-amber-500 bg-amber-500/10 text-foreground"
+                          : "border-border/50 bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
+                      )}
+                    >
+                      <div 
+                        className={cn(
+                          "border-2 rounded-sm",
+                          cinematicSettings.aspectRatio === ar.id ? "border-amber-500" : "border-muted-foreground/50"
+                        )}
+                        style={{
+                          width: ar.id === '9:16' ? 16 : 32,
+                          height: ar.id === '9:16' ? 28 : ar.id === '16:9' ? 18 : ar.id === '4:3' ? 24 : 14
+                        }}
+                      />
+                      <p className="text-[10px] font-medium">{ar.name}</p>
+                      <p className="text-[8px] text-muted-foreground">{ar.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Color Grading */}
+              <div className="col-span-2">
+                <p className="text-xs font-medium text-muted-foreground mb-2">🎨 Color Grading (aplicar no DaVinci)</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {COLOR_GRADING_OPTIONS.map((cg) => (
+                    <button
+                      key={cg.id}
+                      onClick={() => setCinematicSettings(prev => ({ ...prev, colorGrading: cg.id }))}
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-lg border text-center transition-all",
+                        cinematicSettings.colorGrading === cg.id
+                          ? "border-amber-500 bg-amber-500/10 text-foreground"
+                          : "border-border/50 bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
+                      )}
+                    >
+                      <span className="text-lg">{cg.icon}</span>
+                      <p className="text-[10px] font-medium">{cg.name}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Efeitos Cinematográficos */}
+              <div className="col-span-2">
+                <p className="text-xs font-medium text-muted-foreground mb-2">✨ Efeitos Cinematográficos</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-secondary/20 cursor-pointer hover:bg-secondary/40 transition-all">
+                    <Checkbox 
+                      checked={cinematicSettings.fadeInOut}
+                      onCheckedChange={(checked) => setCinematicSettings(prev => ({ ...prev, fadeInOut: !!checked }))}
+                    />
+                    <div>
+                      <p className="text-xs font-medium">Fade In/Out</p>
+                      <p className="text-[10px] text-muted-foreground">Início e fim suaves</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-secondary/20 cursor-pointer hover:bg-secondary/40 transition-all">
+                    <Checkbox 
+                      checked={cinematicSettings.kenBurnsEffect}
+                      onCheckedChange={(checked) => setCinematicSettings(prev => ({ ...prev, kenBurnsEffect: !!checked }))}
+                    />
+                    <div>
+                      <p className="text-xs font-medium">Ken Burns</p>
+                      <p className="text-[10px] text-muted-foreground">Zoom suave nas imagens</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-secondary/20 cursor-pointer hover:bg-secondary/40 transition-all">
+                    <Checkbox 
+                      checked={cinematicSettings.addVignette}
+                      onCheckedChange={(checked) => setCinematicSettings(prev => ({ ...prev, addVignette: !!checked }))}
+                    />
+                    <div>
+                      <p className="text-xs font-medium">Vinheta</p>
+                      <p className="text-[10px] text-muted-foreground">Bordas escurecidas</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-secondary/20 cursor-pointer hover:bg-secondary/40 transition-all">
+                    <Checkbox 
+                      checked={cinematicSettings.letterbox}
+                      onCheckedChange={(checked) => setCinematicSettings(prev => ({ ...prev, letterbox: !!checked }))}
+                    />
+                    <div>
+                      <p className="text-xs font-medium">Letterbox</p>
+                      <p className="text-[10px] text-muted-foreground">Barras pretas cinema</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Resumo das configurações */}
+            <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-lg p-3">
+              <p className="text-xs font-medium text-amber-500 mb-1">📋 Configuração Final:</p>
+              <p className="text-[10px] text-muted-foreground">
+                {ASPECT_RATIO_OPTIONS.find(a => a.id === cinematicSettings.aspectRatio)?.name} • {cinematicSettings.fps}fps • {TRANSITION_OPTIONS.find(t => t.id === cinematicSettings.transitionType)?.name} ({cinematicSettings.transitionDuration}s) • {COLOR_GRADING_OPTIONS.find(c => c.id === cinematicSettings.colorGrading)?.name}
+                {cinematicSettings.fadeInOut && ' • Fade In/Out'}
+                {cinematicSettings.kenBurnsEffect && ' • Ken Burns'}
+                {cinematicSettings.addVignette && ' • Vinheta'}
+                {cinematicSettings.letterbox && ' • Letterbox'}
+              </p>
             </div>
 
             {edlValidationData && (
               <>
-                {/* Estatísticas */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-green-500">{edlValidationData.withImages}</p>
-                    <p className="text-xs text-muted-foreground">Com Imagem</p>
-                  </div>
-                  <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-red-500">{edlValidationData.missingScenes.length}</p>
-                    <p className="text-xs text-muted-foreground">Sem Imagem</p>
-                  </div>
-                  <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                    <p className={cn(
-                      "text-2xl font-bold",
-                      edlValidationData.percentage >= 80 ? "text-amber-500" : "text-red-500"
-                    )}>
-                      {edlValidationData.percentage}%
-                    </p>
-                    <p className="text-xs text-muted-foreground">Cobertura</p>
-                  </div>
-                </div>
-
-                {/* Alerta visual */}
+                {/* Alerta de cenas faltantes */}
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
                   <div className="flex items-start gap-2">
                     <ImagePlus className="w-5 h-5 text-amber-500 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-amber-500">
-                        {edlValidationData.missingScenes.length} cena{edlValidationData.missingScenes.length > 1 ? 's' : ''} sem imagem
+                        {edlValidationData.missingScenes.length} cena{edlValidationData.missingScenes.length > 1 ? 's' : ''} sem imagem ({edlValidationData.percentage}% cobertura)
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        O XML incluirá apenas as cenas que possuem imagem. Cenas faltantes criarão gaps na timeline do DaVinci.
+                        Cenas faltantes: {edlValidationData.missingScenes.slice(0, 10).map(n => `#${String(n).padStart(3, '0')}`).join(', ')}{edlValidationData.missingScenes.length > 10 ? '...' : ''}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Lista de cenas faltantes */}
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Cenas sem imagem:</p>
-                  <ScrollArea className="max-h-32">
-                    <div className="flex flex-wrap gap-1.5">
-                      {edlValidationData.missingScenes.map((sceneNum) => (
-                        <Badge 
-                          key={sceneNum} 
-                          variant="outline" 
-                          className="text-xs font-mono bg-red-500/10 border-red-500/30 text-red-400"
-                        >
-                          #{String(sceneNum).padStart(3, '0')}
-                        </Badge>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </div>
-
                 {/* Botões de ação - com cenas faltantes */}
-                <div className="flex flex-col gap-2 pt-2">
+                <div className="flex flex-col gap-2">
                   <Button
                     onClick={handleGenerateMissingFromEdlModal}
                     disabled={bgState.isGenerating}
@@ -5109,12 +5247,11 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                       Cancelar
                     </Button>
                     <Button
-                      variant="outline"
                       onClick={executeXmlExport}
-                      className="flex-1 border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:opacity-90"
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      Exportar Mesmo Assim
+                      Exportar XML Cinematográfico
                     </Button>
                   </div>
                 </div>
@@ -5123,7 +5260,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
             {/* Botões de ação - sem cenas faltantes */}
             {!edlValidationData && (
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setShowEdlValidationModal(false)}
@@ -5136,7 +5273,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-90"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Exportar XML
+                  Exportar XML Cinematográfico
                 </Button>
               </div>
             )}
