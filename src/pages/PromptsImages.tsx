@@ -97,7 +97,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { cn, addBrandingFooter } from "@/lib/utils";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES } from "@/lib/thumbnailStyles";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -418,7 +418,7 @@ const PromptsImages = () => {
   
   // Função para baixar guia de introdução
   const downloadIntroGuide = (preset: typeof INTRO_PRESETS[0]) => {
-    const content = generateIntroInstructions(preset);
+    const content = addBrandingFooter(generateIntroInstructions(preset));
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -1806,7 +1806,7 @@ echo "Agora importe o video no CapCut!"
     // 2. Exportar Color Grading Instructions (se não for neutro)
     if (cinematicSettings.colorGrading !== 'neutral') {
       setTimeout(() => {
-        const colorGradingContent = generateColorGradingInstructions(cinematicSettings.colorGrading, cinematicSettings);
+        const colorGradingContent = addBrandingFooter(generateColorGradingInstructions(cinematicSettings.colorGrading, cinematicSettings));
         const colorBlob = new Blob([colorGradingContent], { type: "text/plain" });
         const colorUrl = URL.createObjectURL(colorBlob);
         const colorLink = document.createElement("a");
@@ -1822,7 +1822,7 @@ echo "Agora importe o video no CapCut!"
       const effectsInstructions = generateCinematicEffectsInstructions(cinematicSettings);
       if (effectsInstructions) {
         setTimeout(() => {
-          const effectsBlob = new Blob([effectsInstructions], { type: "text/plain" });
+          const effectsBlob = new Blob([addBrandingFooter(effectsInstructions)], { type: "text/plain" });
           const effectsUrl = URL.createObjectURL(effectsBlob);
           const effectsLink = document.createElement("a");
           effectsLink.href = effectsUrl;
@@ -2150,7 +2150,7 @@ ${cinematicSettings.colorGrading !== 'neutral' ? `
   // Exportar Tutorial XML
   const handleExportXmlTutorial = () => {
     const scenesForXml = getScenesForEdl();
-    const tutorialContent = generateXmlTutorial(scenesForXml, projectName || "Meu Projeto");
+    const tutorialContent = addBrandingFooter(generateXmlTutorial(scenesForXml, projectName || "Meu Projeto"));
 
     const blob = new Blob([tutorialContent], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -2377,9 +2377,9 @@ Você precisa IMPORTAR as imagens diretamente no CapCut.
 
   // Baixar prompts como TXT
   const downloadPrompts = () => {
-    const content = generatedScenes
+    const content = addBrandingFooter(generatedScenes
       .map(s => `=== CENA ${s.number} ===\nTimecode: ${s.timecode}\nDuração: ${s.estimatedTime}\nPalavras: ${s.wordCount}\n\nTexto:\n${s.text}\n\nPrompt de Imagem:\n${s.imagePrompt}`)
-      .join("\n\n" + "=".repeat(50) + "\n\n");
+      .join("\n\n" + "=".repeat(50) + "\n\n"));
     
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -2667,7 +2667,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 ================================================================================
 `;
 
-    const fullContent = header + groupsText + motionSection + scenesDetail + tips;
+    const fullContent = addBrandingFooter(header + groupsText + motionSection + scenesDetail + tips);
     
     const blob = new Blob([fullContent], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);

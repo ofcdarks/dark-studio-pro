@@ -1,6 +1,7 @@
 /**
  * Configurações de mixagem de áudio para produção de vídeo
  */
+import { BRANDING_FOOTER } from "@/lib/utils";
 
 export interface AudioTrack {
   type: 'narration' | 'intro' | 'background' | 'sfx' | 'outro';
@@ -306,7 +307,6 @@ ffmpeg -i video_base.mp4 \\
 ✅ Use fade in/out para transições suaves
 ✅ Teste em fones de ouvido E em caixas de som
 ✅ Exporte em MP3 320kbps ou WAV para melhor qualidade
-
-═══════════════════════════════════════════════════════════════════════════
+${BRANDING_FOOTER}
 `.trim();
 };

@@ -2,6 +2,7 @@
  * Estilos de legendas para vídeos
  * Cada estilo define cores, fontes e posicionamento
  */
+import { BRANDING_FOOTER } from "@/lib/utils";
 
 export interface SubtitleStyle {
   id: string;
@@ -228,6 +229,8 @@ export const generateSubtitleInstructions = (style: SubtitleStyle): string => {
     `4. Ajuste o tamanho para: ${style.fontSize}px`,
     `5. Defina a cor: ${style.fontColor}`,
     style.bgColor ? `6. Adicione fundo com cor ${style.bgColor}` : ``,
+    ``,
+    BRANDING_FOOTER.trim(),
   ].filter(Boolean);
 
   return instructions.join('\n');
