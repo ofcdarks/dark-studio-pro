@@ -26,11 +26,15 @@ import {
   KEN_BURNS_OPTIONS,
   KenBurnsMotionType,
   CINEMATIC_PRESETS,
-  CinematicPreset
+  CinematicPreset,
+  INTRO_PRESETS,
+  IntroNiche,
+  generateIntroInstructions
 } from "@/lib/xmlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { TransitionPreview } from "@/components/transitions/TransitionPreview";
 import { PresetPreview } from "@/components/transitions/PresetPreview";
+import { IntroPresetSelector } from "@/components/transitions/IntroPresetSelector";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -302,6 +306,7 @@ const PromptsImages = () => {
   const [edlValidationData, setEdlValidationData] = useState<{ missingScenes: number[]; percentage: number; totalScenes: number; withImages: number } | null>(null);
   const [cinematicSettings, setCinematicSettings] = useState<CinematicSettings>(DEFAULT_CINEMATIC_SETTINGS);
   const [selectedPreset, setSelectedPreset] = useState<CinematicPreset>('custom');
+  const [selectedIntroNiche, setSelectedIntroNiche] = useState<IntroNiche | null>(null);
   
   // Função para aplicar preset
   const applyPreset = (presetId: CinematicPreset) => {
@@ -319,6 +324,24 @@ const PromptsImages = () => {
   ) => {
     setSelectedPreset('custom');
     setCinematicSettings(prev => ({ ...prev, [key]: value }));
+  };
+  
+  // Função para baixar guia de introdução
+  const downloadIntroGuide = (preset: typeof INTRO_PRESETS[0]) => {
+    const content = generateIntroInstructions(preset);
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `GUIA_INTRO_${preset.id.toUpperCase()}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ 
+      title: `📥 Guia de Intro: ${preset.name}`, 
+      description: "Arquivo baixado com estrutura de gancho e dicas profissionais" 
+    });
   };
   
   // FFmpeg hook
@@ -5523,6 +5546,19 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                 {cinematicSettings.addVignette && ' • Vinheta'}
                 {cinematicSettings.letterbox && ' • Letterbox'}
               </p>
+            </div>
+
+            {/* Presets de Introdução por Nicho */}
+            <div className="border-t border-border/50 pt-4">
+              <p className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                🎬 Presets de Introdução por Nicho
+                <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-500">NOVO</Badge>
+              </p>
+              <IntroPresetSelector
+                selectedNiche={selectedIntroNiche}
+                onSelect={setSelectedIntroNiche}
+                onDownloadGuide={downloadIntroGuide}
+              />
             </div>
 
             {edlValidationData && (

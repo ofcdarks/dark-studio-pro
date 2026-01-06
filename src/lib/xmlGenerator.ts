@@ -1190,8 +1190,508 @@ export const CINEMATIC_PRESETS: CinematicPresetOption[] = [
 ];
 
 /**
- * Converte segundos para frames
+ * Presets de introdução para diferentes nichos de vídeo
  */
+export type IntroNiche = 
+  | 'documentary' 
+  | 'tech_tutorial' 
+  | 'gaming' 
+  | 'lifestyle_vlog' 
+  | 'business_finance' 
+  | 'horror_suspense' 
+  | 'comedy' 
+  | 'motivational' 
+  | 'news' 
+  | 'educational' 
+  | 'travel' 
+  | 'fitness' 
+  | 'cooking' 
+  | 'music' 
+  | 'storytime';
+
+export interface IntroPreset {
+  id: IntroNiche;
+  name: string;
+  icon: string;
+  description: string;
+  introDuration: number; // segundos
+  hookStructure: string; // estrutura do gancho
+  textAnimation: 'fade' | 'slide' | 'zoom' | 'typewriter' | 'glitch' | 'bounce';
+  musicStyle: string;
+  transitionIn: TransitionType;
+  transitionDuration: TransitionDuration;
+  visualStyle: string;
+  colorTone: ColorGrading;
+  effects: {
+    vignette: boolean;
+    kenBurns: boolean;
+    letterbox: boolean;
+    fadeIn: boolean;
+  };
+  hookExamples: string[];
+  tipsPt: string[];
+}
+
+export const INTRO_PRESETS: IntroPreset[] = [
+  {
+    id: 'documentary',
+    name: 'Documentário',
+    icon: '🎥',
+    description: 'Intro cinematográfica com narração épica',
+    introDuration: 8,
+    hookStructure: '[Cena impactante] + [Pergunta provocativa] + [Promessa de revelação]',
+    textAnimation: 'fade',
+    musicStyle: 'Orquestral épica ou ambiente tenso',
+    transitionIn: 'fade_to_black',
+    transitionDuration: 1,
+    visualStyle: 'Imagens em slow-motion, closes dramáticos, paisagens grandiosas',
+    colorTone: 'film_look',
+    effects: { vignette: true, kenBurns: true, letterbox: true, fadeIn: true },
+    hookExamples: [
+      '"O que você está prestes a ver vai mudar sua perspectiva para sempre..."',
+      '"Em 1987, algo inexplicável aconteceu nesta pequena cidade..."',
+      '"Este é o segredo que a indústria não quer que você saiba."'
+    ],
+    tipsPt: [
+      'Use narração grave e pausada',
+      'Comece com imagem de impacto visual',
+      'Crie mistério nos primeiros 3 segundos',
+      'Som ambiente + música crescente'
+    ]
+  },
+  {
+    id: 'tech_tutorial',
+    name: 'Tech/Tutorial',
+    icon: '💻',
+    description: 'Direto ao ponto com preview do resultado',
+    introDuration: 5,
+    hookStructure: '[Preview do resultado] + [Problema comum] + [Solução rápida]',
+    textAnimation: 'slide',
+    musicStyle: 'Lo-fi eletrônico ou música tech moderna',
+    transitionIn: 'push',
+    transitionDuration: 0.25,
+    visualStyle: 'Screen recording, animações de UI, texto dinâmico',
+    colorTone: 'neutral',
+    effects: { vignette: false, kenBurns: false, letterbox: false, fadeIn: false },
+    hookExamples: [
+      '"Em menos de 5 minutos, você vai dominar isso..."',
+      '"Esse truque vai te poupar HORAS de trabalho."',
+      '"A maioria faz errado. Aqui está o jeito certo."'
+    ],
+    tipsPt: [
+      'Mostre o resultado final nos primeiros 3 segundos',
+      'Use marcadores visuais (setas, círculos)',
+      'Ritmo acelerado, sem enrolação',
+      'Fale o benefício principal imediatamente'
+    ]
+  },
+  {
+    id: 'gaming',
+    name: 'Gaming',
+    icon: '🎮',
+    description: 'Energia alta com highlights explosivos',
+    introDuration: 4,
+    hookStructure: '[Highlight épico] + [Reação] + [Teaser do conteúdo]',
+    textAnimation: 'glitch',
+    musicStyle: 'EDM, dubstep ou trilha de jogo épica',
+    transitionIn: 'push',
+    transitionDuration: 0.25,
+    visualStyle: 'Cortes rápidos, efeitos de tela, zoom dramático',
+    colorTone: 'teal_orange',
+    effects: { vignette: true, kenBurns: false, letterbox: false, fadeIn: false },
+    hookExamples: [
+      '"VOCÊ NÃO VAI ACREDITAR NO QUE ACONTECEU!"',
+      '"Essa jogada... simplesmente INSANA!"',
+      '"1v5 e eu VENCI. Assista até o final."'
+    ],
+    tipsPt: [
+      'Comece com a melhor jogada/momento',
+      'Use efeitos sonoros de impacto',
+      'Texto grande e animado',
+      'Energia e emoção na voz'
+    ]
+  },
+  {
+    id: 'lifestyle_vlog',
+    name: 'Lifestyle/Vlog',
+    icon: '✨',
+    description: 'Pessoal e autêntico, conexão imediata',
+    introDuration: 6,
+    hookStructure: '[Situação relatable] + [Teaser emocional] + [Convite pessoal]',
+    textAnimation: 'bounce',
+    musicStyle: 'Indie, acústico ou pop suave',
+    transitionIn: 'cross_dissolve',
+    transitionDuration: 0.5,
+    visualStyle: 'Cores quentes, luz natural, closes pessoais',
+    colorTone: 'cinematic_warm',
+    effects: { vignette: true, kenBurns: true, letterbox: false, fadeIn: true },
+    hookExamples: [
+      '"Gente, vocês não vão ACREDITAR no que aconteceu hoje..."',
+      '"Preciso contar uma coisa pra vocês. Vem comigo."',
+      '"Esse foi o melhor/pior dia da minha vida."'
+    ],
+    tipsPt: [
+      'Olhe diretamente para a câmera',
+      'Comece com emoção genuína',
+      'Use B-roll do dia/momento',
+      'Seja você mesmo, autenticidade vende'
+    ]
+  },
+  {
+    id: 'business_finance',
+    name: 'Business/Finanças',
+    icon: '💰',
+    description: 'Autoridade e credibilidade instantânea',
+    introDuration: 7,
+    hookStructure: '[Dado impactante] + [Consequência] + [Solução/Oportunidade]',
+    textAnimation: 'typewriter',
+    musicStyle: 'Corporativo moderno ou piano sutil',
+    transitionIn: 'cross_dissolve',
+    transitionDuration: 0.5,
+    visualStyle: 'Gráficos, números em destaque, ambiente profissional',
+    colorTone: 'neutral',
+    effects: { vignette: false, kenBurns: true, letterbox: false, fadeIn: true },
+    hookExamples: [
+      '"R$ 10.000 em 30 dias. E eu vou te mostrar exatamente como."',
+      '"97% das pessoas fazem isso ERRADO com seu dinheiro."',
+      '"Esse investimento subiu 340% em 2024. Você precisa saber."'
+    ],
+    tipsPt: [
+      'Mostre números e dados logo no início',
+      'Vista-se de forma profissional',
+      'Use gráficos animados',
+      'Fale com confiança e autoridade'
+    ]
+  },
+  {
+    id: 'horror_suspense',
+    name: 'Terror/Suspense',
+    icon: '👻',
+    description: 'Atmosfera tensa e misteriosa',
+    introDuration: 10,
+    hookStructure: '[Ambiente tenso] + [Elemento perturbador] + [Pergunta assustadora]',
+    textAnimation: 'fade',
+    musicStyle: 'Drone, sons ambiente, silêncio estratégico',
+    transitionIn: 'dip_to_color',
+    transitionDuration: 1,
+    visualStyle: 'Low key lighting, sombras, movimentos lentos',
+    colorTone: 'cinematic_cool',
+    effects: { vignette: true, kenBurns: true, letterbox: true, fadeIn: true },
+    hookExamples: [
+      '"Às 3:33 da manhã, algo bateu na minha janela..."',
+      '"Nunca deveria ter entrado naquela casa."',
+      '"Esta gravação foi encontrada. O dono nunca foi visto novamente."'
+    ],
+    tipsPt: [
+      'Use silêncios e sons sutis',
+      'Iluminação baixa e sombras',
+      'Narração sussurrada ou grave',
+      'Build-up lento da tensão'
+    ]
+  },
+  {
+    id: 'comedy',
+    name: 'Comédia',
+    icon: '😂',
+    description: 'Riso imediato e energia contagiante',
+    introDuration: 3,
+    hookStructure: '[Piada/Situação absurda] + [Reação] + [Setup para mais risadas]',
+    textAnimation: 'bounce',
+    musicStyle: 'Funk, música cômica ou efeitos sonoros',
+    transitionIn: 'push',
+    transitionDuration: 0.25,
+    visualStyle: 'Cores vibrantes, expressões exageradas, zoom cômico',
+    colorTone: 'neutral',
+    effects: { vignette: false, kenBurns: false, letterbox: false, fadeIn: false },
+    hookExamples: [
+      '"Eu fiz a maior besteira da minha vida."',
+      '"Minha mãe descobriu meu canal. Olha a reação dela."',
+      '"Isso é o que acontece quando você é burro."'
+    ],
+    tipsPt: [
+      'A piada precisa vir nos primeiros 2 segundos',
+      'Use expressões faciais exageradas',
+      'Efeitos sonoros de comédia',
+      'Cortes rápidos e timing perfeito'
+    ]
+  },
+  {
+    id: 'motivational',
+    name: 'Motivacional',
+    icon: '🔥',
+    description: 'Inspiração e chamada para ação',
+    introDuration: 6,
+    hookStructure: '[Frase de impacto] + [História resumida] + [Promessa de transformação]',
+    textAnimation: 'zoom',
+    musicStyle: 'Épica motivacional, piano emocional',
+    transitionIn: 'fade_to_black',
+    transitionDuration: 0.5,
+    visualStyle: 'Imagens de superação, luz dourada, closes emocionais',
+    colorTone: 'cinematic_warm',
+    effects: { vignette: true, kenBurns: true, letterbox: true, fadeIn: true },
+    hookExamples: [
+      '"Você vai morrer. A pergunta é: vai ter vivido?"',
+      '"Ele tinha TUDO contra ele. E mesmo assim..."',
+      '"Se você está cansado de ser medíocre, assista até o final."'
+    ],
+    tipsPt: [
+      'Comece com frase de impacto',
+      'Use imagens de conquista/superação',
+      'Música crescente emocionalmente',
+      'Energia na voz, pausas dramáticas'
+    ]
+  },
+  {
+    id: 'news',
+    name: 'Notícias/Atualidades',
+    icon: '📰',
+    description: 'Urgência e relevância imediata',
+    introDuration: 4,
+    hookStructure: '[Manchete bombástica] + [Contexto rápido] + [Por que importa]',
+    textAnimation: 'slide',
+    musicStyle: 'News theme, urgência ou silêncio',
+    transitionIn: 'push',
+    transitionDuration: 0.25,
+    visualStyle: 'Lower thirds, textos em movimento, estilo jornalístico',
+    colorTone: 'neutral',
+    effects: { vignette: false, kenBurns: false, letterbox: false, fadeIn: false },
+    hookExamples: [
+      '"URGENTE: Isso acabou de acontecer e você precisa saber."',
+      '"ÚLTIMA HORA: A decisão que vai afetar TODO brasileiro."',
+      '"BOMBA: O que a mídia não está te contando."'
+    ],
+    tipsPt: [
+      'Vá direto ao fato principal',
+      'Use texto na tela (lower thirds)',
+      'Tom de voz urgente mas claro',
+      'Imagens de apoio relevantes'
+    ]
+  },
+  {
+    id: 'educational',
+    name: 'Educacional',
+    icon: '📚',
+    description: 'Curiosidade e promessa de aprendizado',
+    introDuration: 6,
+    hookStructure: '[Fato curioso] + [Problema/Questão] + [Promessa de explicação]',
+    textAnimation: 'typewriter',
+    musicStyle: 'Instrumental calmo, piano ou lo-fi',
+    transitionIn: 'cross_dissolve',
+    transitionDuration: 0.5,
+    visualStyle: 'Infográficos, animações explicativas, diagrama',
+    colorTone: 'neutral',
+    effects: { vignette: false, kenBurns: true, letterbox: false, fadeIn: true },
+    hookExamples: [
+      '"Por que o céu é azul? A resposta é mais estranha do que você imagina."',
+      '"Seu cérebro está te enganando agora. Deixa eu provar."',
+      '"Em 5 minutos, você vai entender o que 99% não entende."'
+    ],
+    tipsPt: [
+      'Comece com uma pergunta intrigante',
+      'Use analogias visuais',
+      'Tom de voz curioso e acessível',
+      'Animações explicativas simples'
+    ]
+  },
+  {
+    id: 'travel',
+    name: 'Viagem/Turismo',
+    icon: '✈️',
+    description: 'Wanderlust e descobertas visuais',
+    introDuration: 7,
+    hookStructure: '[Vista deslumbrante] + [Elemento surpresa] + [Convite para explorar]',
+    textAnimation: 'fade',
+    musicStyle: 'World music, acústico ou épico cinematográfico',
+    transitionIn: 'cross_dissolve',
+    transitionDuration: 1,
+    visualStyle: 'Drone shots, paisagens épicas, golden hour',
+    colorTone: 'cinematic_warm',
+    effects: { vignette: true, kenBurns: true, letterbox: true, fadeIn: true },
+    hookExamples: [
+      '"Esse lugar existe e quase NINGUÉM sabe."',
+      '"R$ 50 por dia no país mais bonito do mundo."',
+      '"Pensei que era Photoshop. Olha o que eu encontrei."'
+    ],
+    tipsPt: [
+      'Comece com a melhor imagem do destino',
+      'Use drone shots para impacto',
+      'Música que evoque aventura',
+      'Cores vibrantes e quentes'
+    ]
+  },
+  {
+    id: 'fitness',
+    name: 'Fitness/Saúde',
+    icon: '💪',
+    description: 'Transformação e resultados comprovados',
+    introDuration: 5,
+    hookStructure: '[Resultado/Transformação] + [Método] + [Promessa realista]',
+    textAnimation: 'slide',
+    musicStyle: 'Workout beats, EDM ou hip-hop',
+    transitionIn: 'push',
+    transitionDuration: 0.25,
+    visualStyle: 'Antes/depois, treino em ação, closes de esforço',
+    colorTone: 'teal_orange',
+    effects: { vignette: true, kenBurns: false, letterbox: false, fadeIn: false },
+    hookExamples: [
+      '"30 dias. Zero equipamento. Esse foi o resultado."',
+      '"O exercício que NINGUÉM faz e que muda tudo."',
+      '"Perdi 20kg fazendo ISSO por 10 minutos por dia."'
+    ],
+    tipsPt: [
+      'Mostre resultado visual imediato',
+      'Energia alta na voz e corpo',
+      'Música motivacional de treino',
+      'Demonstre o movimento brevemente'
+    ]
+  },
+  {
+    id: 'cooking',
+    name: 'Culinária',
+    icon: '👨‍🍳',
+    description: 'Apetite visual e simplicidade',
+    introDuration: 5,
+    hookStructure: '[Prato finalizado] + [Ingrediente surpresa] + [Facilidade]',
+    textAnimation: 'fade',
+    musicStyle: 'Jazz suave, acústico ou música alegre',
+    transitionIn: 'cross_dissolve',
+    transitionDuration: 0.5,
+    visualStyle: 'Food porn, close-ups, vapor, cores vibrantes',
+    colorTone: 'cinematic_warm',
+    effects: { vignette: true, kenBurns: true, letterbox: false, fadeIn: true },
+    hookExamples: [
+      '"3 ingredientes. 5 minutos. Resultado: INCRÍVEL."',
+      '"O segredo que os chefs não contam."',
+      '"Nunca mais você vai comer isso de outro jeito."'
+    ],
+    tipsPt: [
+      'Mostre o prato pronto primeiro (food porn)',
+      'Close-ups do corte, vapor, texturas',
+      'Iluminação quente e apetitosa',
+      'Sons de cozinha (ASMR culinário)'
+    ]
+  },
+  {
+    id: 'music',
+    name: 'Música',
+    icon: '🎵',
+    description: 'Impacto sonoro e visual sincronizado',
+    introDuration: 4,
+    hookStructure: '[Drop/Riff marcante] + [Visual sincronizado] + [Identidade artística]',
+    textAnimation: 'glitch',
+    musicStyle: 'A própria música do artista/cover',
+    transitionIn: 'dip_to_color',
+    transitionDuration: 0.25,
+    visualStyle: 'Performance, luzes, estética do artista',
+    colorTone: 'noir',
+    effects: { vignette: true, kenBurns: false, letterbox: true, fadeIn: true },
+    hookExamples: [
+      '"(Riff/Batida) E aí galera, bora pro som!"',
+      '"Essa música mudou minha vida. Ouve até o final."',
+      '"Cover com um twist que você NUNCA ouviu."'
+    ],
+    tipsPt: [
+      'Comece com o melhor momento musical',
+      'Sincronia visual com a batida',
+      'Iluminação dramática',
+      'Mostre habilidade logo de cara'
+    ]
+  },
+  {
+    id: 'storytime',
+    name: 'Storytime',
+    icon: '📖',
+    description: 'Mistério e curiosidade narrativa',
+    introDuration: 8,
+    hookStructure: '[Contexto intrigante] + [Ponto de virada] + [Pergunta que prende]',
+    textAnimation: 'typewriter',
+    musicStyle: 'Suspense sutil ou piano emocional',
+    transitionIn: 'fade_to_black',
+    transitionDuration: 1,
+    visualStyle: 'Rosto do narrador, B-roll ilustrativo, baixa luz',
+    colorTone: 'cinematic_cool',
+    effects: { vignette: true, kenBurns: true, letterbox: false, fadeIn: true },
+    hookExamples: [
+      '"Tudo começou com uma mensagem às 3 da manhã..."',
+      '"Essa é a história que eu NUNCA contei."',
+      '"O que aconteceu naquela noite... mudou tudo."'
+    ],
+    tipsPt: [
+      'Comece no meio da ação (in media res)',
+      'Crie suspense com pausas',
+      'Use expressões faciais',
+      'B-roll para ilustrar a história'
+    ]
+  }
+];
+
+/**
+ * Gera instruções de introdução para o nicho selecionado
+ */
+export const generateIntroInstructions = (preset: IntroPreset): string => {
+  return `
+╔══════════════════════════════════════════════════════════════════════════════╗
+║          GUIA DE INTRODUÇÃO - ${preset.name.toUpperCase().padEnd(20)}                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📋 VISÃO GERAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${preset.icon} ${preset.description}
+
+⏱️  Duração ideal: ${preset.introDuration} segundos
+🎬 Transição: ${preset.transitionIn.replace('_', ' ')} (${preset.transitionDuration}s)
+🎨 Colorização: ${preset.colorTone}
+
+═══════════════════════════════════════════════════════════════════════════════
+                           ESTRUTURA DO GANCHO
+═══════════════════════════════════════════════════════════════════════════════
+
+📌 FÓRMULA:
+${preset.hookStructure}
+
+💬 EXEMPLOS DE GANCHOS:
+${preset.hookExamples.map((h, i) => `   ${i + 1}. ${h}`).join('\n')}
+
+═══════════════════════════════════════════════════════════════════════════════
+                              ESTILO VISUAL
+═══════════════════════════════════════════════════════════════════════════════
+
+🎥 DIREÇÃO VISUAL:
+${preset.visualStyle}
+
+🎵 ESTILO MUSICAL:
+${preset.musicStyle}
+
+✨ ANIMAÇÃO DE TEXTO: ${preset.textAnimation.toUpperCase()}
+
+🔧 EFEITOS APLICADOS:
+${preset.effects.fadeIn ? '   ✅ Fade In na abertura' : '   ⬜ Fade In'}
+${preset.effects.kenBurns ? '   ✅ Ken Burns (movimento suave)' : '   ⬜ Ken Burns'}
+${preset.effects.vignette ? '   ✅ Vinheta cinematográfica' : '   ⬜ Vinheta'}
+${preset.effects.letterbox ? '   ✅ Letterbox (barras cinema)' : '   ⬜ Letterbox'}
+
+═══════════════════════════════════════════════════════════════════════════════
+                              DICAS PRO
+═══════════════════════════════════════════════════════════════════════════════
+
+${preset.tipsPt.map((t, i) => `💡 ${i + 1}. ${t}`).join('\n')}
+
+═══════════════════════════════════════════════════════════════════════════════
+                         CHECKLIST DE GRAVAÇÃO
+═══════════════════════════════════════════════════════════════════════════════
+
+□ Gancho nos primeiros 3 segundos
+□ Música/som ambiente configurado
+□ Iluminação adequada ao estilo
+□ Texto/títulos preparados
+□ B-roll de suporte selecionado
+□ Transição de saída da intro definida
+
+Gerado automaticamente por Viral Video AI
+`;
+};
+
+
 const secondsToFrames = (seconds: number, fps: number): number => {
   return Math.round(seconds * fps);
 };
