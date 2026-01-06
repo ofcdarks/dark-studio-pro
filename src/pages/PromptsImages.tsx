@@ -2130,56 +2130,6 @@ ${cinematicSettings.colorGrading !== 'neutral' ? `
     }
   };
 
-  // Ref para o input de arquivos oculto
-  const importImagesInputRef = useRef<HTMLInputElement>(null);
-
-  // Importar imagens via input file (compatível com todos navegadores)
-  const handleImportImagesFromFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    let importedCount = 0;
-    const updatedScenes = [...generatedScenes];
-
-    // Mapear arquivos por nome
-    const fileMap = new Map<string, File>();
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      fileMap.set(file.name.toLowerCase(), file);
-    }
-
-    // Iterar pelas cenas e procurar imagens correspondentes
-    for (let i = 0; i < updatedScenes.length; i++) {
-      const scene = updatedScenes[i];
-      const jpgFileName = `cena_${String(scene.number).padStart(3, "0")}.jpg`;
-      const pngFileName = `cena_${String(scene.number).padStart(3, "0")}.png`;
-      
-      const file = fileMap.get(jpgFileName.toLowerCase()) || fileMap.get(pngFileName.toLowerCase());
-
-      if (file) {
-        const url = URL.createObjectURL(file);
-        updatedScenes[i] = { ...updatedScenes[i], generatedImage: url };
-        importedCount++;
-      }
-    }
-
-    if (importedCount > 0) {
-      setGeneratedScenes(updatedScenes);
-      toast({ 
-        title: "✅ Imagens importadas!", 
-        description: `${importedCount} imagens foram carregadas.`
-      });
-    } else {
-      toast({ 
-        title: "Nenhuma imagem correspondente", 
-        description: "Nenhum arquivo cena_001.jpg/png encontrado. Verifique os nomes.",
-        variant: "destructive" 
-      });
-    }
-
-    // Limpar input para permitir reimportação
-    e.target.value = "";
-  };
 
   // Detectar sistema operacional
   const isWindows = typeof navigator !== 'undefined' && navigator.platform?.toLowerCase().includes('win');
@@ -4737,23 +4687,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
           <div className="space-y-2 pt-2 border-t border-border">
             {/* Botões principais */}
             <div className="flex gap-2">
-              {/* Input oculto para importar arquivos */}
-              <input
-                ref={importImagesInputRef}
-                type="file"
-                accept="image/jpeg,image/png"
-                multiple
-                className="hidden"
-                onChange={handleImportImagesFromFiles}
-              />
-              <Button
-                variant="outline"
-                onClick={() => importImagesInputRef.current?.click()}
-                className="flex-1 h-8 text-xs"
-              >
-                <FolderSearch className="w-3 h-3 mr-1" />
-                Importar
-              </Button>
+              {/* Botões de ação */}
               <Button
                 variant="outline"
                 onClick={handleConfirmCapcutExport}

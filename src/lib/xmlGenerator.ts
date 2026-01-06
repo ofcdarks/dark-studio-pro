@@ -1380,9 +1380,11 @@ export type IntroNiche =
 // Branding global para todos os documentos
 export const BRAND_FOOTER = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🏠 Gerado pelo La Casa Dark Core
+🏠 La Casa Dark Core®
+   A infraestrutura por trás de canais dark profissionais
+   A revolução chegou. Não há espaço para amadores.
+
 🌐 www.canaisdarks.com.br
-✨ "Transformando ideias em vídeos virais"
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;
 
