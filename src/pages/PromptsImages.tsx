@@ -318,9 +318,12 @@ const PromptsImages = () => {
   const [showSavePresetModal, setShowSavePresetModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState("");
   const [newPresetIcon, setNewPresetIcon] = useState("🎨");
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
+  const [editPresetName, setEditPresetName] = useState("");
+  const [editPresetIcon, setEditPresetIcon] = useState("🎨");
   
   // Hook para presets do usuário
-  const { userPresets, isSaving: isSavingPreset, savePreset: saveUserPreset, deletePreset: deleteUserPreset } = useUserCinematicPresets();
+  const { userPresets, isSaving: isSavingPreset, savePreset: saveUserPreset, updatePreset: updateUserPreset, deletePreset: deleteUserPreset } = useUserCinematicPresets();
   
   // Função para aplicar preset (padrão ou do usuário)
   const applyPreset = (presetId: CinematicPreset | string) => {
@@ -338,6 +341,29 @@ const PromptsImages = () => {
     const preset = CINEMATIC_PRESETS.find(p => p.id === presetId);
     if (preset) {
       setCinematicSettings(preset.settings);
+    }
+  };
+  
+  // Iniciar edição de preset
+  const startEditPreset = (preset: typeof userPresets[0]) => {
+    setEditingPresetId(preset.id);
+    setEditPresetName(preset.name);
+    setEditPresetIcon(preset.icon);
+  };
+  
+  // Salvar edição de preset
+  const handleUpdatePreset = async () => {
+    if (!editingPresetId || !editPresetName.trim()) return;
+    
+    const success = await updateUserPreset(editingPresetId, {
+      name: editPresetName,
+      icon: editPresetIcon,
+    });
+    
+    if (success) {
+      setEditingPresetId(null);
+      setEditPresetName("");
+      setEditPresetIcon("🎨");
     }
   };
   
@@ -5405,6 +5431,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   <p className="text-[10px] font-medium text-muted-foreground mb-2 flex items-center gap-1">
                     <Star className="w-3 h-3 text-amber-500" />
                     Meus Presets Salvos
+                    <span className="text-[9px] text-muted-foreground/70 ml-1">(clique para aplicar, hover para editar/deletar)</span>
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     {userPresets.map((preset) => (
@@ -5416,6 +5443,17 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                           <span className="text-2xl">{preset.icon}</span>
                           <p className="text-xs font-medium truncate w-full">{preset.name}</p>
                         </button>
+                        {/* Botão Editar */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEditPreset(preset);
+                          }}
+                          className="absolute -top-1 -left-1 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-1 hover:bg-primary/80"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </button>
+                        {/* Botão Deletar */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -5828,6 +5866,81 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   <>
                     <Save className="w-4 h-4 mr-2" />
                     Salvar Preset
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Editar Preset */}
+      <Dialog open={!!editingPresetId} onOpenChange={(open) => !open && setEditingPresetId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-primary" />
+              Editar Preset
+            </DialogTitle>
+            <DialogDescription>
+              Altere o nome e ícone do seu preset
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-preset-name">Nome do Preset</Label>
+              <Input
+                id="edit-preset-name"
+                placeholder="Ex: Meu Estilo Dark"
+                value={editPresetName}
+                onChange={(e) => setEditPresetName(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label>Ícone</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {["🎨", "🎬", "🎥", "🌙", "☀️", "🔥", "❄️", "💎", "⚡", "🎭", "🌟", "🎪"].map((icon) => (
+                  <button
+                    key={icon}
+                    onClick={() => setEditPresetIcon(icon)}
+                    className={cn(
+                      "text-2xl p-2 rounded-lg border transition-all",
+                      editPresetIcon === icon
+                        ? "border-primary bg-primary/20"
+                        : "border-border/50 hover:bg-secondary/50"
+                    )}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setEditingPresetId(null)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleUpdatePreset}
+                disabled={isSavingPreset || !editPresetName.trim()}
+                className="flex-1"
+              >
+                {isSavingPreset ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Salvar Alterações
                   </>
                 )}
               </Button>
