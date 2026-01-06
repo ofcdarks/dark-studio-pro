@@ -900,11 +900,7 @@ ${config.references.map(r => `   • ${r}`).join('\n')}
    • Se as cores parecerem muito fortes, reduza Saturation para 0.85
    • Se os pretos estiverem lavados, reduza Lift Master
    • Se os brancos estiverem estourados, reduza Gain Master
-
-═══════════════════════════════════════════════════════════════════════════════
-  Gerado automaticamente pelo Viral Visions Pro • ${new Date().toLocaleDateString('pt-BR')}
-═══════════════════════════════════════════════════════════════════════════════
-`;
+${BRAND_FOOTER}`;
 
   return instructions;
 };
@@ -1034,9 +1030,7 @@ export const generateCinematicEffectsInstructions = (settings: CinematicSettings
    4. ✅ Na aba Color, aplique a vinheta em um node dedicado
    5. ✅ Ajuste keyframes de Ken Burns se necessário
    6. ✅ Exporte em H.264 para YouTube (15-25 Mbps)
-
-Gerado automaticamente por Viral Video AI
-`;
+${BRAND_FOOTER}`;
 
   return instructions;
 };
@@ -1215,7 +1209,19 @@ export type IntroNiche =
   | 'storytime'
   | 'biblical'
   | 'psychology'
-  | 'curiosities';
+  | 'curiosities'
+  | 'ancient_civilizations'
+  | 'health'
+  | 'emotional_stories';
+
+// Branding global para todos os documentos
+export const BRAND_FOOTER = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏠 Gerado pelo La Casa Dark Core
+🌐 www.canaisdarks.com.br
+✨ "Transformando ideias em vídeos virais"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
 
 export interface MusicRecommendation {
   name: string;
@@ -1830,6 +1836,102 @@ export const INTRO_PRESETS: IntroPreset[] = [
       { name: 'Amazing Facts', artist: 'Coma-Media', source: 'Pixabay', genre: 'Trailer', mood: 'Épico', url: 'https://pixabay.com/music/upbeat-amazing-facts-141890/', duration: '1:45', bpm: 130, isPremium: false },
       { name: 'Discovery Channel', artist: 'AlexiAction', source: 'Pixabay', genre: 'Orquestral', mood: 'Maravilhado', url: 'https://pixabay.com/music/upbeat-discovery-channel-129876/', duration: '2:15', bpm: 100, isPremium: false }
     ]
+  },
+  {
+    id: 'ancient_civilizations',
+    name: 'Civilizações Antigas',
+    icon: '🏛️',
+    description: 'Mistérios e segredos de civilizações perdidas',
+    introDuration: 8,
+    hookStructure: '[Mistério antigo] + [Descoberta recente] + [Pergunta provocativa]',
+    textAnimation: 'fade',
+    musicStyle: 'Orquestral épica, percussão tribal, ambiente misterioso',
+    transitionIn: 'fade_to_black',
+    transitionDuration: 1,
+    visualStyle: 'Ruínas, pirâmides, artefatos, mapas antigos, reconstruções 3D',
+    colorTone: 'film_look',
+    effects: { vignette: true, kenBurns: true, letterbox: true, fadeIn: true },
+    hookExamples: [
+      '"Esta descoberta de 2024 reescreve a história humana..."',
+      '"Os arqueólogos ficaram CHOCADOS ao encontrar isso."',
+      '"Como civilizações antigas sabiam sobre isso 5000 anos atrás?"'
+    ],
+    tipsPt: [
+      'Comece com imagem impactante de ruínas',
+      'Use mapas e reconstruções visuais',
+      'Tom de voz misterioso e contemplativo',
+      'Música épica com elementos étnicos'
+    ],
+    recommendedMusic: [
+      { name: 'Ancient Mystery', artist: 'Lexin_Music', source: 'Pixabay', genre: 'Orquestral', mood: 'Misterioso', url: 'https://pixabay.com/music/ambient-ancient-mystery-142567/', duration: '3:30', bpm: 80, isPremium: false },
+      { name: 'Egyptian Empire', artist: 'AlexiAction', source: 'Pixabay', genre: 'Épico', mood: 'Grandioso', url: 'https://pixabay.com/music/epic-egyptian-empire-138234/', duration: '3:00', bpm: 90, isPremium: false },
+      { name: 'Lost Civilization', artist: 'SoulProdMusic', source: 'Pixabay', genre: 'Ambiente', mood: 'Exploratório', url: 'https://pixabay.com/music/ambient-lost-civilization-141890/', duration: '4:00', bpm: 70, isPremium: false },
+      { name: 'Tribal Drums', artist: 'Coma-Media', source: 'Pixabay', genre: 'Percussão', mood: 'Intenso', url: 'https://pixabay.com/music/world-tribal-drums-129876/', duration: '2:45', bpm: 100, isPremium: false }
+    ]
+  },
+  {
+    id: 'health',
+    name: 'Saúde/Bem-estar',
+    icon: '💚',
+    description: 'Dicas de saúde e qualidade de vida',
+    introDuration: 5,
+    hookStructure: '[Problema comum] + [Causa oculta] + [Solução simples]',
+    textAnimation: 'slide',
+    musicStyle: 'Suave, positivo, piano ou acústico leve',
+    transitionIn: 'cross_dissolve',
+    transitionDuration: 0.5,
+    visualStyle: 'Natureza, alimentos saudáveis, exercícios, pessoas felizes',
+    colorTone: 'neutral',
+    effects: { vignette: false, kenBurns: true, letterbox: false, fadeIn: true },
+    hookExamples: [
+      '"Este alimento comum está DESTRUINDO sua saúde..."',
+      '"O hábito de 5 minutos que mudou minha vida."',
+      '"Por que você acorda cansado mesmo dormindo 8 horas?"'
+    ],
+    tipsPt: [
+      'Comece com problema que todos têm',
+      'Use dados científicos de forma simples',
+      'Imagens de bem-estar e natureza',
+      'Tom acolhedor e motivador'
+    ],
+    recommendedMusic: [
+      { name: 'Healthy Life', artist: 'FASSounds', source: 'Pixabay', genre: 'Acústico', mood: 'Positivo', url: 'https://pixabay.com/music/acoustic-healthy-life-142567/', duration: '2:30', bpm: 95, isPremium: false },
+      { name: 'Wellness Journey', artist: 'Lesfm', source: 'Pixabay', genre: 'Piano', mood: 'Sereno', url: 'https://pixabay.com/music/solo-piano-wellness-journey-138234/', duration: '3:00', bpm: 80, isPremium: false },
+      { name: 'Morning Energy', artist: 'SoulProdMusic', source: 'Pixabay', genre: 'Pop', mood: 'Energético', url: 'https://pixabay.com/music/upbeat-morning-energy-141890/', duration: '2:15', bpm: 110, isPremium: false },
+      { name: 'Natural Balance', artist: 'Coma-Media', source: 'Pixabay', genre: 'Ambiente', mood: 'Relaxante', url: 'https://pixabay.com/music/ambient-natural-balance-129876/', duration: '3:15', bpm: 70, isPremium: false }
+    ]
+  },
+  {
+    id: 'emotional_stories',
+    name: 'Histórias Emocionantes',
+    icon: '💔',
+    description: 'Narrativas que tocam o coração e emocionam',
+    introDuration: 10,
+    hookStructure: '[Situação emocional] + [Ponto de virada] + [Promessa de emoção]',
+    textAnimation: 'fade',
+    musicStyle: 'Piano emotivo, cordas, baladas instrumentais',
+    transitionIn: 'fade_to_black',
+    transitionDuration: 1.5,
+    visualStyle: 'Rostos expressivos, momentos íntimos, luz suave, cores quentes',
+    colorTone: 'cinematic_warm',
+    effects: { vignette: true, kenBurns: true, letterbox: true, fadeIn: true },
+    hookExamples: [
+      '"Ele esperou 40 anos para dizer isso a ela..."',
+      '"As últimas palavras dela me destruíram."',
+      '"Este vídeo VAI te fazer chorar. Eu garanto."'
+    ],
+    tipsPt: [
+      'Comece com emoção genuína e vulnerabilidade',
+      'Use pausas dramáticas na narração',
+      'Música emotiva que cresce gradualmente',
+      'Imagens de conexão humana'
+    ],
+    recommendedMusic: [
+      { name: 'Tears of Joy', artist: 'Lesfm', source: 'Pixabay', genre: 'Piano', mood: 'Emotivo', url: 'https://pixabay.com/music/solo-piano-tears-of-joy-142567/', duration: '4:00', bpm: 60, isPremium: false },
+      { name: 'Heartfelt Strings', artist: 'Lexin_Music', source: 'Pixabay', genre: 'Orquestral', mood: 'Comovente', url: 'https://pixabay.com/music/orchestral-heartfelt-strings-138234/', duration: '3:30', bpm: 65, isPremium: false },
+      { name: 'Emotional Journey', artist: 'AudioCoffee', source: 'Pixabay', genre: 'Ambiente', mood: 'Melancólico', url: 'https://pixabay.com/music/ambient-emotional-journey-141890/', duration: '4:30', bpm: 70, isPremium: false },
+      { name: 'True Love', artist: 'SoulProdMusic', source: 'Pixabay', genre: 'Balada', mood: 'Romântico', url: 'https://pixabay.com/music/romantic-true-love-129876/', duration: '3:45', bpm: 75, isPremium: false }
+    ]
   }
 ];
 
@@ -1894,9 +1996,7 @@ ${preset.tipsPt.map((t, i) => `💡 ${i + 1}. ${t}`).join('\n')}
 □ Texto/títulos preparados
 □ B-roll de suporte selecionado
 □ Transição de saída da intro definida
-
-Gerado automaticamente por Viral Video AI
-`;
+${BRAND_FOOTER}`;
 };
 
 
@@ -2339,11 +2439,7 @@ Total de Cenas: ${scenes.length}
    - Zoom: 8% de variação (ajustável para mais intensidade)
    - Pan: 10% de deslocamento (ajustável conforme necessidade)
    - Intensidade varia por cena baseado na análise do texto
-
-═══════════════════════════════════════════════════════════════════════════════
-  Gerado automaticamente pelo Viral Visions Pro • ${new Date().toLocaleDateString('pt-BR')}
-═══════════════════════════════════════════════════════════════════════════════
-`;
+${BRAND_FOOTER}`;
 
   return report;
 };
@@ -2524,9 +2620,5 @@ Quando a edição estiver pronta:
 4. Clique em "Add to Render Queue"
 5. Clique em "Render All"
 
-
-================================================================================
-              Gerado automaticamente | ${new Date().toLocaleDateString('pt-BR')}
-================================================================================
-`;
+${BRAND_FOOTER}`;
 };

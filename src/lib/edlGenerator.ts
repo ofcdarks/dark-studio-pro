@@ -3,6 +3,15 @@
  * Formato CMX 3600 compatível com DaVinci Resolve 16+
  */
 
+// Branding global para todos os documentos
+const BRAND_FOOTER = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏠 Gerado pelo La Casa Dark Core
+🌐 www.canaisdarks.com.br
+✨ "Transformando ideias em vídeos virais"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+
 interface SceneForEdl {
   number: number;
   text: string;
@@ -302,9 +311,5 @@ Quando a edição estiver pronta:
 4. Clique em "Add to Render Queue"
 5. Clique em "Render All"
 
-
-================================================================================
-              Gerado automaticamente | ${new Date().toLocaleDateString('pt-BR')}
-================================================================================
-`;
+${BRAND_FOOTER}`;
 };
