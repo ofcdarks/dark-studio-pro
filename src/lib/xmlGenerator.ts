@@ -906,6 +906,169 @@ ${BRAND_FOOTER}`;
 };
 
 /**
+ * MODO FÁCIL: Instruções ultra-simplificadas para usuários leigos
+ * Apenas 5 passos simples com linguagem amigável
+ */
+export const generateEasyModeInstructions = (
+  colorGrading: ColorGrading,
+  settings: CinematicSettings
+): string => {
+  const config = COLOR_GRADING_CONFIGS[colorGrading];
+  const option = COLOR_GRADING_OPTIONS.find(o => o.id === colorGrading);
+  const presetName = option?.name || 'Personalizado';
+
+  return `
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    🎬 MODO FÁCIL - GUIA RÁPIDO                                ║
+║                    Para: ${presetName.padEnd(30)}                             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+🎯 VOCÊ VAI CONSEGUIR! São apenas 5 passos simples.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PASSO 1: ABRIR O DAVINCI RESOLVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   1. Abra o DaVinci Resolve (é gratuito!)
+   2. Crie um projeto novo ou abra o seu
+   3. Importe seu vídeo/fotos arrastando para a tela
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PASSO 2: IMPORTAR O XML (Seu projeto pronto!)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   1. Vá em: Arquivo → Importar → Timeline...
+   2. Selecione o arquivo .xml que você baixou
+   3. Clique OK - PRONTO! As cenas já estarão organizadas!
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PASSO 3: APLICAR O VISUAL "${presetName.toUpperCase()}"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   🌟 MÉTODO SUPER FÁCIL (LUT):
+   
+   1. Clique na aba "Color" (ícone de pincel colorido embaixo)
+   2. Clique com botão DIREITO na área de "LUTs"
+   3. Escolha "Import LUT..."
+   4. Procure por LUTs gratuitas no Google: 
+      "${presetName} LUT free download"
+   5. Arraste a LUT para cima do seu vídeo - PRONTO!
+   
+   💡 Dica: LUTs são "filtros prontos" como no Instagram!
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PASSO 4: AJUSTES RÁPIDOS (Opcional)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Ainda na aba "Color", você pode ajustar:
+   
+   🔆 BRILHO muito escuro/claro?
+      → Mova a bolinha do meio (Gamma) para cima/baixo
+   
+   🎨 CORES muito fortes/fracas?
+      → Procure "Saturation" e aumente/diminua
+   
+   ⚫ PRETOS muito lavados?
+      → Mova a bolinha da esquerda (Lift) para baixo
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PASSO 5: EXPORTAR SEU VÍDEO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   1. Clique na aba "Deliver" (ícone de foguete embaixo)
+   2. Escolha "YouTube" nos presets prontos
+   3. Escolha onde salvar o arquivo
+   4. Clique em "Add to Render Queue"
+   5. Clique em "Render All"
+   6. Espere terminar - PRONTO! Seu vídeo está pronto! 🎉
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    🎁 BÔNUS: LUTS GRATUITAS RECOMENDADAS                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+   Pesquise no Google por:
+   • "${presetName} LUT free download"
+   • "Cinematic LUT pack free"
+   • "Film look LUT DaVinci"
+   
+   Sites confiáveis:
+   • fixthephoto.com/free-luts
+   • rocketstock.com/free-after-effects-templates/35-free-luts
+   • filtergrade.com/free-luts
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    ❓ PRECISA DE AJUDA?                                        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+   📺 No YouTube, pesquise:
+   • "DaVinci Resolve tutorial básico português"
+   • "Como usar LUT no DaVinci Resolve"
+   • "Color grading fácil DaVinci"
+
+${BRAND_FOOTER}`;
+};
+
+/**
+ * Gera arquivo Power Grade (.dpx) para importação direta no DaVinci
+ * Este é um formato simplificado que pode ser aplicado com 1 clique
+ */
+export const generatePowerGradeXml = (colorGrading: ColorGrading): string => {
+  const config = COLOR_GRADING_CONFIGS[colorGrading];
+  const option = COLOR_GRADING_OPTIONS.find(o => o.id === colorGrading);
+  const presetName = option?.name || 'Custom';
+  
+  // Gera um XML simplificado de Power Grade para DaVinci
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<PowerGrade>
+  <Name>${presetName} - La Casa Dark Core</Name>
+  <Version>1.0</Version>
+  <Grade>
+    <Primary>
+      <Lift>
+        <Red>${config.lift.r.toFixed(4)}</Red>
+        <Green>${config.lift.g.toFixed(4)}</Green>
+        <Blue>${config.lift.b.toFixed(4)}</Blue>
+        <Luma>${config.lift.master.toFixed(4)}</Luma>
+      </Lift>
+      <Gamma>
+        <Red>${config.gamma.r.toFixed(4)}</Red>
+        <Green>${config.gamma.g.toFixed(4)}</Green>
+        <Blue>${config.gamma.b.toFixed(4)}</Blue>
+        <Luma>${config.gamma.master.toFixed(4)}</Luma>
+      </Gamma>
+      <Gain>
+        <Red>${config.gain.r.toFixed(4)}</Red>
+        <Green>${config.gain.g.toFixed(4)}</Green>
+        <Blue>${config.gain.b.toFixed(4)}</Blue>
+        <Luma>${config.gain.master.toFixed(4)}</Luma>
+      </Gain>
+      <Offset>
+        <Red>${config.offset.r.toFixed(4)}</Red>
+        <Green>${config.offset.g.toFixed(4)}</Green>
+        <Blue>${config.offset.b.toFixed(4)}</Blue>
+        <Luma>${config.offset.master.toFixed(4)}</Luma>
+      </Offset>
+      <Saturation>${config.saturation.toFixed(4)}</Saturation>
+      <Contrast>${config.contrast.toFixed(4)}</Contrast>
+      <Pivot>${config.pivot.toFixed(4)}</Pivot>
+    </Primary>
+  </Grade>
+  <Notes>
+    Preset gerado pelo La Casa Dark Core
+    www.canaisdarks.com.br
+    "Transformando ideias em vídeos virais"
+  </Notes>
+</PowerGrade>`;
+};
+
+/**
  * Gera instruções de efeitos cinematográficos (independente de Color Grading)
  * Usado quando há efeitos selecionados mas colorGrading é neutro
  */
