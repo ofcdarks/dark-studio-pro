@@ -735,6 +735,7 @@ export type Database = {
           permissions: Json
           plan_name: string
           price_amount: number | null
+          storage_limit_gb: number | null
           stripe_price_id: string | null
           updated_at: string | null
         }
@@ -746,6 +747,7 @@ export type Database = {
           permissions?: Json
           plan_name: string
           price_amount?: number | null
+          storage_limit_gb?: number | null
           stripe_price_id?: string | null
           updated_at?: string | null
         }
@@ -757,6 +759,7 @@ export type Database = {
           permissions?: Json
           plan_name?: string
           price_amount?: number | null
+          storage_limit_gb?: number | null
           stripe_price_id?: string | null
           updated_at?: string | null
         }
@@ -1219,6 +1222,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_file_uploads: {
+        Row: {
+          bucket_name: string
+          created_at: string | null
+          file_path: string
+          file_size: number
+          file_type: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          bucket_name: string
+          created_at?: string | null
+          file_path: string
+          file_size?: number
+          file_type?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          bucket_name?: string
+          created_at?: string | null
+          file_path?: string
+          file_size?: number
+          file_type?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string
@@ -1487,6 +1520,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_user_upload: {
+        Args: { p_file_size_bytes: number; p_user_id: string }
+        Returns: boolean
+      }
+      get_user_storage_bytes: { Args: { p_user_id: string }; Returns: number }
+      get_user_storage_limit_gb: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

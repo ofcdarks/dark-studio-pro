@@ -14,6 +14,7 @@ import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useApiSettings } from "@/hooks/useApiSettings";
+import { useStorage } from "@/hooks/useStorage";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { resetAllTutorials } from "@/hooks/useTutorial";
@@ -30,6 +31,7 @@ const SettingsPage = () => {
   const { user } = useAuth();
   const { profile, loading: profileLoading, refetch: refetchProfile } = useProfile();
   const { settings, loading: settingsLoading, validating, validateApiKey, saveSettings, isValidated } = useApiSettings();
+  const { registerUpload, unregisterUpload, canUpload } = useStorage();
 
   const [userPlan, setUserPlan] = useState<UserPlan>('free');
   const [profileData, setProfileData] = useState({ full_name: '', email: '' });
@@ -212,6 +214,13 @@ const SettingsPage = () => {
       toast.error('A imagem deve ter no máximo 2MB');
       return;
     }
+
+    // Check storage limit
+    const hasSpace = await canUpload(file.size);
+    if (!hasSpace) {
+      toast.error("Limite de armazenamento atingido! Faça upgrade do seu plano.");
+      return;
+    }
     
     setUploadingAvatar(true);
     
@@ -221,6 +230,7 @@ const SettingsPage = () => {
         const oldPath = avatarUrl.split('/avatars/')[1];
         if (oldPath) {
           await supabase.storage.from('avatars').remove([oldPath]);
+          await unregisterUpload('avatars', oldPath);
         }
       }
       
@@ -230,6 +240,14 @@ const SettingsPage = () => {
         .upload(fileName, file, { contentType: file.type });
       
       if (uploadError) throw uploadError;
+
+      // Register upload for storage tracking
+      await registerUpload({
+        bucket_name: 'avatars',
+        file_path: fileName,
+        file_size: file.size,
+        file_type: file.type
+      });
       
       // Get public URL
       const { data: urlData } = supabase.storage
@@ -264,6 +282,7 @@ const SettingsPage = () => {
       const oldPath = avatarUrl.split('/avatars/')[1];
       if (oldPath) {
         await supabase.storage.from('avatars').remove([oldPath]);
+        await unregisterUpload('avatars', oldPath);
       }
       
       await supabase
