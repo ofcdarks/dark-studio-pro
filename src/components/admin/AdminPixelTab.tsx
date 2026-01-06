@@ -661,6 +661,78 @@ ${EMAIL_FOOTER}`
             </td>
           </tr>
 ${EMAIL_FOOTER}`
+  },
+  renewal_reminder: {
+    subject: "⏰ Seu Plano Vence em {{days_remaining}} Dias - Renove Agora!",
+    body: `${EMAIL_HEADER}
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <!-- Warning Icon -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(251, 146, 60, 0.2) 0%, rgba(234, 88, 12, 0.1) 100%); border: 2px solid #fb923c; display: inline-flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 40px;">⏰</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #fb923c; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
+                Seu Plano Vence em Breve!
+              </h2>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 8px 0; text-align: center;">
+                Olá, <strong style="color: #f59e0b;">{{name}}</strong>
+              </p>
+              
+              <p style="color: #737373; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0; text-align: center;">
+                Seu plano <strong style="color: #fb923c;">{{plan_name}}</strong> vence em <strong style="color: #ef4444;">{{days_remaining}} dias</strong>. Renove agora para continuar aproveitando todos os benefícios!
+              </p>
+              
+              <!-- Expiration Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(251, 146, 60, 0.05); border: 1px solid rgba(251, 146, 60, 0.3); border-radius: 12px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 24px; text-align: center;">
+                    <p style="color: #fb923c; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px 0;">📅 Data de Vencimento</p>
+                    <p style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0;">{{date_end}}</p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Benefits List -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+                <tr>
+                  <td>
+                    <p style="color: #a3a3a3; font-size: 14px; margin: 0 0 16px 0; text-align: center;">Não perca acesso às ferramentas exclusivas:</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr><td style="color: #22c55e; font-size: 14px; padding: 8px 0;">✓ Análise ilimitada de vídeos virais</td></tr>
+                      <tr><td style="color: #22c55e; font-size: 14px; padding: 8px 0;">✓ Geração de scripts com IA avançada</td></tr>
+                      <tr><td style="color: #22c55e; font-size: 14px; padding: 8px 0;">✓ Thumbnails profissionais</td></tr>
+                      <tr><td style="color: #22c55e; font-size: 14px; padding: 8px 0;">✓ Suporte prioritário 24/7</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 0 0;">
+                <tr>
+                  <td align="center">
+                    <a href="{{renewal_link}}" style="display: inline-block; background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 14px rgba(251, 146, 60, 0.4);">
+                      Renovar Meu Plano →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #525252; font-size: 13px; line-height: 1.6; margin: 24px 0 0 0; text-align: center;">
+                Dúvidas? Entre em contato com nosso suporte.
+              </p>
+            </td>
+          </tr>
+${EMAIL_FOOTER}`
   }
 };
 
@@ -1085,6 +1157,7 @@ export function AdminPixelTab() {
       blocked_password: "Senha Bloqueada",
       plan_start: "Plano Ativado",
       plan_renewal: "Plano Renovado",
+      renewal_reminder: "Lembrete de Renovação",
     };
     return labels[type] || type;
   };
@@ -1101,6 +1174,7 @@ export function AdminPixelTab() {
       blocked_password: "🔒",
       plan_start: "🎉",
       plan_renewal: "🔄",
+      renewal_reminder: "⏰",
     };
     return icons[type] || "📧";
   };
@@ -1118,7 +1192,9 @@ export function AdminPixelTab() {
       .replace(/\{\{credits_amount\}\}/g, "5.000")
       .replace(/\{\{date_cancellation\}\}/g, "06/01/2026")
       .replace(/\{\{date_end\}\}/g, "06/02/2026")
-      .replace(/\{\{transaction_id\}\}/g, "TXN-123456");
+      .replace(/\{\{transaction_id\}\}/g, "TXN-123456")
+      .replace(/\{\{days_remaining\}\}/g, "3")
+      .replace(/\{\{renewal_link\}\}/g, "#");
   };
 
   if (loading) {
