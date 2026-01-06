@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Film, Copy, Check, Image, Images } from "lucide-react";
+import { Loader2, Film, Copy, Check, Image, Images, Download, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePersistedState } from "@/hooks/usePersistedState";
@@ -30,6 +30,17 @@ const STYLES = [
   { value: "vibrant", label: "Vibrante/Colorido" },
 ];
 
+const WORDS_PER_SCENE_OPTIONS = [
+  { value: "25", label: "25 palavras" },
+  { value: "30", label: "30 palavras" },
+  { value: "35", label: "35 palavras" },
+  { value: "40", label: "40 palavras" },
+  { value: "50", label: "50 palavras" },
+  { value: "60", label: "60 palavras" },
+  { value: "75", label: "75 palavras" },
+  { value: "100", label: "100 palavras" },
+];
+
 const SceneGenerator = () => {
   // Tab state
   const [activeTab, setActiveTab] = usePersistedState("scene_active_tab", "scenes");
@@ -39,12 +50,24 @@ const SceneGenerator = () => {
   const [title, setTitle] = usePersistedState("scene_title", "");
   const [niche, setNiche] = usePersistedState("scene_niche", "");
   const [style, setStyle] = usePersistedState("scene_style", "photorealistic");
-  const [estimatedScenes, setEstimatedScenes] = usePersistedState("scene_estimatedScenes", "8");
+  const [wordsPerScene, setWordsPerScene] = usePersistedState("scene_wordsPerScene", "40");
   const [scenes, setScenes] = usePersistedState<ScenePrompt[]>("scene_scenes", []);
+  const [batchPrompts, setBatchPrompts] = usePersistedState("batch_prompts", "");
   
   // Non-persisted states
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  // Calculate estimated scenes based on word count
+  const wordCount = useMemo(() => {
+    return script.split(/\s+/).filter(w => w).length;
+  }, [script]);
+
+  const estimatedScenes = useMemo(() => {
+    const wps = parseInt(wordsPerScene);
+    if (wordCount === 0 || wps === 0) return 0;
+    return Math.ceil(wordCount / wps);
+  }, [wordCount, wordsPerScene]);
 
   const handleGenerate = async () => {
     if (!script.trim()) {
@@ -62,7 +85,8 @@ const SceneGenerator = () => {
           title,
           niche,
           style,
-          estimatedScenes: parseInt(estimatedScenes),
+          estimatedScenes,
+          wordsPerScene: parseInt(wordsPerScene),
         },
       });
 
@@ -93,6 +117,25 @@ const SceneGenerator = () => {
     const allPrompts = scenes.map(s => `CENA ${s.number}:\n${s.imagePrompt}`).join("\n\n---\n\n");
     navigator.clipboard.writeText(allPrompts);
     toast.success("Todos os prompts copiados!");
+  };
+
+  const downloadTxt = () => {
+    const content = scenes.map(s => s.imagePrompt).join("\n\n");
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `prompts-cenas-${title || "video"}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Arquivo TXT baixado!");
+  };
+
+  const sendToBatchGenerator = () => {
+    const prompts = scenes.map(s => s.imagePrompt).join("\n\n");
+    setBatchPrompts(prompts);
+    setActiveTab("batch");
+    toast.success("Prompts enviados para Imagens em Lote!");
   };
 
   return (
@@ -183,18 +226,32 @@ const SceneGenerator = () => {
                           </Select>
                         </div>
                         <div>
-                          <Label htmlFor="scenes">Número de Cenas</Label>
-                          <Input
-                            id="scenes"
-                            type="number"
-                            min="2"
-                            max="30"
-                            value={estimatedScenes}
-                            onChange={(e) => setEstimatedScenes(e.target.value)}
-                            className="mt-1"
-                          />
+                          <Label>Palavras por Cena</Label>
+                          <Select value={wordsPerScene} onValueChange={setWordsPerScene}>
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {WORDS_PER_SCENE_OPTIONS.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
+
+                      {/* Estimated scenes info */}
+                      {wordCount > 0 && (
+                        <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                          <p className="text-sm text-foreground">
+                            <span className="font-medium">{wordCount}</span> palavras ÷{" "}
+                            <span className="font-medium">{wordsPerScene}</span> = aproximadamente{" "}
+                            <span className="font-bold text-primary">{estimatedScenes}</span> cenas
+                          </p>
+                        </div>
+                      )}
 
                       <div>
                         <Label htmlFor="script">Roteiro Completo</Label>
@@ -206,7 +263,7 @@ const SceneGenerator = () => {
                           className="mt-1 min-h-64"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
-                          {script.split(/\s+/).filter(w => w).length} palavras
+                          {wordCount} palavras
                         </p>
                       </div>
 
@@ -223,7 +280,7 @@ const SceneGenerator = () => {
                         ) : (
                           <>
                             <Image className="w-4 h-4 mr-2" />
-                            Gerar Prompts de Cenas
+                            Gerar Prompts de Cenas {estimatedScenes > 0 && `(~${estimatedScenes})`}
                           </>
                         )}
                       </Button>
@@ -252,38 +309,59 @@ const SceneGenerator = () => {
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                        {scenes.map((scene, index) => (
-                          <div
-                            key={index}
-                            className="p-3 bg-secondary/50 rounded-lg space-y-2"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-primary">
-                                Cena {scene.number}
-                              </span>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-6 w-6"
-                                onClick={() => copyPrompt(scene.imagePrompt, index)}
-                              >
-                                {copiedIndex === index ? (
-                                  <Check className="w-3 h-3 text-success" />
-                                ) : (
-                                  <Copy className="w-3 h-3" />
-                                )}
-                              </Button>
+                      <>
+                        <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                          {scenes.map((scene, index) => (
+                            <div
+                              key={index}
+                              className="p-3 bg-secondary/50 rounded-lg space-y-2"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-primary">
+                                  Cena {scene.number}
+                                </span>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6"
+                                  onClick={() => copyPrompt(scene.imagePrompt, index)}
+                                >
+                                  {copiedIndex === index ? (
+                                    <Check className="w-3 h-3 text-success" />
+                                  ) : (
+                                    <Copy className="w-3 h-3" />
+                                  )}
+                                </Button>
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                {scene.text.substring(0, 100)}...
+                              </p>
+                              <p className="text-sm text-foreground">
+                                {scene.imagePrompt.substring(0, 150)}...
+                              </p>
                             </div>
-                            <p className="text-xs text-muted-foreground line-clamp-2">
-                              {scene.text.substring(0, 100)}...
-                            </p>
-                            <p className="text-sm text-foreground">
-                              {scene.imagePrompt.substring(0, 150)}...
-                            </p>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="mt-4 pt-4 border-t border-border space-y-2">
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={downloadTxt}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Baixar TXT
+                          </Button>
+                          <Button
+                            className="w-full"
+                            onClick={sendToBatchGenerator}
+                          >
+                            <ArrowRight className="w-4 h-4 mr-2" />
+                            Gerar Imagens em Lote
+                          </Button>
+                        </div>
+                      </>
                     )}
                   </Card>
                 </div>
@@ -292,7 +370,7 @@ const SceneGenerator = () => {
 
             {/* Batch Image Generation Tab */}
             <TabsContent value="batch">
-              <BatchImageGenerator />
+              <BatchImageGenerator initialPrompts={batchPrompts} />
             </TabsContent>
           </Tabs>
         </div>

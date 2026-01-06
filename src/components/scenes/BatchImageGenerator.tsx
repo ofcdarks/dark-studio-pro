@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,13 +19,24 @@ interface GeneratedImage {
   error?: string;
 }
 
-const BatchImageGenerator = () => {
-  const [promptsText, setPromptsText] = useState("");
+interface BatchImageGeneratorProps {
+  initialPrompts?: string;
+}
+
+const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) => {
+  const [promptsText, setPromptsText] = useState(initialPrompts);
   const [selectedStyle, setSelectedStyle] = useState("");
   const [images, setImages] = useState<GeneratedImage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Update promptsText when initialPrompts changes
+  useEffect(() => {
+    if (initialPrompts && initialPrompts !== promptsText) {
+      setPromptsText(initialPrompts);
+    }
+  }, [initialPrompts]);
 
   const parsePrompts = () => {
     // Split by double newline or numbered lines
