@@ -18,6 +18,7 @@ const authSchema = z.object({
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isRecovery, setIsRecovery] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -25,8 +26,9 @@ const Auth = () => {
   const [rememberPassword, setRememberPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -99,6 +101,47 @@ const Auth = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecoveryLoading(true);
+
+    try {
+      if (!email || !z.string().email().safeParse(email).success) {
+        toast({
+          title: "Erro",
+          description: "Digite um email válido",
+          variant: "destructive",
+        });
+        setRecoveryLoading(false);
+        return;
+      }
+
+      const { error } = await resetPassword(email);
+      
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível enviar o email de recuperação",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email enviado!",
+          description: "Verifique sua caixa de entrada para redefinir sua senha",
+        });
+        setIsRecovery(false);
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado",
+        variant: "destructive",
+      });
+    } finally {
+      setRecoveryLoading(false);
     }
   };
 
@@ -206,89 +249,146 @@ const Auth = () => {
           </div>
 
 
-          <form onSubmit={handleSubmit} className="space-y-4 relative">
-            {!isLogin && (
-              <div>
-                <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
-                  Nome completo
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Seu nome"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="bg-secondary/50 border-border/50 h-11"
-                />
-              </div>
-            )}
-            
-            {/* Email */}
-            <div>
-              <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
-                <Mail className="w-4 h-4 text-primary" />
-                E-mail
-              </label>
-              <Input
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-secondary/50 border-border/50 h-11"
-                required
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-primary" />
-                Senha
-              </label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-secondary/50 border-border/50 h-11 pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Recover access link */}
-            {isLogin && (
-              <div className="text-left">
-                <button type="button" className="text-primary text-sm hover:underline">
-                  Recuperar acesso ao Core
-                </button>
-                <p className="text-xs text-muted-foreground mt-1 italic">
-                  Sessão vinculada à infraestrutura do operador
+          {/* Recovery Form */}
+          {isRecovery ? (
+            <form onSubmit={handleRecovery} className="space-y-4 relative">
+              <div className="text-center mb-4">
+                <h2 className="text-lg font-semibold text-foreground">Recuperar Acesso</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Digite seu email para receber o link de recuperação
                 </p>
               </div>
-            )}
+              
+              {/* Email */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-primary" />
+                  E-mail
+                </label>
+                <Input
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-secondary/50 border-border/50 h-11"
+                  required
+                />
+              </div>
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full h-14 text-base font-semibold gradient-button text-primary-foreground mt-4"
-              disabled={loading}
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-              ) : (
-                <ArrowRight className="w-5 h-5 mr-2" />
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                className="w-full h-14 text-base font-semibold gradient-button text-primary-foreground mt-4"
+                disabled={recoveryLoading}
+              >
+                {recoveryLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                ) : (
+                  <Mail className="w-5 h-5 mr-2" />
+                )}
+                Enviar Link de Recuperação
+              </Button>
+
+              {/* Back to Login */}
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => setIsRecovery(false)}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar ao Login
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4 relative">
+              {!isLogin && (
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                    Nome completo
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Seu nome"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="bg-secondary/50 border-border/50 h-11"
+                  />
+                </div>
               )}
-              {isLogin ? "Acessar o Core" : "Criar Acesso"}
-            </Button>
-          </form>
+              
+              {/* Email */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-primary" />
+                  E-mail
+                </label>
+                <Input
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-secondary/50 border-border/50 h-11"
+                  required
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-primary" />
+                  Senha
+                </label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="bg-secondary/50 border-border/50 h-11 pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Recover access link */}
+              {isLogin && (
+                <div className="text-left">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsRecovery(true)}
+                    className="text-primary text-sm hover:underline"
+                  >
+                    Recuperar acesso ao Core
+                  </button>
+                  <p className="text-xs text-muted-foreground mt-1 italic">
+                    Sessão vinculada à infraestrutura do operador
+                  </p>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                className="w-full h-14 text-base font-semibold gradient-button text-primary-foreground mt-4"
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                ) : (
+                  <ArrowRight className="w-5 h-5 mr-2" />
+                )}
+                {isLogin ? "Acessar o Core" : "Criar Acesso"}
+              </Button>
+            </form>
+          )}
 
           {/* Divider */}
           <div className="flex items-center gap-4 my-6">
