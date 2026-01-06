@@ -591,7 +591,14 @@ const SceneGenerator = () => {
               <>
                 <div className="flex items-center justify-center py-6">
                   <div className="relative">
-                    <Sparkles className="w-16 h-16 text-primary animate-pulse" />
+                    <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shadow-[0_0_30px_hsl(var(--primary)/0.4)]">
+                      <img 
+                        src="/src/assets/logo_1.gif" 
+                        alt="Processando" 
+                        className="w-full h-full object-cover scale-110"
+                      />
+                    </div>
+                    <div className="absolute inset-0 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
                   </div>
                 </div>
                 <div className="space-y-2">
