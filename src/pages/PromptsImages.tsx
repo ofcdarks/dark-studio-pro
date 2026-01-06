@@ -38,6 +38,7 @@ import { TransitionPreview } from "@/components/transitions/TransitionPreview";
 import { PresetPreview } from "@/components/transitions/PresetPreview";
 import { IntroPresetSelector } from "@/components/transitions/IntroPresetSelector";
 import { KenBurnsComparisonPreview } from "@/components/transitions/KenBurnsComparisonPreview";
+import { PowerGradeTutorial } from "@/components/transitions/PowerGradeTutorial";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -310,6 +311,7 @@ const PromptsImages = () => {
   const [cinematicSettings, setCinematicSettings] = useState<CinematicSettings>(DEFAULT_CINEMATIC_SETTINGS);
   const [selectedPreset, setSelectedPreset] = useState<CinematicPreset>('custom');
   const [selectedIntroNiche, setSelectedIntroNiche] = useState<IntroNiche | null>(null);
+  const [showPowerGradeTutorial, setShowPowerGradeTutorial] = useState(false);
   
   // Função para aplicar preset
   const applyPreset = (presetId: CinematicPreset) => {
@@ -5502,7 +5504,20 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
               {/* Color Grading */}
               <div className="col-span-2">
-                <p className="text-xs font-medium text-muted-foreground mb-2">🎨 Color Grading (aplicar no DaVinci)</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-muted-foreground">🎨 Color Grading (aplicar no DaVinci)</p>
+                  {cinematicSettings.colorGrading !== 'neutral' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[10px] text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                      onClick={() => setShowPowerGradeTutorial(true)}
+                    >
+                      <Play className="w-3 h-3 mr-1" />
+                      Ver Tutorial
+                    </Button>
+                  )}
+                </div>
                 <div className="grid grid-cols-4 gap-2">
                   {COLOR_GRADING_OPTIONS.map((cg) => (
                     <button
@@ -5696,6 +5711,12 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Tutorial Power Grade */}
+      <PowerGradeTutorial 
+        open={showPowerGradeTutorial} 
+        onOpenChange={setShowPowerGradeTutorial} 
+      />
     </MainLayout>
   );
 };
