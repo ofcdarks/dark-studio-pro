@@ -25,11 +25,13 @@ const Header = () => {
             className="flex items-center gap-3"
             whileHover={{ scale: 1.02 }}
           >
-            <img 
-              src={headerLogo} 
-              alt="La Casa Dark CORE" 
-              className="h-12 w-auto object-contain"
-            />
+            <div className="h-12 w-12 rounded-full overflow-hidden bg-background/50 flex items-center justify-center">
+              <img 
+                src={headerLogo} 
+                alt="La Casa Dark CORE" 
+                className="h-full w-full object-cover"
+              />
+            </div>
           </motion.div>
         </Link>
 
