@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Film, Copy, Check, Image, Images, Download, ArrowRight, Upload, FileText } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { Loader2, Film, Copy, Check, Image, Images, Download, ArrowRight, Upload, FileText, Sparkles, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePersistedState } from "@/hooks/usePersistedState";
@@ -61,6 +63,9 @@ const SceneGenerator = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [showCustomWps, setShowCustomWps] = useState(false);
   const [customWps, setCustomWps] = useState("");
+  const [progressModalOpen, setProgressModalOpen] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState<"generating" | "complete">("generating");
+  const [generationProgress, setGenerationProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check if current value is custom
@@ -165,6 +170,17 @@ const SceneGenerator = () => {
 
     setIsGenerating(true);
     setScenes([]);
+    setProgressModalOpen(true);
+    setGenerationStatus("generating");
+    setGenerationProgress(0);
+
+    // Simulate progress animation
+    const progressInterval = setInterval(() => {
+      setGenerationProgress(prev => {
+        if (prev >= 90) return prev;
+        return prev + Math.random() * 15;
+      });
+    }, 500);
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-scenes", {
@@ -178,20 +194,36 @@ const SceneGenerator = () => {
         },
       });
 
+      clearInterval(progressInterval);
+
       if (error) throw error;
 
       if (data.success) {
         setScenes(data.scenes);
-        toast.success(`${data.totalScenes} prompts de cenas gerados!`);
+        setGenerationProgress(100);
+        setGenerationStatus("complete");
       } else {
         throw new Error(data.error || "Erro ao gerar cenas");
       }
     } catch (error) {
+      clearInterval(progressInterval);
       console.error("Error generating scenes:", error);
       toast.error("Erro ao gerar prompts de cenas");
+      setProgressModalOpen(false);
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleCloseProgressModal = () => {
+    setProgressModalOpen(false);
+  };
+
+  const handleGoToBatch = () => {
+    const prompts = scenes.map(s => s.imagePrompt).join("\n\n");
+    setBatchPrompts(prompts);
+    setProgressModalOpen(false);
+    setActiveTab("batch");
   };
 
   const copyPrompt = (prompt: string, index: number) => {
@@ -534,6 +566,95 @@ const SceneGenerator = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Progress/Complete Modal */}
+      <Dialog open={progressModalOpen} onOpenChange={setProgressModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {generationStatus === "generating" ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  Gerando Prompts de Cenas
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  Prompts Gerados com Sucesso!
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {generationStatus === "generating" ? (
+              <>
+                <div className="flex items-center justify-center py-6">
+                  <div className="relative">
+                    <Sparkles className="w-16 h-16 text-primary animate-pulse" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Progress value={generationProgress} className="h-2" />
+                  <p className="text-sm text-muted-foreground text-center">
+                    Analisando roteiro e gerando prompts otimizados...
+                  </p>
+                </div>
+                <div className="text-center text-xs text-muted-foreground">
+                  <p>Estimativa: ~{estimatedScenes} cenas</p>
+                  <p>{wordCount} palavras • {wordsPerScene} palavras/cena</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-center py-4">
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-primary mb-1">
+                      {scenes.length}
+                    </div>
+                    <p className="text-sm text-muted-foreground">prompts gerados</p>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-secondary/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Preview do primeiro prompt:</p>
+                  <p className="text-sm text-foreground line-clamp-3">
+                    {scenes[0]?.imagePrompt || "..."}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      downloadTxt();
+                      handleCloseProgressModal();
+                    }}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Baixar TXT
+                  </Button>
+                  <Button
+                    className="w-full"
+                    onClick={handleGoToBatch}
+                  >
+                    <Images className="w-4 h-4 mr-2" />
+                    Gerar Imagens em Lote
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full text-muted-foreground"
+                    onClick={handleCloseProgressModal}
+                  >
+                    Ver Prompts Detalhados
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
