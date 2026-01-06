@@ -32,6 +32,7 @@ export function GuidedTutorial({
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [arrowDirection, setArrowDirection] = useState<"top" | "bottom" | "left" | "right">("top");
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   const step = steps[currentStep];
@@ -57,27 +58,34 @@ export function GuidedTutorial({
       let y = rect.bottom + padding;
 
       const position = step.position || "bottom";
+      let arrow: "top" | "bottom" | "left" | "right" = "top";
 
       switch (position) {
         case "top":
-          y = rect.top - tooltipHeight - padding;
+          y = rect.top - tooltipHeight - padding - 12; // Extra space for arrow
+          arrow = "bottom";
           break;
         case "bottom":
-          y = rect.bottom + padding;
+          y = rect.bottom + padding + 12; // Extra space for arrow
+          arrow = "top";
           break;
         case "left":
-          x = rect.left - tooltipWidth - padding;
+          x = rect.left - tooltipWidth - padding - 12;
           y = rect.top + rect.height / 2 - tooltipHeight / 2;
+          arrow = "right";
           break;
         case "right":
-          x = rect.right + padding;
+          x = rect.right + padding + 12;
           y = rect.top + rect.height / 2 - tooltipHeight / 2;
+          arrow = "left";
           break;
         case "center":
           x = window.innerWidth / 2 - tooltipWidth / 2;
           y = window.innerHeight / 2 - tooltipHeight / 2;
           break;
       }
+      
+      setArrowDirection(arrow);
 
       // Keep tooltip within viewport
       x = Math.max(padding, Math.min(x, window.innerWidth - tooltipWidth - padding));
@@ -297,6 +305,77 @@ export function GuidedTutorial({
                 />
               </motion.div>
             </>
+          )}
+
+          {/* Arrow pointing to target */}
+          {targetRect && step?.position !== "center" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute pointer-events-none"
+              style={{
+                left: arrowDirection === "left" ? tooltipPosition.x - 12 :
+                      arrowDirection === "right" ? tooltipPosition.x + 340 :
+                      tooltipPosition.x + 170 - 8,
+                top: arrowDirection === "top" ? tooltipPosition.y - 12 :
+                     arrowDirection === "bottom" ? tooltipPosition.y + 180 :
+                     tooltipPosition.y + 90 - 8,
+              }}
+            >
+              {/* Arrow with bounce animation */}
+              <motion.div
+                animate={{
+                  x: arrowDirection === "left" ? [-4, 0, -4] :
+                     arrowDirection === "right" ? [4, 0, 4] : 0,
+                  y: arrowDirection === "top" ? [-4, 0, -4] :
+                     arrowDirection === "bottom" ? [4, 0, 4] : 0,
+                }}
+                transition={{
+                  duration: 0.8,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  className={cn(
+                    "text-amber-500 drop-shadow-lg",
+                    arrowDirection === "top" && "rotate-0",
+                    arrowDirection === "bottom" && "rotate-180",
+                    arrowDirection === "left" && "-rotate-90",
+                    arrowDirection === "right" && "rotate-90"
+                  )}
+                >
+                  <path
+                    d="M8 0L14 10H2L8 0Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </motion.div>
+              
+              {/* Glowing trail effect */}
+              <motion.div
+                className="absolute w-1 bg-gradient-to-b from-amber-500 to-transparent rounded-full"
+                style={{
+                  height: arrowDirection === "top" || arrowDirection === "bottom" ? 20 : 0,
+                  width: arrowDirection === "left" || arrowDirection === "right" ? 20 : 4,
+                  left: arrowDirection === "left" ? 16 : arrowDirection === "right" ? -16 : 6,
+                  top: arrowDirection === "top" ? 14 : arrowDirection === "bottom" ? -16 : 6,
+                  transform: arrowDirection === "left" || arrowDirection === "right" 
+                    ? "rotate(90deg)" : "none",
+                }}
+                animate={{
+                  opacity: [0.3, 0.7, 0.3],
+                }}
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            </motion.div>
           )}
 
           {/* Tooltip */}
