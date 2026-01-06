@@ -181,60 +181,118 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
     setIsGenerating(true);
     setCurrentIndex(0);
 
-    // Generate images one by one
-    for (let i = 0; i < initialImages.length; i++) {
-      setCurrentIndex(i);
+    const BATCH_SIZE = 5; // Processar 5 imagens em paralelo
+    let successCount = 0;
+
+    // Helper function to generate a single image with retries
+    const generateSingleImage = async (imageData: GeneratedImage, index: number): Promise<{ index: number; success: boolean; imageUrl?: string }> => {
+      const maxRetries = 3;
+      let retries = 0;
       
-      // Update status to generating
-      setImages(prev => prev.map((img, idx) => 
-        idx === i ? { ...img, status: "generating" } : img
-      ));
+      while (retries <= maxRetries) {
+        try {
+          const { data, error } = await supabase.functions.invoke("generate-imagefx", {
+            body: { 
+              prompt: imageData.prompt,
+              aspectRatio: "LANDSCAPE",
+              numberOfImages: 1
+            }
+          });
 
-      try {
-        const { data, error } = await supabase.functions.invoke("generate-imagefx", {
-          body: { 
-            prompt: initialImages[i].prompt,
-            aspectRatio: "LANDSCAPE" // 16:9 for scenes
+          if (error) {
+            const bodyText = (error as any)?.context?.body;
+            let errMsg = error.message;
+            if (bodyText) {
+              try {
+                const parsed = JSON.parse(bodyText);
+                errMsg = parsed?.error || error.message;
+              } catch {}
+            }
+            
+            // Check for rate limit
+            if (errMsg.includes("Limite de requisições") || errMsg.includes("429")) {
+              const waitTime = 5000 + retries * 3000;
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              retries++;
+              continue;
+            }
+            
+            retries++;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue;
           }
-        });
 
-        if (error) throw error;
+          if ((data as any)?.error) {
+            const errMsg = (data as any).error;
+            if (errMsg.includes("Limite de requisições")) {
+              const waitTime = 5000 + retries * 3000;
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              retries++;
+              continue;
+            }
+            retries++;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue;
+          }
 
-        // Handle both response formats: data.imageUrl (legacy) or data.images[0].url (new)
-        const imageUrl = data.imageUrl || data.images?.[0]?.url;
+          // Handle both response formats
+          const imageUrl = data.imageUrl || data.images?.[0]?.url;
+          if (imageUrl) {
+            return { index, success: true, imageUrl };
+          }
+          
+          retries++;
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        } catch (error) {
+          retries++;
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
+      return { index, success: false };
+    };
+
+    // Process in batches of BATCH_SIZE in parallel
+    for (let batchStart = 0; batchStart < initialImages.length; batchStart += BATCH_SIZE) {
+      const batchIndexes = Array.from(
+        { length: Math.min(BATCH_SIZE, initialImages.length - batchStart) },
+        (_, i) => batchStart + i
+      );
+
+      // Mark batch as generating
+      setImages(prev => prev.map((img, idx) => 
+        batchIndexes.includes(idx) ? { ...img, status: "generating" } : img
+      ));
+      setCurrentIndex(batchStart);
+
+      // Start all requests in parallel and update as each completes
+      const tasks = batchIndexes.map(async (idx) => {
+        const result = await generateSingleImage(initialImages[idx], idx);
         
-        if (data.success && imageUrl) {
-          setImages(prev => prev.map((img, idx) => 
-            idx === i ? { ...img, status: "success", imageUrl } : img
+        // Update immediately when each image completes
+        if (result.success && result.imageUrl) {
+          successCount++;
+          setImages(prev => prev.map((img, i) => 
+            i === result.index ? { ...img, status: "success", imageUrl: result.imageUrl } : img
           ));
         } else {
-          throw new Error(data.error || "Falha ao gerar imagem");
+          setImages(prev => prev.map((img, i) => 
+            i === result.index ? { ...img, status: "error", error: "Falha após várias tentativas" } : img
+          ));
         }
-      } catch (error: any) {
-        console.error("Error generating image:", error);
-        setImages(prev => prev.map((img, idx) => 
-          idx === i ? { ...img, status: "error", error: error.message } : img
-        ));
-      }
+        
+        return result;
+      });
 
-      // Small delay between generations to avoid rate limiting
-      if (i < initialImages.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      }
+      await Promise.allSettled(tasks);
     }
 
     setIsGenerating(false);
     
-    // Calculate final success count
-    const finalSuccessCount = initialImages.filter((_, idx) => {
-      const currentImages = images;
-      return currentImages[idx]?.status === "success";
-    }).length;
+    // Save to history with actual success count
+    await saveToHistory(successCount);
     
-    // Save to history
-    await saveToHistory(finalSuccessCount);
-    
-    toast.success(`Geração concluída! Salvo no histórico.`);
+    toast.success(`Geração concluída! ${successCount}/${initialImages.length} imagens geradas.`);
   };
 
   const handleRetry = async (imageId: string) => {
