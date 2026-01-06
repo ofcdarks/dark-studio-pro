@@ -1134,17 +1134,33 @@ Um carro esportivo na montanha`}
           
           <div className="space-y-4">
             {editingImage?.imageUrl && (
-              <div className="aspect-video rounded-lg overflow-hidden border border-border">
-                <img 
-                  src={editingImage.imageUrl} 
-                  alt="Imagem atual" 
-                  className="w-full h-full object-cover"
-                />
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-muted-foreground">Imagem Atual</Label>
+                  {editingImage.wasRewritten && (
+                    <Badge variant="secondary" className="text-xs bg-amber-500/20 text-amber-600 border-amber-500/30">
+                      <Wand2 className="w-2.5 h-2.5 mr-1" />
+                      Prompt adaptado
+                    </Badge>
+                  )}
+                </div>
+                <div className="aspect-video rounded-lg overflow-hidden border border-border relative">
+                  <img 
+                    src={editingImage.imageUrl} 
+                    alt="Imagem atual" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm rounded px-2 py-1">
+                    <span className="text-xs font-medium">
+                      Imagem #{images.findIndex(img => img.id === editingImage.id) + 1}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
             
             <div>
-              <Label>Prompt</Label>
+              <Label>Novo Prompt</Label>
               <Textarea
                 value={editPromptText}
                 onChange={(e) => setEditPromptText(e.target.value)}
@@ -1152,7 +1168,7 @@ Um carro esportivo na montanha`}
                 className="mt-1.5 min-h-[120px]"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Modifique o prompt e clique em regenerar para criar uma nova imagem
+                Modifique o prompt acima e clique em regenerar para criar uma nova imagem
               </p>
             </div>
           </div>
