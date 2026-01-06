@@ -130,21 +130,21 @@ const EMAIL_HEADER = getEmailHeader(DEFAULT_EMAIL_LOGO);
 const EMAIL_FOOTER = `
           <!-- Footer -->
           <tr>
-            <td class="email-footer" style="padding: 32px 40px; background: linear-gradient(180deg, #0f0f0f 0%, #0a0a0a 100%); border-top: 1px solid rgba(245, 158, 11, 0.15);">
+            <td class="email-footer" style="padding: 32px 40px; background: linear-gradient(180deg, #141414 0%, #0a0a0a 100%); border-top: 1px solid rgba(245, 158, 11, 0.3);">
               <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                 <tr>
                   <td align="center">
-                    <p style="color: #f59e0b; font-size: 16px; font-weight: 700; margin: 0 0 8px 0;">La Casa Dark Core®</p>
-                    <p style="color: #525252; font-size: 12px; margin: 0 0 4px 0; font-style: italic;">A infraestrutura por trás de canais dark profissionais</p>
-                    <p style="color: #404040; font-size: 11px; margin: 0 0 16px 0;">A revolução chegou. Não há espaço para amadores.</p>
+                    <p style="color: #f59e0b; font-size: 18px; font-weight: 800; margin: 0 0 12px 0; letter-spacing: 0.5px;">La Casa Dark Core®</p>
+                    <p style="color: #a3a3a3; font-size: 13px; margin: 0 0 6px 0; font-style: italic;">A infraestrutura por trás de canais dark profissionais</p>
+                    <p style="color: #737373; font-size: 12px; margin: 0 0 20px 0;">A revolução chegou. Não há espaço para amadores.</p>
                     <table cellpadding="0" cellspacing="0" style="margin: 0 auto;" role="presentation">
                       <tr>
                         <td style="padding: 0 8px;">
-                          <a href="https://www.canaisdarks.com.br" style="color: #f59e0b; font-size: 12px; text-decoration: none;">www.canaisdarks.com.br</a>
+                          <a href="https://www.canaisdarks.com.br" style="color: #f59e0b; font-size: 13px; text-decoration: underline; font-weight: 600;">www.canaisdarks.com.br</a>
                         </td>
                       </tr>
                     </table>
-                    <p style="color: #404040; font-size: 11px; margin: 20px 0 0 0;">
+                    <p style="color: #737373; font-size: 12px; margin: 24px 0 0 0;">
                       © ${new Date().getFullYear()} La Casa Dark Core. Todos os direitos reservados.
                     </p>
                   </td>
