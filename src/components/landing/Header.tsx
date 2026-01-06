@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import logo from "@/assets/logo.gif";
+import logo from "@/assets/logo_1.gif";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
