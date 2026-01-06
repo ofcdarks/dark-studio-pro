@@ -7,6 +7,7 @@ import { CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/cap
 import { generateNarrationSrt } from "@/lib/srtGenerator";
 import { generateFcp7XmlWithTransitions, generateXmlTutorial, TRANSITION_OPTIONS, TransitionType } from "@/lib/xmlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
+import { TransitionPreview } from "@/components/transitions/TransitionPreview";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -5003,26 +5004,31 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
           </DialogHeader>
           
           <div className="space-y-4">
+            {/* Preview Animado da Transição */}
+            <div className="flex justify-center">
+              <TransitionPreview 
+                transitionType={selectedTransition} 
+                className="w-full max-w-xs"
+              />
+            </div>
+
             {/* Seletor de Transição */}
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">Tipo de Transição:</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {TRANSITION_OPTIONS.map((transition) => (
                   <button
                     key={transition.id}
                     onClick={() => setSelectedTransition(transition.id)}
                     className={cn(
-                      "flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all",
+                      "flex flex-col items-center gap-1 p-2 rounded-lg border text-center transition-all",
                       selectedTransition === transition.id
                         ? "border-amber-500 bg-amber-500/10 text-foreground"
                         : "border-border/50 bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
                     )}
                   >
-                    <span className="text-lg">{transition.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{transition.name}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{transition.description}</p>
-                    </div>
+                    <span className="text-xl">{transition.icon}</span>
+                    <p className="text-[10px] font-medium truncate w-full">{transition.name}</p>
                   </button>
                 ))}
               </div>
