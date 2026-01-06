@@ -144,6 +144,75 @@ export function useUserCinematicPresets() {
     }
   }, [user, fetchPresets]);
 
+  // Exportar presets como JSON
+  const exportPresets = useCallback(() => {
+    if (userPresets.length === 0) {
+      toast.error("Nenhum preset para exportar");
+      return;
+    }
+
+    const exportData = userPresets.map(({ name, icon, settings }) => ({
+      name,
+      icon,
+      settings,
+    }));
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cinematic-presets-${new Date().toISOString().split("T")[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`${userPresets.length} preset(s) exportado(s)!`);
+  }, [userPresets]);
+
+  // Importar presets de JSON
+  const importPresets = useCallback(async (file: File): Promise<number> => {
+    if (!user) {
+      toast.error("Você precisa estar logado para importar presets");
+      return 0;
+    }
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (!Array.isArray(data)) {
+        toast.error("Formato de arquivo inválido");
+        return 0;
+      }
+
+      let imported = 0;
+      for (const preset of data) {
+        if (preset.name && preset.icon && preset.settings) {
+          const { error } = await supabase
+            .from("user_cinematic_presets" as any)
+            .insert({
+              user_id: user.id,
+              name: preset.name,
+              icon: preset.icon,
+              settings: preset.settings,
+            } as any);
+
+          if (!error) imported++;
+        }
+      }
+
+      await fetchPresets();
+      toast.success(`${imported} preset(s) importado(s) com sucesso!`);
+      return imported;
+    } catch (error) {
+      console.error("Error importing presets:", error);
+      toast.error("Erro ao importar presets. Verifique o formato do arquivo.");
+      return 0;
+    }
+  }, [user, fetchPresets]);
+
   return {
     userPresets,
     isLoading,
@@ -151,6 +220,8 @@ export function useUserCinematicPresets() {
     savePreset,
     updatePreset,
     deletePreset,
+    exportPresets,
+    importPresets,
     refetch: fetchPresets,
   };
 }
