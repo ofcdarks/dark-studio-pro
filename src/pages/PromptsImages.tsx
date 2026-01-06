@@ -321,6 +321,7 @@ const PromptsImages = () => {
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [editPresetName, setEditPresetName] = useState("");
   const [editPresetIcon, setEditPresetIcon] = useState("🎨");
+  const [updatePresetSettings, setUpdatePresetSettings] = useState(false);
   
   // Hook para presets do usuário
   const { userPresets, isSaving: isSavingPreset, savePreset: saveUserPreset, updatePreset: updateUserPreset, deletePreset: deleteUserPreset } = useUserCinematicPresets();
@@ -349,21 +350,29 @@ const PromptsImages = () => {
     setEditingPresetId(preset.id);
     setEditPresetName(preset.name);
     setEditPresetIcon(preset.icon);
+    setUpdatePresetSettings(false);
   };
   
   // Salvar edição de preset
   const handleUpdatePreset = async () => {
     if (!editingPresetId || !editPresetName.trim()) return;
     
-    const success = await updateUserPreset(editingPresetId, {
+    const updates: { name?: string; icon?: string; settings?: CinematicSettings } = {
       name: editPresetName,
       icon: editPresetIcon,
-    });
+    };
+    
+    if (updatePresetSettings) {
+      updates.settings = cinematicSettings;
+    }
+    
+    const success = await updateUserPreset(editingPresetId, updates);
     
     if (success) {
       setEditingPresetId(null);
       setEditPresetName("");
       setEditPresetIcon("🎨");
+      setUpdatePresetSettings(false);
     }
   };
   
@@ -5917,6 +5926,48 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   </button>
                 ))}
               </div>
+            </div>
+            
+            {/* Toggle para atualizar configurações */}
+            <div className="p-3 rounded-lg bg-secondary/50 border border-border/50 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="update-settings" className="text-sm font-medium">
+                    Atualizar configurações
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground">
+                    Substituir as configurações do preset pelas atuais
+                  </p>
+                </div>
+                <Switch
+                  id="update-settings"
+                  checked={updatePresetSettings}
+                  onCheckedChange={setUpdatePresetSettings}
+                />
+              </div>
+              
+              {updatePresetSettings && (
+                <div className="pt-2 border-t border-border/50">
+                  <p className="text-[10px] font-medium text-amber-500 mb-2">⚠️ Novas configurações:</p>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant="outline" className="text-[10px]">
+                      {TRANSITION_OPTIONS.find(t => t.id === cinematicSettings.transitionType)?.name}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px]">
+                      {cinematicSettings.transitionDuration}s
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px]">
+                      {cinematicSettings.aspectRatio}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px]">
+                      {cinematicSettings.fps} FPS
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px]">
+                      {COLOR_GRADING_OPTIONS.find(c => c.id === cinematicSettings.colorGrading)?.name}
+                    </Badge>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="flex gap-2">
