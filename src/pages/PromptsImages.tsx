@@ -29,7 +29,9 @@ import {
   CinematicPreset,
   INTRO_PRESETS,
   IntroNiche,
-  generateIntroInstructions
+  generateIntroInstructions,
+  generateEasyModeInstructions,
+  generatePowerGradeXml
 } from "@/lib/xmlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { TransitionPreview } from "@/components/transitions/TransitionPreview";
@@ -1798,8 +1800,17 @@ echo "Agora importe o video no CapCut!"
     
     // 3. Instruções de Color Grading (se não for neutro) ou Efeitos Cinematográficos
     if (cinematicSettings.colorGrading !== 'neutral') {
+      // Modo Avançado (técnico)
       const colorGradingContent = generateColorGradingInstructions(cinematicSettings.colorGrading, cinematicSettings);
       zip.file(`${safeFileName}_COLOR_GRADING_${cinematicSettings.colorGrading.toUpperCase()}.txt`, colorGradingContent);
+      
+      // Modo Fácil (para iniciantes)
+      const easyModeContent = generateEasyModeInstructions(cinematicSettings.colorGrading, cinematicSettings);
+      zip.file(`${safeFileName}_MODO_FACIL_INICIANTES.txt`, easyModeContent);
+      
+      // Power Grade XML (importação direta no DaVinci)
+      const powerGradeContent = generatePowerGradeXml(cinematicSettings.colorGrading);
+      zip.file(`${safeFileName}_POWER_GRADE.drp`, powerGradeContent);
     } else {
       // Se colorGrading é neutro mas há efeitos, exportar instruções de efeitos
       const effectsInstructions = generateCinematicEffectsInstructions(cinematicSettings);
@@ -1861,7 +1872,13 @@ echo "Agora importe o video no CapCut!"
 
   ${cinematicSettings.kenBurnsEffect ? `🎬 ${safeFileName}_KEN_BURNS_MOVIMENTOS.txt
      → Relatório detalhado de movimentos de câmera por cena (gerado por IA)\n` : ''}${cinematicSettings.colorGrading !== 'neutral' ? `🎨 ${safeFileName}_COLOR_GRADING_${cinematicSettings.colorGrading.toUpperCase()}.txt
-     → Instruções detalhadas de color grading com valores exatos\n` : cinematicSettings.addVignette || cinematicSettings.letterbox || cinematicSettings.fadeInOut ? `✨ ${safeFileName}_EFEITOS_CINEMATOGRAFICOS.txt
+     → Instruções AVANÇADAS de color grading com valores exatos
+
+  🌟 ${safeFileName}_MODO_FACIL_INICIANTES.txt
+     → ⭐ GUIA SIMPLIFICADO para iniciantes (apenas 5 passos!)
+
+  📦 ${safeFileName}_POWER_GRADE.drp
+     → Preset pronto para importar no DaVinci (aplicar com 1 clique!)\n` : cinematicSettings.addVignette || cinematicSettings.letterbox || cinematicSettings.fadeInOut ? `✨ ${safeFileName}_EFEITOS_CINEMATOGRAFICOS.txt
      → Instruções para aplicar vinheta, letterbox e fades no DaVinci\n` : ''}
   📁 imagens/
      → ${scenesWithImages.length} imagens já renomeadas (cena_001.jpg, cena_002.jpg...)
@@ -1889,7 +1906,10 @@ echo "Agora importe o video no CapCut!"
 
 5. Adicione seus áudios das pastas Audio/ na timeline
 
-6. ${cinematicSettings.colorGrading !== 'neutral' ? `Aplique o color grading seguindo as instruções do arquivo TXT` : 'Pronto! Seu projeto está montado'}
+6. ${cinematicSettings.colorGrading !== 'neutral' ? `Aplique o color grading:
+   → 🌟 INICIANTE? Leia o arquivo "MODO_FACIL_INICIANTES.txt"
+   → 🎬 AVANÇADO? Siga o arquivo "COLOR_GRADING" com valores técnicos
+   → ⚡ RÁPIDO? Importe o "POWER_GRADE.drp" no DaVinci!` : 'Pronto! Seu projeto está montado'}
 
 ═══════════════════════════════════════════════════════════════════════════════
                            CONFIGURAÇÕES DO PROJETO
@@ -1919,9 +1939,29 @@ echo "Agora importe o video no CapCut!"
    Música de Outro   │  ${String(audioMixSettings.outroVolume).padStart(3)}%   │ Após fim da narração
    Efeitos Sonoros   │  ${String(audioMixSettings.sfxVolume).padStart(3)}%   │ Ajuste conforme necessidade
 
+${cinematicSettings.colorGrading !== 'neutral' ? `
 ═══════════════════════════════════════════════════════════════════════════════
-  Gerado por Viral Visions Pro • ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}
+                    🌟 QUAL ARQUIVO DE COLOR GRADING USAR?
 ═══════════════════════════════════════════════════════════════════════════════
+
+   📌 NUNCA EDITOU VÍDEO ANTES?
+      → Abra o arquivo "${safeFileName}_MODO_FACIL_INICIANTES.txt"
+      → Apenas 5 passos simples com linguagem amigável!
+
+   🎬 JÁ TEM EXPERIÊNCIA COM DAVINCI?
+      → Use o arquivo "${safeFileName}_COLOR_GRADING_*.txt"
+      → Valores técnicos exatos para Color Wheels
+
+   ⚡ QUER O JEITO MAIS RÁPIDO?
+      → Importe o arquivo "${safeFileName}_POWER_GRADE.drp" no DaVinci
+      → Aba Color → Clique direito em "Stills" → Import
+      → Arraste para aplicar em todos os clips!
+` : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏠 Gerado pelo La Casa Dark Core
+🌐 www.canaisdarks.com.br
+✨ "Transformando ideias em vídeos virais"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;
     zip.file("LEIA-ME.txt", readmeContent);
     
