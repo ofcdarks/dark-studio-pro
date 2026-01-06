@@ -603,9 +603,9 @@ export function AdminPixelTab() {
       return;
     }
 
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 2MB");
+    // Validate file size (max 3MB)
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 3MB");
       return;
     }
 
@@ -1104,7 +1104,7 @@ export function AdminPixelTab() {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Formato: PNG, JPG ou GIF. Tamanho máximo: 2MB. Recomendado: 200x200px
+              Formato: PNG, JPG ou GIF. Tamanho máximo: 3MB. Recomendado: 200x200px
             </p>
           </div>
         </div>
