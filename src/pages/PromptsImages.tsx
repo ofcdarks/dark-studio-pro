@@ -305,12 +305,12 @@ const PromptsImages = () => {
   const [showSrtPreview, setShowSrtPreview] = useState(false);
   const [srtPreviewData, setSrtPreviewData] = useState<{ content: string; blocks: Array<{ index: number; start: string; end: string; text: string; charCount: number }> } | null>(null);
   
-  // EDL Validation Modal & Cinematic Settings
+  // EDL Validation Modal & Cinematic Settings (persistido)
   const [showEdlValidationModal, setShowEdlValidationModal] = useState(false);
   const [edlValidationData, setEdlValidationData] = useState<{ missingScenes: number[]; percentage: number; totalScenes: number; withImages: number } | null>(null);
-  const [cinematicSettings, setCinematicSettings] = useState<CinematicSettings>(DEFAULT_CINEMATIC_SETTINGS);
-  const [selectedPreset, setSelectedPreset] = useState<CinematicPreset>('custom');
-  const [selectedIntroNiche, setSelectedIntroNiche] = useState<IntroNiche | null>(null);
+  const [cinematicSettings, setCinematicSettings] = usePersistedState<CinematicSettings>("prompts_cinematic_settings", DEFAULT_CINEMATIC_SETTINGS);
+  const [selectedPreset, setSelectedPreset] = usePersistedState<CinematicPreset>("prompts_cinematic_preset", 'custom');
+  const [selectedIntroNiche, setSelectedIntroNiche] = usePersistedState<IntroNiche | null>("prompts_intro_niche", null);
   const [showPowerGradeTutorial, setShowPowerGradeTutorial] = useState(false);
   
   // Função para aplicar preset
