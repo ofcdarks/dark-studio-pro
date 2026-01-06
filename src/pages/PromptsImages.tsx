@@ -5355,14 +5355,29 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
       {/* Modal de Exportação Cinematográfica XML */}
       <Dialog open={showEdlValidationModal} onOpenChange={setShowEdlValidationModal}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-amber-500/30 rounded-xl shadow-xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              <Film className="w-5 h-5 text-amber-500" />
-              Exportação Cinematográfica
-            </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Configure seu projeto com qualidade de produção profissional
-            </DialogDescription>
+          <DialogHeader className="flex flex-row items-start justify-between">
+            <div>
+              <DialogTitle className="flex items-center gap-2 text-foreground">
+                <Film className="w-5 h-5 text-amber-500" />
+                Exportação Cinematográfica
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Configure seu projeto com qualidade de produção profissional
+              </DialogDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                setCinematicSettings(DEFAULT_CINEMATIC_SETTINGS);
+                setSelectedPreset('custom');
+                toast({ title: "Configurações resetadas", description: "Valores padrão restaurados" });
+              }}
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              Resetar
+            </Button>
           </DialogHeader>
           
           <div className="space-y-5">
