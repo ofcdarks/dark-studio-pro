@@ -26,6 +26,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { useNavigate } from "react-router-dom";
+import { useTutorial } from "@/hooks/useTutorial";
+import { TutorialModal, TutorialHelpButton } from "@/components/tutorial/TutorialModal";
+import { MONITORED_CHANNELS_TUTORIAL } from "@/lib/tutorialConfigs";
 import {
   Table,
   TableBody,
@@ -88,6 +91,9 @@ const MonitoredChannels = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  
+  // Tutorial hook
+  const { showTutorial, completeTutorial, openTutorial } = useTutorial(MONITORED_CHANNELS_TUTORIAL.id);
 
   // Fetch monitored channels
   const { data: channels, isLoading } = useQuery({
@@ -493,6 +499,7 @@ const MonitoredChannels = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <TutorialHelpButton onClick={openTutorial} />
               {/* Frequency selector */}
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-muted-foreground" />
@@ -824,6 +831,16 @@ const MonitoredChannels = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Tutorial Modal */}
+      <TutorialModal
+        open={showTutorial}
+        onOpenChange={(open) => !open && completeTutorial()}
+        title={MONITORED_CHANNELS_TUTORIAL.title}
+        description={MONITORED_CHANNELS_TUTORIAL.description}
+        steps={MONITORED_CHANNELS_TUTORIAL.steps}
+        onComplete={completeTutorial}
+      />
     </MainLayout>
   );
 };
