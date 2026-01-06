@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, ChevronDown, ChevronUp, Clock, Music, Palette, Lightbulb, StopCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MusicPreviewPlayer } from "./MusicPreviewPlayer";
+import { NicheVisualPreview } from "./NicheVisualPreview";
 
 interface IntroPresetSelectorProps {
   selectedNiche: IntroNiche | null;
@@ -104,6 +105,8 @@ export const IntroPresetSelector = ({
                 </Button>
               </div>
 
+              {/* Preview Visual Animado */}
+              <NicheVisualPreview niche={selectedPreset.id} className="mb-2" />
               {/* Quick Stats */}
               <div className="grid grid-cols-4 gap-2">
                 <div className="bg-background/50 rounded-lg p-2 text-center">
