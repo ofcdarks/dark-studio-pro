@@ -48,9 +48,13 @@ export const generateEdl = (
   scenes.forEach((scene, index) => {
     const editNumber = String(index + 1).padStart(3, '0');
     
-    // Source IN/OUT (começando do 0)
+    // Source IN/OUT
+    // Para imagens (stills) no DaVinci, o "extents" do clip no Media Pool costuma ser 1 frame.
+    // Se colocarmos SOURCE_OUT com a duração inteira da cena, o Resolve falha o link com:
+    // "timecode extents do not match".
+    // Por isso, mantemos o source com 1 frame e deixamos a duração real no RECORD IN/OUT.
     const sourceIn = formatEdlTimecode(0, fps);
-    const sourceOut = formatEdlTimecode(scene.durationSeconds, fps);
+    const sourceOut = formatEdlTimecode(1 / fps, fps);
     
     // Record IN/OUT (posição na timeline)
     const recordIn = formatEdlTimecode(currentTimeSeconds, fps);
@@ -110,8 +114,9 @@ export const generateEdlWithTransitions = (
     const editNumber = String(index + 1).padStart(3, '0');
     
     // Source timecodes
+    // Mesmo motivo do generateEdl(): para stills, mantenha 1 frame no source e use RECORD para a duração.
     const sourceIn = formatEdlTimecode(0, fps);
-    const sourceOut = formatEdlTimecode(scene.durationSeconds, fps);
+    const sourceOut = formatEdlTimecode(1 / fps, fps);
     
     // Record timecodes
     const recordIn = formatEdlTimecode(currentTimeSeconds, fps);
