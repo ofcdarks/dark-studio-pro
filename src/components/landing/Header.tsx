@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import headerLogo from "@/assets/header-logo.png";
+import logo from "@/assets/logo_2.gif";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,11 +25,13 @@ const Header = () => {
             className="flex items-center gap-3"
             whileHover={{ scale: 1.02 }}
           >
-            <img 
-              src={headerLogo} 
-              alt="La Casa Dark CORE" 
-              className="h-12 w-auto object-contain"
-            />
+            <div className="h-16 w-16 flex items-center justify-center">
+              <img 
+                src={logo} 
+                alt="La Casa Dark CORE" 
+                className="h-16 w-16 object-contain"
+              />
+            </div>
           </motion.div>
         </Link>
 
