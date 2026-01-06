@@ -822,11 +822,17 @@ export function AdminPixelTab() {
       return;
     }
 
+    // Replace logo URL in template body with current logo
+    const updatedBody = defaultTemplate.body.replace(
+      new RegExp(DEFAULT_EMAIL_LOGO.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+      emailLogoUrl
+    );
+
     const { error } = await supabase
       .from("email_templates")
       .update({
         subject: defaultTemplate.subject,
-        body: defaultTemplate.body,
+        body: updatedBody,
         updated_at: new Date().toISOString(),
       })
       .eq("id", template.id);
@@ -834,26 +840,35 @@ export function AdminPixelTab() {
     if (error) {
       toast.error("Erro ao resetar template");
     } else {
-      toast.success("Template resetado para o padrão La Casa Dark Core!");
+      toast.success("Template resetado com o logo atual!");
       fetchEmailTemplates();
     }
   };
 
   const resetAllTemplatesToDefault = async () => {
+    toast.loading("Aplicando tema La Casa Dark com logo atual...", { id: "apply-theme" });
+    
     for (const template of emailTemplates) {
       const defaultTemplate = DEFAULT_TEMPLATES[template.template_type];
       if (defaultTemplate) {
+        // Replace logo URL in template body with current logo
+        const updatedBody = defaultTemplate.body.replace(
+          new RegExp(DEFAULT_EMAIL_LOGO.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+          emailLogoUrl
+        );
+
         await supabase
           .from("email_templates")
           .update({
             subject: defaultTemplate.subject,
-            body: defaultTemplate.body,
+            body: updatedBody,
             updated_at: new Date().toISOString(),
           })
           .eq("id", template.id);
       }
     }
-    toast.success("Todos os templates foram atualizados para o padrão La Casa Dark Core!");
+    
+    toast.success("Templates atualizados com tema La Casa Dark e logo atual!", { id: "apply-theme" });
     fetchEmailTemplates();
   };
 
