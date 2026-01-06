@@ -5,7 +5,7 @@ import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
 import { CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
-import { generateEdl, generateEdlWithTransitions, generateEdlTutorial } from "@/lib/edlGenerator";
+import { generateFcp7XmlWithTransitions, generateXmlTutorial } from "@/lib/xmlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -1606,31 +1606,31 @@ echo "Agora importe o video no CapCut!"
     return { valid: true, warnings, errors, missingScenes, percentage, totalScenes, withImages };
   };
 
-  // Função para executar a exportação EDL de fato
-  const executeEdlExport = () => {
+  // Função para executar a exportação XML de fato
+  const executeXmlExport = () => {
     const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
-    const scenesForEdl = getScenesForEdl();
+    const scenesForXml = getScenesForEdl(); // Reutiliza a mesma estrutura
     const fpsValue = parseInt(edlFps) || 24;
     const transitionFrames = Math.round(fpsValue * 0.5);
-    const edlContent = generateEdlWithTransitions(scenesForEdl, {
+    const xmlContent = generateFcp7XmlWithTransitions(scenesForXml, {
       title: projectName || "Projeto_Video",
       fps: fpsValue,
       transitionFrames
     });
 
-    const blob = new Blob([edlContent], { type: "text/plain" });
+    const blob = new Blob([xmlContent], { type: "application/xml" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     const safeFileName = (projectName.trim() || "projeto").replace(/[^a-zA-Z0-9_-]/g, "_");
-    link.download = `${safeFileName}_davinci.edl`;
+    link.download = `${safeFileName}_davinci.xml`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
     toast({ 
-      title: "✅ EDL exportado!", 
+      title: "✅ XML exportado!", 
       description: `${scenesWithImages.length} cenas incluídas. Importe no DaVinci: File > Import > Timeline...` 
     });
     
@@ -1664,8 +1664,8 @@ echo "Agora importe o video no CapCut!"
     });
   };
 
-  // Exportar EDL para DaVinci Resolve - agora abre modal se houver cenas faltantes
-  const handleExportEdl = () => {
+  // Exportar XML para DaVinci Resolve - agora abre modal se houver cenas faltantes
+  const handleExportXml = () => {
     // Validação
     const validation = validateScenesForEdl(generatedScenes);
     
@@ -1691,13 +1691,13 @@ echo "Agora importe o video no CapCut!"
     }
     
     // Se 100% das cenas têm imagem, exportar direto
-    executeEdlExport();
+    executeXmlExport();
   };
 
-  // Exportar Tutorial EDL
-  const handleExportEdlTutorial = () => {
-    const scenesForEdl = getScenesForEdl();
-    const tutorialContent = generateEdlTutorial(scenesForEdl, projectName || "Meu Projeto");
+  // Exportar Tutorial XML
+  const handleExportXmlTutorial = () => {
+    const scenesForXml = getScenesForEdl();
+    const tutorialContent = generateXmlTutorial(scenesForXml, projectName || "Meu Projeto");
 
     const blob = new Blob([tutorialContent], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -1712,7 +1712,7 @@ echo "Agora importe o video no CapCut!"
 
     toast({ 
       title: "📖 Tutorial exportado!", 
-      description: "Guia completo para importar EDL no DaVinci Resolve" 
+      description: "Guia completo para importar XML no DaVinci Resolve" 
     });
   };
 
@@ -4431,17 +4431,17 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleExportEdl}
+                  onClick={handleExportXml}
                   disabled={generatedScenes.filter(s => s.generatedImage).length === 0}
                   className="flex-1 h-7 text-xs"
                 >
                   <FileText className="w-3 h-3 mr-1" />
-                  EDL
+                  XML
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleExportEdlTutorial}
+                  onClick={handleExportXmlTutorial}
                   disabled={generatedScenes.length === 0}
                   className="h-7 text-xs border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
                   title="Tutorial passo a passo para importar no DaVinci"
@@ -4451,7 +4451,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                 </Button>
               </div>
               <p className="text-[10px] text-muted-foreground">
-                Baixe o Tutorial para ver como importar o EDL e as mídias
+                Baixe o Tutorial para ver como importar o XML e as mídias
               </p>
             </div>
 
@@ -5074,7 +5074,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={executeEdlExport}
+                    onClick={executeXmlExport}
                     className="flex-1 border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
                   >
                     <Download className="w-4 h-4 mr-2" />
