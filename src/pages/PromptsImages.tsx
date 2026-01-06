@@ -5,7 +5,7 @@ import JSZip from "jszip";
 import { Textarea } from "@/components/ui/textarea";
 import { CAPCUT_TEMPLATES, TEMPLATE_CATEGORIES, CapcutTemplate } from "@/lib/capcutTemplates";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
-import { generateFcp7XmlWithTransitions, generateXmlTutorial } from "@/lib/xmlGenerator";
+import { generateFcp7XmlWithTransitions, generateXmlTutorial, TRANSITION_OPTIONS, TransitionType } from "@/lib/xmlGenerator";
 import { TemplatePreview } from "@/components/capcut/TemplatePreview";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -274,6 +274,7 @@ const PromptsImages = () => {
   // EDL Validation Modal
   const [showEdlValidationModal, setShowEdlValidationModal] = useState(false);
   const [edlValidationData, setEdlValidationData] = useState<{ missingScenes: number[]; percentage: number; totalScenes: number; withImages: number } | null>(null);
+  const [selectedTransition, setSelectedTransition] = useState<TransitionType>('cross_dissolve');
   
   // FFmpeg hook
   const { generateVideo, downloadVideo, isGenerating: isGeneratingVideo, progress: videoProgress } = useFFmpegVideoGenerator();
@@ -1615,7 +1616,8 @@ echo "Agora importe o video no CapCut!"
     const xmlContent = generateFcp7XmlWithTransitions(scenesForXml, {
       title: projectName || "Projeto_Video",
       fps: fpsValue,
-      transitionFrames
+      transitionFrames,
+      transitionType: selectedTransition
     });
 
     const blob = new Blob([xmlContent], { type: "application/xml" });
@@ -1629,9 +1631,10 @@ echo "Agora importe o video no CapCut!"
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
+    const transitionName = TRANSITION_OPTIONS.find(t => t.id === selectedTransition)?.name || 'Cross Dissolve';
     toast({ 
       title: "✅ XML exportado!", 
-      description: `${scenesWithImages.length} cenas incluídas. Importe no DaVinci: File > Import > Timeline...` 
+      description: `${scenesWithImages.length} cenas com ${transitionName}. Importe no DaVinci: File > Import > Timeline...` 
     });
     
     setShowEdlValidationModal(false);
@@ -1664,7 +1667,7 @@ echo "Agora importe o video no CapCut!"
     });
   };
 
-  // Exportar XML para DaVinci Resolve - agora abre modal se houver cenas faltantes
+  // Exportar XML para DaVinci Resolve - sempre abre modal para escolher transição
   const handleExportXml = () => {
     // Validação
     const validation = validateScenesForEdl(generatedScenes);
@@ -1678,7 +1681,7 @@ echo "Agora importe o video no CapCut!"
       return;
     }
     
-    // Se houver cenas faltantes, mostrar modal de confirmação
+    // Se houver cenas faltantes, mostrar modal com dados de validação
     if (validation.missingScenes.length > 0) {
       setEdlValidationData({
         missingScenes: validation.missingScenes,
@@ -1686,12 +1689,13 @@ echo "Agora importe o video no CapCut!"
         totalScenes: validation.totalScenes,
         withImages: validation.withImages
       });
-      setShowEdlValidationModal(true);
-      return;
+    } else {
+      // Limpar dados de validação se todas as cenas têm imagem
+      setEdlValidationData(null);
     }
     
-    // Se 100% das cenas têm imagem, exportar direto
-    executeXmlExport();
+    // Sempre abrir modal para escolher transição
+    setShowEdlValidationModal(true);
   };
 
   // Exportar Tutorial XML
@@ -4991,99 +4995,146 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
               <Film className="w-5 h-5 text-amber-500" />
-              Validação do EDL
+              Exportar XML para DaVinci
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Algumas cenas não possuem imagem gerada
+              {edlValidationData ? 'Algumas cenas não possuem imagem gerada' : 'Configure as transições do projeto'}
             </DialogDescription>
           </DialogHeader>
           
-          {edlValidationData && (
-            <div className="space-y-4">
-              {/* Estatísticas */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-green-500">{edlValidationData.withImages}</p>
-                  <p className="text-xs text-muted-foreground">Com Imagem</p>
-                </div>
-                <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-red-500">{edlValidationData.missingScenes.length}</p>
-                  <p className="text-xs text-muted-foreground">Sem Imagem</p>
-                </div>
-                <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                  <p className={cn(
-                    "text-2xl font-bold",
-                    edlValidationData.percentage >= 80 ? "text-amber-500" : "text-red-500"
-                  )}>
-                    {edlValidationData.percentage}%
-                  </p>
-                  <p className="text-xs text-muted-foreground">Cobertura</p>
-                </div>
-              </div>
-
-              {/* Alerta visual */}
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-                <div className="flex items-start gap-2">
-                  <ImagePlus className="w-5 h-5 text-amber-500 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-amber-500">
-                      {edlValidationData.missingScenes.length} cena{edlValidationData.missingScenes.length > 1 ? 's' : ''} sem imagem
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      O EDL incluirá apenas as cenas que possuem imagem. Cenas faltantes criarão gaps na timeline do DaVinci.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Lista de cenas faltantes */}
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">Cenas sem imagem:</p>
-                <ScrollArea className="max-h-32">
-                  <div className="flex flex-wrap gap-1.5">
-                    {edlValidationData.missingScenes.map((sceneNum) => (
-                      <Badge 
-                        key={sceneNum} 
-                        variant="outline" 
-                        className="text-xs font-mono bg-red-500/10 border-red-500/30 text-red-400"
-                      >
-                        #{String(sceneNum).padStart(3, '0')}
-                      </Badge>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
-
-              {/* Botões de ação */}
-              <div className="flex flex-col gap-2 pt-2">
-                <Button
-                  onClick={handleGenerateMissingFromEdlModal}
-                  disabled={bgState.isGenerating}
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-90"
-                >
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  Gerar {edlValidationData.missingScenes.length} Imagens Faltantes
-                </Button>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowEdlValidationModal(false)}
-                    className="flex-1"
+          <div className="space-y-4">
+            {/* Seletor de Transição */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Tipo de Transição:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {TRANSITION_OPTIONS.map((transition) => (
+                  <button
+                    key={transition.id}
+                    onClick={() => setSelectedTransition(transition.id)}
+                    className={cn(
+                      "flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all",
+                      selectedTransition === transition.id
+                        ? "border-amber-500 bg-amber-500/10 text-foreground"
+                        : "border-border/50 bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
+                    )}
                   >
-                    Cancelar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={executeXmlExport}
-                    className="flex-1 border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Exportar Mesmo Assim
-                  </Button>
-                </div>
+                    <span className="text-lg">{transition.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{transition.name}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{transition.description}</p>
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
-          )}
+
+            {edlValidationData && (
+              <>
+                {/* Estatísticas */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-green-500">{edlValidationData.withImages}</p>
+                    <p className="text-xs text-muted-foreground">Com Imagem</p>
+                  </div>
+                  <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-red-500">{edlValidationData.missingScenes.length}</p>
+                    <p className="text-xs text-muted-foreground">Sem Imagem</p>
+                  </div>
+                  <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                    <p className={cn(
+                      "text-2xl font-bold",
+                      edlValidationData.percentage >= 80 ? "text-amber-500" : "text-red-500"
+                    )}>
+                      {edlValidationData.percentage}%
+                    </p>
+                    <p className="text-xs text-muted-foreground">Cobertura</p>
+                  </div>
+                </div>
+
+                {/* Alerta visual */}
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <ImagePlus className="w-5 h-5 text-amber-500 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-500">
+                        {edlValidationData.missingScenes.length} cena{edlValidationData.missingScenes.length > 1 ? 's' : ''} sem imagem
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        O XML incluirá apenas as cenas que possuem imagem. Cenas faltantes criarão gaps na timeline do DaVinci.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lista de cenas faltantes */}
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Cenas sem imagem:</p>
+                  <ScrollArea className="max-h-32">
+                    <div className="flex flex-wrap gap-1.5">
+                      {edlValidationData.missingScenes.map((sceneNum) => (
+                        <Badge 
+                          key={sceneNum} 
+                          variant="outline" 
+                          className="text-xs font-mono bg-red-500/10 border-red-500/30 text-red-400"
+                        >
+                          #{String(sceneNum).padStart(3, '0')}
+                        </Badge>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+
+                {/* Botões de ação - com cenas faltantes */}
+                <div className="flex flex-col gap-2 pt-2">
+                  <Button
+                    onClick={handleGenerateMissingFromEdlModal}
+                    disabled={bgState.isGenerating}
+                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-90"
+                  >
+                    <Wand2 className="w-4 h-4 mr-2" />
+                    Gerar {edlValidationData.missingScenes.length} Imagens Faltantes
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowEdlValidationModal(false)}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={executeXmlExport}
+                      className="flex-1 border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Exportar Mesmo Assim
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Botões de ação - sem cenas faltantes */}
+            {!edlValidationData && (
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowEdlValidationModal(false)}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={executeXmlExport}
+                  className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-90"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar XML
+                </Button>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </MainLayout>
