@@ -9,7 +9,397 @@ interface SceneForXml {
   text: string;
   durationSeconds: number;
   imagePath?: string;
+  kenBurnsMotion?: KenBurnsMotion;
 }
+
+/**
+ * Tipos de movimento Ken Burns
+ */
+export type KenBurnsMotionType = 
+  | 'zoom_in' 
+  | 'zoom_out' 
+  | 'pan_left' 
+  | 'pan_right' 
+  | 'pan_up' 
+  | 'pan_down'
+  | 'zoom_in_pan_right'
+  | 'zoom_in_pan_left'
+  | 'zoom_out_pan_right'
+  | 'zoom_out_pan_left'
+  | 'static';
+
+export interface KenBurnsMotion {
+  type: KenBurnsMotionType;
+  intensity: 'subtle' | 'normal' | 'dramatic';
+  reason?: string;
+}
+
+export interface KenBurnsOption {
+  id: KenBurnsMotionType;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+export const KEN_BURNS_OPTIONS: KenBurnsOption[] = [
+  { id: 'zoom_in', name: 'Zoom In', description: 'Aproximar - foco, tensão, intimidade', icon: '🔍' },
+  { id: 'zoom_out', name: 'Zoom Out', description: 'Afastar - revelação, contexto, épico', icon: '🔭' },
+  { id: 'pan_left', name: 'Pan Esquerda', description: 'Movimento lateral - transição, passagem de tempo', icon: '⬅️' },
+  { id: 'pan_right', name: 'Pan Direita', description: 'Movimento lateral - progressão, avanço', icon: '➡️' },
+  { id: 'pan_up', name: 'Pan Cima', description: 'Movimento vertical - grandeza, esperança', icon: '⬆️' },
+  { id: 'pan_down', name: 'Pan Baixo', description: 'Movimento vertical - introspecção, peso', icon: '⬇️' },
+  { id: 'zoom_in_pan_right', name: 'Zoom + Pan Direita', description: 'Combinado - ação intensa, perseguição', icon: '↗️' },
+  { id: 'zoom_in_pan_left', name: 'Zoom + Pan Esquerda', description: 'Combinado - descoberta dramática', icon: '↖️' },
+  { id: 'zoom_out_pan_right', name: 'Zoom Out + Pan Direita', description: 'Combinado - épico revelador', icon: '↘️' },
+  { id: 'zoom_out_pan_left', name: 'Zoom Out + Pan Esquerda', description: 'Combinado - conclusão grandiosa', icon: '↙️' },
+  { id: 'static', name: 'Estático', description: 'Sem movimento - momento de pausa', icon: '⏸️' },
+];
+
+/**
+ * Palavras-chave para análise de movimento de câmera baseada no conteúdo
+ */
+const MOTION_KEYWORDS = {
+  zoom_in: [
+    'foco', 'detalhe', 'olha', 'veja', 'observe', 'atenção', 'importante', 'crucial',
+    'segredo', 'mistério', 'tensão', 'medo', 'terror', 'surpresa', 'choque', 'rosto',
+    'olhos', 'expressão', 'emoção', 'intimidade', 'perto', 'aproximar', 'revelar',
+    'descobrir', 'perceber', 'notar', 'examinar', 'analisar', 'estudar', 'entender',
+    'focus', 'detail', 'look', 'watch', 'attention', 'important', 'crucial', 'secret',
+    'mystery', 'tension', 'fear', 'terror', 'surprise', 'shock', 'face', 'eyes'
+  ],
+  zoom_out: [
+    'panorama', 'visão geral', 'contexto', 'mundo', 'universo', 'tudo', 'inteiro',
+    'completo', 'épico', 'grandioso', 'imenso', 'vasto', 'horizonte', 'paisagem',
+    'natureza', 'montanha', 'oceano', 'céu', 'espaço', 'multidão', 'cidade', 'país',
+    'revelação', 'conclusão', 'final', 'resultado', 'consequência', 'magnitude',
+    'overview', 'context', 'world', 'universe', 'everything', 'complete', 'epic',
+    'grand', 'immense', 'vast', 'horizon', 'landscape', 'nature', 'mountain'
+  ],
+  pan_left: [
+    'passado', 'antes', 'anterior', 'memória', 'lembrança', 'recordar', 'voltar',
+    'retorno', 'origem', 'início', 'começo', 'tradição', 'história', 'legado',
+    'past', 'before', 'memory', 'remember', 'return', 'origin', 'beginning', 'start'
+  ],
+  pan_right: [
+    'futuro', 'depois', 'próximo', 'adiante', 'avançar', 'progresso', 'evolução',
+    'crescimento', 'desenvolvimento', 'inovação', 'novo', 'moderno', 'tecnologia',
+    'destino', 'objetivo', 'meta', 'sonho', 'ambição', 'esperança', 'possibilidade',
+    'future', 'next', 'forward', 'progress', 'evolution', 'growth', 'development'
+  ],
+  pan_up: [
+    'céu', 'alto', 'subir', 'ascender', 'elevar', 'voar', 'sonho', 'esperança',
+    'liberdade', 'sucesso', 'vitória', 'conquista', 'poder', 'força', 'divino',
+    'espiritual', 'transcender', 'inspiração', 'motivação', 'potencial', 'glória',
+    'sky', 'high', 'rise', 'ascend', 'fly', 'dream', 'hope', 'freedom', 'success'
+  ],
+  pan_down: [
+    'terra', 'chão', 'baixo', 'descer', 'cair', 'peso', 'gravidade', 'realidade',
+    'fundação', 'base', 'raiz', 'origem', 'profundo', 'introspectivo', 'sombra',
+    'tristeza', 'derrota', 'fracasso', 'perda', 'luto', 'reflexão', 'humildade',
+    'ground', 'down', 'fall', 'weight', 'gravity', 'reality', 'foundation', 'deep'
+  ],
+  action_intense: [
+    'ação', 'velocidade', 'rápido', 'urgente', 'emergência', 'perseguição', 'fuga',
+    'luta', 'batalha', 'guerra', 'conflito', 'explosão', 'impacto', 'colisão',
+    'corrida', 'correr', 'saltar', 'pular', 'atacar', 'defender', 'destruir',
+    'action', 'speed', 'fast', 'urgent', 'emergency', 'chase', 'escape', 'fight'
+  ],
+  dramatic_reveal: [
+    'mas', 'porém', 'entretanto', 'contudo', 'surpreendente', 'incrível', 'chocante',
+    'inesperado', 'plot twist', 'virada', 'reviravolta', 'revelação', 'verdade',
+    'but', 'however', 'surprising', 'incredible', 'shocking', 'unexpected', 'twist'
+  ]
+};
+
+/**
+ * Analisa o texto da cena e sugere movimento Ken Burns apropriado
+ */
+export const analyzeSceneForKenBurns = (
+  text: string,
+  sceneIndex: number,
+  totalScenes: number,
+  previousMotion?: KenBurnsMotionType
+): KenBurnsMotion => {
+  const lowerText = text.toLowerCase();
+  const words = lowerText.split(/\s+/);
+  
+  // Scoring para cada tipo de movimento
+  const scores: Record<string, number> = {
+    zoom_in: 0,
+    zoom_out: 0,
+    pan_left: 0,
+    pan_right: 0,
+    pan_up: 0,
+    pan_down: 0,
+    action_intense: 0,
+    dramatic_reveal: 0,
+  };
+  
+  // Calcular scores baseado em palavras-chave
+  for (const [motionType, keywords] of Object.entries(MOTION_KEYWORDS)) {
+    for (const keyword of keywords) {
+      if (lowerText.includes(keyword)) {
+        scores[motionType] += keyword.length > 5 ? 2 : 1;
+      }
+    }
+  }
+  
+  // Determinar o movimento baseado nos scores
+  let selectedMotion: KenBurnsMotionType = 'zoom_in';
+  let intensity: 'subtle' | 'normal' | 'dramatic' = 'normal';
+  let reason = '';
+  
+  // Ação intensa = combinação de zoom + pan
+  if (scores.action_intense >= 3) {
+    selectedMotion = previousMotion === 'zoom_in_pan_right' ? 'zoom_in_pan_left' : 'zoom_in_pan_right';
+    intensity = 'dramatic';
+    reason = 'Cena de ação intensa detectada';
+  }
+  // Revelação dramática = zoom out
+  else if (scores.dramatic_reveal >= 2) {
+    selectedMotion = 'zoom_out';
+    intensity = 'dramatic';
+    reason = 'Momento de revelação dramática';
+  }
+  // Primeira cena = zoom in para capturar atenção
+  else if (sceneIndex === 0) {
+    selectedMotion = 'zoom_in';
+    intensity = 'normal';
+    reason = 'Abertura - capturar atenção do espectador';
+  }
+  // Última cena = zoom out para conclusão épica
+  else if (sceneIndex === totalScenes - 1) {
+    selectedMotion = 'zoom_out';
+    intensity = 'dramatic';
+    reason = 'Conclusão - revelação final';
+  }
+  // Baseado no score mais alto
+  else {
+    const maxScore = Math.max(
+      scores.zoom_in,
+      scores.zoom_out,
+      scores.pan_left,
+      scores.pan_right,
+      scores.pan_up,
+      scores.pan_down
+    );
+    
+    if (maxScore > 0) {
+      if (scores.zoom_in === maxScore) {
+        selectedMotion = 'zoom_in';
+        reason = 'Foco em detalhes/emoção';
+      } else if (scores.zoom_out === maxScore) {
+        selectedMotion = 'zoom_out';
+        reason = 'Contexto/visão geral';
+      } else if (scores.pan_up === maxScore) {
+        selectedMotion = 'pan_up';
+        reason = 'Elevação/esperança';
+      } else if (scores.pan_down === maxScore) {
+        selectedMotion = 'pan_down';
+        reason = 'Introspecção/peso';
+      } else if (scores.pan_left === maxScore) {
+        selectedMotion = 'pan_left';
+        reason = 'Referência ao passado';
+      } else if (scores.pan_right === maxScore) {
+        selectedMotion = 'pan_right';
+        reason = 'Progressão/futuro';
+      }
+      
+      intensity = maxScore >= 4 ? 'dramatic' : maxScore >= 2 ? 'normal' : 'subtle';
+    } else {
+      // Alternar entre zoom in e zoom out se não houver keywords
+      selectedMotion = previousMotion === 'zoom_in' ? 'zoom_out' : 'zoom_in';
+      intensity = 'subtle';
+      reason = 'Variação para manter dinamismo';
+    }
+  }
+  
+  // Evitar repetição excessiva do mesmo movimento
+  if (selectedMotion === previousMotion && sceneIndex > 1) {
+    const alternatives: KenBurnsMotionType[] = ['zoom_in', 'zoom_out', 'pan_right', 'pan_left'];
+    const alternativeIndex = sceneIndex % alternatives.length;
+    selectedMotion = alternatives[alternativeIndex];
+    reason = 'Variação para evitar repetição';
+  }
+  
+  return {
+    type: selectedMotion,
+    intensity,
+    reason,
+  };
+};
+
+/**
+ * Aplica análise Ken Burns a todas as cenas
+ */
+export const applyKenBurnsToScenes = (scenes: SceneForXml[]): SceneForXml[] => {
+  let previousMotion: KenBurnsMotionType | undefined;
+  
+  return scenes.map((scene, index) => {
+    const motion = analyzeSceneForKenBurns(scene.text, index, scenes.length, previousMotion);
+    previousMotion = motion.type;
+    
+    return {
+      ...scene,
+      kenBurnsMotion: motion,
+    };
+  });
+};
+
+/**
+ * Gera os parâmetros de keyframe para o movimento Ken Burns
+ */
+const getKenBurnsKeyframeParams = (
+  motion: KenBurnsMotion,
+  durationFrames: number
+): { startScale: number; endScale: number; startX: number; endX: number; startY: number; endY: number } => {
+  const intensityMultiplier = motion.intensity === 'dramatic' ? 1.5 : motion.intensity === 'subtle' ? 0.5 : 1.0;
+  
+  const baseZoom = 0.08 * intensityMultiplier;
+  const basePan = 0.1 * intensityMultiplier;
+  
+  let params = {
+    startScale: 1.0,
+    endScale: 1.0,
+    startX: 0,
+    endX: 0,
+    startY: 0,
+    endY: 0,
+  };
+  
+  switch (motion.type) {
+    case 'zoom_in':
+      params.startScale = 1.0;
+      params.endScale = 1.0 + baseZoom;
+      break;
+    case 'zoom_out':
+      params.startScale = 1.0 + baseZoom;
+      params.endScale = 1.0;
+      break;
+    case 'pan_left':
+      params.startX = basePan;
+      params.endX = -basePan;
+      break;
+    case 'pan_right':
+      params.startX = -basePan;
+      params.endX = basePan;
+      break;
+    case 'pan_up':
+      params.startY = basePan;
+      params.endY = -basePan;
+      break;
+    case 'pan_down':
+      params.startY = -basePan;
+      params.endY = basePan;
+      break;
+    case 'zoom_in_pan_right':
+      params.startScale = 1.0;
+      params.endScale = 1.0 + baseZoom;
+      params.startX = -basePan * 0.5;
+      params.endX = basePan * 0.5;
+      break;
+    case 'zoom_in_pan_left':
+      params.startScale = 1.0;
+      params.endScale = 1.0 + baseZoom;
+      params.startX = basePan * 0.5;
+      params.endX = -basePan * 0.5;
+      break;
+    case 'zoom_out_pan_right':
+      params.startScale = 1.0 + baseZoom;
+      params.endScale = 1.0;
+      params.startX = -basePan * 0.5;
+      params.endX = basePan * 0.5;
+      break;
+    case 'zoom_out_pan_left':
+      params.startScale = 1.0 + baseZoom;
+      params.endScale = 1.0;
+      params.startX = basePan * 0.5;
+      params.endX = -basePan * 0.5;
+      break;
+    case 'static':
+    default:
+      // Sem movimento
+      break;
+  }
+  
+  return params;
+};
+
+/**
+ * Gera XML de keyframes para efeito Ken Burns
+ */
+const generateKenBurnsKeyframesXml = (
+  motion: KenBurnsMotion | undefined,
+  durationFrames: number,
+  fps: number
+): string => {
+  if (!motion || motion.type === 'static') {
+    return '';
+  }
+  
+  const params = getKenBurnsKeyframeParams(motion, durationFrames);
+  
+  // Gerar XML de keyframes para transformação
+  return `                <filter>
+                  <effect>
+                    <name>Basic Motion</name>
+                    <effectid>basic</effectid>
+                    <effectcategory>motion</effectcategory>
+                    <effecttype>motion</effecttype>
+                    <mediatype>video</mediatype>
+                    <parameter authoringApp="FCP">
+                      <parameterid>scale</parameterid>
+                      <name>Scale</name>
+                      <valuemin>0</valuemin>
+                      <valuemax>10000</valuemax>
+                      <value>${(params.startScale * 100).toFixed(1)}</value>
+                      <keyframe>
+                        <when>0</when>
+                        <value>${(params.startScale * 100).toFixed(1)}</value>
+                        <interpolation>
+                          <name>bezier</name>
+                        </interpolation>
+                      </keyframe>
+                      <keyframe>
+                        <when>${durationFrames}</when>
+                        <value>${(params.endScale * 100).toFixed(1)}</value>
+                        <interpolation>
+                          <name>bezier</name>
+                        </interpolation>
+                      </keyframe>
+                    </parameter>
+                    <parameter authoringApp="FCP">
+                      <parameterid>center</parameterid>
+                      <name>Center</name>
+                      <value>
+                        <horiz>${params.startX.toFixed(4)}</horiz>
+                        <vert>${params.startY.toFixed(4)}</vert>
+                      </value>
+                      <keyframe>
+                        <when>0</when>
+                        <value>
+                          <horiz>${params.startX.toFixed(4)}</horiz>
+                          <vert>${params.startY.toFixed(4)}</vert>
+                        </value>
+                        <interpolation>
+                          <name>bezier</name>
+                        </interpolation>
+                      </keyframe>
+                      <keyframe>
+                        <when>${durationFrames}</when>
+                        <value>
+                          <horiz>${params.endX.toFixed(4)}</horiz>
+                          <vert>${params.endY.toFixed(4)}</vert>
+                        </value>
+                        <interpolation>
+                          <name>bezier</name>
+                        </interpolation>
+                      </keyframe>
+                    </parameter>
+                  </effect>
+                </filter>
+`;
+};
 
 /**
  * Tipos de transição disponíveis
@@ -764,7 +1154,7 @@ export const generateFcp7Xml = (
 };
 
 /**
- * Gera XML com transições entre cenas
+ * Gera XML com transições entre cenas e keyframes Ken Burns opcionais
  */
 export const generateFcp7XmlWithTransitions = (
   scenes: SceneForXml[],
@@ -775,18 +1165,23 @@ export const generateFcp7XmlWithTransitions = (
     height?: number;
     transitionFrames?: number;
     transitionType?: TransitionType;
+    enableKenBurns?: boolean;
   } = {}
 ): string => {
   const title = options.title || 'Projeto_Video';
   const fps = options.fps || 24;
   const width = options.width || 1920;
   const height = options.height || 1080;
-  const transitionFrames = options.transitionFrames || Math.round(fps * 0.5); // 0.5s por padrão
+  const transitionFrames = options.transitionFrames || Math.round(fps * 0.5);
   const transitionType = options.transitionType || 'cross_dissolve';
+  const enableKenBurns = options.enableKenBurns !== false; // Habilitado por padrão
   const safeTitle = escapeXml(title.replace(/[^a-zA-Z0-9_-]/g, '_'));
   
+  // Aplicar análise Ken Burns se habilitado
+  const processedScenes = enableKenBurns ? applyKenBurnsToScenes(scenes) : scenes;
+  
   // Calcular duração total em frames
-  const totalDurationFrames = scenes.reduce(
+  const totalDurationFrames = processedScenes.reduce(
     (acc, scene) => acc + secondsToFrames(scene.durationSeconds, fps),
     0
   );
@@ -839,13 +1234,14 @@ export const generateFcp7XmlWithTransitions = (
 
   let currentFrame = 0;
   
-  scenes.forEach((scene, index) => {
+  processedScenes.forEach((scene, index) => {
     const durationFrames = secondsToFrames(scene.durationSeconds, fps);
     const fileName = `cena_${String(scene.number).padStart(3, '0')}.jpg`;
     const clipId = `clip-${scene.number}`;
     const fileId = `file-${scene.number}`;
     const masterId = `master-${scene.number}`;
     const shortText = scene.text ? escapeXml(scene.text.substring(0, 100)) : '';
+    const motionInfo = scene.kenBurnsMotion ? ` [${KEN_BURNS_OPTIONS.find(o => o.id === scene.kenBurnsMotion?.type)?.name || scene.kenBurnsMotion.type}]` : '';
     
     xml += `              <clipitem id="${clipId}">
                 <name>${fileName}</name>
@@ -883,9 +1279,14 @@ export const generateFcp7XmlWithTransitions = (
       xml += getTransitionXml(transitionType, transitionFrames);
     }
     
+    // Adicionar keyframes Ken Burns se disponível
+    if (enableKenBurns && scene.kenBurnsMotion) {
+      xml += generateKenBurnsKeyframesXml(scene.kenBurnsMotion, durationFrames, fps);
+    }
+    
     if (shortText) {
       xml += `                <comments>
-                  <mastercomment1>${shortText}</mastercomment1>
+                  <mastercomment1>${escapeXml(shortText + motionInfo)}</mastercomment1>
                 </comments>
 `;
     }
@@ -905,6 +1306,90 @@ export const generateFcp7XmlWithTransitions = (
 </xmeml>`;
 
   return xml;
+};
+
+/**
+ * Gera relatório de movimentos Ken Burns aplicados
+ */
+export const generateKenBurnsReport = (scenes: SceneForXml[]): string => {
+  const processedScenes = applyKenBurnsToScenes(scenes);
+  
+  let report = `
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    RELATÓRIO DE MOVIMENTOS KEN BURNS                          ║
+║                          Análise Automática por IA                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📊 RESUMO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total de Cenas: ${scenes.length}
+`;
+
+  // Contagem por tipo de movimento
+  const motionCounts: Record<string, number> = {};
+  processedScenes.forEach(scene => {
+    const type = scene.kenBurnsMotion?.type || 'static';
+    motionCounts[type] = (motionCounts[type] || 0) + 1;
+  });
+
+  report += `\n📈 DISTRIBUIÇÃO DE MOVIMENTOS:\n`;
+  Object.entries(motionCounts).forEach(([type, count]) => {
+    const option = KEN_BURNS_OPTIONS.find(o => o.id === type);
+    const percentage = ((count / scenes.length) * 100).toFixed(1);
+    report += `   ${option?.icon || '❓'} ${option?.name || type}: ${count} cenas (${percentage}%)\n`;
+  });
+
+  report += `
+═══════════════════════════════════════════════════════════════════════════════
+                              DETALHES POR CENA
+═══════════════════════════════════════════════════════════════════════════════
+`;
+
+  processedScenes.forEach((scene, index) => {
+    const motion = scene.kenBurnsMotion;
+    const option = motion ? KEN_BURNS_OPTIONS.find(o => o.id === motion.type) : null;
+    const textPreview = scene.text.substring(0, 60) + (scene.text.length > 60 ? '...' : '');
+    
+    report += `
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CENA ${String(scene.number).padStart(3, '0')} │ ${scene.durationSeconds.toFixed(1)}s │ ${option?.icon || '⏸️'} ${option?.name || 'Estático'}
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Texto: "${textPreview}"
+│ Intensidade: ${motion?.intensity || 'N/A'}
+│ Razão: ${motion?.reason || 'Sem análise'}
+└─────────────────────────────────────────────────────────────────────────────┘`;
+  });
+
+  report += `
+
+═══════════════════════════════════════════════════════════════════════════════
+                              DICAS DE APLICAÇÃO
+═══════════════════════════════════════════════════════════════════════════════
+
+💡 COMO AJUSTAR NO DAVINCI RESOLVE:
+   1. Importe o XML que já contém os keyframes
+   2. Na aba "Edit", selecione o clip
+   3. Vá para "Inspector" → "Transform"
+   4. Os keyframes já estarão aplicados automaticamente
+   5. Use "Ease In/Out" para suavizar os movimentos
+
+🎬 PARA MOVIMENTOS MAIS DRAMÁTICOS:
+   1. Selecione o clip na timeline
+   2. Abra "Keyframe Editor" (clique no ícone de diamante)
+   3. Ajuste a curva de interpolação para "Bezier"
+   4. Modifique os valores de Scale e Position
+
+⚠️ NOTA: Os keyframes foram calculados para:
+   - Zoom: 8% de variação (ajustável para mais intensidade)
+   - Pan: 10% de deslocamento (ajustável conforme necessidade)
+   - Intensidade varia por cena baseado na análise do texto
+
+═══════════════════════════════════════════════════════════════════════════════
+  Gerado automaticamente pelo Viral Visions Pro • ${new Date().toLocaleDateString('pt-BR')}
+═══════════════════════════════════════════════════════════════════════════════
+`;
+
+  return report;
 };
 
 /**
