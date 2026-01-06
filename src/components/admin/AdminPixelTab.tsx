@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,10 @@ import {
   Rocket,
   RefreshCw,
   Wand2,
-  Send
+  Send,
+  Upload,
+  Image as ImageIcon,
+  Trash2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -37,8 +40,11 @@ interface EmailTemplate {
   is_active: boolean;
 }
 
-// Email base template with header and footer
-const EMAIL_HEADER = `<!DOCTYPE html>
+// Default email logo URL
+const DEFAULT_EMAIL_LOGO = "https://kabnbvnephjifeazaiis.supabase.co/storage/v1/object/public/avatars/logo-email.png";
+
+// Function to generate email header with dynamic logo
+const getEmailHeader = (logoUrl: string) => `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -60,7 +66,7 @@ const EMAIL_HEADER = `<!DOCTYPE html>
                   <td align="center">
                     <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 3px; display: inline-block;">
                       <div style="width: 74px; height: 74px; border-radius: 50%; background: #0a0a0a; display: flex; align-items: center; justify-content: center;">
-                        <img src="https://kabnbvnephjifeazaiis.supabase.co/storage/v1/object/public/avatars/logo-email.png" alt="La Casa Dark Core" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;" onerror="this.style.display='none'"/>
+                        <img src="${logoUrl}" alt="La Casa Dark Core" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;" onerror="this.style.display='none'"/>
                       </div>
                     </div>
                     <h1 style="margin: 16px 0 0 0; color: #f59e0b; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">La Casa Dark Core</h1>
@@ -70,6 +76,9 @@ const EMAIL_HEADER = `<!DOCTYPE html>
               </table>
             </td>
           </tr>`;
+
+// Static header for default templates (uses placeholder that gets replaced)
+const EMAIL_HEADER = getEmailHeader(DEFAULT_EMAIL_LOGO);
 
 const EMAIL_FOOTER = `
           <!-- Footer -->
@@ -513,6 +522,9 @@ export function AdminPixelTab() {
   const [savingTracking, setSavingTracking] = useState(false);
   const [savingWhatsapp, setSavingWhatsapp] = useState(false);
   const [savingSmtp, setSavingSmtp] = useState(false);
+  const [emailLogoUrl, setEmailLogoUrl] = useState(DEFAULT_EMAIL_LOGO);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadSettings();
@@ -561,12 +573,100 @@ export function AdminPixelTab() {
       setUseSsl(s.use_ssl || false);
     }
 
+    // Load email logo
+    const { data: emailSettings } = await supabase
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "email_branding")
+      .single();
+
+    if (emailSettings?.value) {
+      const e = emailSettings.value as Record<string, string>;
+      if (e.logo_url) setEmailLogoUrl(e.logo_url);
+    }
+
     setLoading(false);
   };
 
   const fetchEmailTemplates = async () => {
     const { data } = await supabase.from("email_templates").select("*").order("template_type");
     if (data) setEmailTemplates(data);
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Por favor, selecione um arquivo de imagem");
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 2MB");
+      return;
+    }
+
+    setUploadingLogo(true);
+
+    try {
+      // Upload to avatars bucket with fixed name
+      const fileName = "logo-email.png";
+      
+      // Delete existing logo if exists
+      await supabase.storage.from("avatars").remove([fileName]);
+
+      // Upload new logo
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(fileName);
+
+      const newLogoUrl = urlData.publicUrl + `?t=${Date.now()}`;
+      setEmailLogoUrl(newLogoUrl);
+
+      // Save to admin_settings
+      await supabase
+        .from("admin_settings")
+        .upsert({
+          key: "email_branding",
+          value: { logo_url: newLogoUrl },
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "key" });
+
+      toast.success("Logo atualizado com sucesso!");
+    } catch (error: any) {
+      console.error("Error uploading logo:", error);
+      toast.error(error.message || "Erro ao fazer upload do logo");
+    }
+
+    setUploadingLogo(false);
+    if (logoInputRef.current) logoInputRef.current.value = "";
+  };
+
+  const resetLogoToDefault = async () => {
+    setEmailLogoUrl(DEFAULT_EMAIL_LOGO);
+    
+    await supabase
+      .from("admin_settings")
+      .upsert({
+        key: "email_branding",
+        value: { logo_url: DEFAULT_EMAIL_LOGO },
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "key" });
+
+    toast.success("Logo resetado para o padrão");
   };
 
   const saveTracking = async () => {
@@ -940,6 +1040,81 @@ export function AdminPixelTab() {
             Salvar Configurações WhatsApp
           </Button>
         </div>
+      </Card>
+
+      {/* Email Logo Upload */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <ImageIcon className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold text-foreground">Logo dos Emails</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Faça upload do logo que aparecerá no header de todos os emails enviados pela plataforma.
+        </p>
+
+        <div className="flex items-center gap-6">
+          {/* Logo Preview */}
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary/70 p-[3px]">
+              <div className="w-full h-full rounded-full bg-background flex items-center justify-center overflow-hidden">
+                <img 
+                  src={emailLogoUrl} 
+                  alt="Email Logo" 
+                  className="w-20 h-20 rounded-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/placeholder.svg";
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Upload Controls */}
+          <div className="flex-1 space-y-3">
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleLogoUpload}
+              className="hidden"
+            />
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => logoInputRef.current?.click()}
+                disabled={uploadingLogo}
+                className="bg-primary text-primary-foreground"
+              >
+                {uploadingLogo ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Upload className="w-4 h-4 mr-2" />
+                )}
+                {uploadingLogo ? "Enviando..." : "Upload Logo"}
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={resetLogoToDefault}
+                disabled={uploadingLogo}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Resetar
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Formato: PNG, JPG ou GIF. Tamanho máximo: 2MB. Recomendado: 200x200px
+            </p>
+          </div>
+        </div>
+
+        <Alert className="mt-4 border-primary/50 bg-primary/10">
+          <Info className="w-4 h-4 text-primary" />
+          <AlertDescription className="text-primary">
+            O logo será exibido em formato circular no header dos emails. Use uma imagem quadrada para melhor resultado.
+          </AlertDescription>
+        </Alert>
       </Card>
 
       {/* Email Templates */}
