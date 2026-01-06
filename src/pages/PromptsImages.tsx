@@ -73,7 +73,9 @@ import {
   Play,
   Music,
   Volume2,
-  Type
+  Type,
+  Plus,
+  Star
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,6 +85,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { useBackgroundImageGeneration } from "@/hooks/useBackgroundImageGeneration";
 import { useFFmpegVideoGenerator } from "@/hooks/useFFmpegVideoGenerator";
+import { useUserCinematicPresets } from "@/hooks/useUserCinematicPresets";
 import { SessionIndicator } from "@/components/ui/session-indicator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -312,13 +315,44 @@ const PromptsImages = () => {
   const [selectedPreset, setSelectedPreset] = usePersistedState<CinematicPreset>("prompts_cinematic_preset", 'custom');
   const [selectedIntroNiche, setSelectedIntroNiche] = usePersistedState<IntroNiche | null>("prompts_intro_niche", null);
   const [showPowerGradeTutorial, setShowPowerGradeTutorial] = useState(false);
+  const [showSavePresetModal, setShowSavePresetModal] = useState(false);
+  const [newPresetName, setNewPresetName] = useState("");
+  const [newPresetIcon, setNewPresetIcon] = useState("🎨");
   
-  // Função para aplicar preset
-  const applyPreset = (presetId: CinematicPreset) => {
-    setSelectedPreset(presetId);
+  // Hook para presets do usuário
+  const { userPresets, isSaving: isSavingPreset, savePreset: saveUserPreset, deletePreset: deleteUserPreset } = useUserCinematicPresets();
+  
+  // Função para aplicar preset (padrão ou do usuário)
+  const applyPreset = (presetId: CinematicPreset | string) => {
+    // Verificar se é um preset do usuário
+    const userPreset = userPresets.find(p => p.id === presetId);
+    if (userPreset) {
+      setSelectedPreset('custom');
+      setCinematicSettings(userPreset.settings);
+      toast({ title: `Preset "${userPreset.name}" aplicado!` });
+      return;
+    }
+    
+    // Preset padrão
+    setSelectedPreset(presetId as CinematicPreset);
     const preset = CINEMATIC_PRESETS.find(p => p.id === presetId);
     if (preset) {
       setCinematicSettings(preset.settings);
+    }
+  };
+  
+  // Salvar preset personalizado
+  const handleSavePreset = async () => {
+    if (!newPresetName.trim()) {
+      toast({ title: "Digite um nome para o preset", variant: "destructive" });
+      return;
+    }
+    
+    const success = await saveUserPreset(newPresetName, newPresetIcon, cinematicSettings);
+    if (success) {
+      setShowSavePresetModal(false);
+      setNewPresetName("");
+      setNewPresetIcon("🎨");
     }
   };
   
@@ -5329,7 +5363,20 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
             {/* Presets Cinematográficos */}
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">🎬 Preset Rápido</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-muted-foreground">🎬 Preset Rápido</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[10px] text-primary hover:text-primary"
+                  onClick={() => setShowSavePresetModal(true)}
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Salvar Atual
+                </Button>
+              </div>
+              
+              {/* Presets do Sistema */}
               <div className="grid grid-cols-3 gap-2">
                 {CINEMATIC_PRESETS.map((preset) => (
                   <button
@@ -5351,6 +5398,38 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   </button>
                 ))}
               </div>
+              
+              {/* Presets do Usuário */}
+              {userPresets.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-[10px] font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                    <Star className="w-3 h-3 text-amber-500" />
+                    Meus Presets Salvos
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {userPresets.map((preset) => (
+                      <div key={preset.id} className="relative group">
+                        <button
+                          onClick={() => applyPreset(preset.id)}
+                          className="w-full flex flex-col items-center gap-1 p-3 rounded-lg border text-center transition-all border-primary/30 bg-primary/5 text-muted-foreground hover:bg-primary/10 hover:border-primary/50"
+                        >
+                          <span className="text-2xl">{preset.icon}</span>
+                          <p className="text-xs font-medium truncate w-full">{preset.name}</p>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteUserPreset(preset.id);
+                          }}
+                          className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/80"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Grid de Configurações */}
@@ -5660,6 +5739,102 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
         open={showPowerGradeTutorial} 
         onOpenChange={setShowPowerGradeTutorial} 
       />
+
+      {/* Modal Salvar Preset Personalizado */}
+      <Dialog open={showSavePresetModal} onOpenChange={setShowSavePresetModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-amber-500" />
+              Salvar Preset Cinematográfico
+            </DialogTitle>
+            <DialogDescription>
+              Salve suas configurações atuais para reutilizar em outros projetos
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="preset-name">Nome do Preset</Label>
+              <Input
+                id="preset-name"
+                placeholder="Ex: Meu Estilo Dark"
+                value={newPresetName}
+                onChange={(e) => setNewPresetName(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label>Ícone</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {["🎨", "🎬", "🎥", "🌙", "☀️", "🔥", "❄️", "💎", "⚡", "🎭", "🌟", "🎪"].map((icon) => (
+                  <button
+                    key={icon}
+                    onClick={() => setNewPresetIcon(icon)}
+                    className={cn(
+                      "text-2xl p-2 rounded-lg border transition-all",
+                      newPresetIcon === icon
+                        ? "border-amber-500 bg-amber-500/20"
+                        : "border-border/50 hover:bg-secondary/50"
+                    )}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Configurações que serão salvas:</p>
+              <div className="flex flex-wrap gap-1">
+                <Badge variant="outline" className="text-[10px]">
+                  {TRANSITION_OPTIONS.find(t => t.id === cinematicSettings.transitionType)?.name}
+                </Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {cinematicSettings.transitionDuration}s
+                </Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {cinematicSettings.aspectRatio}
+                </Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {cinematicSettings.fps} FPS
+                </Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {COLOR_GRADING_OPTIONS.find(c => c.id === cinematicSettings.colorGrading)?.name}
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowSavePresetModal(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSavePreset}
+                disabled={isSavingPreset || !newPresetName.trim()}
+                className="flex-1"
+              >
+                {isSavingPreset ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Salvar Preset
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
