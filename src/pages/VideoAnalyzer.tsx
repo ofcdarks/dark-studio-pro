@@ -782,6 +782,7 @@ const VideoAnalyzer = () => {
                   URL do Vídeo Viral
                 </label>
                 <Input
+                  data-tutorial="video-url-input"
                   placeholder="https://www.youtube.com/watch?v=..."
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
@@ -857,6 +858,7 @@ const VideoAnalyzer = () => {
               {/* Analyze Button with Progress Bar */}
               <div className="space-y-3">
                 <Button
+                  data-tutorial="analyze-button"
                   onClick={handleAnalyze}
                   disabled={analyzing}
                   className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-14 text-lg font-semibold relative overflow-hidden"

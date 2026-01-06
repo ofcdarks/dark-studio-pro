@@ -1,0 +1,307 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, X, Rocket } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+
+export interface GuidedStep {
+  title: string;
+  description: string;
+  icon?: string;
+  selector?: string; // CSS selector for the element to highlight
+  position?: "top" | "bottom" | "left" | "right" | "center";
+}
+
+interface GuidedTutorialProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: string;
+  steps: GuidedStep[];
+  onComplete: () => void;
+}
+
+export function GuidedTutorial({
+  open,
+  onOpenChange,
+  title,
+  steps,
+  onComplete,
+}: GuidedTutorialProps) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  const step = steps[currentStep];
+
+  // Find and highlight the target element
+  const updateTargetElement = useCallback(() => {
+    if (!step?.selector) {
+      setTargetRect(null);
+      return;
+    }
+
+    const element = document.querySelector(step.selector);
+    if (element) {
+      const rect = element.getBoundingClientRect();
+      setTargetRect(rect);
+
+      // Calculate tooltip position based on step position preference
+      const padding = 16;
+      const tooltipWidth = 340;
+      const tooltipHeight = 180;
+      
+      let x = rect.left + rect.width / 2 - tooltipWidth / 2;
+      let y = rect.bottom + padding;
+
+      const position = step.position || "bottom";
+
+      switch (position) {
+        case "top":
+          y = rect.top - tooltipHeight - padding;
+          break;
+        case "bottom":
+          y = rect.bottom + padding;
+          break;
+        case "left":
+          x = rect.left - tooltipWidth - padding;
+          y = rect.top + rect.height / 2 - tooltipHeight / 2;
+          break;
+        case "right":
+          x = rect.right + padding;
+          y = rect.top + rect.height / 2 - tooltipHeight / 2;
+          break;
+        case "center":
+          x = window.innerWidth / 2 - tooltipWidth / 2;
+          y = window.innerHeight / 2 - tooltipHeight / 2;
+          break;
+      }
+
+      // Keep tooltip within viewport
+      x = Math.max(padding, Math.min(x, window.innerWidth - tooltipWidth - padding));
+      y = Math.max(padding, Math.min(y, window.innerHeight - tooltipHeight - padding));
+
+      setTooltipPosition({ x, y });
+
+      // Scroll element into view if needed
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      setTargetRect(null);
+      // Center tooltip if no element found
+      setTooltipPosition({
+        x: window.innerWidth / 2 - 170,
+        y: window.innerHeight / 2 - 90,
+      });
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (open) {
+      updateTargetElement();
+      
+      // Update on resize/scroll
+      const handleUpdate = () => updateTargetElement();
+      window.addEventListener("resize", handleUpdate);
+      window.addEventListener("scroll", handleUpdate, true);
+      
+      return () => {
+        window.removeEventListener("resize", handleUpdate);
+        window.removeEventListener("scroll", handleUpdate, true);
+      };
+    }
+  }, [open, currentStep, updateTargetElement]);
+
+  const handleNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      handleComplete();
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleComplete = () => {
+    onComplete();
+    setCurrentStep(0);
+    onOpenChange(false);
+  };
+
+  const handleSkip = () => {
+    handleComplete();
+  };
+
+  if (!open) return null;
+
+  const progress = ((currentStep + 1) / steps.length) * 100;
+
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[9999]">
+          {/* Backdrop with cutout */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0"
+            onClick={handleSkip}
+          >
+            <svg className="absolute inset-0 w-full h-full">
+              <defs>
+                <mask id="spotlight-mask">
+                  <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                  {targetRect && (
+                    <rect
+                      x={targetRect.left - 8}
+                      y={targetRect.top - 8}
+                      width={targetRect.width + 16}
+                      height={targetRect.height + 16}
+                      rx="8"
+                      fill="black"
+                    />
+                  )}
+                </mask>
+              </defs>
+              <rect
+                x="0"
+                y="0"
+                width="100%"
+                height="100%"
+                fill="rgba(0, 0, 0, 0.75)"
+                mask="url(#spotlight-mask)"
+              />
+            </svg>
+          </motion.div>
+
+          {/* Highlight border around target element */}
+          {targetRect && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute pointer-events-none"
+              style={{
+                left: targetRect.left - 8,
+                top: targetRect.top - 8,
+                width: targetRect.width + 16,
+                height: targetRect.height + 16,
+              }}
+            >
+              <div className="w-full h-full rounded-lg border-2 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)] animate-pulse" />
+            </motion.div>
+          )}
+
+          {/* Tooltip */}
+          <motion.div
+            ref={tooltipRef}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute w-[340px] bg-card border border-amber-500/30 rounded-xl shadow-2xl overflow-hidden"
+            style={{
+              left: tooltipPosition.x,
+              top: tooltipPosition.y,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="relative p-4 pb-3 border-b border-border/50 bg-gradient-to-br from-amber-500/10 to-transparent">
+              <button
+                onClick={handleSkip}
+                className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">{step.icon || "📚"}</span>
+                <span className="text-xs text-muted-foreground font-medium">
+                  {title} • {currentStep + 1}/{steps.length}
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="h-1 bg-secondary/50 rounded-full overflow-hidden mt-2">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-4">
+              <h3 className="text-base font-semibold text-foreground mb-2">
+                {step.title}
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {step.description}
+              </p>
+            </div>
+
+            {/* Navigation */}
+            <div className="p-4 pt-2 flex items-center justify-between border-t border-border/30">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handlePrev}
+                disabled={currentStep === 0}
+                className="text-muted-foreground h-8 px-2"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Anterior
+              </Button>
+
+              <div className="flex gap-1">
+                {steps.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentStep(index)}
+                    className={cn(
+                      "w-1.5 h-1.5 rounded-full transition-all",
+                      index === currentStep
+                        ? "bg-amber-500 w-3"
+                        : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                    )}
+                  />
+                ))}
+              </div>
+
+              <Button
+                size="sm"
+                onClick={handleNext}
+                className={cn(
+                  "h-8 px-3",
+                  currentStep === steps.length - 1
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-90"
+                    : ""
+                )}
+              >
+                {currentStep === steps.length - 1 ? (
+                  <>
+                    Começar!
+                    <Rocket className="w-4 h-4 ml-1" />
+                  </>
+                ) : (
+                  <>
+                    Próximo
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+}
