@@ -556,6 +556,7 @@ const MonitoredChannels = () => {
                   </label>
                   <div className="relative">
                     <Input
+                      data-tutorial="add-channel-input"
                       placeholder="https://www.youtube.com/@canal"
                       value={channelUrl}
                       onChange={handleUrlChange}

@@ -825,6 +825,7 @@ const ViralAgents = () => {
                       Crie agentes de IA personalizados para gerar roteiros baseados em fórmulas virais extraídas de vídeos de sucesso
                     </p>
                     <Button
+                      data-tutorial="create-agent-button"
                       onClick={() => setShowNewAgentModal(true)}
                       className="bg-gradient-to-r from-primary to-amber-500 text-primary-foreground"
                     >

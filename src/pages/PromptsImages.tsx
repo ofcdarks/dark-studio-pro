@@ -3180,7 +3180,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                 <Film className="w-4 h-4" />
                 Gerador
               </TabsTrigger>
-              <TabsTrigger value="history" className="gap-2">
+              <TabsTrigger value="history" className="gap-2" data-tutorial="history-tab">
                 <History className="w-4 h-4" />
                 Histórico
               </TabsTrigger>
@@ -3197,6 +3197,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                     </div>
 
                     <Textarea
+                      data-tutorial="script-input"
                       placeholder="Cole seu roteiro aqui... A IA irá analisar e dividir em cenas com prompts de imagem otimizados."
                       value={script}
                       onChange={(e) => setScript(e.target.value)}
@@ -3228,7 +3229,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" data-tutorial="style-settings">
                       <Select value={style} onValueChange={setStyle}>
                         <SelectTrigger className="bg-secondary border-border">
                           <SelectValue placeholder="Estilo" />
@@ -3266,6 +3267,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                       </Select>
 
                       <Input
+                        data-tutorial="words-per-scene"
                         type="number"
                         placeholder="Palavras/cena"
                         value={wordsPerScene}
@@ -3309,6 +3311,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                       )}
 
                       <Button 
+                        data-tutorial="generate-button"
                         onClick={handleGenerate}
                         disabled={generating || !script.trim()}
                         className="bg-primary text-primary-foreground hover:bg-primary/90"

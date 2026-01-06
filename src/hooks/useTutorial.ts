@@ -2,20 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 
 const TUTORIALS_STORAGE_KEY = "completed_tutorials";
 
-export interface TutorialStep {
-  title: string;
-  description: string;
-  icon?: string;
-  image?: string;
-}
-
-export interface TutorialConfig {
-  id: string;
-  title: string;
-  description: string;
-  steps: TutorialStep[];
-}
-
 export function useTutorial(tutorialId: string) {
   const [hasSeenTutorial, setHasSeenTutorial] = useState(true); // Default to true to avoid flash
   const [showTutorial, setShowTutorial] = useState(false);
@@ -28,9 +14,10 @@ export function useTutorial(tutorialId: string) {
     const seen = completedTutorials.includes(tutorialId);
     setHasSeenTutorial(seen);
     
-    // Auto-show tutorial if not seen
+    // Auto-show tutorial if not seen (with small delay for page to render)
     if (!seen) {
-      setShowTutorial(true);
+      const timer = setTimeout(() => setShowTutorial(true), 500);
+      return () => clearTimeout(timer);
     }
   }, [tutorialId]);
 
