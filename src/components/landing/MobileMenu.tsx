@@ -59,7 +59,9 @@ export const MobileMenu = ({ scrollToSection }: MobileMenuProps) => {
                 <div className="flex items-center gap-3 pb-4 mb-4 border-b border-border">
                   <div className="relative">
                     <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary via-amber-400 to-primary animate-spin-slow opacity-75 blur-sm" />
-                    <img src={logo} alt="La Casa Dark CORE" className="w-10 h-10 rounded-full relative z-10 border-2 border-primary" />
+                    <div className="w-10 h-10 rounded-full overflow-hidden relative z-10 border-2 border-primary bg-black">
+                      <img src={logo} alt="La Casa Dark CORE" className="w-full h-full object-cover" />
+                    </div>
                   </div>
                   <span className="font-bold text-lg">La Casa Dark <span className="text-primary">CORE</span></span>
                 </div>
