@@ -35,6 +35,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useSearchParams } from "react-router-dom";
 import { GenerateScriptModal } from "@/components/library/GenerateScriptModal";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { useTutorial } from "@/hooks/useTutorial";
+import { TutorialModal, TutorialHelpButton } from "@/components/tutorial/TutorialModal";
+import { VIRAL_LIBRARY_TUTORIAL } from "@/lib/tutorialConfigs";
 
 interface ViralTitle {
   id: string;
@@ -96,6 +99,9 @@ interface ViralThumbnail {
 const ViralLibrary = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Tutorial
+  const { showTutorial, completeTutorial, openTutorial } = useTutorial(VIRAL_LIBRARY_TUTORIAL.id);
   
   // Persisted states
   const [searchTerm, setSearchTerm] = usePersistedState("library_searchTerm", "");
@@ -294,14 +300,17 @@ const ViralLibrary = () => {
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-4xl">📚</span>
-              <h1 className="text-4xl font-bold text-foreground">Biblioteca de Títulos e Thumbnails Virais</h1>
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-4xl">📚</span>
+                <h1 className="text-4xl font-bold text-foreground">Biblioteca de Títulos e Thumbnails Virais</h1>
+              </div>
+              <p className="text-lg text-muted-foreground">
+                Acesse todos os títulos e thumbnails que geraram milhões de views
+              </p>
             </div>
-            <p className="text-lg text-muted-foreground">
-              Acesse todos os títulos e thumbnails que geraram milhões de views
-            </p>
+            <TutorialHelpButton onClick={openTutorial} />
           </div>
 
           {/* Tabs */}
@@ -338,7 +347,7 @@ const ViralLibrary = () => {
             </TabsList>
 
             {/* Filters */}
-            <Card className="p-6 mb-8 border-border/50">
+            <Card className="p-6 mb-8 border-border/50" data-tutorial="search-filter">
               <div className="flex flex-wrap gap-4">
                 <div className="flex-1 min-w-[200px]">
                   <Input
@@ -382,7 +391,7 @@ const ViralLibrary = () => {
             </Card>
 
             {/* Titles Tab */}
-            <TabsContent value="titles" className="mt-0">
+            <TabsContent value="titles" className="mt-0" data-tutorial="titles-list">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -443,6 +452,7 @@ const ViralLibrary = () => {
                       )}
 
                       <Button 
+                        data-tutorial="title-actions"
                         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11 text-base"
                         onClick={() => handleCopyTitle(title.id, title.title_text)}
                       >
@@ -795,6 +805,16 @@ const ViralLibrary = () => {
         open={generateModalOpen}
         onOpenChange={setGenerateModalOpen}
         agent={selectedAgent}
+      />
+      
+      {/* Tutorial Modal */}
+      <TutorialModal
+        open={showTutorial}
+        onOpenChange={(open) => !open && completeTutorial()}
+        title={VIRAL_LIBRARY_TUTORIAL.title}
+        description={VIRAL_LIBRARY_TUTORIAL.description}
+        steps={VIRAL_LIBRARY_TUTORIAL.steps}
+        onComplete={completeTutorial}
       />
     </MainLayout>
   );
