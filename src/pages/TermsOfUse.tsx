@@ -2,15 +2,17 @@ import { motion } from "framer-motion";
 import { Crown, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Helmet } from "react-helmet";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const TermsOfUse = () => {
   return (
     <>
-      <Helmet>
-        <title>Termos de Uso | La Casa Dark CORE</title>
-        <meta name="description" content="Termos de uso da plataforma La Casa Dark CORE para criação de canais dark no YouTube." />
-      </Helmet>
+      <SEOHead
+        title="Termos de Uso"
+        description="Termos de uso da plataforma La Casa Dark CORE para criação de canais dark no YouTube. Responsabilidades, pagamentos e propriedade intelectual."
+        canonical="/termos-de-uso"
+        keywords="termos de uso, canal dark, youtube automation, la casa dark"
+      />
       
       <div className="min-h-screen bg-background">
         {/* Header */}
