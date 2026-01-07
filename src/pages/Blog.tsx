@@ -482,7 +482,7 @@ const Blog = () => {
               <div className="flex flex-wrap items-center justify-center gap-8 mb-10">
                 {[
                   { value: "100%", label: "Gratuito" },
-                  { value: "11+", label: "Artigos" },
+                  { value: `${blogPosts.length}+`, label: "Artigos" },
                   { value: "2026", label: "Atualizado" }
                 ].map((stat, i) => (
                   <div key={i} className="text-center">
