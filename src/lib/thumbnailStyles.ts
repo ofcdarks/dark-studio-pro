@@ -251,6 +251,38 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     icon: "🏔️",
     category: "experimentais",
     promptPrefix: "Production ready 3D cinematic rendering, accurate scale lighting and camera motion, miniature landscape growth animation and timelapse when scene requires environmental or structural buildup, standard 3D cinematic visualization with controlled natural movement, hyper-detailed miniature world, tilt-shift depth of field, macro photography aesthetic, epic scale in small form,"
+  },
+  {
+    id: "isometrico-arquitetonico",
+    name: "Isométrico Arquitetônico",
+    description: "Perspectiva isométrica com detalhes arquitetônicos",
+    icon: "🏛️",
+    category: "experimentais",
+    promptPrefix: "Isometric architectural rendering, 3D isometric perspective, detailed architectural visualization, clean geometric shapes, precise angles, modern architectural design, blueprint aesthetic with color, technical illustration style, urban planning visualization,"
+  },
+  {
+    id: "low-poly-stylized",
+    name: "Low Poly Stylized",
+    description: "Arte 3D estilizada com polígonos",
+    icon: "💎",
+    category: "experimentais",
+    promptPrefix: "Low poly 3D art style, stylized geometric shapes, flat shaded polygons, vibrant color palette, modern game aesthetic, minimalist 3D design, crystal-like facets, angular beauty, indie game art style,"
+  },
+  {
+    id: "claymation-3d",
+    name: "Claymation 3D",
+    description: "Estilo stop-motion com argila",
+    icon: "🎭",
+    category: "experimentais",
+    promptPrefix: "Claymation style, 3D clay animation aesthetic, stop-motion look, handcrafted texture, plasticine material, Wallace and Gromit inspired, tactile organic shapes, warm handmade feeling,"
+  },
+  {
+    id: "voxel-art",
+    name: "Voxel Art 3D",
+    description: "Cubos 3D estilo Minecraft",
+    icon: "🧱",
+    category: "experimentais",
+    promptPrefix: "Voxel art style, 3D cube-based aesthetic, Minecraft inspired, blocky geometric design, retro gaming meets 3D, pixel art in three dimensions, colorful voxel world, charming cubic characters,"
   }
 ];
 
