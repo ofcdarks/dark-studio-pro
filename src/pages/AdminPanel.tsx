@@ -52,6 +52,7 @@ import {
   ChevronRight,
   Youtube,
   Layout,
+  Wrench,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -66,6 +67,7 @@ import { AdminSubscriptionsTab } from "@/components/admin/AdminSubscriptionsTab"
 import { AdminStorageTab } from "@/components/admin/AdminStorageTab";
 import { AdminNotificationsTab } from "@/components/admin/AdminNotificationsTab";
 import { AdminLandingTab } from "@/components/admin/AdminLandingTab";
+import { AdminMaintenanceTab } from "@/components/admin/AdminMaintenanceTab";
 
 interface AdminStats {
   totalUsers: number;
@@ -621,6 +623,10 @@ const AdminPanel = () => {
                 <Layout className="w-4 h-4" />
                 Landing Page
               </TabsTrigger>
+              <TabsTrigger value="maintenance" className="flex items-center gap-2">
+                <Wrench className="w-4 h-4" />
+                Manutenção
+              </TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -928,6 +934,10 @@ const AdminPanel = () => {
 
             <TabsContent value="landing">
               <AdminLandingTab />
+            </TabsContent>
+
+            <TabsContent value="maintenance">
+              <AdminMaintenanceTab />
             </TabsContent>
           </Tabs>
         </div>
