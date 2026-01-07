@@ -40,6 +40,8 @@ import {
   GlobeLock,
   RefreshCw,
   Search,
+  Image,
+  ImagePlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -78,6 +80,7 @@ export const AdminBlogTab = () => {
   const [articles, setArticles] = useState<BlogArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [generatingCover, setGeneratingCover] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -86,6 +89,7 @@ export const AdminBlogTab = () => {
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [generateTopic, setGenerateTopic] = useState("");
   const [generateCategory, setGenerateCategory] = useState("YouTube");
+  const [generateWithCover, setGenerateWithCover] = useState(true);
 
   // Edit modal
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -167,6 +171,33 @@ export const AdminBlogTab = () => {
 
       if (saveError) throw saveError;
 
+      // Generate cover image if enabled
+      if (generateWithCover && savedArticle) {
+        toast.info("Gerando imagem de capa...");
+        try {
+          const { data: coverData, error: coverError } = await supabase.functions.invoke(
+            "generate-blog-cover",
+            {
+              body: {
+                title: article.title,
+                category: generateCategory,
+                articleId: savedArticle.id,
+              },
+            }
+          );
+
+          if (coverError) {
+            console.error("Error generating cover:", coverError);
+            toast.warning("Artigo criado, mas houve erro na imagem de capa");
+          } else if (coverData?.image_url) {
+            toast.success("Imagem de capa gerada!");
+          }
+        } catch (coverErr) {
+          console.error("Cover generation failed:", coverErr);
+          toast.warning("Artigo criado, mas houve erro na imagem de capa");
+        }
+      }
+
       toast.success("Artigo gerado com sucesso!");
       setGenerateModalOpen(false);
       setGenerateTopic("");
@@ -176,6 +207,30 @@ export const AdminBlogTab = () => {
       toast.error(error.message || "Erro ao gerar artigo");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleGenerateCover = async (article: BlogArticle) => {
+    setGeneratingCover(article.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-blog-cover", {
+        body: {
+          title: article.title,
+          category: article.category,
+          articleId: article.id,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success("Imagem de capa gerada com sucesso!");
+      fetchArticles();
+    } catch (error: any) {
+      console.error("Error generating cover:", error);
+      toast.error(error.message || "Erro ao gerar imagem de capa");
+    } finally {
+      setGeneratingCover(null);
     }
   };
 
@@ -388,30 +443,59 @@ export const AdminBlogTab = () => {
                 key={article.id}
                 className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg"
               >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-foreground truncate">{article.title}</h4>
-                    {article.is_published ? (
-                      <Badge className="bg-success/20 text-success border-success/50">
-                        <Globe className="w-3 h-3 mr-1" />
-                        Publicado
-                      </Badge>
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  {/* Thumbnail */}
+                  <div className="w-16 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
+                    {article.image_url ? (
+                      <img
+                        src={article.image_url}
+                        alt={article.title}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      <Badge variant="outline">
-                        <GlobeLock className="w-3 h-3 mr-1" />
-                        Rascunho
-                      </Badge>
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Image className="w-4 h-4 text-muted-foreground" />
+                      </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>{article.category}</span>
-                    <span>•</span>
-                    <span>{article.read_time}</span>
-                    <span>•</span>
-                    <span>{new Date(article.created_at).toLocaleDateString("pt-BR")}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-medium text-foreground truncate">{article.title}</h4>
+                      {article.is_published ? (
+                        <Badge className="bg-success/20 text-success border-success/50">
+                          <Globe className="w-3 h-3 mr-1" />
+                          Publicado
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">
+                          <GlobeLock className="w-3 h-3 mr-1" />
+                          Rascunho
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span>{article.category}</span>
+                      <span>•</span>
+                      <span>{article.read_time}</span>
+                      <span>•</span>
+                      <span>{new Date(article.created_at).toLocaleDateString("pt-BR")}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleGenerateCover(article)}
+                    disabled={generatingCover === article.id}
+                    title="Gerar imagem de capa"
+                  >
+                    {generatingCover === article.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ImagePlus className="w-4 h-4" />
+                    )}
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -484,6 +568,18 @@ export const AdminBlogTab = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="generateWithCover"
+                checked={generateWithCover}
+                onChange={(e) => setGenerateWithCover(e.target.checked)}
+                className="w-4 h-4 rounded border-border"
+              />
+              <label htmlFor="generateWithCover" className="text-sm text-muted-foreground">
+                Gerar imagem de capa automaticamente
+              </label>
             </div>
           </div>
           <DialogFooter>
