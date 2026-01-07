@@ -52,6 +52,18 @@ const DynamicArticle = () => {
           setNotFound(true);
         } else {
           setArticle(data);
+          
+          // Track page view
+          try {
+            await supabase.functions.invoke("track-blog-view", {
+              body: { 
+                pagePath: `/blog/${slug}`,
+                articleId: data.id 
+              },
+            });
+          } catch (e) {
+            // Silent fail for analytics
+          }
         }
       } catch (err) {
         console.error("Error fetching article:", err);
