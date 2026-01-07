@@ -670,6 +670,33 @@ export type Database = {
           },
         ]
       }
+      imagefx_monthly_usage: {
+        Row: {
+          created_at: string
+          id: string
+          images_generated: number
+          month_year: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          images_generated?: number
+          month_year: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          images_generated?: number
+          month_year?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       monitored_channels: {
         Row: {
           channel_name: string | null
@@ -1563,6 +1590,14 @@ export type Database = {
         Args: { p_file_size_bytes: number; p_user_id: string }
         Returns: boolean
       }
+      get_imagefx_usage: {
+        Args: { p_user_id: string }
+        Returns: {
+          current_count: number
+          month_limit: number
+          remaining: number
+        }[]
+      }
       get_user_storage_bytes: { Args: { p_user_id: string }; Returns: number }
       get_user_storage_limit_gb: {
         Args: { p_user_id: string }
@@ -1574,6 +1609,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_imagefx_usage: {
+        Args: { p_count?: number; p_user_id: string }
+        Returns: {
+          is_limit_reached: boolean
+          month_limit: number
+          new_count: number
+        }[]
       }
     }
     Enums: {
