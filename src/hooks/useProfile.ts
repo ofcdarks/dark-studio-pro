@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -17,48 +17,51 @@ interface UserRole {
   role: "admin" | "pro" | "free";
 }
 
+// Cache: 5 minutos (perfil muda pouco)
+const PROFILE_STALE_TIME = 5 * 60 * 1000;
+const PROFILE_GC_TIME = 30 * 60 * 1000;
+
 export function useProfile() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [role, setRole] = useState<UserRole | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchProfile = async () => {
-    if (!user) {
-      setProfile(null);
-      setRole(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data: profileData, error: profileError } = await supabase
+  const { data: profile = null, isLoading: profileLoading } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (profileError) throw profileError;
-      setProfile(profileData);
+      if (error) throw error;
+      return data as Profile | null;
+    },
+    enabled: !!user,
+    staleTime: PROFILE_STALE_TIME,
+    gcTime: PROFILE_GC_TIME,
+  });
 
-      const { data: roleData, error: roleError } = await supabase
+  const { data: role = null, isLoading: roleLoading } = useQuery({
+    queryKey: ['user-role', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const { data, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (roleError) throw roleError;
-      setRole(roleData as UserRole);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProfile();
-  }, [user]);
+      if (error) throw error;
+      return data as UserRole | null;
+    },
+    enabled: !!user,
+    staleTime: PROFILE_STALE_TIME,
+    gcTime: PROFILE_GC_TIME,
+  });
 
   const updateCredits = async (newCredits: number) => {
     if (!user) return;
@@ -69,9 +72,22 @@ export function useProfile() {
       .eq("id", user.id);
       
     if (!error) {
-      setProfile(prev => prev ? { ...prev, credits: newCredits } : null);
+      queryClient.setQueryData(['profile', user.id], (old: Profile | null) => 
+        old ? { ...old, credits: newCredits } : null
+      );
     }
   };
 
-  return { profile, role, loading, updateCredits, refetch: fetchProfile };
+  const refetch = () => {
+    queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+    queryClient.invalidateQueries({ queryKey: ['user-role', user?.id] });
+  };
+
+  return { 
+    profile, 
+    role, 
+    loading: profileLoading || roleLoading, 
+    updateCredits, 
+    refetch 
+  };
 }

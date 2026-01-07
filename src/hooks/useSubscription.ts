@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -10,64 +10,55 @@ interface SubscriptionData {
   subscriptionEnd: string | null;
 }
 
+// Cache: 10 minutos (assinatura muda raramente)
+const SUBSCRIPTION_STALE_TIME = 10 * 60 * 1000;
+const SUBSCRIPTION_GC_TIME = 30 * 60 * 1000;
+
 export function useSubscription() {
   const { session } = useAuth();
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function checkSubscription() {
-      if (!session?.access_token) {
-        setLoading(false);
-        return;
+  const { data: subscription = null, isLoading: loading, error } = useQuery({
+    queryKey: ['subscription', session?.user?.id],
+    queryFn: async (): Promise<SubscriptionData | null> => {
+      if (!session?.access_token) return null;
+
+      // First check if user is admin
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      if (roleData?.role === "admin") {
+        return {
+          subscribed: true,
+          plan: "ADMIN",
+          productId: null,
+          priceId: null,
+          subscriptionEnd: null,
+        };
       }
 
-      try {
-        // First check if user is admin
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .single();
+      const { data, error } = await supabase.functions.invoke("check-subscription", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
-        if (roleData?.role === "admin") {
-          setSubscription({
-            subscribed: true,
-            plan: "ADMIN",
-            productId: null,
-            priceId: null,
-            subscriptionEnd: null,
-          });
-          setLoading(false);
-          return;
-        }
+      if (error) throw error;
 
-        const { data, error } = await supabase.functions.invoke("check-subscription", {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
-
-        if (error) throw error;
-
-        setSubscription({
-          subscribed: data?.subscribed || false,
-          plan: data?.plan || null,
-          productId: data?.product_id || null,
-          priceId: data?.price_id || null,
-          subscriptionEnd: data?.subscription_end || null,
-        });
-      } catch (err) {
-        console.error("Error checking subscription:", err);
-        setError(err instanceof Error ? err.message : "Failed to check subscription");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    checkSubscription();
-  }, [session?.access_token]);
+      return {
+        subscribed: data?.subscribed || false,
+        plan: data?.plan || null,
+        productId: data?.product_id || null,
+        priceId: data?.price_id || null,
+        subscriptionEnd: data?.subscription_end || null,
+      };
+    },
+    enabled: !!session?.access_token,
+    staleTime: SUBSCRIPTION_STALE_TIME,
+    gcTime: SUBSCRIPTION_GC_TIME,
+  });
 
   const getPlanDisplayName = (): string => {
     if (!subscription?.subscribed) return "Free";
@@ -76,6 +67,7 @@ export function useSubscription() {
     if (planName?.includes("pro") || planName?.includes("profissional")) return "Pro";
     if (planName?.includes("expert")) return "Expert";
     if (planName?.includes("master")) return "Master";
+    if (planName === "admin") return "Admin";
     
     return subscription.plan || "Pro";
   };
@@ -83,7 +75,7 @@ export function useSubscription() {
   return {
     subscription,
     loading,
-    error,
+    error: error instanceof Error ? error.message : null,
     isSubscribed: subscription?.subscribed || false,
     planName: getPlanDisplayName(),
   };
