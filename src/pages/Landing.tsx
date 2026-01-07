@@ -207,15 +207,7 @@ const Landing = () => {
         <ParallaxLayer depth={0.5} className="absolute bottom-0 right-1/4 w-60 md:w-80 h-60 md:h-80 bg-primary/8 rounded-full blur-2xl pointer-events-none hidden lg:block" />
 
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-16 items-center relative z-10 w-full">
-          <AnimatedSection animation="fade-right" className="space-y-6 md:space-y-8">
-              {/* Private Elite Access Badge - Centered and wider */}
-              <div className="flex justify-center lg:justify-start">
-                <div className="inline-flex items-center justify-center gap-4 md:gap-6 px-8 md:px-12 py-3 md:py-4 rounded-full bg-card border border-border min-w-[280px] md:min-w-[360px]">
-                  <Rocket className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-                  <span className="text-sm md:text-base font-medium tracking-wide">PRIVATE ELITE ACCESS</span>
-                  <Rocket className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-                </div>
-              </div>
+          <AnimatedSection animation="fade-right" className="space-y-5 md:space-y-6">
 
               {/* Warning Badge */}
               <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-primary/20 border border-primary/30">
