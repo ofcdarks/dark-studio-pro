@@ -132,15 +132,33 @@ export const ComparisonSlider = () => {
           className="absolute top-0 bottom-0 w-1 bg-foreground cursor-ew-resize z-10"
           style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
         >
-          {/* Handle grip */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-foreground flex items-center justify-center shadow-xl shadow-black/50 border-2 border-background">
+          {/* Handle grip with pulse animation */}
+          <motion.div 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-foreground flex items-center justify-center shadow-xl shadow-black/50 border-2 border-background"
+            animate={{ 
+              boxShadow: [
+                "0 0 0 0 rgba(245, 158, 11, 0.4)",
+                "0 0 0 12px rgba(245, 158, 11, 0)",
+                "0 0 0 0 rgba(245, 158, 11, 0)"
+              ]
+            }}
+            transition={{ 
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeOut"
+            }}
+          >
             <GripVertical className="w-5 h-5 text-background" />
-          </div>
+          </motion.div>
           
           {/* Labels */}
-          <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-medium text-foreground bg-background/80 backdrop-blur px-3 py-1.5 rounded-full border border-border">
+          <motion.div 
+            className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-medium text-foreground bg-background/80 backdrop-blur px-3 py-1.5 rounded-full border border-border"
+            animate={{ opacity: [1, 0.6, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
             ← Arraste →
-          </div>
+          </motion.div>
         </div>
       </div>
 
