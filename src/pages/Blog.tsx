@@ -8,6 +8,7 @@ import { SEOHead } from "@/components/seo/SEOHead";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { AnimatedCounter } from "@/components/landing/AnimatedCounter";
 import { 
   ArrowRight, 
   Clock, 
@@ -478,18 +479,11 @@ const Blog = () => {
                 faceless que geram renda passiva consistente.
               </p>
 
-              {/* Stats */}
+{/* Stats */}
               <div className="flex flex-wrap items-center justify-center gap-8 mb-10">
-                {[
-                  { value: "100%", label: "Gratuito" },
-                  { value: `${blogPosts.length}+`, label: "Artigos" },
-                  { value: "2026", label: "Atualizado" }
-                ].map((stat, i) => (
-                  <div key={i} className="text-center">
-                    <div className="text-2xl md:text-3xl font-bold text-primary">{stat.value}</div>
-                    <div className="text-sm text-muted-foreground">{stat.label}</div>
-                  </div>
-                ))}
+                <AnimatedCounter value="100%" label="Gratuito" />
+                <AnimatedCounter value={`${blogPosts.length}+`} label="Artigos" />
+                <AnimatedCounter value="2026" label="Atualizado" />
               </div>
 
               {/* Search Bar - Premium */}
