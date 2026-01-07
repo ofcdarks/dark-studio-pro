@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,30 +25,16 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Generating cover image for:", title, "with style:", style);
+    console.log("Generating cover for:", title);
 
-    // Style-specific prompt modifiers
-    const stylePrompts: Record<string, string> = {
-      cinematic: "Cinematic lighting with dramatic shadows, film-quality aesthetic, rich contrast, depth of field blur, professional movie poster feel.",
-      minimalist: "Clean minimalist design with lots of negative space, simple geometric shapes, muted color palette, elegant and sophisticated.",
-      colorful: "Vibrant and bold colors, playful gradients, energetic and dynamic composition, bright and cheerful mood.",
-      tech: "Futuristic technology aesthetic, circuit patterns, holographic elements, blue and cyan tones, digital matrix feel, sci-fi inspired.",
-      gradient: "Abstract flowing gradients, smooth color transitions, aurora-like effects, dreamy and ethereal atmosphere.",
-      neon: "Neon lights and glowing effects, cyberpunk aesthetic, dark background with bright neon accents in pink, purple and cyan.",
-      professional: "Corporate professional look, clean and structured, business-oriented, trustworthy blue and gray tones, subtle geometric patterns.",
-      creative: "Artistic and expressive, painterly brushstrokes, mixed media collage feel, creative and unique visual elements.",
-    };
+    let styleDesc = "cinematic dramatic lighting";
+    if (style === "minimalist") styleDesc = "minimalist with negative space";
+    else if (style === "colorful") styleDesc = "vibrant bold colors";
+    else if (style === "tech") styleDesc = "futuristic technology";
+    else if (style === "neon") styleDesc = "neon cyberpunk style";
 
-    const selectedStyle = stylePrompts[style || "cinematic"] || stylePrompts.cinematic;
+    const imagePrompt = `Professional blog cover 16:9 about "${title}". ${styleDesc}. Category: ${category || "YouTube"}. No text. Ultra detailed.`;
 
-    // Create a detailed prompt for blog cover image
-    const imagePrompt = `Professional blog cover image for an article about: "${title}". 
-Category: ${category || "YouTube content creation"}.
-Visual Style: ${selectedStyle}
-Composition: 16:9 aspect ratio, suitable for blog hero image.
-No text or words in the image. High quality, ultra detailed.`;
-
-    // Generate image using Lovable AI
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -58,105 +43,68 @@ No text or words in the image. High quality, ultra detailed.`;
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: imagePrompt,
-          },
-        ],
+        messages: [{ role: "user", content: imagePrompt }],
         modalities: ["image", "text"],
       }),
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Limite de requisições excedido. Tente novamente mais tarde." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos insuficientes." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+      console.error("AI error:", response.status, errorText);
+      return new Response(
+        JSON.stringify({ error: `AI error: ${response.status}` }),
+        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const data = await response.json();
     const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
     if (!imageUrl) {
-      console.error("No image generated, response:", JSON.stringify(data));
-      throw new Error("Nenhuma imagem foi gerada");
+      throw new Error("Nenhuma imagem gerada");
     }
 
-    console.log("Image generated successfully");
-
-    // If articleId is provided, upload to storage and update the article
+    // If articleId provided, upload to storage
     if (articleId) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+      
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
 
-      // Convert base64 to blob
       const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
       const imageBuffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
-
       const fileName = `blog-covers/${articleId}-${Date.now()}.png`;
 
-      // Upload to storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("blog-images")
-        .upload(fileName, imageBuffer, {
-          contentType: "image/png",
-          upsert: true,
-        });
+        .upload(fileName, imageBuffer, { contentType: "image/png", upsert: true });
 
       if (uploadError) {
         console.error("Upload error:", uploadError);
-        // Return the base64 image if upload fails
         return new Response(
           JSON.stringify({ success: true, image_url: imageUrl, uploaded: false }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("blog-images")
-        .getPublicUrl(fileName);
-
-      const publicUrl = urlData.publicUrl;
-
-      // Update article with image URL
-      const { error: updateError } = await supabase
-        .from("blog_articles")
-        .update({ image_url: publicUrl })
-        .eq("id", articleId);
-
-      if (updateError) {
-        console.error("Update error:", updateError);
-      }
-
-      console.log("Image uploaded and article updated:", publicUrl);
+      const { data: urlData } = supabase.storage.from("blog-images").getPublicUrl(fileName);
+      
+      await supabase.from("blog_articles").update({ image_url: urlData.publicUrl }).eq("id", articleId);
 
       return new Response(
-        JSON.stringify({ success: true, image_url: publicUrl, uploaded: true }),
+        JSON.stringify({ success: true, image_url: urlData.publicUrl, uploaded: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Return base64 image if no articleId
     return new Response(
       JSON.stringify({ success: true, image_url: imageUrl, uploaded: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error generating blog cover:", error);
+    console.error("Error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
