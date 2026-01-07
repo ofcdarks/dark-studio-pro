@@ -4,8 +4,9 @@ import { useToolMaintenance, TOOL_REGISTRY } from "@/hooks/useToolMaintenance";
 import { MaintenanceModal } from "./MaintenanceModal";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, X, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 // Key for localStorage to check simulation mode
 const SIMULATE_USER_KEY = 'admin_simulate_user_maintenance';
@@ -101,6 +102,29 @@ export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('simulateUserModeChanged', handleStorageChange);
+    };
+  }, []);
+
+  // Listen for maintenance end broadcast notifications
+  useEffect(() => {
+    const channel = supabase
+      .channel('maintenance-broadcast')
+      .on('broadcast', { event: 'maintenance_end' }, (payload) => {
+        console.log('[MaintenanceGuard] Received maintenance end notification:', payload);
+        
+        toast.success(payload.payload?.message || '🎉 A manutenção foi concluída!', {
+          duration: 8000,
+          icon: <Rocket className="w-5 h-5 text-primary" />,
+          action: {
+            label: 'Recarregar',
+            onClick: () => window.location.reload(),
+          },
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
   }, []);
 

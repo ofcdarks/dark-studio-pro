@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Save, Loader2, Clock, AlertTriangle, ExternalLink, Monitor, Wrench, Rocket, RefreshCw } from "lucide-react";
+import { Globe, Save, Loader2, Clock, AlertTriangle, ExternalLink, Monitor, Wrench, Rocket, RefreshCw, BellRing } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,6 +34,7 @@ export const AdminGlobalMaintenanceTab = () => {
   const [settings, setSettings] = useState<GlobalMaintenanceSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -154,6 +155,32 @@ export const AdminGlobalMaintenanceTab = () => {
     }
   };
 
+  const sendMaintenanceEndNotification = async () => {
+    setIsSendingNotification(true);
+    try {
+      // Broadcast maintenance end notification to all connected users
+      const channel = supabase.channel('maintenance-broadcast');
+      
+      await channel.send({
+        type: 'broadcast',
+        event: 'maintenance_end',
+        payload: {
+          message: '🎉 A manutenção foi concluída! A plataforma está online novamente.',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      
+      await supabase.removeChannel(channel);
+      
+      toast.success('📢 Notificação de teste enviada para usuários conectados!');
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      toast.error('Erro ao enviar notificação');
+    } finally {
+      setIsSendingNotification(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -258,13 +285,28 @@ export const AdminGlobalMaintenanceTab = () => {
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t">
-          <Button
-            variant="outline"
-            onClick={() => window.open('/maintenance', '_blank')}
-          >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Visualizar Página
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => window.open('/maintenance', '_blank')}
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Visualizar Página
+            </Button>
+            
+            <Button
+              variant="secondary"
+              onClick={sendMaintenanceEndNotification}
+              disabled={isSendingNotification}
+            >
+              {isSendingNotification ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <BellRing className="w-4 h-4 mr-2" />
+              )}
+              Testar Notificação
+            </Button>
+          </div>
 
           <Button onClick={saveSettings} disabled={isSaving}>
             {isSaving ? (
