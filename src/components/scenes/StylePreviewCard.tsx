@@ -104,6 +104,7 @@ import previewDataflow from "@/assets/style-previews/dataflow.jpg";
 // 3D & Animação - extras
 import previewDreamworksStyle from "@/assets/style-previews/dreamworks-style.jpg";
 import previewCyberpunk3D from "@/assets/style-previews/cyberpunk-3d.jpg";
+import preview3DViralMinimalista from "@/assets/style-previews/3d-viral-minimalista.jpg";
 
 interface StylePreviewCardProps {
   style: ThumbnailStyle;
@@ -126,6 +127,7 @@ const styleImages: Record<string, string> = {
   "neon-3d": previewNeon3D,
   "dreamworks-style": previewDreamworksStyle,
   "cyberpunk-3d": previewCyberpunk3D,
+  "3d-viral-minimalista": preview3DViralMinimalista,
   // Realistas
   "foto-realista": previewFotoRealista,
   "cinematografico": previewCinematografico,
