@@ -1,74 +1,274 @@
-# Deploy no EasyPanel
+# 🚀 Deploy La Casa Dark CORE no EasyPanel
 
-## Configuração de Domínios
-
-### Landing Page: www.canaisdarks.com.br
-- Redireciona automaticamente para `/landing`
-- Público, sem autenticação
-
-### Aplicação: app.canaisdarks.com.br  
-- Aplicação completa com dashboard
-- Requer autenticação
+## 📋 Índice
+1. [Pré-requisitos](#pré-requisitos)
+2. [Configuração do Servidor](#configuração-do-servidor)
+3. [Deploy no EasyPanel](#deploy-no-easypanel)
+4. [Configuração de Domínios](#configuração-de-domínios)
+5. [Variáveis de Ambiente](#variáveis-de-ambiente)
+6. [Modo Manutenção](#modo-manutenção)
+7. [Verificação e Troubleshooting](#verificação-e-troubleshooting)
 
 ---
 
-## Passos para Deploy no EasyPanel
+## 🎯 Domínios Configurados
 
-### 1. Criar Projeto no EasyPanel
-1. Acesse seu painel EasyPanel
-2. Clique em **"New Project"**
-3. Nome: `canaisdarks`
+| Domínio | Função |
+|---------|--------|
+| `www.canaisdarks.com.br` | Landing Page (pública) |
+| `canaisdarks.com.br` | Redireciona para www |
+| `app.canaisdarks.com.br` | Aplicação (requer login) |
 
-### 2. Criar Serviço
-1. Dentro do projeto, clique em **"+ Service"**
-2. Selecione **"App"** → **"Docker"**
-3. Configure:
-   - **Name**: `app`
-   - **Source**: GitHub ou upload do código
-   - **Dockerfile Path**: `./Dockerfile`
+---
 
-### 3. Configurar Domínios
-No serviço criado, vá em **"Domains"** e adicione:
+## ✅ Pré-requisitos
 
-#### Domínio 1 - Landing
-- **Domain**: `www.canaisdarks.com.br`
-- **Port**: `80`
-- **HTTPS**: Ativado
+- [ ] VPS com Ubuntu 20.04+ ou Debian 11+
+- [ ] Mínimo 2GB RAM, 2 vCPU
+- [ ] EasyPanel instalado
+- [ ] Domínio configurado no provedor DNS
+- [ ] Acesso SSH ao servidor
 
-#### Domínio 2 - Landing (sem www)
-- **Domain**: `canaisdarks.com.br`
-- **Port**: `80`
-- **HTTPS**: Ativado
+---
+
+## 🖥️ Configuração do Servidor
+
+### 1. Instalar EasyPanel (se ainda não tiver)
+
+```bash
+# Conecte via SSH no seu servidor
+ssh root@seu-ip-do-servidor
+
+# Instale o EasyPanel
+curl -sSL https://get.easypanel.io | sh
+```
+
+### 2. Acessar EasyPanel
+
+Após instalação, acesse:
+```
+https://seu-ip-do-servidor:3000
+```
+
+Crie sua conta de administrador no primeiro acesso.
+
+---
+
+## 🐳 Deploy no EasyPanel
+
+### Passo 1: Criar Projeto
+
+1. No EasyPanel, clique em **"+ New Project"**
+2. Nome: `canaisdarks`
+3. Clique em **"Create"**
+
+### Passo 2: Criar Serviço (App)
+
+1. Dentro do projeto, clique em **"+ New Service"**
+2. Selecione **"App"**
+3. Escolha o método de deploy:
+
+#### Opção A: Via GitHub (Recomendado)
+1. Conecte sua conta GitHub
+2. Selecione o repositório
+3. Branch: `main`
+4. Build Command: deixe vazio (usa Dockerfile)
+5. Dockerfile Path: `./Dockerfile`
+
+#### Opção B: Via Git URL
+1. Selecione **"Git URL"**
+2. URL: `https://github.com/seu-usuario/seu-repo.git`
+3. Branch: `main`
+4. Dockerfile Path: `./Dockerfile`
+
+### Passo 3: Configurar Build
+
+Na aba **"Build"** do serviço:
+
+```yaml
+Dockerfile Path: ./Dockerfile
+Build Context: .
+```
+
+### Passo 4: Adicionar Variáveis de Ambiente
+
+Na aba **"Environment"**, adicione:
+
+```env
+NODE_ENV=production
+VITE_SUPABASE_URL=https://kabnbvnephjifeazaiis.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_PROJECT_ID=kabnbvnephjifeazaiis
+```
+
+> ⚠️ **Importante**: Substitua pelas suas credenciais reais do Supabase
+
+### Passo 5: Deploy
+
+1. Clique em **"Deploy"**
+2. Aguarde o build completar (3-5 minutos)
+3. Verifique se o status está **"Running"**
+
+---
+
+## 🌐 Configuração de Domínios
+
+### No EasyPanel
+
+Na aba **"Domains"** do serviço, adicione:
+
+#### Domínio 1 - Landing (www)
+```
+Domain: www.canaisdarks.com.br
+Port: 80
+HTTPS: ✅ Enabled
+Force HTTPS: ✅ Enabled
+```
+
+#### Domínio 2 - Landing (raiz)
+```
+Domain: canaisdarks.com.br
+Port: 80
+HTTPS: ✅ Enabled
+Force HTTPS: ✅ Enabled
+```
 
 #### Domínio 3 - Aplicação
-- **Domain**: `app.canaisdarks.com.br`
-- **Port**: `80`
-- **HTTPS**: Ativado
-
-### 4. Configurar DNS
-No seu provedor de domínio, configure:
-
 ```
-Tipo    Nome    Valor
-A       @       [IP do servidor EasyPanel]
-A       www     [IP do servidor EasyPanel]
-A       app     [IP do servidor EasyPanel]
+Domain: app.canaisdarks.com.br
+Port: 80
+HTTPS: ✅ Enabled
+Force HTTPS: ✅ Enabled
 ```
 
-### 5. Variáveis de Ambiente (Opcional)
-Se precisar adicionar variáveis de ambiente, vá em **"Environment"**:
+### No Provedor de DNS (Cloudflare, GoDaddy, etc.)
+
+Configure os seguintes registros DNS:
+
 ```
-NODE_ENV=production
+Tipo    Nome    Valor                      TTL
+─────────────────────────────────────────────────
+A       @       [IP do seu servidor]       Auto
+A       www     [IP do seu servidor]       Auto
+A       app     [IP do seu servidor]       Auto
 ```
 
-### 6. Deploy
-1. Clique em **"Deploy"**
-2. Aguarde o build completar
-3. Teste os domínios
+**Exemplo prático** (se seu IP é 203.0.113.50):
+```
+A       @       203.0.113.50    Auto
+A       www     203.0.113.50    Auto
+A       app     203.0.113.50    Auto
+```
+
+> 📝 O IP do servidor aparece no painel EasyPanel em **Settings → Server**
+
+### Verificar Propagação DNS
+
+Use https://dnschecker.org para verificar se os registros propagaram.
 
 ---
 
-## Comandos Úteis (Docker Local)
+## 🔐 Variáveis de Ambiente
+
+### Build Args (durante build)
+
+Estas variáveis são injetadas durante o build:
+
+| Variável | Descrição |
+|----------|-----------|
+| `VITE_SUPABASE_URL` | URL do projeto Supabase |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Chave pública (anon) |
+| `VITE_SUPABASE_PROJECT_ID` | ID do projeto |
+
+### Como Configurar no EasyPanel
+
+1. Vá no serviço → **Environment**
+2. Adicione cada variável
+3. Clique em **"Redeploy"** para aplicar
+
+---
+
+## 🔧 Modo Manutenção
+
+### Antes de um Deploy
+
+1. Acesse `https://app.canaisdarks.com.br/admin`
+2. Vá na aba **"Manutenção Global"**
+3. Ative o modo manutenção
+4. Configure:
+   - Mensagem personalizada
+   - Previsão de retorno
+   - Contador regressivo
+
+### Durante o Deploy
+
+- Usuários verão a página de manutenção
+- Admins continuam navegando normalmente
+
+### Após o Deploy
+
+1. Volte ao painel admin
+2. Desative o modo manutenção
+3. Clique em **"Testar Notificação"** para avisar usuários conectados
+
+---
+
+## ✅ Verificação e Troubleshooting
+
+### Checklist Pós-Deploy
+
+- [ ] https://www.canaisdarks.com.br → Abre landing page
+- [ ] https://canaisdarks.com.br → Redireciona para www
+- [ ] https://app.canaisdarks.com.br → Abre aplicação
+- [ ] https://app.canaisdarks.com.br/health → Retorna "OK"
+- [ ] Login funciona corretamente
+- [ ] HTTPS está ativo (cadeado verde)
+
+### Comandos Úteis no Servidor
+
+```bash
+# Ver logs do container
+docker logs canaisdarks-app-1 -f
+
+# Reiniciar container
+docker restart canaisdarks-app-1
+
+# Ver uso de recursos
+docker stats canaisdarks-app-1
+
+# Acessar shell do container
+docker exec -it canaisdarks-app-1 sh
+```
+
+### Problemas Comuns
+
+#### ❌ Erro 502 Bad Gateway
+```bash
+# Verifique se o container está rodando
+docker ps | grep canaisdarks
+
+# Veja os logs
+docker logs canaisdarks-app-1 --tail 100
+```
+
+#### ❌ SSL não funciona
+- Aguarde até 48h para propagação DNS
+- Verifique registros A no dnschecker.org
+- No EasyPanel, clique em "Renew Certificate"
+
+#### ❌ Página em branco
+- Abra DevTools (F12) → Console
+- Verifique se variáveis de ambiente estão corretas
+- Limpe cache: Ctrl+Shift+R
+
+#### ❌ Build falha
+- Verifique se Dockerfile está no caminho correto
+- Confira logs de build no EasyPanel
+- Certifique-se que `npm ci` funciona localmente
+
+---
+
+## 📱 Comandos Docker (Desenvolvimento Local)
 
 ```bash
 # Build da imagem
@@ -85,45 +285,40 @@ docker-compose logs -f
 
 # Parar
 docker-compose down
+
+# Rebuild e restart
+docker-compose up -d --build
 ```
 
 ---
 
-## Modo Manutenção
+## 🔄 Atualizando a Aplicação
 
-### Antes de um Deploy
-1. Acesse o **Painel Admin** → **Manutenção Global**
-2. Ative o modo manutenção
-3. Configure a mensagem e previsão de retorno
-4. Todos os usuários serão redirecionados para `/maintenance`
-5. Após o deploy, desative o modo manutenção
+### Via EasyPanel (Automático)
 
-### URL de Manutenção
-- https://app.canaisdarks.com.br/maintenance
+1. Push para branch `main` no GitHub
+2. EasyPanel detecta e faz deploy automático
 
----
+### Via EasyPanel (Manual)
 
-## Verificação
+1. Vá no serviço
+2. Clique em **"Redeploy"**
 
-Após deploy, verifique:
-- [ ] https://www.canaisdarks.com.br → Redireciona para landing
-- [ ] https://canaisdarks.com.br → Redireciona para landing  
-- [ ] https://app.canaisdarks.com.br → Abre aplicação completa
-- [ ] Health check: https://app.canaisdarks.com.br/health
-- [ ] Modo manutenção funciona corretamente
+### Via Webhook (Opcional)
+
+Configure webhook no GitHub:
+```
+URL: https://easypanel.seu-ip/api/webhook/github
+Secret: [gerado no EasyPanel]
+```
 
 ---
 
-## Troubleshooting
+## 📞 Suporte
 
-### Erro 502 Bad Gateway
-- Verifique se o container está rodando
-- Cheque os logs: `docker logs canaisdarks-app`
+- **Documentação EasyPanel**: https://easypanel.io/docs
+- **Status do Supabase**: https://status.supabase.com
 
-### SSL não funciona
-- Aguarde propagação DNS (até 48h)
-- Verifique se os registros A estão corretos
+---
 
-### Página em branco
-- Limpe cache do navegador
-- Verifique console do navegador por erros
+*Última atualização: Janeiro 2026*
