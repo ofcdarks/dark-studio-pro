@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -41,7 +42,6 @@ interface CachedDirective {
 }
 
 const CACHE_KEY = 'dashboard_directive_cache';
-const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 horas
 
 const iconMap = {
   target: Target,
@@ -59,11 +59,15 @@ function generateStatsHash(stats: DirectivesCardProps['stats']): string {
 
 export function DirectivesCard({ stats }: DirectivesCardProps) {
   const { user } = useAuth();
+  const { directiveUpdateHours } = useUserPreferences();
   const [directive, setDirective] = useState<AIDirective | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
   const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
   const [isFromCache, setIsFromCache] = useState(false);
+  
+  // Cache duration based on user preference (convert hours to ms)
+  const cacheDurationMs = directiveUpdateHours * 60 * 60 * 1000;
 
   // Carrega do cache
   const loadFromCache = (): CachedDirective | null => {
@@ -93,7 +97,7 @@ export function DirectivesCard({ stats }: DirectivesCardProps) {
   // Verifica se o cache é válido
   const isCacheValid = (cached: CachedDirective, currentStatsHash: string): boolean => {
     const now = Date.now();
-    const isExpired = now - cached.timestamp > CACHE_DURATION_MS;
+    const isExpired = now - cached.timestamp > cacheDurationMs;
     const statsChanged = cached.statsHash !== currentStatsHash;
     
     // Cache inválido se expirou OU se stats mudaram significativamente
