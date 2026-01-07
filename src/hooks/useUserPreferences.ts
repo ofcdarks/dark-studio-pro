@@ -15,7 +15,7 @@ export function useUserPreferences() {
   const [isLoading, setIsLoading] = useState(true);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const isInitialized = useRef(false);
-  const isSavingTheme = useRef(false);
+  const isSaving = useRef(false);
 
   // Load preferences from database ONCE on mount
   useEffect(() => {
@@ -58,19 +58,18 @@ export function useUserPreferences() {
     loadPreferences();
   }, [user?.id, setNextTheme]);
 
-  // Save theme to database when user changes it
-  const saveTheme = useCallback(async (newTheme: string) => {
-    // Prevent double saves
-    if (isSavingTheme.current) return;
-    isSavingTheme.current = true;
+  // Generic save function for any preference
+  const savePreference = useCallback(async <K extends keyof UserPreferences>(
+    key: K,
+    value: UserPreferences[K]
+  ) => {
+    if (isSaving.current) return;
+    isSaving.current = true;
 
-    // Apply theme immediately via next-themes
-    setNextTheme(newTheme);
-
-    // Update local state
+    // Update local state immediately
     setPreferences(prev => prev 
-      ? { ...prev, theme: newTheme } 
-      : { theme: newTheme, sidebar_order: null, directive_update_hours: 24 }
+      ? { ...prev, [key]: value } 
+      : { theme: 'dark', sidebar_order: null, directive_update_hours: 24, [key]: value }
     );
 
     // Save to database if user is logged in
@@ -80,51 +79,46 @@ export function useUserPreferences() {
           .from('user_preferences')
           .upsert({
             user_id: user.id,
-            theme: newTheme,
+            [key]: value,
             updated_at: new Date().toISOString()
           }, {
             onConflict: 'user_id'
           });
       } catch (err) {
-        console.error('Error saving theme:', err);
+        console.error(`Error saving ${key}:`, err);
       }
     }
 
-    // Allow new saves after a small delay
     setTimeout(() => {
-      isSavingTheme.current = false;
+      isSaving.current = false;
     }, 100);
-  }, [user?.id, setNextTheme]);
+  }, [user?.id]);
+
+  // Save theme
+  const saveTheme = useCallback(async (newTheme: string) => {
+    setNextTheme(newTheme);
+    await savePreference('theme', newTheme);
+  }, [setNextTheme, savePreference]);
+
+  // Save sidebar order
+  const saveSidebarOrder = useCallback(async (order: string[]) => {
+    await savePreference('sidebar_order', order);
+  }, [savePreference]);
 
   // Save directive update frequency
   const saveDirectiveUpdateHours = useCallback(async (hours: number) => {
-    if (!user?.id) return;
-
-    try {
-      await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: user.id,
-          directive_update_hours: hours,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        });
-      
-      setPreferences(prev => prev 
-        ? { ...prev, directive_update_hours: hours } 
-        : { theme: 'dark', sidebar_order: null, directive_update_hours: hours }
-      );
-    } catch (err) {
-      console.error('Error saving directive update hours:', err);
-    }
-  }, [user?.id]);
+    await savePreference('directive_update_hours', hours);
+  }, [savePreference]);
 
   return {
     theme: resolvedTheme || theme || 'dark',
     setTheme: saveTheme,
     preferences,
     isLoading,
+    // Sidebar order
+    sidebarOrder: preferences?.sidebar_order ?? null,
+    saveSidebarOrder,
+    // Directive update hours
     directiveUpdateHours: preferences?.directive_update_hours ?? 24,
     saveDirectiveUpdateHours
   };
