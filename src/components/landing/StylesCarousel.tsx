@@ -27,30 +27,30 @@ import previewUnrealEngine from "@/assets/style-previews/unreal-engine.jpg";
 
 // Row 1 styles (left to right)
 const stylesRow1 = [
-  { id: "3d-cinematic", name: "3D Cinematográfico", image: preview3DCinematic, category: "3D" },
-  { id: "cinematografico", name: "Cinematográfico", image: previewCinematografico, category: "Realista" },
-  { id: "anime", name: "Anime", image: previewAnime, category: "Artístico" },
-  { id: "neon-cyberpunk", name: "Neon Cyberpunk", image: previewNeonCyberpunk, category: "Vibrante" },
-  { id: "noir-classico", name: "Noir Clássico", image: previewNoirClassico, category: "Dramático" },
-  { id: "diorama", name: "Diorama", image: previewDiorama, category: "Experimental" },
-  { id: "pixar", name: "Pixar/Disney", image: previewPixar, category: "3D" },
-  { id: "vaporwave", name: "Vaporwave", image: previewVaporwave, category: "Vibrante" },
+  { id: "3d-cinematic", name: "3D Cinematográfico", image: preview3DCinematic, category: "3D", description: "Miniaturas hiper-detalhadas com iluminação dramática e profundidade cinematográfica" },
+  { id: "cinematografico", name: "Cinematográfico", image: previewCinematografico, category: "Realista", description: "Estética de cinema hollywoodiano com composição e cor profissionais" },
+  { id: "anime", name: "Anime", image: previewAnime, category: "Artístico", description: "Traços fluidos e expressivos inspirados em animação japonesa" },
+  { id: "neon-cyberpunk", name: "Neon Cyberpunk", image: previewNeonCyberpunk, category: "Vibrante", description: "Luzes néon vibrantes em cenários urbanos futuristas" },
+  { id: "noir-classico", name: "Noir Clássico", image: previewNoirClassico, category: "Dramático", description: "Alto contraste P&B com sombras expressivas e atmosfera misteriosa" },
+  { id: "diorama", name: "Diorama", image: previewDiorama, category: "Experimental", description: "Cenas em miniatura com efeito tilt-shift e detalhes intrincados" },
+  { id: "pixar", name: "Pixar/Disney", image: previewPixar, category: "3D", description: "Personagens expressivos com visual polido de animação 3D" },
+  { id: "vaporwave", name: "Vaporwave", image: previewVaporwave, category: "Vibrante", description: "Estética retrô-futurista com cores pastel e elementos 80s/90s" },
 ];
 
 // Row 2 styles (right to left)
 const stylesRow2 = [
-  { id: "terror", name: "Terror Analógico", image: previewTerrorAnalogico, category: "Dramático" },
-  { id: "surrealismo", name: "Surrealismo", image: previewSurrealismo, category: "Experimental" },
-  { id: "fantasia", name: "Fantasia", image: previewFantasia, category: "Artístico" },
-  { id: "apocaliptico", name: "Apocalíptico", image: previewApocaliptico, category: "Dramático" },
-  { id: "comic", name: "Comic Book", image: previewComicBook, category: "Artístico" },
-  { id: "gotico", name: "Gótico Vitoriano", image: previewGoticoVitoriano, category: "Dramático" },
-  { id: "synthwave", name: "Synthwave", image: previewSynthwave, category: "Vibrante" },
-  { id: "unreal", name: "Unreal Engine", image: previewUnrealEngine, category: "3D" },
+  { id: "terror", name: "Terror Analógico", image: previewTerrorAnalogico, category: "Dramático", description: "Atmosfera perturbadora com grão de filme e degradação visual" },
+  { id: "surrealismo", name: "Surrealismo", image: previewSurrealismo, category: "Experimental", description: "Composições oníricas que desafiam a realidade e a lógica" },
+  { id: "fantasia", name: "Fantasia", image: previewFantasia, category: "Artístico", description: "Mundos mágicos com criaturas e paisagens encantadas" },
+  { id: "apocaliptico", name: "Apocalíptico", image: previewApocaliptico, category: "Dramático", description: "Cenários pós-apocalípticos com atmosfera desoladora e épica" },
+  { id: "comic", name: "Comic Book", image: previewComicBook, category: "Artístico", description: "Traços bold com cores vibrantes estilo HQ americana" },
+  { id: "gotico", name: "Gótico Vitoriano", image: previewGoticoVitoriano, category: "Dramático", description: "Arquitetura sombria com elementos românticos e misteriosos" },
+  { id: "synthwave", name: "Synthwave", image: previewSynthwave, category: "Vibrante", description: "Néon e gradientes com estética retrofuturista dos anos 80" },
+  { id: "unreal", name: "Unreal Engine", image: previewUnrealEngine, category: "3D", description: "Realismo fotográfico com iluminação e texturas de alta fidelidade" },
 ];
 
 interface StyleCardProps {
-  style: { id: string; name: string; image: string; category: string };
+  style: { id: string; name: string; image: string; category: string; description: string };
   index: number;
 }
 
@@ -58,26 +58,45 @@ const StyleCard = ({ style, index }: StyleCardProps) => (
   <motion.div
     key={`${style.id}-${index}`}
     className="flex-shrink-0 w-56 md:w-72 group"
-    whileHover={{ scale: 1.05, y: -8 }}
+    whileHover={{ scale: 1.08, y: -12 }}
     transition={{ duration: 0.3 }}
   >
-    <div className="relative rounded-xl overflow-hidden border-2 border-border group-hover:border-primary/50 transition-all duration-300 shadow-lg group-hover:shadow-primary/20">
+    <div className="relative rounded-xl overflow-hidden border-2 border-border group-hover:border-primary/50 transition-all duration-300 shadow-lg group-hover:shadow-xl group-hover:shadow-primary/30">
       <div className="aspect-video">
         <img 
           src={style.image} 
           alt={style.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           loading="lazy"
         />
       </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80" />
+      
+      {/* Overlay gradiente - expande no hover */}
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent opacity-80 group-hover:opacity-95 transition-opacity duration-300" />
+      
+      {/* Badge categoria */}
       <div className="absolute top-3 right-3">
-        <span className="px-2 py-1 text-xs font-medium bg-primary/90 text-primary-foreground rounded-full">
+        <span className="px-2 py-1 text-xs font-medium bg-primary/90 text-primary-foreground rounded-full shadow-lg">
           {style.category}
         </span>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 p-3">
-        <h4 className="font-bold text-base text-foreground">{style.name}</h4>
+      
+      {/* Conteúdo - expande no hover */}
+      <div className="absolute bottom-0 left-0 right-0 p-3 transform transition-all duration-300">
+        <h4 className="font-bold text-base md:text-lg text-foreground mb-0 group-hover:mb-2 transition-all duration-300">
+          {style.name}
+        </h4>
+        
+        {/* Descrição - aparece no hover */}
+        <p className="text-xs md:text-sm text-muted-foreground leading-tight max-h-0 opacity-0 group-hover:max-h-20 group-hover:opacity-100 transition-all duration-300 overflow-hidden">
+          {style.description}
+        </p>
+        
+        {/* Indicador visual */}
+        <div className="flex items-center gap-1.5 mt-0 group-hover:mt-2 max-h-0 opacity-0 group-hover:max-h-8 group-hover:opacity-100 transition-all duration-300">
+          <Sparkles className="w-3 h-3 text-primary" />
+          <span className="text-xs text-primary font-medium">Clique para explorar</span>
+        </div>
       </div>
     </div>
   </motion.div>
