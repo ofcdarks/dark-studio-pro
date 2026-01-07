@@ -122,7 +122,7 @@ const SettingsPage = () => {
   const { profile, loading: profileLoading, refetch: refetchProfile } = useProfile();
   const { settings, loading: settingsLoading, validating, validateApiKey, saveSettings, isValidated } = useApiSettings();
   const { registerUpload, unregisterUpload, canUpload } = useStorage();
-  const { hasPermission, loading: permissionsLoading } = usePermissions();
+  const { hasPermission, loading: permissionsLoading, planName } = usePermissions();
 
   const [userPlan, setUserPlan] = useState<UserPlan>('free');
   const [profileData, setProfileData] = useState({ full_name: '', email: '' });
@@ -704,6 +704,41 @@ const SettingsPage = () => {
               Sincronizar Plano
             </Button>
           </div>
+
+          {/* Plan Status Card */}
+          <Card className="p-4 mb-6 bg-secondary/30 border-border">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Shield className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Plano Detectado</p>
+                  <p className="font-semibold text-foreground">{planName || 'Carregando...'}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant={hasPermission('analisador_videos') ? 'default' : 'secondary'} className="text-xs">
+                  {hasPermission('analisador_videos') ? <CheckCircle className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
+                  Analisador
+                </Badge>
+                <Badge variant={hasPermission('gerador_cenas') ? 'default' : 'secondary'} className="text-xs">
+                  {hasPermission('gerador_cenas') ? <CheckCircle className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
+                  Cenas
+                </Badge>
+                <Badge variant={hasPermission('agentes_virais') ? 'default' : 'secondary'} className="text-xs">
+                  {hasPermission('agentes_virais') ? <CheckCircle className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
+                  Agentes
+                </Badge>
+                <Badge variant={hasPermission('usar_api_propria') ? 'default' : 'secondary'} className="text-xs">
+                  {hasPermission('usar_api_propria') ? <CheckCircle className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
+                  API Própria
+                </Badge>
+                <Badge variant={hasPermission('imagefx_cookies') ? 'default' : 'secondary'} className="text-xs">
+                  {hasPermission('imagefx_cookies') ? <CheckCircle className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
+                  ImageFX
+                </Badge>
+              </div>
+            </div>
+          </Card>
 
           <div className="space-y-6">
             <Card className="p-6">
