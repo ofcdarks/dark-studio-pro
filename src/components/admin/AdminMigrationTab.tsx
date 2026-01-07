@@ -64,6 +64,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getAppBaseUrl } from "@/lib/appUrl";
 
 interface MigrationInvite {
   id: string;
@@ -355,7 +356,7 @@ export function AdminMigrationTab() {
   };
 
   const copyInviteLink = (token: string) => {
-    const link = `${window.location.origin}/auth?invite=${token}`;
+    const link = `${getAppBaseUrl()}/auth?invite=${token}`;
     navigator.clipboard.writeText(link);
     toast.success("Link copiado para a área de transferência!");
   };
