@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1278,6 +1279,11 @@ const Analytics = () => {
 
   return (
     <MainLayout>
+      <SEOHead
+        title="Analytics de Canal"
+        description="Análise completa de canais do YouTube com métricas, metas e insights estratégicos."
+        noindex={true}
+      />
       <PermissionGate permission="analytics" featureName="Analytics">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">

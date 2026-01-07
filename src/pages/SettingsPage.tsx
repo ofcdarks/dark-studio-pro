@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -656,6 +657,11 @@ const SettingsPage = () => {
 
   return (
     <MainLayout>
+      <SEOHead
+        title="Configurações"
+        description="Gerencie suas preferências, perfil e integrações da plataforma."
+        noindex={true}
+      />
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">

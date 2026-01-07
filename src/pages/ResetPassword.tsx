@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Loader2, Lock, Eye, EyeOff, Shield, ArrowLeft, CheckCircle } from "lucide-react";
 import { z } from "zod";
 import logo from "@/assets/logo.gif";
@@ -107,7 +108,13 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <>
+      <SEOHead
+        title="Redefinir Senha"
+        description="Redefina sua senha para recuperar o acesso à plataforma."
+        noindex={true}
+      />
+      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background with Porsche - animated */}
       <div className="absolute inset-0 overflow-hidden">
         <img
@@ -342,6 +349,7 @@ const ResetPassword = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

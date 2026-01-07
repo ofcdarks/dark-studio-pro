@@ -1,5 +1,6 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -279,6 +280,11 @@ const SRTConverter = () => {
 
   return (
     <MainLayout>
+      <SEOHead
+        title="Conversor SRT"
+        description="Converta textos em legendas SRT e divida roteiros com facilidade."
+        noindex={true}
+      />
       <PermissionGate permission="conversor_srt" featureName="Conversor SRT">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-5xl mx-auto">

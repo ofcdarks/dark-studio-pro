@@ -1,5 +1,6 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Youtube, Link, CheckCircle, Upload, BarChart3, Settings } from "lucide-react";
@@ -9,6 +10,11 @@ const YouTubeIntegration = () => {
 
   return (
     <MainLayout>
+      <SEOHead
+        title="Integração YouTube"
+        description="Conecte seu canal do YouTube e gerencie uploads diretamente pela plataforma."
+        noindex={true}
+      />
       <PermissionGate permission="analytics_youtube" featureName="Analytics YouTube">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">

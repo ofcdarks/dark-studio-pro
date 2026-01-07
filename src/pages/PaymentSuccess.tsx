@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { 
   CheckCircle2, 
   Zap, 
@@ -53,7 +54,13 @@ export default function PaymentSuccess() {
   ];
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4">
+    <>
+      <SEOHead
+        title="Pagamento Confirmado"
+        description="Sua assinatura foi ativada com sucesso."
+        noindex={true}
+      />
+      <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4">
       {/* Background Effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <motion.div 
@@ -232,5 +239,6 @@ export default function PaymentSuccess() {
         </Card>
       </motion.div>
     </div>
+    </>
   );
 }

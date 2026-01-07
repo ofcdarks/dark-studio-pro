@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -503,6 +504,11 @@ export default function AnalysisHistory() {
 
   return (
     <MainLayout>
+      <SEOHead
+        title="Histórico de Análises"
+        description="Visualize todos os vídeos analisados e títulos gerados na plataforma."
+        noindex={true}
+      />
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
