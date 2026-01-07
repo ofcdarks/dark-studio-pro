@@ -1145,12 +1145,12 @@ export function AdminMigrationTab() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Nome</Label>
-                    <Select value={columnMapping.name} onValueChange={(v) => setColumnMapping(prev => ({ ...prev, name: v }))}>
+                    <Select value={columnMapping.name || "__none__"} onValueChange={(v) => setColumnMapping(prev => ({ ...prev, name: v === "__none__" ? "" : v }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Opcional" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhum</SelectItem>
+                        <SelectItem value="__none__">Nenhum</SelectItem>
                         {sqliteColumns.map((col) => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}
@@ -1159,12 +1159,12 @@ export function AdminMigrationTab() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Plano</Label>
-                    <Select value={columnMapping.plan} onValueChange={(v) => setColumnMapping(prev => ({ ...prev, plan: v }))}>
+                    <Select value={columnMapping.plan || "__none__"} onValueChange={(v) => setColumnMapping(prev => ({ ...prev, plan: v === "__none__" ? "" : v }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Opcional" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhum (usar FREE)</SelectItem>
+                        <SelectItem value="__none__">Nenhum (usar FREE)</SelectItem>
                         {sqliteColumns.map((col) => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}
@@ -1173,12 +1173,12 @@ export function AdminMigrationTab() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Créditos</Label>
-                    <Select value={columnMapping.credits} onValueChange={(v) => setColumnMapping(prev => ({ ...prev, credits: v }))}>
+                    <Select value={columnMapping.credits || "__none__"} onValueChange={(v) => setColumnMapping(prev => ({ ...prev, credits: v === "__none__" ? "" : v }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Opcional" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhum (usar 50)</SelectItem>
+                        <SelectItem value="__none__">Nenhum (usar 50)</SelectItem>
                         {sqliteColumns.map((col) => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}
