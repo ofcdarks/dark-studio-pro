@@ -9,6 +9,7 @@ import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ArrowLeft, Rocket
 import { z } from "zod";
 import logo from "@/assets/logo.gif";
 import authBg from "@/assets/auth-porsche.jpg";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 const authSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -162,7 +163,11 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <>
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
+      
+      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background with Porsche - animated */}
       <div className="absolute inset-0 overflow-hidden">
         <img
@@ -514,6 +519,7 @@ const Auth = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
