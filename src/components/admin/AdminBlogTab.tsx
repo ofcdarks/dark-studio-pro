@@ -241,6 +241,8 @@ export const AdminBlogTab = () => {
       // Build prompt for blog cover
       const imagePrompt = `Professional blog cover image about "${article.title}". Cinematic dramatic lighting, professional. Category: ${article.category || "YouTube content creation"}. High quality, ultra detailed, no text or words.`;
 
+      console.log("Generating cover with prompt:", imagePrompt);
+
       // Use the existing generate-imagefx function
       const { data, error } = await supabase.functions.invoke("generate-imagefx", {
         body: {
@@ -251,36 +253,57 @@ export const AdminBlogTab = () => {
         },
       });
 
+      console.log("ImageFX response:", { data, error });
+
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
       const imageUrl = data?.images?.[0]?.url;
+      console.log("Image URL received:", imageUrl ? `${imageUrl.substring(0, 50)}...` : "none");
+      
       if (!imageUrl) throw new Error("Nenhuma imagem gerada");
 
-      // Upload the base64 image to storage
-      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
-      const imageBuffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
-      const fileName = `blog-covers/${article.id}-${Date.now()}.png`;
+      // Check if it's base64
+      if (imageUrl.startsWith("data:image")) {
+        // Upload the base64 image to storage
+        const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
+        const imageBuffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+        const fileName = `blog-covers/${article.id}-${Date.now()}.png`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("blog-images")
-        .upload(fileName, imageBuffer, { contentType: "image/png", upsert: true });
+        console.log("Uploading to storage:", fileName);
 
-      if (uploadError) {
-        console.error("Upload error:", uploadError);
-        throw new Error("Erro ao fazer upload da imagem");
+        const { error: uploadError } = await supabase.storage
+          .from("blog-images")
+          .upload(fileName, imageBuffer, { contentType: "image/png", upsert: true });
+
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          throw new Error("Erro ao fazer upload da imagem: " + uploadError.message);
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage.from("blog-images").getPublicUrl(fileName);
+        console.log("Public URL:", urlData.publicUrl);
+
+        // Update article with image URL
+        const { error: updateError } = await supabase
+          .from("blog_articles")
+          .update({ image_url: urlData.publicUrl })
+          .eq("id", article.id);
+
+        if (updateError) {
+          console.error("Update error:", updateError);
+          throw updateError;
+        }
+      } else {
+        // URL already public, just save it
+        const { error: updateError } = await supabase
+          .from("blog_articles")
+          .update({ image_url: imageUrl })
+          .eq("id", article.id);
+
+        if (updateError) throw updateError;
       }
-
-      // Get public URL
-      const { data: urlData } = supabase.storage.from("blog-images").getPublicUrl(fileName);
-
-      // Update article with image URL
-      const { error: updateError } = await supabase
-        .from("blog_articles")
-        .update({ image_url: urlData.publicUrl })
-        .eq("id", article.id);
-
-      if (updateError) throw updateError;
 
       toast.success("Imagem de capa gerada com sucesso!");
       fetchArticles();
@@ -877,9 +900,32 @@ export const AdminBlogTab = () => {
           </DialogHeader>
           {previewArticle && (
             <div className="py-4">
+              {/* Cover Image */}
+              {previewArticle.image_url && (
+                <div className="mb-6 rounded-lg overflow-hidden">
+                  <img 
+                    src={previewArticle.image_url} 
+                    alt={previewArticle.title}
+                    className="w-full h-48 object-cover"
+                  />
+                </div>
+              )}
               <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                 <Badge>{previewArticle.category}</Badge>
-                <span>{previewArticle.read_time}</span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  {previewArticle.read_time}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  Criado: {new Date(previewArticle.created_at).toLocaleDateString('pt-BR')}
+                </span>
+                {previewArticle.published_at && (
+                  <span className="text-success flex items-center gap-1">
+                    <Globe className="w-4 h-4" />
+                    Publicado: {new Date(previewArticle.published_at).toLocaleDateString('pt-BR')}
+                  </span>
+                )}
               </div>
               {previewArticle.excerpt && (
                 <p className="text-muted-foreground italic mb-6">{previewArticle.excerpt}</p>
@@ -888,6 +934,14 @@ export const AdminBlogTab = () => {
                 className="prose prose-sm dark:prose-invert max-w-none"
                 dangerouslySetInnerHTML={{ __html: previewArticle.content }}
               />
+              {previewArticle.content === "<p>Artigo importado - edite o conteúdo completo aqui.</p>" && (
+                <div className="mt-4 p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                  <p className="text-warning text-sm">
+                    ⚠️ Este artigo foi importado e precisa ter seu conteúdo editado. 
+                    Clique em "Editar" para adicionar o conteúdo completo.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
