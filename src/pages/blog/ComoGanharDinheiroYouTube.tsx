@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Clock, Calendar, User, Share2, BookOpen } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, User, Share2 } from "lucide-react";
+import coverImage from "@/assets/blog/como-ganhar-dinheiro-youtube.jpg";
 import { Button } from "@/components/ui/button";
 import SEOHead from "@/components/seo/SEOHead";
 
@@ -82,8 +83,12 @@ const ComoGanharDinheiroYouTube = () => {
           </h1>
 
           {/* Featured Image */}
-          <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl mb-8 flex items-center justify-center border border-border/50">
-            <BookOpen className="w-24 h-24 text-primary/40" />
+          <div className="aspect-video rounded-2xl mb-8 overflow-hidden border border-border/50">
+            <img 
+              src={coverImage} 
+              alt="Como Ganhar Dinheiro no YouTube em 2025" 
+              className="w-full h-full object-cover"
+            />
           </div>
 
           {/* Content */}
