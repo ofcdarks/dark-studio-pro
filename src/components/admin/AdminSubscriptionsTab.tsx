@@ -467,15 +467,19 @@ export function AdminSubscriptionsTab() {
       <Card className="p-6">
         <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
           <LineChart className="w-5 h-5 text-primary" />
-          Evolução do MRR (Últimos 12 meses)
+          Evolução do MRR e Assinantes (Últimos 12 meses)
         </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={mrrHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <AreaChart data={mrrHistory} margin={{ top: 10, right: 50, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorMrr" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
                   <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorSubs" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -486,10 +490,19 @@ export function AdminSubscriptionsTab() {
                 tickLine={false}
               />
               <YAxis 
+                yAxisId="left"
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
                 tickLine={false}
                 tickFormatter={(value) => `R$ ${value}`}
+              />
+              <YAxis 
+                yAxisId="right"
+                orientation="right"
+                stroke="#22c55e"
+                fontSize={12}
+                tickLine={false}
+                tickFormatter={(value) => `${value}`}
               />
               <Tooltip
                 contentStyle={{
@@ -500,17 +513,30 @@ export function AdminSubscriptionsTab() {
                 }}
                 formatter={(value: number, name: string) => {
                   if (name === "mrr") return [`R$ ${value.toFixed(2)}`, "MRR"];
-                  return [value, "Assinantes"];
+                  if (name === "subscribers") return [value, "Assinantes"];
+                  return [value, name];
                 }}
                 labelStyle={{ color: "hsl(var(--muted-foreground))" }}
               />
               <Area
+                yAxisId="left"
                 type="monotone"
                 dataKey="mrr"
                 stroke="hsl(var(--primary))"
                 fillOpacity={1}
                 fill="url(#colorMrr)"
                 strokeWidth={2}
+                name="mrr"
+              />
+              <Area
+                yAxisId="right"
+                type="monotone"
+                dataKey="subscribers"
+                stroke="#22c55e"
+                fillOpacity={1}
+                fill="url(#colorSubs)"
+                strokeWidth={2}
+                name="subscribers"
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -518,7 +544,11 @@ export function AdminSubscriptionsTab() {
         <div className="flex justify-center gap-8 mt-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-primary" />
-            <span className="text-muted-foreground">MRR (Receita Mensal Recorrente)</span>
+            <span className="text-muted-foreground">MRR (Receita Mensal)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-green-500" />
+            <span className="text-muted-foreground">Assinantes Ativos</span>
           </div>
         </div>
       </Card>
