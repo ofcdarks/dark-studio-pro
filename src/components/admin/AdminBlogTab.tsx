@@ -238,16 +238,49 @@ export const AdminBlogTab = () => {
   const handleGenerateCover = async (article: BlogArticle) => {
     setGeneratingCover(article.id);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-blog-cover", {
+      // Build prompt for blog cover
+      const imagePrompt = `Professional blog cover image about "${article.title}". Cinematic dramatic lighting, professional. Category: ${article.category || "YouTube content creation"}. High quality, ultra detailed, no text or words.`;
+
+      // Use the existing generate-imagefx function
+      const { data, error } = await supabase.functions.invoke("generate-imagefx", {
         body: {
-          title: article.title,
-          category: article.category,
-          articleId: article.id,
+          prompt: imagePrompt,
+          aspectRatio: "LANDSCAPE",
+          numberOfImages: 1,
+          model: "IMAGEN_3_5",
         },
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+
+      const imageUrl = data?.images?.[0]?.url;
+      if (!imageUrl) throw new Error("Nenhuma imagem gerada");
+
+      // Upload the base64 image to storage
+      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
+      const imageBuffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+      const fileName = `blog-covers/${article.id}-${Date.now()}.png`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("blog-images")
+        .upload(fileName, imageBuffer, { contentType: "image/png", upsert: true });
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        throw new Error("Erro ao fazer upload da imagem");
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage.from("blog-images").getPublicUrl(fileName);
+
+      // Update article with image URL
+      const { error: updateError } = await supabase
+        .from("blog_articles")
+        .update({ image_url: urlData.publicUrl })
+        .eq("id", article.id);
+
+      if (updateError) throw updateError;
 
       toast.success("Imagem de capa gerada com sucesso!");
       fetchArticles();
