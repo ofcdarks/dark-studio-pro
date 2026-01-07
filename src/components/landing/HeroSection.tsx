@@ -5,8 +5,8 @@ import { ArrowRight, Zap, Shield, Rocket, Play, Star, Crown, Flame } from "lucid
 import { Link } from "react-router-dom";
 import { useLandingSettings } from "@/hooks/useLandingSettings";
 
-// Use public path for faster loading (served directly by CDN/Nginx)
-const heroBg = "/images/hero-porsche.jpg";
+// Use WebP for faster loading (served directly by CDN/Nginx)
+const heroBg = "/images/hero-porsche.webp";
 
 const allOperators = [
   { initials: "JM" }, { initials: "AL" }, { initials: "CS" }, { initials: "RB" },
