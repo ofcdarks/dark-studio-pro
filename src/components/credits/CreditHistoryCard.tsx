@@ -44,6 +44,7 @@ interface UsageStats {
   totalAdded: number;
   mostUsedTool: string;
   operationCounts: Record<string, number>;
+  creditsPerTool: Record<string, number>;
 }
 
 export function CreditHistoryCard() {
@@ -57,6 +58,7 @@ export function CreditHistoryCard() {
     totalAdded: 0,
     mostUsedTool: '',
     operationCounts: {},
+    creditsPerTool: {},
   });
 
   const fetchHistory = async () => {
@@ -111,13 +113,16 @@ export function CreditHistoryCard() {
 
       // Calculate stats
       const operationCounts: Record<string, number> = {};
+      const creditsPerTool: Record<string, number> = {};
       let totalSpent = 0;
       let totalAdded = 0;
 
       usageItems.forEach((item) => {
-        totalSpent += Math.abs(item.amount);
+        const creditsUsed = Math.abs(item.amount);
+        totalSpent += creditsUsed;
         const toolName = item.toolInfo.name;
         operationCounts[toolName] = (operationCounts[toolName] || 0) + 1;
+        creditsPerTool[toolName] = (creditsPerTool[toolName] || 0) + creditsUsed;
       });
 
       transactionItems.forEach((item) => {
@@ -126,7 +131,7 @@ export function CreditHistoryCard() {
         }
       });
 
-      const mostUsedTool = Object.entries(operationCounts)
+      const mostUsedTool = Object.entries(creditsPerTool)
         .sort(([, a], [, b]) => b - a)[0]?.[0] || 'N/A';
 
       setStats({
@@ -134,6 +139,7 @@ export function CreditHistoryCard() {
         totalAdded,
         mostUsedTool,
         operationCounts,
+        creditsPerTool,
       });
     } catch (error) {
       console.error('Error fetching credit history:', error);
@@ -238,24 +244,30 @@ export function CreditHistoryCard() {
         </div>
       </div>
 
-      {/* Cost Reference */}
-      <div className="mb-6 p-4 rounded-lg bg-secondary/30 border border-border">
-        <h4 className="text-sm font-medium text-foreground mb-3">Custo por Ferramenta</h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {Object.entries(CREDIT_COSTS)
-            .filter(([key]) => !key.includes('_') || key === 'title_analysis' || key === 'thumbnail_generation' || key === 'script_generation' || key === 'scene_generation' || key === 'voice_generation' || key === 'channel_analysis' || key === 'batch_images' || key === 'explore_niche')
-            .slice(0, 9)
-            .map(([key, cost]) => {
-              const toolInfo = getToolInfo(key);
-              return (
-                <div key={key} className="flex items-center justify-between text-xs p-2 rounded bg-background/50">
-                  <span className="text-muted-foreground">{toolInfo.icon} {toolInfo.name}</span>
-                  <Badge variant="outline" className="text-xs">{cost}</Badge>
-                </div>
-              );
-            })}
+      {/* Credits Used Per Tool */}
+      {Object.keys(stats.creditsPerTool).length > 0 && (
+        <div className="mb-6 p-4 rounded-lg bg-secondary/30 border border-border">
+          <h4 className="text-sm font-medium text-foreground mb-3">Créditos Gastos por Ferramenta</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {Object.entries(stats.creditsPerTool)
+              .sort(([, a], [, b]) => b - a)
+              .map(([toolName, credits]) => {
+                const uses = stats.operationCounts[toolName] || 0;
+                return (
+                  <div key={toolName} className="flex items-center justify-between text-xs p-2 rounded bg-background/50">
+                    <span className="text-muted-foreground truncate mr-2">{toolName}</span>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs text-destructive border-destructive/30">
+                        -{credits.toFixed(0)}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground/70">({uses}x)</span>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* History List */}
       {loading ? (
