@@ -1,5 +1,6 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,6 +86,11 @@ const SearchChannels = () => {
 
   return (
     <MainLayout>
+      <SEOHead
+        title="Buscar Canais"
+        description="Encontre canais do YouTube semelhantes ao seu canal de referência."
+        noindex={true}
+      />
       <PermissionGate permission="buscar_canais" featureName="Buscar Canais">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">

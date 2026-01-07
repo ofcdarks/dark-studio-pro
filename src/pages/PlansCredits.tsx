@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -324,6 +325,11 @@ export default function PlansCredits() {
 
   return (
     <MainLayout>
+      <SEOHead
+        title="Planos e Créditos"
+        description="Escolha seu plano e gerencie seus créditos para acessar todas as ferramentas."
+        noindex={true}
+      />
       <div className="min-h-screen bg-background relative overflow-hidden">
         {/* Background Effects */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">

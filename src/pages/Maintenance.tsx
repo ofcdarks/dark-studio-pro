@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { SEOHead } from "@/components/seo/SEOHead";
 import logo from "@/assets/logo_1.gif";
 
 interface MaintenanceSettings {
@@ -89,7 +90,13 @@ const Maintenance = () => {
     : null;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <>
+      <SEOHead
+        title="Em Manutenção"
+        description="Estamos trabalhando para melhorar sua experiência. Voltamos em breve!"
+        noindex={true}
+      />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
@@ -176,6 +183,7 @@ const Maintenance = () => {
         </p>
       </div>
     </div>
+    </>
   );
 };
 

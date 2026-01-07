@@ -1,4 +1,5 @@
 import { MainLayout } from "@/components/layout/MainLayout";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Film, Clock, Rocket } from "lucide-react";
@@ -7,6 +8,11 @@ import { Badge } from "@/components/ui/badge";
 const VideoGenerator = () => {
   return (
     <MainLayout>
+      <SEOHead
+        title="Gerador de Vídeo"
+        description="Crie vídeos incríveis com IA usando Sora 2 e Veo 3.1."
+        noindex={true}
+      />
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}

@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Clock, Mail, ArrowLeft, RefreshCw, LogOut } from "lucide-react";
 import logo from "@/assets/logo.gif";
 import authBg from "@/assets/auth-porsche.jpg";
@@ -49,7 +50,13 @@ const PendingApproval = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <>
+      <SEOHead
+        title="Aguardando Aprovação"
+        description="Sua solicitação de acesso está sendo analisada pela nossa equipe."
+        noindex={true}
+      />
+      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 overflow-hidden">
         <img
@@ -185,6 +192,7 @@ const PendingApproval = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

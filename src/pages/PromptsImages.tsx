@@ -1,5 +1,6 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import JSZip from "jszip";
@@ -3152,6 +3153,11 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
   return (
     <MainLayout>
+      <SEOHead
+        title="Prompts e Imagens"
+        description="Gere prompts de imagem a partir de roteiros e crie imagens com IA para seu conteúdo."
+        noindex={true}
+      />
       <PermissionGate permission="prompts_imagens" featureName="Prompts e Imagens">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">

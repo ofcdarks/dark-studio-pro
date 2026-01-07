@@ -1,5 +1,6 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -694,6 +695,11 @@ const ExploreNiche = () => {
 
   return (
     <MainLayout>
+      <SEOHead
+        title="Explorar Nichos"
+        description="Descubra subnichos lucrativos e gere planos estratégicos para seu canal."
+        noindex={true}
+      />
       <PermissionGate permission="explorar_nicho" featureName="Explorar Nicho">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-5xl mx-auto">

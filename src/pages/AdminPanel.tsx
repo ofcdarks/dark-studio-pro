@@ -1,4 +1,5 @@
 import { MainLayout } from "@/components/layout/MainLayout";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -568,6 +569,11 @@ const AdminPanel = () => {
 
   return (
     <MainLayout>
+      <SEOHead
+        title="Painel Administrativo"
+        description="Gerencie usuários, créditos e configurações da plataforma."
+        noindex={true}
+      />
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
