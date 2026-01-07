@@ -43,6 +43,7 @@ import { AdSenseCard } from "@/components/landing/AdSenseCard";
 import FloatingElements from "@/components/landing/FloatingElements";
 import { ScrollIndicator } from "@/components/landing/ScrollIndicator";
 import { MobileMenu } from "@/components/landing/MobileMenu";
+import { ComparisonSlider } from "@/components/landing/ComparisonSlider";
 
 import { Tool3DCard } from "@/components/landing/Tool3DCard";
 import { Dream3DCard } from "@/components/landing/Dream3DCard";
@@ -624,6 +625,12 @@ const Landing = () => {
                   </ul>
                 </div>
               </Card>
+            </div>
+
+            {/* Interactive Comparison Slider */}
+            <div className="pt-8">
+              <p className="text-sm text-muted-foreground mb-6 text-center">Arraste para ver a diferença</p>
+              <ComparisonSlider />
             </div>
 
             <div className="pt-6">
