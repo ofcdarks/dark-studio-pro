@@ -221,9 +221,9 @@ const PromptsImages = () => {
 
   // Persisted states (sem imagens - muito grandes para localStorage)
   const [script, setScript] = usePersistedState("prompts_script", "");
-  const [style, setStyle] = usePersistedState("prompts_style", "cinematic");
-  const [model, setModel] = usePersistedState("prompts_model", "gpt-4o");
-  const [wordsPerScene, setWordsPerScene] = usePersistedState("prompts_wordsPerScene", "80");
+  const [style, setStyle] = usePersistedState("prompts_style", "cinematografico");
+  const [model, setModel] = usePersistedState("prompts_model", "claude-sonnet-4-20250514");
+  const [wordsPerScene, setWordsPerScene] = usePersistedState("prompts_wordsPerScene", "25");
   
   // Cenas - persistimos apenas os prompts, não as imagens (base64 muito grande)
   const [persistedScenes, setPersistedScenes] = usePersistedState<Omit<ScenePrompt, 'generatedImage' | 'generatingImage'>[]>("prompts_scenes_meta", []);
