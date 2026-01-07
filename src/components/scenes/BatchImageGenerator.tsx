@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Sparkles, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw, AlertTriangle, ImageIcon } from "lucide-react";
+import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Sparkles, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw, AlertTriangle, ImageIcon, Coins } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,8 @@ import { ptBR } from "date-fns/locale";
 import { saveBatchImageToCache, getAllBatchCachedImages, getBatchCacheStats, clearBatchImageCache } from "@/lib/imageCache";
 import { useImageFXUsage } from "@/hooks/useImageFXUsage";
 import { useNavigate } from "react-router-dom";
+import { useCreditDeduction } from "@/hooks/useCreditDeduction";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface GeneratedImage {
   id: string;
@@ -49,12 +51,15 @@ interface BatchImageGeneratorProps {
 const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { deduct, checkBalance, getEstimatedCost, CREDIT_COSTS } = useCreditDeduction();
+  
   const [promptsText, setPromptsText] = useState(initialPrompts);
   const [selectedStyle, setSelectedStyle] = useState("");
   const [images, setImages] = useState<GeneratedImage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [insufficientCredits, setInsufficientCredits] = useState(false);
   
   // ImageFX usage tracking
   const { currentCount, monthLimit, remaining, isLimitReached, incrementUsage, refresh: refreshUsage } = useImageFXUsage();
@@ -76,6 +81,16 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
   // Cache state
   const [cacheStats, setCacheStats] = useState<{ count: number; lastUpdated: Date | null }>({ count: 0, lastUpdated: null });
   const [loadingCache, setLoadingCache] = useState(false);
+
+  // Verificar saldo ao carregar
+  useEffect(() => {
+    const checkCredits = async () => {
+      const cost = getEstimatedCost('batch_images');
+      const { hasBalance } = await checkBalance(cost);
+      setInsufficientCredits(!hasBalance);
+    };
+    if (user) checkCredits();
+  }, [user, checkBalance, getEstimatedCost]);
 
   // Load cache stats on mount
   useEffect(() => {
@@ -205,6 +220,22 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
       }
     }
 
+    // Calcular custo total (4 créditos por imagem)
+    const totalCost = prompts.length * CREDIT_COSTS.batch_images;
+    
+    // Deduzir créditos antes
+    const deductionResult = await deduct({
+      operationType: 'batch_images',
+      customAmount: totalCost,
+      details: { imageCount: prompts.length },
+      showToast: true
+    });
+
+    if (!deductionResult.success) {
+      setInsufficientCredits(true);
+      return;
+    }
+
     const stylePrefix = getStylePrefix();
     
     // Initialize all images as pending
@@ -221,6 +252,7 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
 
     const BATCH_SIZE = 5; // Processar 5 imagens em paralelo
     let successCount = 0;
+    let refundAmount = 0;
 
     // Helper function to generate a single image with retries
     // The backend already handles prompt rewriting for blocked content
@@ -359,6 +391,7 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
             console.warn('Failed to save to cache:', err);
           });
         } else {
+          refundAmount += CREDIT_COSTS.batch_images; // Contabilizar para reembolso
           setImages(prev => prev.map((img, i) => 
             i === result.index ? { ...img, status: "error", error: "Falha após várias tentativas" } : img
           ));
@@ -382,9 +415,23 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
       await refreshUsage();
     }
     
+    // Reembolsar créditos das imagens que falharam
+    if (refundAmount > 0 && deductionResult.shouldRefund) {
+      const { refundCredits } = await import("@/lib/creditToolsMap");
+      await refundCredits(
+        user!.id,
+        refundAmount,
+        'batch_images',
+        undefined,
+        `Reembolso por ${refundAmount / CREDIT_COSTS.batch_images} imagens que falharam`
+      );
+      toast.info(`${refundAmount} créditos reembolsados por imagens que falharam`);
+    }
+    
     // Save to history with actual success count
     await saveToHistory(successCount);
     
+    setInsufficientCredits(false);
     toast.success(`Geração concluída! ${successCount}/${initialImages.length} imagens geradas.`);
   };
 

@@ -24,7 +24,9 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
-  Pencil
+  Pencil,
+  AlertTriangle,
+  Coins
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +37,9 @@ import { SessionIndicator } from "@/components/ui/session-indicator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCreditDeduction } from "@/hooks/useCreditDeduction";
+import { useNavigate } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ChannelToAnalyze {
   id: string;
@@ -73,6 +78,8 @@ interface AnalysisResult {
 
 const ChannelAnalyzer = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { deduct, checkBalance, getEstimatedCost, CREDIT_COSTS } = useCreditDeduction();
   
   // Persisted states
   const [channels, setChannels] = usePersistedState<ChannelToAnalyze[]>("channelAnalyzer_channels", []);
@@ -93,6 +100,17 @@ const ChannelAnalyzer = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [insufficientCredits, setInsufficientCredits] = useState(false);
+
+  // Verificar saldo
+  useEffect(() => {
+    const checkCredits = async () => {
+      const cost = getEstimatedCost('analyze_channel');
+      const { hasBalance } = await checkBalance(cost);
+      setInsufficientCredits(!hasBalance);
+    };
+    if (user) checkCredits();
+  }, [user, checkBalance, getEstimatedCost]);
 
   // Load saved analyses
   useEffect(() => {
@@ -229,6 +247,17 @@ const ChannelAnalyzer = () => {
   };
 
   const handleAnalyzeChannel = async (channel: ChannelToAnalyze) => {
+    // Deduzir créditos antes
+    const deductionResult = await deduct({
+      operationType: 'analyze_channel',
+      showToast: true
+    });
+
+    if (!deductionResult.success) {
+      setInsufficientCredits(true);
+      return;
+    }
+
     setAnalyzingChannel(channel.id);
     try {
       const { data, error } = await supabase.functions.invoke('analyze-channel', {
@@ -271,9 +300,14 @@ const ChannelAnalyzer = () => {
         return ch;
       }));
 
+      setInsufficientCredits(false);
       toast.success(`Canal "${channelInfo.name || 'Canal'}" analisado com sucesso!`);
     } catch (error) {
       console.error('Error analyzing channel:', error);
+      // Reembolsar em caso de erro
+      if (deductionResult.shouldRefund) {
+        await deductionResult.refund();
+      }
       toast.error('Erro ao analisar canal. Verifique a URL.');
     } finally {
       setAnalyzingChannel(null);
@@ -285,6 +319,17 @@ const ChannelAnalyzer = () => {
     
     if (analyzedChannels.length < 2) {
       toast.error("Analise pelo menos 2 canais antes de gerar a análise completa");
+      return;
+    }
+
+    // Deduzir créditos para análise completa
+    const deductionResult = await deduct({
+      operationType: 'analyze_multiple_channels',
+      showToast: true
+    });
+
+    if (!deductionResult.success) {
+      setInsufficientCredits(true);
       return;
     }
 
@@ -322,9 +367,14 @@ const ChannelAnalyzer = () => {
       // Extract result from response
       const result = data?.result || data;
       setAnalysisResult(result);
+      setInsufficientCredits(false);
       toast.success("Análise completa gerada com sucesso!");
     } catch (error) {
       console.error('Error generating analysis:', error);
+      // Reembolsar em caso de erro
+      if (deductionResult.shouldRefund) {
+        await deductionResult.refund();
+      }
       toast.error('Erro ao gerar análise. Tente novamente.');
     } finally {
       setGeneratingAnalysis(false);

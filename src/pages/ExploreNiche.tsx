@@ -38,7 +38,8 @@ import {
   Video,
   Timer,
   Image,
-  History
+  History,
+  Coins
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -48,6 +49,9 @@ import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
 import { FolderSelect } from "@/components/folders/FolderSelect";
 import { useAuth } from "@/hooks/useAuth";
+import { useCreditDeduction } from "@/hooks/useCreditDeduction";
+import { useNavigate } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface SubnicheResult {
   name: string;
@@ -108,6 +112,9 @@ interface StrategicPlan {
 
 const ExploreNiche = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { deduct, checkBalance, getEstimatedCost, CREDIT_COSTS } = useCreditDeduction();
+  
   // Etapa 1 states
   const [mainNiche, setMainNiche] = usePersistedState("explore_mainNiche", "");
   const [competitorSubniche, setCompetitorSubniche] = usePersistedState("explore_competitorSubniche", "");
@@ -117,6 +124,7 @@ const ExploreNiche = () => {
   const [expandedSubniche, setExpandedSubniche] = useState<number | null>(null);
   const [copiedKeyword, setCopiedKeyword] = useState<string | null>(null);
   const [regeneratingTitles, setRegeneratingTitles] = useState<number | null>(null);
+  const [insufficientCredits, setInsufficientCredits] = useState(false);
 
   // Etapa 2 states
   const [channelUrl, setChannelUrl] = usePersistedState("explore_channelUrl", "");
@@ -131,6 +139,16 @@ const ExploreNiche = () => {
     "explore_loadChannelFolderFilter",
     "all",
   );
+
+  // Verificar saldo
+  useEffect(() => {
+    const checkCredits = async () => {
+      const cost = getEstimatedCost('explore_niche');
+      const { hasBalance } = await checkBalance(cost);
+      setInsufficientCredits(!hasBalance);
+    };
+    if (user) checkCredits();
+  }, [user, checkBalance, getEstimatedCost]);
 
   // Query para buscar análises salvas (apenas análises de canal)
   const { data: savedAnalyses, refetch: refetchSavedAnalyses, isLoading: loadingSavedAnalyses } = useQuery({
@@ -424,6 +442,18 @@ const ExploreNiche = () => {
       return;
     }
 
+    // Deduzir créditos antes
+    const deductionResult = await deduct({
+      operationType: 'explore_niche',
+      modelUsed: subnicheModel,
+      showToast: true
+    });
+
+    if (!deductionResult.success) {
+      setInsufficientCredits(true);
+      return;
+    }
+
     setLoadingSubniches(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
@@ -447,8 +477,13 @@ const ExploreNiche = () => {
       } else {
         throw new Error("Formato de resposta inválido");
       }
+      setInsufficientCredits(false);
     } catch (error) {
       console.error('Error finding subniches:', error);
+      // Reembolsar em caso de erro
+      if (deductionResult.shouldRefund) {
+        await deductionResult.refund();
+      }
       toast.error('Erro ao buscar subnichos. Usando sugestões padrão.');
       setSubnicheResults([
         {
