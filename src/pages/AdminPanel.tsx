@@ -468,40 +468,21 @@ const AdminPanel = () => {
     try {
       const userId = selectedUser.id;
       
-      // Delete all related data in order (respecting foreign keys)
-      // 1. Delete user credits
-      await supabase.from("user_credits").delete().eq("user_id", userId);
-      
-      // 2. Delete credit transactions
-      await supabase.from("credit_transactions").delete().eq("user_id", userId);
-      
-      // 3. Delete credit usage
-      await supabase.from("credit_usage").delete().eq("user_id", userId);
-      
-      // 4. Delete user roles
-      await supabase.from("user_roles").delete().eq("user_id", userId);
-      
-      // 5. Delete user preferences
-      await supabase.from("user_preferences").delete().eq("user_id", userId);
-      
-      // 6. Delete user API settings
-      await supabase.from("user_api_settings").delete().eq("user_id", userId);
-      
-      // 7. Delete activity logs
-      await supabase.from("activity_logs").delete().eq("user_id", userId);
-      
-      // 8. Delete profile (last)
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", userId);
+      // Use Edge Function to delete user completely (including auth.users)
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { userId },
+      });
 
-      if (profileError) {
-        console.error("Error deleting profile:", profileError);
-        throw profileError;
+      if (error) {
+        console.error("Error calling delete-user function:", error);
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
       }
       
-      toast.success("Usuário e todos os dados relacionados excluídos!");
+      toast.success("Usuário e todos os dados relacionados excluídos permanentemente!");
       setDeleteDialogOpen(false);
       fetchAdminData();
     } catch (error: any) {
