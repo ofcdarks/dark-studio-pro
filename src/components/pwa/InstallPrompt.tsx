@@ -1,35 +1,79 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, X, Smartphone } from "lucide-react";
+import { Download, X, Smartphone, Share, MoreVertical } from "lucide-react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import logo from "@/assets/logo.gif";
+
+// Detect iOS
+const isIOS = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+};
+
+// Detect if in standalone mode
+const isStandalone = () => {
+  return window.matchMedia("(display-mode: standalone)").matches || 
+         (window.navigator as any).standalone === true;
+};
+
+// Detect Android
+const isAndroid = () => {
+  return /Android/.test(navigator.userAgent);
+};
 
 export function InstallPrompt() {
   const { isInstallable, isInstalled, install } = usePWAInstall();
   const [showPrompt, setShowPrompt] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
   useEffect(() => {
     // Check if user already dismissed
     const wasDismissed = localStorage.getItem("pwa-install-dismissed");
-    if (wasDismissed) {
-      setDismissed(true);
+    const dismissedAt = localStorage.getItem("pwa-install-dismissed-at");
+    
+    // Allow showing again after 24 hours
+    if (wasDismissed && dismissedAt) {
+      const dismissedTime = parseInt(dismissedAt, 10);
+      const now = Date.now();
+      const hoursElapsed = (now - dismissedTime) / (1000 * 60 * 60);
+      
+      if (hoursElapsed < 24) {
+        setDismissed(true);
+        return;
+      } else {
+        // Clear old dismissal
+        localStorage.removeItem("pwa-install-dismissed");
+        localStorage.removeItem("pwa-install-dismissed-at");
+      }
+    }
+
+    // Don't show if already installed or in standalone mode
+    if (isInstalled || isStandalone()) {
       return;
     }
 
-    // Show prompt after a short delay if installable
-    if (isInstallable && !isInstalled) {
-      const timer = setTimeout(() => {
+    // Show prompt after a short delay
+    const timer = setTimeout(() => {
+      // Show native prompt if available, otherwise show manual instructions
+      if (isInstallable) {
         setShowPrompt(true);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
+      } else if (isIOS() || isAndroid()) {
+        // On mobile without native prompt, show manual instructions
+        setShowPrompt(true);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
   }, [isInstallable, isInstalled]);
 
   const handleInstall = async () => {
-    const success = await install();
-    if (success) {
-      setShowPrompt(false);
+    if (isInstallable) {
+      const success = await install();
+      if (success) {
+        setShowPrompt(false);
+      }
+    } else if (isIOS()) {
+      setShowIOSInstructions(true);
     }
   };
 
@@ -37,10 +81,11 @@ export function InstallPrompt() {
     setShowPrompt(false);
     setDismissed(true);
     localStorage.setItem("pwa-install-dismissed", "true");
+    localStorage.setItem("pwa-install-dismissed-at", Date.now().toString());
   };
 
-  // Don't show if installed, dismissed, or not installable
-  if (isInstalled || dismissed || !showPrompt) {
+  // Don't show if installed, dismissed, or prompt not active
+  if (isInstalled || isStandalone() || dismissed || !showPrompt) {
     return null;
   }
 
@@ -79,18 +124,76 @@ export function InstallPrompt() {
             <h3 className="text-base font-bold text-foreground mb-1">
               La Casa Dark CORE
             </h3>
-            <p className="text-xs text-muted-foreground mb-3">
-              Instale para acesso rápido e experiência completa offline
-            </p>
-
-            {/* Install button */}
-            <Button
-              onClick={handleInstall}
-              className="w-full h-10 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Instalar Agora
-            </Button>
+            
+            {showIOSInstructions ? (
+              // iOS Manual Instructions
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Para instalar no iPhone/iPad:
+                </p>
+                <div className="flex items-center gap-2 text-xs text-foreground bg-secondary/50 rounded-lg p-2">
+                  <Share className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span>Toque em <strong>Compartilhar</strong></span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-foreground bg-secondary/50 rounded-lg p-2">
+                  <Download className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span>Depois <strong>"Adicionar à Tela Inicial"</strong></span>
+                </div>
+                <Button
+                  onClick={handleDismiss}
+                  variant="outline"
+                  className="w-full h-9 text-xs mt-2"
+                >
+                  Entendi
+                </Button>
+              </div>
+            ) : isIOS() ? (
+              // iOS Initial State
+              <>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Instale para acesso rápido e experiência completa
+                </p>
+                <Button
+                  onClick={handleInstall}
+                  className="w-full h-10 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Share className="w-4 h-4 mr-2" />
+                  Como Instalar
+                </Button>
+              </>
+            ) : isAndroid() && !isInstallable ? (
+              // Android without native prompt - show menu instructions
+              <>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Para instalar:
+                </p>
+                <div className="flex items-center gap-2 text-xs text-foreground bg-secondary/50 rounded-lg p-2 mb-2">
+                  <MoreVertical className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span>Menu do navegador → <strong>"Instalar app"</strong></span>
+                </div>
+                <Button
+                  onClick={handleDismiss}
+                  variant="outline"
+                  className="w-full h-9 text-xs"
+                >
+                  Entendi
+                </Button>
+              </>
+            ) : (
+              // Native Install Available
+              <>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Instale para acesso rápido e experiência completa offline
+                </p>
+                <Button
+                  onClick={handleInstall}
+                  className="w-full h-10 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Instalar Agora
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
