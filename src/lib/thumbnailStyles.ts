@@ -35,7 +35,7 @@ export const THUMBNAIL_STYLE_CATEGORIES = [
   },
   {
     id: "experimentais",
-    name: "Estilos Experimentais 2025",
+    name: "Estilos Experimentais 2026",
     icon: "🎨"
   },
   {
@@ -102,6 +102,46 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     icon: "🏙️",
     category: "realistas",
     promptPrefix: "Modern architecture photography, contemporary design, clean lines, dramatic perspectives, architectural digest style,"
+  },
+  {
+    id: "street-photography",
+    name: "Street Photography",
+    description: "Fotografia urbana autêntica",
+    icon: "🚶",
+    category: "realistas",
+    promptPrefix: "Street photography style, urban candid moments, documentary realism, authentic city life, decisive moment, Henri Cartier-Bresson inspired,"
+  },
+  {
+    id: "fotojornalismo",
+    name: "Fotojornalismo",
+    description: "Impacto jornalístico",
+    icon: "📰",
+    category: "realistas",
+    promptPrefix: "Photojournalism style, impactful documentary, raw emotion, news photography, Pulitzer quality, authentic storytelling,"
+  },
+  {
+    id: "produto-comercial",
+    name: "Produto Comercial",
+    description: "Fotografia publicitária",
+    icon: "📦",
+    category: "realistas",
+    promptPrefix: "Commercial product photography, advertising quality, perfect lighting setup, clean studio backdrop, high-end commercial aesthetic,"
+  },
+  {
+    id: "macro-extremo",
+    name: "Macro Extremo",
+    description: "Detalhes microscópicos",
+    icon: "🔬",
+    category: "realistas",
+    promptPrefix: "Extreme macro photography, microscopic details, incredible close-up, water droplets, insect eyes, texture revelation, scientific beauty,"
+  },
+  {
+    id: "astrofotografia",
+    name: "Astrofotografia",
+    description: "Céu noturno e galáxias",
+    icon: "🌌",
+    category: "realistas",
+    promptPrefix: "Astrophotography style, night sky, Milky Way, star trails, nebulae, cosmic beauty, long exposure, celestial photography,"
   },
 
   // Estilos Artísticos
@@ -177,6 +217,30 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     category: "artisticos",
     promptPrefix: "Pop art style, Andy Warhol inspired, bold primary colors, Ben-Day dots, iconic repetition, 60s aesthetic,"
   },
+  {
+    id: "art-nouveau",
+    name: "Art Nouveau",
+    description: "Estilo Alphonse Mucha",
+    icon: "🌺",
+    category: "artisticos",
+    promptPrefix: "Art Nouveau style, Alphonse Mucha inspired, organic flowing lines, decorative borders, floral motifs, elegant illustration,"
+  },
+  {
+    id: "expressionismo",
+    name: "Expressionismo",
+    description: "Emoção intensa abstrata",
+    icon: "😱",
+    category: "artisticos",
+    promptPrefix: "Expressionist art style, intense emotional distortion, bold brushstrokes, psychological depth, Edvard Munch inspired, raw emotion,"
+  },
+  {
+    id: "impressionismo",
+    name: "Impressionismo",
+    description: "Pinceladas de luz Monet",
+    icon: "🎨",
+    category: "artisticos",
+    promptPrefix: "Impressionist style, Claude Monet inspired, light brushstrokes, outdoor scenes, natural light capture, pastel color palette,"
+  },
 
   // Estilos Minimalistas
   {
@@ -234,6 +298,46 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     icon: "🌅",
     category: "minimalistas",
     promptPrefix: "Dramatic silhouette style, high contrast, bold shapes against light, sunset/sunrise backdrop, powerful minimalism,"
+  },
+  {
+    id: "geometrico-abstrato",
+    name: "Geométrico Abstrato",
+    description: "Formas puras Mondrian",
+    icon: "🔷",
+    category: "minimalistas",
+    promptPrefix: "Abstract geometric style, Mondrian inspired, primary colors, grid composition, pure geometric shapes, De Stijl movement,"
+  },
+  {
+    id: "monocromatico",
+    name: "Monocromático",
+    description: "Uma única cor dominante",
+    icon: "⬛",
+    category: "minimalistas",
+    promptPrefix: "Monochromatic style, single color palette, tonal variations, sophisticated restraint, elegant single-hue design,"
+  },
+  {
+    id: "negative-space",
+    name: "Negative Space",
+    description: "Espaço vazio criativo",
+    icon: "⚪",
+    category: "minimalistas",
+    promptPrefix: "Negative space design, creative use of empty space, clever visual illusion, minimalist composition, hidden imagery,"
+  },
+  {
+    id: "tipografia-bold",
+    name: "Tipografia Bold",
+    description: "Texto como elemento visual",
+    icon: "🔤",
+    category: "minimalistas",
+    promptPrefix: "Bold typography style, text as visual element, kinetic typography, impactful lettering, graphic design aesthetic,"
+  },
+  {
+    id: "bauhaus",
+    name: "Bauhaus",
+    description: "Design funcional alemão",
+    icon: "🔺",
+    category: "minimalistas",
+    promptPrefix: "Bauhaus style, German functional design, geometric shapes, primary colors, modernist aesthetic, form follows function,"
   },
 
   // Estilos Vibrantes
@@ -293,6 +397,46 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     category: "vibrantes",
     promptPrefix: "Aurora gradient style, flowing color transitions, iridescent hues, northern lights aesthetic, ethereal color blend,"
   },
+  {
+    id: "neon-tokyo",
+    name: "Neon Tokyo",
+    description: "Luzes de Tóquio à noite",
+    icon: "🗼",
+    category: "vibrantes",
+    promptPrefix: "Neon Tokyo style, Japanese city lights, vibrant nightlife, Shibuya crossing, urban neon glow, anime city aesthetic,"
+  },
+  {
+    id: "psychedelic",
+    name: "Psicodélico",
+    description: "Cores alucinantes 60s",
+    icon: "🌀",
+    category: "vibrantes",
+    promptPrefix: "Psychedelic style, 1960s counterculture, kaleidoscopic patterns, trippy visuals, vibrant swirling colors, mind-expanding art,"
+  },
+  {
+    id: "candy-pop",
+    name: "Candy Pop",
+    description: "Doce e colorido",
+    icon: "🍭",
+    category: "vibrantes",
+    promptPrefix: "Candy pop style, sweet pastel colors, playful aesthetic, bubblegum pink, cotton candy blue, cheerful and cute,"
+  },
+  {
+    id: "holografico",
+    name: "Holográfico",
+    description: "Reflexos iridescentes",
+    icon: "💿",
+    category: "vibrantes",
+    promptPrefix: "Holographic style, iridescent reflections, rainbow chrome, prismatic colors, futuristic sheen, metallic rainbow effect,"
+  },
+  {
+    id: "festival-lights",
+    name: "Festival Lights",
+    description: "Luzes de festival noturno",
+    icon: "🎪",
+    category: "vibrantes",
+    promptPrefix: "Festival lights style, concert lighting, colorful stage lights, LED effects, party atmosphere, vibrant nightlife energy,"
+  },
 
   // Estilos Dramáticos
   {
@@ -351,8 +495,48 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     category: "dramaticos",
     promptPrefix: "Thriller suspense style, tense atmosphere, shadowy figures, mysterious lighting, edge-of-seat composition, Hitchcock inspired,"
   },
+  {
+    id: "corpo-horror",
+    name: "Body Horror",
+    description: "Cronenberg grotesco",
+    icon: "🧟",
+    category: "dramaticos",
+    promptPrefix: "Body horror style, Cronenberg inspired, grotesque transformation, unsettling flesh, psychological terror, visceral imagery,"
+  },
+  {
+    id: "tempestade-epica",
+    name: "Tempestade Épica",
+    description: "Céus dramáticos e raios",
+    icon: "⛈️",
+    category: "dramaticos",
+    promptPrefix: "Epic storm style, dramatic skies, lightning bolts, turbulent clouds, powerful weather, apocalyptic atmosphere, nature's fury,"
+  },
+  {
+    id: "submundo",
+    name: "Submundo",
+    description: "Underground sombrio",
+    icon: "🕳️",
+    category: "dramaticos",
+    promptPrefix: "Underworld style, dark underground, cave systems, dim lighting, mysterious depths, subterranean atmosphere,"
+  },
+  {
+    id: "guerra-epica",
+    name: "Guerra Épica",
+    description: "Campos de batalha cinematográficos",
+    icon: "⚔️",
+    category: "dramaticos",
+    promptPrefix: "Epic war style, cinematic battlefield, dramatic combat scenes, heroic moments, Band of Brothers aesthetic, intense action,"
+  },
+  {
+    id: "lovecraft-cosmico",
+    name: "Horror Cósmico",
+    description: "Lovecraft e o desconhecido",
+    icon: "🐙",
+    category: "dramaticos",
+    promptPrefix: "Cosmic horror style, Lovecraftian aesthetic, eldritch beings, unknowable entities, madness-inducing visions, cosmic dread,"
+  },
 
-  // Estilos Experimentais 2025
+  // Estilos Experimentais 2026
   {
     id: "diorama-cinematografico",
     name: "Diorama Cinematográfico Narrativo",
@@ -432,6 +616,22 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     icon: "🌿",
     category: "experimentais",
     promptPrefix: "Infrared photography style, inverted colors, pink and white foliage, surreal landscape, ethereal atmosphere, false color,"
+  },
+  {
+    id: "ai-generativo",
+    name: "AI Generativo",
+    description: "Estética de IA pura",
+    icon: "🤖",
+    category: "experimentais",
+    promptPrefix: "AI generated art style, neural network aesthetic, algorithmic beauty, emergent patterns, machine learning art, digital consciousness,"
+  },
+  {
+    id: "dataflow",
+    name: "Dataflow Visual",
+    description: "Fluxo de dados visível",
+    icon: "📊",
+    category: "experimentais",
+    promptPrefix: "Data visualization style, flowing data streams, matrix-like code rain, network nodes, digital information flow, cybernetic data,"
   },
 
   // 3D & Animação
@@ -514,6 +714,22 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     icon: "💡",
     category: "3d-animacao",
     promptPrefix: "3D neon style, glowing light tubes, wireframe aesthetic, dark background with neon outlines, futuristic light sculpture, Tron inspired,"
+  },
+  {
+    id: "dreamworks-style",
+    name: "DreamWorks Style",
+    description: "Animação estilo Shrek/Madagascar",
+    icon: "🐉",
+    category: "3d-animacao",
+    promptPrefix: "DreamWorks animation style, expressive cartoon characters, exaggerated features, dynamic poses, family animation quality, stylized 3D,"
+  },
+  {
+    id: "cyberpunk-3d",
+    name: "Cyberpunk 3D",
+    description: "Cidade futurista neon",
+    icon: "🌆",
+    category: "3d-animacao",
+    promptPrefix: "Cyberpunk 3D style, futuristic neon city, holographic displays, flying vehicles, dystopian megacity, Blade Runner 2049 aesthetic,"
   }
 ];
 
