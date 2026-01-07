@@ -79,6 +79,30 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     category: "realistas",
     promptPrefix: "Visual storytelling, narrative composition, emotional depth, cinematic framing, meaningful atmosphere,"
   },
+  {
+    id: "retrato-editorial",
+    name: "Retrato Editorial",
+    description: "Estilo revista de moda",
+    icon: "👔",
+    category: "realistas",
+    promptPrefix: "Editorial portrait style, fashion magazine aesthetic, professional studio lighting, high-end retouching, Vogue quality,"
+  },
+  {
+    id: "natureza-wildlife",
+    name: "Natureza & Wildlife",
+    description: "National Geographic",
+    icon: "🦁",
+    category: "realistas",
+    promptPrefix: "Wildlife photography, National Geographic style, natural habitat, golden hour lighting, majestic wildlife, ultra detailed,"
+  },
+  {
+    id: "arquitetura-moderna",
+    name: "Arquitetura Moderna",
+    description: "Design contemporâneo",
+    icon: "🏙️",
+    category: "realistas",
+    promptPrefix: "Modern architecture photography, contemporary design, clean lines, dramatic perspectives, architectural digest style,"
+  },
 
   // Estilos Artísticos
   {
@@ -112,6 +136,46 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     icon: "🪄",
     category: "artisticos",
     promptPrefix: "Fantasy style, magical atmosphere, epic scale, ethereal lighting, mystical elements, enchanted world,"
+  },
+  {
+    id: "comic-book",
+    name: "Comic Book",
+    description: "HQ americana clássica",
+    icon: "💥",
+    category: "artisticos",
+    promptPrefix: "Comic book style, Marvel/DC aesthetic, bold ink lines, halftone dots, dynamic action poses, vibrant superhero colors,"
+  },
+  {
+    id: "manga-shonen",
+    name: "Manga Shonen",
+    description: "Estilo Dragon Ball/Naruto",
+    icon: "⚡",
+    category: "artisticos",
+    promptPrefix: "Shonen manga style, dynamic action lines, intense expressions, power auras, battle scenes, Japanese comic aesthetic,"
+  },
+  {
+    id: "aquarela-digital",
+    name: "Aquarela Digital",
+    description: "Pintura suave e fluida",
+    icon: "🎨",
+    category: "artisticos",
+    promptPrefix: "Digital watercolor style, soft flowing colors, delicate brush strokes, artistic bleeding effects, painterly aesthetic,"
+  },
+  {
+    id: "oleo-classico",
+    name: "Óleo Clássico",
+    description: "Pintura renascentista",
+    icon: "🖼️",
+    category: "artisticos",
+    promptPrefix: "Classical oil painting style, Renaissance masters technique, rich textures, dramatic chiaroscuro, museum quality art,"
+  },
+  {
+    id: "pop-art",
+    name: "Pop Art",
+    description: "Andy Warhol vibes",
+    icon: "🎭",
+    category: "artisticos",
+    promptPrefix: "Pop art style, Andy Warhol inspired, bold primary colors, Ben-Day dots, iconic repetition, 60s aesthetic,"
   },
 
   // Estilos Minimalistas
@@ -147,6 +211,30 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     category: "minimalistas",
     promptPrefix: "Spiritual minimalist style, serene atmosphere, peaceful composition, soft colors, zen aesthetic, mindful design,"
   },
+  {
+    id: "flat-design",
+    name: "Flat Design",
+    description: "Vetorial moderno",
+    icon: "📐",
+    category: "minimalistas",
+    promptPrefix: "Flat design style, vector illustration, bold colors, no gradients, clean geometric shapes, modern UI aesthetic,"
+  },
+  {
+    id: "line-art",
+    name: "Line Art Elegante",
+    description: "Traços finos e sofisticados",
+    icon: "✍️",
+    category: "minimalistas",
+    promptPrefix: "Elegant line art, fine detailed strokes, sophisticated single-line illustration, artistic contours, premium minimalism,"
+  },
+  {
+    id: "silhueta-dramatica",
+    name: "Silhueta Dramática",
+    description: "Formas em contraste",
+    icon: "🌅",
+    category: "minimalistas",
+    promptPrefix: "Dramatic silhouette style, high contrast, bold shapes against light, sunset/sunrise backdrop, powerful minimalism,"
+  },
 
   // Estilos Vibrantes
   {
@@ -164,6 +252,46 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     icon: "📺",
     category: "vibrantes",
     promptPrefix: "Modern documentary style, dynamic composition, contemporary aesthetic, engaging visuals, current and fresh,"
+  },
+  {
+    id: "neon-cyberpunk",
+    name: "Neon Cyberpunk",
+    description: "Futurista com neons",
+    icon: "🌃",
+    category: "vibrantes",
+    promptPrefix: "Cyberpunk neon style, futuristic cityscape, glowing neon lights, Blade Runner aesthetic, rain-soaked streets, high-tech low-life,"
+  },
+  {
+    id: "vaporwave",
+    name: "Vaporwave",
+    description: "Estética retrô-futurista",
+    icon: "🌴",
+    category: "vibrantes",
+    promptPrefix: "Vaporwave aesthetic, 80s retro-futurism, pink and cyan gradients, Greek statues, palm trees, sunset grids, nostalgic digital,"
+  },
+  {
+    id: "synthwave",
+    name: "Synthwave",
+    description: "Outrun, sunset grid",
+    icon: "🚗",
+    category: "vibrantes",
+    promptPrefix: "Synthwave style, Outrun aesthetic, neon sunset, chrome reflections, retro sports cars, 80s sci-fi, digital sunset grid,"
+  },
+  {
+    id: "tropical-paradise",
+    name: "Tropical Paradise",
+    description: "Cores vibrantes de praia",
+    icon: "🏝️",
+    category: "vibrantes",
+    promptPrefix: "Tropical paradise style, vibrant beach colors, turquoise waters, palm trees, golden sunshine, vacation vibes, exotic beauty,"
+  },
+  {
+    id: "gradiente-aurora",
+    name: "Gradiente Aurora",
+    description: "Cores fluidas mescladas",
+    icon: "🌈",
+    category: "vibrantes",
+    promptPrefix: "Aurora gradient style, flowing color transitions, iridescent hues, northern lights aesthetic, ethereal color blend,"
   },
 
   // Estilos Dramáticos
@@ -190,6 +318,38 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     icon: "🎬",
     category: "dramaticos",
     promptPrefix: "Naturalistic drama style, realistic and emotional, subtle lighting, authentic atmosphere, human connection,"
+  },
+  {
+    id: "noir-classico",
+    name: "Noir Clássico",
+    description: "Preto e branco cinematográfico",
+    icon: "🕵️",
+    category: "dramaticos",
+    promptPrefix: "Film noir style, black and white, dramatic shadows, venetian blind lighting, detective mystery, 1940s Hollywood,"
+  },
+  {
+    id: "gotico-vitoriano",
+    name: "Gótico Vitoriano",
+    description: "Dark academia, sombrio",
+    icon: "🏰",
+    category: "dramaticos",
+    promptPrefix: "Victorian gothic style, dark academia aesthetic, ornate architecture, candlelit atmosphere, mysterious and elegant,"
+  },
+  {
+    id: "apocaliptico",
+    name: "Apocalíptico",
+    description: "Pós-apocalipse, destruição",
+    icon: "💀",
+    category: "dramaticos",
+    promptPrefix: "Post-apocalyptic style, dystopian landscape, destroyed cities, dramatic skies, survival aesthetic, Mad Max vibes,"
+  },
+  {
+    id: "suspense-thriller",
+    name: "Suspense Thriller",
+    description: "Tensão e mistério",
+    icon: "🔍",
+    category: "dramaticos",
+    promptPrefix: "Thriller suspense style, tense atmosphere, shadowy figures, mysterious lighting, edge-of-seat composition, Hitchcock inspired,"
   },
 
   // Estilos Experimentais 2025
@@ -249,6 +409,30 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     category: "experimentais",
     promptPrefix: "VHS nostalgic style, 80s/90s aesthetic, retro grain, scan lines, vintage color palette, analog warmth, retrowave,"
   },
+  {
+    id: "glitch-art",
+    name: "Glitch Art",
+    description: "Digital distorcido",
+    icon: "📺",
+    category: "experimentais",
+    promptPrefix: "Glitch art style, digital distortion, corrupted data aesthetic, RGB split, pixelated errors, cybernetic malfunction,"
+  },
+  {
+    id: "double-exposure",
+    name: "Double Exposure",
+    description: "Sobreposição artística",
+    icon: "👤",
+    category: "experimentais",
+    promptPrefix: "Double exposure style, artistic overlay, silhouette with landscape, dreamy composition, ethereal blend, photographic art,"
+  },
+  {
+    id: "infravermelho",
+    name: "Infravermelho",
+    description: "Cores invertidas surreais",
+    icon: "🌿",
+    category: "experimentais",
+    promptPrefix: "Infrared photography style, inverted colors, pink and white foliage, surreal landscape, ethereal atmosphere, false color,"
+  },
 
   // 3D & Animação
   {
@@ -306,6 +490,30 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     icon: "✨",
     category: "3d-animacao",
     promptPrefix: "Pixar Disney 3D animation style, premium studio quality, subsurface scattering skin, detailed hair simulation, expressive characters, theatrical lighting, family-friendly aesthetic, award-winning animation quality,"
+  },
+  {
+    id: "unreal-engine",
+    name: "Unreal Engine",
+    description: "Hiperrealismo de games AAA",
+    icon: "🎮",
+    category: "3d-animacao",
+    promptPrefix: "Unreal Engine 5 quality, AAA game graphics, ray tracing, photorealistic rendering, next-gen visuals, cinematic game cutscene,"
+  },
+  {
+    id: "paper-craft",
+    name: "Paper Craft 3D",
+    description: "Arte de papel recortado",
+    icon: "📄",
+    category: "3d-animacao",
+    promptPrefix: "Paper craft 3D style, layered paper cutout aesthetic, origami inspired, handmade paper texture, delicate shadows, whimsical papercraft world,"
+  },
+  {
+    id: "neon-3d",
+    name: "Neon 3D",
+    description: "Linhas de luz em 3D",
+    icon: "💡",
+    category: "3d-animacao",
+    promptPrefix: "3D neon style, glowing light tubes, wireframe aesthetic, dark background with neon outlines, futuristic light sculpture, Tron inspired,"
   }
 ];
 
