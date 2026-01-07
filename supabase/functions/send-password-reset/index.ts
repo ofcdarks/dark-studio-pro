@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import nodemailer from "npm:nodemailer";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -141,12 +142,10 @@ serve(async (req) => {
     logStep("Variables replaced");
 
     // Send email via SMTP
-    const nodemailer = await import("https://esm.sh/nodemailer@6.9.10");
-    
     const port = Number(smtpSettings.port) || 587;
     const secure = !!smtpSettings.useSsl || port === 465;
 
-    const transporter = nodemailer.default.createTransport({
+    const transporter = nodemailer.createTransport({
       host: smtpSettings.host,
       port,
       secure,
