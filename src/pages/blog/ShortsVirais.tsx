@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Clock, Calendar, User, Share2, Smartphone } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, User, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SEOHead from "@/components/seo/SEOHead";
+import coverImage from "@/assets/blog/shorts-virais.jpg";
 
 const ShortsVirais = () => {
   const articleJsonLd = {
@@ -52,8 +53,8 @@ const ShortsVirais = () => {
             Como Fazer Shorts Virais no YouTube em 2025
           </h1>
 
-          <div className="aspect-video bg-gradient-to-br from-pink-500/20 to-primary/5 rounded-2xl mb-8 flex items-center justify-center border border-border/50">
-            <Smartphone className="w-24 h-24 text-pink-500/40" />
+          <div className="aspect-video rounded-2xl mb-8 overflow-hidden border border-border/50">
+            <img src={coverImage} alt="Como Fazer Shorts Virais no YouTube em 2025" className="w-full h-full object-cover" />
           </div>
 
           <div className="prose prose-lg prose-invert max-w-none">

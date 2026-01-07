@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Clock, Calendar, User, Share2, Wrench, Check, X } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, User, Share2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SEOHead from "@/components/seo/SEOHead";
+import coverImage from "@/assets/blog/ferramentas-criacao-videos.jpg";
 
 const FerramentasCriacaoVideos = () => {
   const articleJsonLd = {
@@ -87,8 +88,8 @@ const FerramentasCriacaoVideos = () => {
             Melhores Ferramentas para Criar Vídeos no YouTube em 2025
           </h1>
 
-          <div className="aspect-video bg-gradient-to-br from-emerald-500/20 to-primary/5 rounded-2xl mb-8 flex items-center justify-center border border-border/50">
-            <Wrench className="w-24 h-24 text-emerald-500/40" />
+          <div className="aspect-video rounded-2xl mb-8 overflow-hidden border border-border/50">
+            <img src={coverImage} alt="Melhores Ferramentas para Criar Vídeos no YouTube em 2025" className="w-full h-full object-cover" />
           </div>
 
           <div className="prose prose-lg prose-invert max-w-none">
