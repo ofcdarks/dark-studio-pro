@@ -215,24 +215,37 @@ const StylePreviewModal = ({
               </span>
             </motion.button>
 
-            {/* Main image */}
-            <div className="relative aspect-video flex-1 overflow-hidden">
+            {/* Main image with swipe support */}
+            <motion.div 
+              className="relative aspect-video flex-1 overflow-hidden touch-pan-y"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.2}
+              onDragEnd={(_, info) => {
+                const threshold = 50;
+                if (info.offset.x > threshold) {
+                  onNavigate('prev');
+                } else if (info.offset.x < -threshold) {
+                  onNavigate('next');
+                }
+              }}
+            >
               <AnimatePresence mode="wait">
                 <motion.img 
                   key={style.id}
                   src={style.image} 
                   alt={style.name}
-                  className="w-full h-full object-cover absolute inset-0"
+                  className="w-full h-full object-cover absolute inset-0 pointer-events-none"
                   initial={{ opacity: 0, scale: 1.05 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
                 />
               </AnimatePresence>
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
               
               {/* Badge categoria com animação */}
-              <div className="absolute top-4 right-4">
+              <div className="absolute top-4 right-4 pointer-events-none">
                 <AnimatePresence mode="wait">
                   <motion.span 
                     key={style.category}
@@ -250,19 +263,26 @@ const StylePreviewModal = ({
               {/* Mobile Navigation Arrows */}
               <button
                 onClick={() => onNavigate('prev')}
-                className="md:hidden absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/80 hover:bg-background border border-border/50 shadow-lg transition-all hover:scale-110"
+                className="md:hidden absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/80 hover:bg-background border border-border/50 shadow-lg transition-all hover:scale-110 z-10"
                 aria-label="Estilo anterior"
               >
                 <ChevronLeft className="w-6 h-6 text-foreground" />
               </button>
               <button
                 onClick={() => onNavigate('next')}
-                className="md:hidden absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/80 hover:bg-background border border-border/50 shadow-lg transition-all hover:scale-110"
+                className="md:hidden absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/80 hover:bg-background border border-border/50 shadow-lg transition-all hover:scale-110 z-10"
                 aria-label="Próximo estilo"
               >
                 <ChevronRight className="w-6 h-6 text-foreground" />
               </button>
-            </div>
+              
+              {/* Swipe hint for mobile */}
+              <div className="md:hidden absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background/70 backdrop-blur-sm pointer-events-none">
+                <ChevronLeft className="w-3 h-3 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground">Arraste para navegar</span>
+                <ChevronRight className="w-3 h-3 text-muted-foreground" />
+              </div>
+            </motion.div>
 
             {/* Next style thumbnail */}
             <motion.button
