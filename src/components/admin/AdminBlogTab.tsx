@@ -68,6 +68,15 @@ interface BlogArticle {
   created_at: string;
   updated_at: string;
   published_at: string | null;
+  view_count?: number;
+  seo_score?: number;
+}
+
+interface BlogViewStats {
+  total_views: number;
+  views_7d: number;
+  views_30d: number;
+  unique_visitors: number;
 }
 
 const CATEGORIES = [
@@ -97,6 +106,12 @@ export const AdminBlogTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [viewStats, setViewStats] = useState<BlogViewStats>({
+    total_views: 0,
+    views_7d: 0,
+    views_30d: 0,
+    unique_visitors: 0,
+  });
 
   // Generate modal
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
@@ -131,6 +146,7 @@ export const AdminBlogTab = () => {
 
   useEffect(() => {
     fetchArticles();
+    fetchViewStats();
   }, []);
 
   const fetchArticles = async () => {
@@ -149,6 +165,84 @@ export const AdminBlogTab = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchViewStats = async () => {
+    try {
+      const now = new Date();
+      const date7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const date30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      // Get total views
+      const { count: totalViews } = await supabase
+        .from("blog_page_views")
+        .select("*", { count: "exact", head: true });
+
+      // Get views last 7 days
+      const { count: views7d } = await supabase
+        .from("blog_page_views")
+        .select("*", { count: "exact", head: true })
+        .gte("view_date", date7d);
+
+      // Get views last 30 days
+      const { count: views30d } = await supabase
+        .from("blog_page_views")
+        .select("*", { count: "exact", head: true })
+        .gte("view_date", date30d);
+
+      // Get unique visitors (distinct hashes)
+      const { data: uniqueData } = await supabase
+        .from("blog_page_views")
+        .select("visitor_hash");
+      
+      const uniqueVisitors = new Set(uniqueData?.map(v => v.visitor_hash) || []).size;
+
+      setViewStats({
+        total_views: totalViews || 0,
+        views_7d: views7d || 0,
+        views_30d: views30d || 0,
+        unique_visitors: uniqueVisitors,
+      });
+    } catch (error) {
+      console.error("Error fetching view stats:", error);
+    }
+  };
+
+  // Calculate SEO score for an article
+  const calculateSEOScore = (article: BlogArticle): number => {
+    let score = 0;
+    const maxScore = 100;
+    
+    // Title: 60 chars or less (15 points)
+    if (article.title && article.title.length > 0 && article.title.length <= 60) score += 15;
+    else if (article.title && article.title.length <= 70) score += 10;
+    
+    // Meta description: 120-160 chars (20 points)
+    if (article.meta_description) {
+      const len = article.meta_description.length;
+      if (len >= 120 && len <= 160) score += 20;
+      else if (len >= 80 && len <= 180) score += 10;
+    }
+    
+    // Keywords: at least 3 (15 points)
+    if (article.meta_keywords && article.meta_keywords.length >= 3) score += 15;
+    else if (article.meta_keywords && article.meta_keywords.length >= 1) score += 7;
+    
+    // Cover image (15 points)
+    if (article.image_url) score += 15;
+    
+    // Slug is valid (10 points)
+    if (article.slug && article.slug.length > 0 && !article.slug.includes(' ')) score += 10;
+    
+    // Content length (15 points for 500+ words)
+    const wordCount = article.content?.split(/\s+/).length || 0;
+    if (wordCount >= 500) score += 15;
+    else if (wordCount >= 200) score += 8;
+    
+    // Excerpt exists (10 points)
+    if (article.excerpt && article.excerpt.length > 20) score += 10;
+    
+    return Math.min(score, maxScore);
   };
 
   const handleGenerateArticle = async () => {
@@ -614,9 +708,9 @@ export const AdminBlogTab = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
         <Card className="p-4">
-          <p className="text-sm text-muted-foreground">Total de Artigos</p>
+          <p className="text-sm text-muted-foreground">Total Artigos</p>
           <p className="text-2xl font-bold text-foreground">{articles.length}</p>
         </Card>
         <Card className="p-4">
@@ -626,43 +720,28 @@ export const AdminBlogTab = () => {
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-muted-foreground">Rascunhos</p>
-          <p className="text-2xl font-bold text-primary">
-            {articles.filter((a) => !a.is_published).length}
-          </p>
+          <p className="text-sm text-muted-foreground">Visitas Total</p>
+          <p className="text-2xl font-bold text-primary">{viewStats.total_views.toLocaleString()}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-muted-foreground">Categorias</p>
+          <p className="text-sm text-muted-foreground">Visitas 7d</p>
+          <p className="text-2xl font-bold text-accent">{viewStats.views_7d.toLocaleString()}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Visitas 30d</p>
+          <p className="text-2xl font-bold text-foreground">{viewStats.views_30d.toLocaleString()}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Visitantes Únicos</p>
+          <p className="text-2xl font-bold text-foreground">{viewStats.unique_visitors.toLocaleString()}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Média SEO</p>
           <p className="text-2xl font-bold text-foreground">
-            {new Set(articles.map((a) => a.category)).size}
+            {articles.length > 0 
+              ? Math.round(articles.reduce((sum, a) => sum + calculateSEOScore(a), 0) / articles.length)
+              : 0}%
           </p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-muted-foreground">Com Placeholder</p>
-          <p className="text-2xl font-bold text-warning">
-            {articles.filter((a) => a.content === "<p>Artigo importado - edite o conteúdo completo aqui.</p>").length}
-          </p>
-          {articles.filter((a) => a.content === "<p>Artigo importado - edite o conteúdo completo aqui.</p>").length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2 w-full"
-              onClick={handleRegenerateAllContent}
-              disabled={regeneratingAll || regeneratingCovers}
-            >
-              {regeneratingAll ? (
-                <>
-                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                  {regeneratingProgress.current}/{regeneratingProgress.total}
-                </>
-              ) : (
-                <>
-                  <Wand2 className="w-3 h-3 mr-1" />
-                  Regenerar Todos
-                </>
-              )}
-            </Button>
-          )}
         </Card>
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">Capas WebP</p>
@@ -672,7 +751,7 @@ export const AdminBlogTab = () => {
           <Button
             variant="outline"
             size="sm"
-            className="mt-2 w-full"
+            className="mt-2 w-full text-xs"
             onClick={handleRegenerateAllCovers}
             disabled={regeneratingCovers || regeneratingAll}
           >
@@ -684,7 +763,7 @@ export const AdminBlogTab = () => {
             ) : (
               <>
                 <ImagePlus className="w-3 h-3 mr-1" />
-                Regenerar Capas
+                Regenerar
               </>
             )}
           </Button>
@@ -793,15 +872,21 @@ export const AdminBlogTab = () => {
                         {article.read_time}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Criado: {new Date(article.created_at).toLocaleDateString("pt-BR")}
+                        <Eye className="w-3 h-3" />
+                        {(article.view_count || 0).toLocaleString()} views
                       </span>
-                      {article.published_at && (
-                        <span className="flex items-center gap-1 text-success">
-                          <Globe className="w-3 h-3" />
-                          Publicado: {new Date(article.published_at).toLocaleDateString("pt-BR")}
-                        </span>
-                      )}
+                      <span 
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          calculateSEOScore(article) >= 80 
+                            ? 'bg-success/20 text-success' 
+                            : calculateSEOScore(article) >= 50 
+                              ? 'bg-warning/20 text-warning' 
+                              : 'bg-destructive/20 text-destructive'
+                        }`}
+                        title="Nota SEO"
+                      >
+                        SEO: {calculateSEOScore(article)}%
+                      </span>
                     </div>
                   </div>
                 </div>

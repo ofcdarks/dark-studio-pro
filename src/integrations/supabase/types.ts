@@ -278,9 +278,11 @@ export type Database = {
           meta_keywords: string[] | null
           published_at: string | null
           read_time: string | null
+          seo_score: number | null
           slug: string
           title: string
           updated_at: string
+          view_count: number | null
         }
         Insert: {
           category?: string
@@ -295,9 +297,11 @@ export type Database = {
           meta_keywords?: string[] | null
           published_at?: string | null
           read_time?: string | null
+          seo_score?: number | null
           slug: string
           title: string
           updated_at?: string
+          view_count?: number | null
         }
         Update: {
           category?: string
@@ -312,11 +316,54 @@ export type Database = {
           meta_keywords?: string[] | null
           published_at?: string | null
           read_time?: string | null
+          seo_score?: number | null
           slug?: string
           title?: string
           updated_at?: string
+          view_count?: number | null
         }
         Relationships: []
+      }
+      blog_page_views: {
+        Row: {
+          article_id: string | null
+          id: string
+          page_path: string
+          referrer: string | null
+          user_agent: string | null
+          view_date: string
+          viewed_at: string
+          visitor_hash: string
+        }
+        Insert: {
+          article_id?: string | null
+          id?: string
+          page_path: string
+          referrer?: string | null
+          user_agent?: string | null
+          view_date?: string
+          viewed_at?: string
+          visitor_hash: string
+        }
+        Update: {
+          article_id?: string | null
+          id?: string
+          page_path?: string
+          referrer?: string | null
+          user_agent?: string | null
+          view_date?: string
+          viewed_at?: string
+          visitor_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_page_views_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       channel_analyses: {
         Row: {

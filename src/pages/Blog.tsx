@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   ArrowRight, 
   Clock, 
@@ -163,6 +164,20 @@ const Blog = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Track page view on mount
+  useEffect(() => {
+    const trackView = async () => {
+      try {
+        await supabase.functions.invoke("track-blog-view", {
+          body: { pagePath: "/blog" },
+        });
+      } catch (e) {
+        // Silent fail for analytics
+      }
+    };
+    trackView();
+  }, []);
 
   // Extrair categorias únicas
   const categories = useMemo(() => {
