@@ -523,6 +523,106 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* DaVinci Resolve Section - Professional Upgrade */}
+      <section className="py-16 md:py-24 px-4 relative overflow-hidden">
+        <ParallaxLayer depth={0.3} className="absolute -top-20 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none hidden md:block" />
+        
+        <div className="max-w-5xl mx-auto relative">
+          <AnimatedSection className="text-center space-y-6 md:space-y-8">
+            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-gradient-to-r from-purple-500/20 to-violet-500/20 border border-purple-500/30">
+              <Video className="w-5 h-5 text-purple-400" />
+              <span className="text-sm md:text-base font-medium text-purple-300">WORKFLOW PROFISSIONAL</span>
+            </div>
+            
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold">
+              Chega de edição
+              <span className="block text-purple-400">amadora no celular</span>
+            </h2>
+            
+            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Enquanto a maioria perde tempo com templates genéricos de CapCut, 
+              nossos operadores dominam o <span className="text-primary font-semibold">DaVinci Resolve 20</span> — 
+              o mesmo software usado por Hollywood. Exportação XML nativa, color grading cinematográfico 
+              e workflow que separa <span className="text-purple-400 font-semibold">amadores de profissionais</span>.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+              {/* Amateur Side */}
+              <Card className="p-6 md:p-8 bg-card/50 border-destructive/30 relative overflow-hidden group">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-destructive/50" />
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                      <AlertTriangle className="w-5 h-5 text-destructive" />
+                    </div>
+                    <h3 className="text-xl font-bold text-destructive">Caminho Amador</h3>
+                  </div>
+                  <ul className="space-y-3 text-muted-foreground">
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-destructive/50" />
+                      Templates prontos e genéricos
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-destructive/50" />
+                      Marca d'água em tudo
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-destructive/50" />
+                      Qualidade limitada a 1080p
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-destructive/50" />
+                      Zero controle de cor
+                    </li>
+                  </ul>
+                </div>
+              </Card>
+
+              {/* Pro Side */}
+              <Card className="p-6 md:p-8 bg-card/50 border-primary/30 relative overflow-hidden group">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-purple-500 to-primary" />
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Rocket className="w-5 h-5 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold text-primary">La Casa Dark CORE</h3>
+                  </div>
+                  <ul className="space-y-3 text-muted-foreground">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-primary" />
+                      Exportação XML nativa para DaVinci
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-primary" />
+                      Color grading cinematográfico
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-primary" />
+                      Resolução 4K e HDR
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-primary" />
+                      Workflow profissional completo
+                    </li>
+                  </ul>
+                </div>
+              </Card>
+            </div>
+
+            <div className="pt-6">
+              <Link to="/auth">
+                <Button size="lg" className="gradient-button text-primary-foreground font-semibold h-14 md:h-16 px-8 md:px-12 text-lg glow-primary">
+                  <Rocket className="w-5 h-5 md:w-6 md:h-6 mr-3" />
+                  Elevar Meu Nível Agora
+                  <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-3" />
+                </Button>
+              </Link>
+            </div>
+          </AnimatedSection>
+        </div>
+      </section>
+
       {/* Scroll indicator - line style */}
       <ScrollIndicator variant="line" />
 
