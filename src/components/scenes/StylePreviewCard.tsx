@@ -3,7 +3,8 @@ import { ThumbnailStyle } from "@/lib/thumbnailStyles";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Import real preview images for 3D styles
+// Import real preview images for all styles
+// 3D & Animação
 import preview3DCinematic from "@/assets/style-previews/3d-cinematic-miniature.jpg";
 import previewIsometric from "@/assets/style-previews/isometrico-arquitetonico.jpg";
 import previewLowPoly from "@/assets/style-previews/low-poly-stylized.jpg";
@@ -11,6 +12,42 @@ import previewClaymation from "@/assets/style-previews/claymation-3d.jpg";
 import previewVoxel from "@/assets/style-previews/voxel-art.jpg";
 import previewAnime3D from "@/assets/style-previews/anime-3d.jpg";
 import previewPixar from "@/assets/style-previews/pixar-disney.jpg";
+
+// Realistas
+import previewFotoRealista from "@/assets/style-previews/foto-realista.jpg";
+import previewCinematografico from "@/assets/style-previews/cinematografico.jpg";
+import previewDocumentario from "@/assets/style-previews/documentario.jpg";
+import previewNarrativaCinematografica from "@/assets/style-previews/narrativa-cinematografica.jpg";
+
+// Artísticos
+import previewAnime from "@/assets/style-previews/anime.jpg";
+import previewDesenhoAnimado from "@/assets/style-previews/desenho-animado.jpg";
+import previewCartoonPremium from "@/assets/style-previews/cartoon-premium.jpg";
+import previewFantasia from "@/assets/style-previews/fantasia.jpg";
+
+// Minimalistas
+import previewDesenhoPalitos from "@/assets/style-previews/desenho-palitos.jpg";
+import previewQuadroBranco from "@/assets/style-previews/quadro-branco.jpg";
+import previewTechMinimalista from "@/assets/style-previews/tech-minimalista.jpg";
+import previewEspiritualMinimalista from "@/assets/style-previews/narrativa-espiritual-minimalista.jpg";
+
+// Vibrantes
+import previewViralVibrante from "@/assets/style-previews/viral-vibrante.jpg";
+import previewDocumentarioModerno from "@/assets/style-previews/documentario-moderno.jpg";
+
+// Dramáticos
+import previewTerrorAnalogico from "@/assets/style-previews/terror-analogico.jpg";
+import previewTeatroSombrio from "@/assets/style-previews/teatro-sombrio.jpg";
+import previewDramaNaturalista from "@/assets/style-previews/drama-naturalista.jpg";
+
+// Experimentais
+import previewDiorama from "@/assets/style-previews/diorama-cinematografico.jpg";
+import previewNeoRealismo from "@/assets/style-previews/neo-realismo-espiritual.jpg";
+import previewSurrealismo from "@/assets/style-previews/surrealismo-psicologico.jpg";
+import previewMemoriaFragmentada from "@/assets/style-previews/memoria-fragmentada.jpg";
+import previewNarrativaFragmentada from "@/assets/style-previews/narrativa-fragmentada.jpg";
+import previewSonhoReal from "@/assets/style-previews/sonho-real.jpg";
+import previewVhsNostalgico from "@/assets/style-previews/vhs-nostalgico.jpg";
 
 interface StylePreviewCardProps {
   style: ThumbnailStyle;
@@ -20,6 +57,7 @@ interface StylePreviewCardProps {
 
 // Map style IDs to their real preview images
 const styleImages: Record<string, string> = {
+  // 3D & Animação
   "3d-cinematic-miniature": preview3DCinematic,
   "isometrico-arquitetonico": previewIsometric,
   "low-poly-stylized": previewLowPoly,
@@ -27,6 +65,36 @@ const styleImages: Record<string, string> = {
   "voxel-art": previewVoxel,
   "anime-3d": previewAnime3D,
   "pixar-disney": previewPixar,
+  // Realistas
+  "foto-realista": previewFotoRealista,
+  "cinematografico": previewCinematografico,
+  "documentario": previewDocumentario,
+  "narrativa-cinematografica": previewNarrativaCinematografica,
+  // Artísticos
+  "anime": previewAnime,
+  "desenho-animado": previewDesenhoAnimado,
+  "cartoon-premium": previewCartoonPremium,
+  "fantasia": previewFantasia,
+  // Minimalistas
+  "desenho-palitos": previewDesenhoPalitos,
+  "quadro-branco": previewQuadroBranco,
+  "tech-minimalista": previewTechMinimalista,
+  "narrativa-espiritual-minimalista": previewEspiritualMinimalista,
+  // Vibrantes
+  "viral-vibrante": previewViralVibrante,
+  "documentario-moderno": previewDocumentarioModerno,
+  // Dramáticos
+  "terror-analogico": previewTerrorAnalogico,
+  "teatro-sombrio": previewTeatroSombrio,
+  "drama-naturalista": previewDramaNaturalista,
+  // Experimentais
+  "diorama-cinematografico": previewDiorama,
+  "neo-realismo-espiritual": previewNeoRealismo,
+  "surrealismo-psicologico": previewSurrealismo,
+  "memoria-fragmentada": previewMemoriaFragmentada,
+  "narrativa-fragmentada": previewNarrativaFragmentada,
+  "sonho-real": previewSonhoReal,
+  "vhs-nostalgico": previewVhsNostalgico,
 };
 
 // Fallback visual for styles without real images
