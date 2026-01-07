@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
-import { Smartphone, Monitor, AlertTriangle, Check, GripVertical, DollarSign, Rocket, Volume2, VolumeX } from "lucide-react";
+import { motion } from "framer-motion";
+import { Monitor, Check, GripVertical, DollarSign, Rocket, Volume2, VolumeX } from "lucide-react";
 import amateurImg from "@/assets/comparison-amateur.jpg";
-
 export const ComparisonSlider = () => {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isMuted, setIsMuted] = useState(true);
@@ -38,8 +38,20 @@ export const ComparisonSlider = () => {
   return (
     <div className="relative w-full max-w-4xl mx-auto">
       {/* Top black bar */}
-      <div className="bg-black py-4 px-5 sm:px-6 flex items-center justify-between rounded-t-xl border border-b-0 border-border">
-        <div className="flex flex-col gap-1.5">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="bg-black py-4 px-5 sm:px-6 flex items-center justify-between rounded-t-xl border border-b-0 border-border"
+      >
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="flex flex-col gap-1.5"
+        >
           <div className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-destructive text-[10px] sm:text-xs font-bold text-destructive-foreground w-fit">
             ANTES
           </div>
@@ -47,8 +59,14 @@ export const ComparisonSlider = () => {
             <DollarSign className="w-3 h-3 text-red-400" />
             <span className="text-red-400 text-[10px] sm:text-xs font-bold">R$34,90/mês</span>
           </div>
-        </div>
-        <div className="flex flex-col gap-1.5 items-end">
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+          className="flex flex-col gap-1.5 items-end"
+        >
           <div className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border-2 border-emerald-500 text-[10px] sm:text-xs font-bold text-emerald-400 w-fit">
             DEPOIS
           </div>
@@ -56,8 +74,8 @@ export const ComparisonSlider = () => {
             <Rocket className="w-3 h-3 text-green-400" />
             <span className="text-green-400 text-[10px] sm:text-xs font-bold">100% GRÁTIS</span>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Video comparison area */}
       <div 
@@ -126,8 +144,20 @@ export const ComparisonSlider = () => {
       </div>
 
       {/* Bottom black bar */}
-      <div className="bg-black py-4 px-5 sm:px-6 flex items-center justify-between rounded-b-xl border border-t-0 border-border">
-        <div className="flex items-center gap-2 sm:gap-3">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+        className="bg-black py-4 px-5 sm:px-6 flex items-center justify-between rounded-b-xl border border-t-0 border-border"
+      >
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+          className="flex items-center gap-2 sm:gap-3"
+        >
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-orange-500 via-red-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
             <Monitor className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
@@ -135,9 +165,15 @@ export const ComparisonSlider = () => {
             <h4 className="text-sm sm:text-base font-bold text-foreground">DaVinci Resolve 20</h4>
             <p className="text-[10px] sm:text-xs text-zinc-400">Color grading Hollywood</p>
           </div>
-        </div>
+        </motion.div>
         
-        <div className="flex items-center gap-2 sm:gap-3">
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+          className="flex items-center gap-2 sm:gap-3"
+        >
           <div className="hidden md:flex flex-wrap gap-2">
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/20 text-primary text-xs border border-primary/30">
               <Check className="w-3 h-3" />
@@ -163,8 +199,8 @@ export const ComparisonSlider = () => {
               <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             )}
           </button>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };
