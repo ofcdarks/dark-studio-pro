@@ -4476,6 +4476,65 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
         </DialogContent>
       </Dialog>
 
+      {/* Modal de Reescrita Automática de Prompt */}
+      <Dialog open={bgState.rewriteProgress.isRewriting} onOpenChange={() => {}}>
+        <DialogContent className="max-w-md bg-card border-amber-500/50 rounded-2xl shadow-xl" hideCloseButton>
+          <div className="flex flex-col items-center justify-center py-8 space-y-5">
+            {/* Ícone de reescrita */}
+            <div className="relative w-20 h-20">
+              <div className="absolute inset-0 bg-amber-500/20 rounded-full animate-ping" />
+              <div className="absolute inset-0 bg-amber-500/10 rounded-full animate-pulse" />
+              <div className="relative w-20 h-20 rounded-full border-2 border-amber-500/50 bg-amber-500/10 flex items-center justify-center">
+                <Wand2 className="w-10 h-10 text-amber-500 animate-pulse" />
+              </div>
+            </div>
+            
+            {/* Informações */}
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold text-foreground">
+                Reescrevendo Prompt Bloqueado
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                A IA está reescrevendo o prompt da cena #{bgState.rewriteProgress.sceneNumber} para evitar bloqueios
+              </p>
+              <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30">
+                Tentativa {bgState.rewriteProgress.attemptNumber}/2
+              </Badge>
+            </div>
+
+            {/* Prompts */}
+            <div className="w-full space-y-3 px-2">
+              {bgState.rewriteProgress.originalPrompt && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-destructive mb-1 flex items-center gap-1">
+                    <X className="w-3 h-3" /> Prompt Original (bloqueado)
+                  </p>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    "{bgState.rewriteProgress.originalPrompt}"
+                  </p>
+                </div>
+              )}
+              
+              {bgState.rewriteProgress.newPrompt && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-green-500 mb-1 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Novo Prompt (reescrito)
+                  </p>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    "{bgState.rewriteProgress.newPrompt}"
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Loader */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+              <span>Processando...</span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de Instruções CapCut */}
       <Dialog open={showCapcutInstructions} onOpenChange={setShowCapcutInstructions}>
