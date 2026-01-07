@@ -42,7 +42,11 @@ import {
   Search,
   Image,
   ImagePlus,
+  Youtube,
+  Newspaper,
+  Type,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -87,7 +91,9 @@ export const AdminBlogTab = () => {
 
   // Generate modal
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
+  const [generateMode, setGenerateMode] = useState<"keyword" | "youtube" | "news">("keyword");
   const [generateTopic, setGenerateTopic] = useState("");
+  const [generateYoutubeUrl, setGenerateYoutubeUrl] = useState("");
   const [generateCategory, setGenerateCategory] = useState("YouTube");
   const [generateWithCover, setGenerateWithCover] = useState(true);
 
@@ -136,15 +142,28 @@ export const AdminBlogTab = () => {
   };
 
   const handleGenerateArticle = async () => {
-    if (!generateTopic.trim()) {
+    if (generateMode === "keyword" && !generateTopic.trim()) {
       toast.error("Digite um tópico para o artigo");
+      return;
+    }
+    if (generateMode === "youtube" && !generateYoutubeUrl.trim()) {
+      toast.error("Cole a URL do vídeo do YouTube");
+      return;
+    }
+    if (generateMode === "news" && !generateTopic.trim()) {
+      toast.error("Digite o tópico da notícia");
       return;
     }
 
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-blog-article", {
-        body: { topic: generateTopic, category: generateCategory },
+        body: { 
+          topic: generateTopic, 
+          category: generateCategory,
+          mode: generateMode,
+          youtubeUrl: generateYoutubeUrl,
+        },
       });
 
       if (error) throw error;
@@ -201,6 +220,8 @@ export const AdminBlogTab = () => {
       toast.success("Artigo gerado com sucesso!");
       setGenerateModalOpen(false);
       setGenerateTopic("");
+      setGenerateYoutubeUrl("");
+      setGenerateMode("keyword");
       fetchArticles();
     } catch (error: any) {
       console.error("Error generating article:", error);
@@ -536,7 +557,7 @@ export const AdminBlogTab = () => {
 
       {/* Generate Modal */}
       <Dialog open={generateModalOpen} onOpenChange={setGenerateModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
@@ -544,16 +565,82 @@ export const AdminBlogTab = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">
-                Tópico do Artigo
-              </label>
-              <Input
-                placeholder="Ex: Como criar thumbnails que viralizam"
-                value={generateTopic}
-                onChange={(e) => setGenerateTopic(e.target.value)}
-              />
-            </div>
+            {/* Mode Selection */}
+            <Tabs value={generateMode} onValueChange={(v) => setGenerateMode(v as any)}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="keyword" className="gap-1.5">
+                  <Type className="w-4 h-4" />
+                  Palavra-chave
+                </TabsTrigger>
+                <TabsTrigger value="youtube" className="gap-1.5">
+                  <Youtube className="w-4 h-4" />
+                  YouTube
+                </TabsTrigger>
+                <TabsTrigger value="news" className="gap-1.5">
+                  <Newspaper className="w-4 h-4" />
+                  Notícias
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="keyword" className="mt-4 space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Tópico do Artigo
+                  </label>
+                  <Input
+                    placeholder="Ex: Como criar thumbnails que viralizam"
+                    value={generateTopic}
+                    onChange={(e) => setGenerateTopic(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    A IA vai criar um artigo completo sobre este tópico
+                  </p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="youtube" className="mt-4 space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    URL do Vídeo do YouTube
+                  </label>
+                  <Input
+                    placeholder="https://youtube.com/watch?v=..."
+                    value={generateYoutubeUrl}
+                    onChange={(e) => setGenerateYoutubeUrl(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    O vídeo será transcrito e transformado em artigo
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Foco do Artigo (opcional)
+                  </label>
+                  <Input
+                    placeholder="Ex: Principais insights do vídeo"
+                    value={generateTopic}
+                    onChange={(e) => setGenerateTopic(e.target.value)}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="news" className="mt-4 space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Tópico da Notícia
+                  </label>
+                  <Input
+                    placeholder="Ex: Novas regras de monetização do YouTube 2025"
+                    value={generateTopic}
+                    onChange={(e) => setGenerateTopic(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    A IA vai pesquisar tendências e criar um artigo atualizado
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
+
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">Categoria</label>
               <Select value={generateCategory} onValueChange={setGenerateCategory}>
@@ -590,7 +677,7 @@ export const AdminBlogTab = () => {
               {generating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Gerando...
+                  {generateMode === "youtube" ? "Transcrevendo..." : "Gerando..."}
                 </>
               ) : (
                 <>
