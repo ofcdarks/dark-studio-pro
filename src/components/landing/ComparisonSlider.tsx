@@ -20,6 +20,7 @@ export const ComparisonSlider = () => {
 
   const handleMouseDown = () => {
     isDragging.current = true;
+    setIsMuted(false);
   };
 
   const handleMouseUp = () => {
