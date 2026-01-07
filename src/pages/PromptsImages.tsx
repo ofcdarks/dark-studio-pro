@@ -108,6 +108,7 @@ import { Switch } from "@/components/ui/switch";
 import logoGif from "@/assets/logo.gif";
 import { SceneTimeline } from "@/components/scenes/SceneTimeline";
 import { ScriptPreviewTimeline } from "@/components/scenes/ScriptPreviewTimeline";
+import { StyleSelector } from "@/components/scenes/StyleSelector";
 import { SUBTITLE_STYLES, SubtitleStyle, generateSubtitleInstructions } from "@/lib/subtitleStyles";
 import { DEFAULT_AUDIO_MIX, AudioMixSettings, generateAudioFolderStructure, generateAudioMixReadme } from "@/lib/audioMixConfig";
 import { Slider } from "@/components/ui/slider";
@@ -3237,29 +3238,13 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" data-tutorial="style-settings">
-                      <Select value={style} onValueChange={setStyle}>
-                        <SelectTrigger className="bg-secondary border-border">
-                          <SelectValue placeholder="Estilo" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-80">
-                          {THUMBNAIL_STYLE_CATEGORIES.map((category) => (
-                            <div key={category.id}>
-                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                                {category.icon} {category.name}
-                              </div>
-                              {THUMBNAIL_STYLES.filter(s => s.category === category.id).map((s) => (
-                                <SelectItem key={s.id} value={s.id}>
-                                  <div className="flex items-center gap-2">
-                                    <span>{s.icon}</span>
-                                    <span>{s.name}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </div>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4" data-tutorial="style-settings">
+                      <div className="md:col-span-2">
+                        <StyleSelector 
+                          selectedStyleId={style} 
+                          onStyleSelect={setStyle} 
+                        />
+                      </div>
 
                       <Select value={model} onValueChange={setModel}>
                         <SelectTrigger className="bg-secondary border-border">
