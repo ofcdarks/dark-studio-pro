@@ -10,6 +10,41 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  build: {
+    // Optimize build for production
+    target: "esnext",
+    minify: "esbuild",
+    cssMinify: true,
+    sourcemap: false,
+    // Code splitting for better caching
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React libs
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          // UI components
+          "vendor-ui": [
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-tabs",
+            "@radix-ui/react-tooltip",
+            "@radix-ui/react-select",
+            "@radix-ui/react-popover",
+          ],
+          // Charts
+          "vendor-charts": ["recharts"],
+          // Query
+          "vendor-query": ["@tanstack/react-query"],
+          // Supabase
+          "vendor-supabase": ["@supabase/supabase-js"],
+          // Animation
+          "vendor-animation": ["framer-motion"],
+        },
+      },
+    },
+    // Chunk size warning
+    chunkSizeWarningLimit: 1000,
+  },
   plugins: [
     react(),
     mode === "development" && componentTagger(),
@@ -65,6 +100,17 @@ export default defineConfig(({ mode }) => ({
                 statuses: [0, 200]
               }
             }
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "images-cache",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30
+              }
+            }
           }
         ]
       }
@@ -74,5 +120,15 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  // Optimize deps
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "react-router-dom",
+      "@tanstack/react-query",
+      "@supabase/supabase-js"
+    ],
   },
 }));

@@ -12,8 +12,47 @@ import { BackgroundGenerationIndicator } from "@/components/layout/BackgroundGen
 import { MaintenanceGuard } from "@/components/maintenance/MaintenanceGuard";
 import { useAppDomainRedirect } from "@/hooks/useAppDomainRedirect";
 import { Loader2 } from "lucide-react";
+import { Suspense, lazy } from "react";
+
+// Critical pages loaded immediately
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
+import Auth from "./pages/Auth";
+import NotFound from "./pages/NotFound";
+
+// Lazy load all other pages for better performance
+const VideoAnalyzer = lazy(() => import("./pages/VideoAnalyzer"));
+const ExploreNiche = lazy(() => import("./pages/ExploreNiche"));
+const Folders = lazy(() => import("./pages/Folders"));
+const MonitoredChannels = lazy(() => import("./pages/MonitoredChannels"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const ViralLibrary = lazy(() => import("./pages/ViralLibrary"));
+const ViralAgents = lazy(() => import("./pages/ViralAgents"));
+const PromptsImages = lazy(() => import("./pages/PromptsImages"));
+const VoiceGenerator = lazy(() => import("./pages/VoiceGenerator"));
+const VideoGenerator = lazy(() => import("./pages/VideoGenerator"));
+const YouTubeIntegration = lazy(() => import("./pages/YouTubeIntegration"));
+const SearchChannels = lazy(() => import("./pages/SearchChannels"));
+const ChannelAnalyzer = lazy(() => import("./pages/ChannelAnalyzer"));
+const SRTConverter = lazy(() => import("./pages/SRTConverter"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const SceneGenerator = lazy(() => import("./pages/SceneGenerator"));
+const AnalysisHistory = lazy(() => import("./pages/AnalysisHistory"));
+const PlansCredits = lazy(() => import("./pages/PlansCredits"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const PendingApproval = lazy(() => import("./pages/PendingApproval"));
+const Maintenance = lazy(() => import("./pages/Maintenance"));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+  </div>
+);
 
 // Smart redirect: logged in -> dashboard, not logged in -> landing
 const RootRedirect = () => {
@@ -21,11 +60,7 @@ const RootRedirect = () => {
   useAppDomainRedirect();
   
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PageLoader />;
   }
   
   return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/landing" replace />;
@@ -37,74 +72,57 @@ const AppRoutes = () => {
   
   return (
     <MaintenanceGuard>
-      <Routes>
-        <Route path="/" element={<RootRedirect />} />
-        <Route path="/landing" element={<LandingSettingsProvider><Landing /></LandingSettingsProvider>} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-        <Route path="/analyzer" element={<ProtectedRoute><VideoAnalyzer /></ProtectedRoute>} />
-        <Route path="/history" element={<ProtectedRoute><AnalysisHistory /></ProtectedRoute>} />
-        <Route path="/explore" element={<ProtectedRoute><ExploreNiche /></ProtectedRoute>} />
-        <Route path="/folders" element={<ProtectedRoute><Folders /></ProtectedRoute>} />
-        <Route path="/channels" element={<ProtectedRoute><MonitoredChannels /></ProtectedRoute>} />
-        <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-        <Route path="/library" element={<ProtectedRoute><ViralLibrary /></ProtectedRoute>} />
-        <Route path="/agents" element={<ProtectedRoute><ViralAgents /></ProtectedRoute>} />
-        <Route path="/prompts" element={<ProtectedRoute><PromptsImages /></ProtectedRoute>} />
-        <Route path="/voice" element={<ProtectedRoute><VoiceGenerator /></ProtectedRoute>} />
-        
-        <Route path="/video-gen" element={<ProtectedRoute><VideoGenerator /></ProtectedRoute>} />
-        <Route path="/youtube" element={<ProtectedRoute><YouTubeIntegration /></ProtectedRoute>} />
-        <Route path="/search-channels" element={<ProtectedRoute><SearchChannels /></ProtectedRoute>} />
-        <Route path="/channel-analyzer" element={<ProtectedRoute><ChannelAnalyzer /></ProtectedRoute>} />
-        <Route path="/srt" element={<ProtectedRoute><SRTConverter /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-        <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
-        
-        <Route path="/scenes" element={<ProtectedRoute><SceneGenerator /></ProtectedRoute>} />
-        <Route path="/plans" element={<ProtectedRoute><PlansCredits /></ProtectedRoute>} />
-        <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
-        <Route path="/maintenance" element={<Maintenance />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<RootRedirect />} />
+          <Route path="/landing" element={<LandingSettingsProvider><Landing /></LandingSettingsProvider>} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/analyzer" element={<ProtectedRoute><VideoAnalyzer /></ProtectedRoute>} />
+          <Route path="/history" element={<ProtectedRoute><AnalysisHistory /></ProtectedRoute>} />
+          <Route path="/explore" element={<ProtectedRoute><ExploreNiche /></ProtectedRoute>} />
+          <Route path="/folders" element={<ProtectedRoute><Folders /></ProtectedRoute>} />
+          <Route path="/channels" element={<ProtectedRoute><MonitoredChannels /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+          <Route path="/library" element={<ProtectedRoute><ViralLibrary /></ProtectedRoute>} />
+          <Route path="/agents" element={<ProtectedRoute><ViralAgents /></ProtectedRoute>} />
+          <Route path="/prompts" element={<ProtectedRoute><PromptsImages /></ProtectedRoute>} />
+          <Route path="/voice" element={<ProtectedRoute><VoiceGenerator /></ProtectedRoute>} />
+          
+          <Route path="/video-gen" element={<ProtectedRoute><VideoGenerator /></ProtectedRoute>} />
+          <Route path="/youtube" element={<ProtectedRoute><YouTubeIntegration /></ProtectedRoute>} />
+          <Route path="/search-channels" element={<ProtectedRoute><SearchChannels /></ProtectedRoute>} />
+          <Route path="/channel-analyzer" element={<ProtectedRoute><ChannelAnalyzer /></ProtectedRoute>} />
+          <Route path="/srt" element={<ProtectedRoute><SRTConverter /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+          
+          <Route path="/scenes" element={<ProtectedRoute><SceneGenerator /></ProtectedRoute>} />
+          <Route path="/plans" element={<ProtectedRoute><PlansCredits /></ProtectedRoute>} />
+          <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
+          <Route path="/maintenance" element={<Maintenance />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </MaintenanceGuard>
   );
 };
-import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
-import VideoAnalyzer from "./pages/VideoAnalyzer";
-import ExploreNiche from "./pages/ExploreNiche";
-import Folders from "./pages/Folders";
-import MonitoredChannels from "./pages/MonitoredChannels";
-import Analytics from "./pages/Analytics";
-import ViralLibrary from "./pages/ViralLibrary";
-import ViralAgents from "./pages/ViralAgents";
-import PromptsImages from "./pages/PromptsImages";
-import VoiceGenerator from "./pages/VoiceGenerator";
 
-import VideoGenerator from "./pages/VideoGenerator";
-import YouTubeIntegration from "./pages/YouTubeIntegration";
-import SearchChannels from "./pages/SearchChannels";
-import ChannelAnalyzer from "./pages/ChannelAnalyzer";
-import SRTConverter from "./pages/SRTConverter";
-import SettingsPage from "./pages/SettingsPage";
-import AdminPanel from "./pages/AdminPanel";
-
-import SceneGenerator from "./pages/SceneGenerator";
-import AnalysisHistory from "./pages/AnalysisHistory";
-import PlansCredits from "./pages/PlansCredits";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import ResetPassword from "./pages/ResetPassword";
-import PendingApproval from "./pages/PendingApproval";
-import Maintenance from "./pages/Maintenance";
-
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Optimize query behavior
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
