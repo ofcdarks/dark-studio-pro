@@ -4,6 +4,8 @@ import { useToolMaintenance, TOOL_REGISTRY } from "@/hooks/useToolMaintenance";
 import { MaintenanceModal } from "./MaintenanceModal";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertTriangle, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface MaintenanceGuardProps {
   children: React.ReactNode;
@@ -14,10 +16,12 @@ export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
   const { user } = useAuth();
   const { isUnderMaintenance, getMaintenanceInfo, isLoading } = useToolMaintenance();
   const [showModal, setShowModal] = useState(false);
+  const [showAdminBanner, setShowAdminBanner] = useState(false);
   const [currentToolName, setCurrentToolName] = useState("");
   const [maintenanceMessage, setMaintenanceMessage] = useState<string | undefined>();
   const [estimatedEndTime, setEstimatedEndTime] = useState<string | undefined>();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -40,13 +44,12 @@ export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
     checkAdmin();
   }, [user?.id]);
 
+  // Reset banner dismissed state when route changes
   useEffect(() => {
-    // Don't check maintenance for admins
-    if (isAdmin) {
-      setShowModal(false);
-      return;
-    }
+    setBannerDismissed(false);
+  }, [location.pathname]);
 
+  useEffect(() => {
     // Skip if still loading or no user
     if (isLoading || !user) return;
 
@@ -60,15 +63,49 @@ export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
       setCurrentToolName(matchingTool.name);
       setMaintenanceMessage(info?.message);
       setEstimatedEndTime(info?.estimatedEndTime);
-      setShowModal(true);
+      
+      if (isAdmin) {
+        // Show banner for admins instead of blocking modal
+        setShowAdminBanner(true);
+        setShowModal(false);
+      } else {
+        // Show blocking modal for regular users
+        setShowModal(true);
+        setShowAdminBanner(false);
+      }
     } else {
       setShowModal(false);
+      setShowAdminBanner(false);
     }
   }, [location.pathname, isUnderMaintenance, getMaintenanceInfo, isLoading, isAdmin, user]);
 
   return (
     <>
-      {children}
+      {/* Admin maintenance banner */}
+      {showAdminBanner && !bannerDismissed && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500/90 text-amber-950 px-4 py-2 flex items-center justify-center gap-3">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <span className="text-sm font-medium">
+            <strong>{currentToolName}</strong> está em manutenção para usuários normais.
+            {maintenanceMessage && ` (${maintenanceMessage})`}
+            {" "}Você tem acesso como admin.
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 hover:bg-amber-600/20"
+            onClick={() => setBannerDismissed(true)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      
+      {/* Add padding when banner is visible */}
+      <div className={showAdminBanner && !bannerDismissed ? "pt-10" : ""}>
+        {children}
+      </div>
+      
       <MaintenanceModal
         isOpen={showModal}
         toolName={currentToolName}
