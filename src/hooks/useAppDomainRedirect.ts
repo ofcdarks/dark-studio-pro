@@ -2,29 +2,30 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // Rotas que pertencem ao app (não à landing page)
+// Baseadas nas rotas reais do App.tsx
 const APP_ROUTES = [
   '/dashboard',
-  '/admin',
-  '/settings',
-  '/video-analyzer',
-  '/scene-generator',
-  '/video-generator',
-  '/voice-generator',
-  '/viral-library',
-  '/analysis-history',
+  '/analyzer',
+  '/history',
+  '/explore',
   '/folders',
-  '/channel-analyzer',
-  '/monitored-channels',
+  '/channels',
+  '/analytics',
+  '/library',
+  '/agents',
+  '/prompts',
+  '/voice',
+  '/video-gen',
+  '/youtube',
   '/search-channels',
-  '/explore-niche',
-  '/plans-credits',
-  '/srt-converter',
+  '/channel-analyzer',
+  '/srt',
+  '/settings',
+  '/admin',
+  '/scenes',
+  '/plans',
   '/payment-success',
   '/pending-approval',
-  '/viral-agents',
-  '/youtube-integration',
-  '/analytics',
-  '/prompts-images',
 ];
 
 /**
