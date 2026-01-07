@@ -10,6 +10,7 @@ interface Profile {
   credits: number;
   storage_used: number;
   storage_limit: number;
+  whatsapp: string | null;
 }
 
 interface UserRole {
