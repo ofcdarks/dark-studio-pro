@@ -24,6 +24,11 @@ import previewNarrativaCinematografica from "@/assets/style-previews/narrativa-c
 import previewRetratoEditorial from "@/assets/style-previews/retrato-editorial.jpg";
 import previewNaturezaWildlife from "@/assets/style-previews/natureza-wildlife.jpg";
 import previewArquiteturaModerna from "@/assets/style-previews/arquitetura-moderna.jpg";
+import previewStreetPhotography from "@/assets/style-previews/street-photography.jpg";
+import previewFotojornalismo from "@/assets/style-previews/fotojornalismo.jpg";
+import previewProdutoComercial from "@/assets/style-previews/produto-comercial.jpg";
+import previewMacroExtremo from "@/assets/style-previews/macro-extremo.jpg";
+import previewAstrofotografia from "@/assets/style-previews/astrofotografia.jpg";
 
 // Artísticos
 import previewAnime from "@/assets/style-previews/anime.jpg";
@@ -35,6 +40,9 @@ import previewMangaShonen from "@/assets/style-previews/manga-shonen.jpg";
 import previewAquarelaDigital from "@/assets/style-previews/aquarela-digital.jpg";
 import previewOleoClassico from "@/assets/style-previews/oleo-classico.jpg";
 import previewPopArt from "@/assets/style-previews/pop-art.jpg";
+import previewArtNouveau from "@/assets/style-previews/art-nouveau.jpg";
+import previewExpressionismo from "@/assets/style-previews/expressionismo.jpg";
+import previewImpressionismo from "@/assets/style-previews/impressionismo.jpg";
 
 // Minimalistas
 import previewDesenhoPalitos from "@/assets/style-previews/desenho-palitos.jpg";
@@ -44,6 +52,11 @@ import previewEspiritualMinimalista from "@/assets/style-previews/narrativa-espi
 import previewFlatDesign from "@/assets/style-previews/flat-design.jpg";
 import previewLineArt from "@/assets/style-previews/line-art.jpg";
 import previewSilhuetaDramatica from "@/assets/style-previews/silhueta-dramatica.jpg";
+import previewGeometricoAbstrato from "@/assets/style-previews/geometrico-abstrato.jpg";
+import previewMonocromatico from "@/assets/style-previews/monocromatico.jpg";
+import previewNegativeSpace from "@/assets/style-previews/negative-space.jpg";
+import previewTipografiaBold from "@/assets/style-previews/tipografia-bold.jpg";
+import previewBauhaus from "@/assets/style-previews/bauhaus.jpg";
 
 // Vibrantes
 import previewViralVibrante from "@/assets/style-previews/viral-vibrante.jpg";
@@ -53,6 +66,11 @@ import previewVaporwave from "@/assets/style-previews/vaporwave.jpg";
 import previewSynthwave from "@/assets/style-previews/synthwave.jpg";
 import previewTropicalParadise from "@/assets/style-previews/tropical-paradise.jpg";
 import previewGradienteAurora from "@/assets/style-previews/gradiente-aurora.jpg";
+import previewNeonTokyo from "@/assets/style-previews/neon-tokyo.jpg";
+import previewPsychedelic from "@/assets/style-previews/psychedelic.jpg";
+import previewCandyPop from "@/assets/style-previews/candy-pop.jpg";
+import previewHolografico from "@/assets/style-previews/holografico.jpg";
+import previewFestivalLights from "@/assets/style-previews/festival-lights.jpg";
 
 // Dramáticos
 import previewTerrorAnalogico from "@/assets/style-previews/terror-analogico.jpg";
@@ -62,6 +80,11 @@ import previewNoirClassico from "@/assets/style-previews/noir-classico.jpg";
 import previewGoticoVitoriano from "@/assets/style-previews/gotico-vitoriano.jpg";
 import previewApocaliptico from "@/assets/style-previews/apocaliptico.jpg";
 import previewSuspenseThriller from "@/assets/style-previews/suspense-thriller.jpg";
+import previewCorpoHorror from "@/assets/style-previews/corpo-horror.jpg";
+import previewTempestadeEpica from "@/assets/style-previews/tempestade-epica.jpg";
+import previewSubmundo from "@/assets/style-previews/submundo.jpg";
+import previewGuerraEpica from "@/assets/style-previews/guerra-epica.jpg";
+import previewLovecraftCosmico from "@/assets/style-previews/lovecraft-cosmico.jpg";
 
 // Experimentais
 import previewDiorama from "@/assets/style-previews/diorama-cinematografico.jpg";
@@ -74,6 +97,12 @@ import previewVhsNostalgico from "@/assets/style-previews/vhs-nostalgico.jpg";
 import previewGlitchArt from "@/assets/style-previews/glitch-art.jpg";
 import previewDoubleExposure from "@/assets/style-previews/double-exposure.jpg";
 import previewInfravermelho from "@/assets/style-previews/infravermelho.jpg";
+import previewAiGenerativo from "@/assets/style-previews/ai-generativo.jpg";
+import previewDataflow from "@/assets/style-previews/dataflow.jpg";
+
+// 3D & Animação - extras
+import previewDreamworksStyle from "@/assets/style-previews/dreamworks-style.jpg";
+import previewCyberpunk3D from "@/assets/style-previews/cyberpunk-3d.jpg";
 
 interface StylePreviewCardProps {
   style: ThumbnailStyle;
@@ -92,8 +121,10 @@ const styleImages: Record<string, string> = {
   "anime-3d": previewAnime3D,
   "pixar-disney": previewPixar,
   "unreal-engine": previewUnrealEngine,
-  "paper-craft-3d": previewPaperCraft3D,
+  "paper-craft": previewPaperCraft3D,
   "neon-3d": previewNeon3D,
+  "dreamworks-style": previewDreamworksStyle,
+  "cyberpunk-3d": previewCyberpunk3D,
   // Realistas
   "foto-realista": previewFotoRealista,
   "cinematografico": previewCinematografico,
@@ -102,6 +133,11 @@ const styleImages: Record<string, string> = {
   "retrato-editorial": previewRetratoEditorial,
   "natureza-wildlife": previewNaturezaWildlife,
   "arquitetura-moderna": previewArquiteturaModerna,
+  "street-photography": previewStreetPhotography,
+  "fotojornalismo": previewFotojornalismo,
+  "produto-comercial": previewProdutoComercial,
+  "macro-extremo": previewMacroExtremo,
+  "astrofotografia": previewAstrofotografia,
   // Artísticos
   "anime": previewAnime,
   "desenho-animado": previewDesenhoAnimado,
@@ -112,6 +148,9 @@ const styleImages: Record<string, string> = {
   "aquarela-digital": previewAquarelaDigital,
   "oleo-classico": previewOleoClassico,
   "pop-art": previewPopArt,
+  "art-nouveau": previewArtNouveau,
+  "expressionismo": previewExpressionismo,
+  "impressionismo": previewImpressionismo,
   // Minimalistas
   "desenho-palitos": previewDesenhoPalitos,
   "quadro-branco": previewQuadroBranco,
@@ -120,6 +159,11 @@ const styleImages: Record<string, string> = {
   "flat-design": previewFlatDesign,
   "line-art": previewLineArt,
   "silhueta-dramatica": previewSilhuetaDramatica,
+  "geometrico-abstrato": previewGeometricoAbstrato,
+  "monocromatico": previewMonocromatico,
+  "negative-space": previewNegativeSpace,
+  "tipografia-bold": previewTipografiaBold,
+  "bauhaus": previewBauhaus,
   // Vibrantes
   "viral-vibrante": previewViralVibrante,
   "documentario-moderno": previewDocumentarioModerno,
@@ -128,6 +172,11 @@ const styleImages: Record<string, string> = {
   "synthwave": previewSynthwave,
   "tropical-paradise": previewTropicalParadise,
   "gradiente-aurora": previewGradienteAurora,
+  "neon-tokyo": previewNeonTokyo,
+  "psychedelic": previewPsychedelic,
+  "candy-pop": previewCandyPop,
+  "holografico": previewHolografico,
+  "festival-lights": previewFestivalLights,
   // Dramáticos
   "terror-analogico": previewTerrorAnalogico,
   "teatro-sombrio": previewTeatroSombrio,
@@ -136,6 +185,11 @@ const styleImages: Record<string, string> = {
   "gotico-vitoriano": previewGoticoVitoriano,
   "apocaliptico": previewApocaliptico,
   "suspense-thriller": previewSuspenseThriller,
+  "corpo-horror": previewCorpoHorror,
+  "tempestade-epica": previewTempestadeEpica,
+  "submundo": previewSubmundo,
+  "guerra-epica": previewGuerraEpica,
+  "lovecraft-cosmico": previewLovecraftCosmico,
   // Experimentais
   "diorama-cinematografico": previewDiorama,
   "neo-realismo-espiritual": previewNeoRealismo,
@@ -147,6 +201,8 @@ const styleImages: Record<string, string> = {
   "glitch-art": previewGlitchArt,
   "double-exposure": previewDoubleExposure,
   "infravermelho": previewInfravermelho,
+  "ai-generativo": previewAiGenerativo,
+  "dataflow": previewDataflow,
 };
 
 // Fallback visual for styles without real images
