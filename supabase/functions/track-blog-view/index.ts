@@ -70,17 +70,22 @@ serve(async (req) => {
 
     // Update article view_count if articleId provided
     if (articleId) {
-      const { data: countData } = await supabase
+      // Count all views for this article
+      const { count } = await supabase
         .from("blog_page_views")
-        .select("id", { count: "exact", head: true })
+        .select("*", { count: "exact", head: true })
         .eq("article_id", articleId);
 
-      const totalViews = countData || 0;
+      console.log(`[TrackView] Article ${articleId} total views: ${count}`);
 
-      await supabase
+      const { error: updateError } = await supabase
         .from("blog_articles")
-        .update({ view_count: totalViews })
+        .update({ view_count: count || 0 })
         .eq("id", articleId);
+
+      if (updateError) {
+        console.error("[TrackView] Update view_count error:", updateError);
+      }
     }
 
     return new Response(

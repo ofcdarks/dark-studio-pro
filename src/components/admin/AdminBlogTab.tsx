@@ -78,6 +78,9 @@ interface BlogArticle {
   published_at: string | null;
   view_count?: number;
   seo_score?: number;
+  product_url?: string | null;
+  product_title?: string | null;
+  product_cta?: string | null;
 }
 
 interface BlogViewStats {
@@ -149,6 +152,9 @@ export const AdminBlogTab = () => {
     read_time: "5 min",
     meta_description: "",
     image_url: "",
+    product_url: "",
+    product_title: "",
+    product_cta: "Saiba Mais",
   });
 
   // Delete dialog
@@ -659,6 +665,9 @@ export const AdminBlogTab = () => {
       read_time: article.read_time || "5 min",
       meta_description: article.meta_description || "",
       image_url: article.image_url || "",
+      product_url: article.product_url || "",
+      product_title: article.product_title || "",
+      product_cta: article.product_cta || "Saiba Mais",
     });
     setEditModalOpen(true);
   };
@@ -678,6 +687,9 @@ export const AdminBlogTab = () => {
           read_time: editForm.read_time,
           meta_description: editForm.meta_description,
           image_url: editForm.image_url || null,
+          product_url: editForm.product_url || null,
+          product_title: editForm.product_title || null,
+          product_cta: editForm.product_cta || "Saiba Mais",
         })
         .eq("id", editingArticle.id);
 
@@ -1415,6 +1427,42 @@ export const AdminBlogTab = () => {
                 rows={12}
                 className="font-mono text-xs"
               />
+            </div>
+
+            {/* Product/Affiliate Section */}
+            <div className="border-t border-border pt-4">
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                🛒 Produto/Afiliado (opcional)
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Nome do Produto</label>
+                  <Input
+                    value={editForm.product_title}
+                    onChange={(e) => setEditForm({ ...editForm, product_title: e.target.value })}
+                    placeholder="Ex: Curso Completo de YouTube"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Texto do Botão</label>
+                  <Input
+                    value={editForm.product_cta}
+                    onChange={(e) => setEditForm({ ...editForm, product_cta: e.target.value })}
+                    placeholder="Ex: Comprar Agora, Saiba Mais"
+                  />
+                </div>
+              </div>
+              <div className="mt-3">
+                <label className="text-sm text-muted-foreground mb-2 block">Link do Produto/Afiliado</label>
+                <Input
+                  value={editForm.product_url}
+                  onChange={(e) => setEditForm({ ...editForm, product_url: e.target.value })}
+                  placeholder="https://..."
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Se preenchido, será exibido um card de produto no artigo
+                </p>
+              </div>
             </div>
           </div>
           <DialogFooter>
