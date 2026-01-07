@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload, History, Video, FileText, Play, Rocket, Mic, RotateCcw } from "lucide-react";
+import { CreditHistoryCard } from "@/components/credits/CreditHistoryCard";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
@@ -829,7 +830,8 @@ const SettingsPage = () => {
               </div>
             </Card>
 
-            {/* Activity Logs Section */}
+            {/* Credit History Section */}
+            <CreditHistoryCard />
             <Card className="p-6">
               <div className="flex items-center gap-2 mb-6">
                 <History className="w-5 h-5 text-primary" />
