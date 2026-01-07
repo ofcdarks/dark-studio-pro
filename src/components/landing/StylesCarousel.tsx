@@ -1,9 +1,10 @@
 import { useRef, useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Palette, Sparkles, ArrowRight, Eye } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Palette, Sparkles, ArrowRight, Eye, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { AnimatedSection } from "./AnimatedSection";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 // Import style preview images - Row 1
 import preview3DCinematic from "@/assets/style-previews/3d-cinematic-miniature.jpg";
@@ -49,24 +50,22 @@ const stylesRow2 = [
   { id: "unreal", name: "Unreal Engine", image: previewUnrealEngine, category: "3D", description: "Realismo fotográfico com iluminação e texturas de alta fidelidade" },
 ];
 
+type StyleType = { id: string; name: string; image: string; category: string; description: string };
+
 interface StyleCardProps {
-  style: { id: string; name: string; image: string; category: string; description: string };
+  style: StyleType;
   index: number;
+  onSelect: (style: StyleType) => void;
 }
 
-const StyleCard = ({ style, index }: StyleCardProps) => {
-  const navigate = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    window.location.href = '/auth';
-  };
-
+const StyleCard = ({ style, index, onSelect }: StyleCardProps) => {
   return (
     <motion.div
       key={`${style.id}-${index}`}
       className="flex-shrink-0 w-56 md:w-72 group cursor-pointer"
       whileHover={{ scale: 1.08, y: -12 }}
       transition={{ duration: 0.3 }}
-      onClick={navigate}
+      onClick={() => onSelect(style)}
     >
       <div className="relative rounded-xl overflow-hidden border-2 border-border group-hover:border-primary/50 transition-all duration-300 shadow-lg group-hover:shadow-xl group-hover:shadow-primary/30">
         <div className="aspect-video">
@@ -110,11 +109,92 @@ const StyleCard = ({ style, index }: StyleCardProps) => {
   );
 };
 
+// Modal de Preview do Estilo
+const StylePreviewModal = ({ 
+  style, 
+  isOpen, 
+  onClose 
+}: { 
+  style: StyleType | null; 
+  isOpen: boolean; 
+  onClose: () => void;
+}) => {
+  if (!style) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-card border-primary/30 rounded-xl shadow-2xl">
+        <div className="relative">
+          {/* Imagem grande */}
+          <div className="relative aspect-video">
+            <img 
+              src={style.image} 
+              alt={style.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+            
+            {/* Badge categoria */}
+            <div className="absolute top-4 right-4">
+              <span className="px-3 py-1.5 text-sm font-semibold bg-primary text-primary-foreground rounded-full shadow-lg">
+                {style.category}
+              </span>
+            </div>
+          </div>
+          
+          {/* Conteúdo */}
+          <div className="p-6 space-y-4">
+            <div>
+              <h3 className="text-2xl md:text-3xl font-bold text-foreground">{style.name}</h3>
+              <p className="text-muted-foreground mt-2 text-base md:text-lg">{style.description}</p>
+            </div>
+            
+            {/* Features */}
+            <div className="flex flex-wrap gap-2">
+              {["Alta Qualidade", "Pronto para Uso", "Totalmente Editável"].map((feature) => (
+                <span 
+                  key={feature}
+                  className="px-3 py-1 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-full"
+                >
+                  {feature}
+                </span>
+              ))}
+            </div>
+            
+            {/* CTA */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Link to="/auth" className="flex-1">
+                <Button className="w-full gradient-button text-primary-foreground font-semibold h-12 text-base">
+                  <Zap className="w-5 h-5 mr-2" />
+                  Começar a Usar Agora
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+              <Button 
+                variant="outline" 
+                onClick={onClose}
+                className="h-12 px-6 border-border hover:bg-muted"
+              >
+                Ver Mais Estilos
+              </Button>
+            </div>
+            
+            {/* Info extra */}
+            <p className="text-xs text-muted-foreground text-center">
+              Este é apenas 1 dos <span className="text-primary font-semibold">84 estilos</span> disponíveis na plataforma
+            </p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export const StylesCarousel = () => {
   const scrollRef1 = useRef<HTMLDivElement>(null);
   const scrollRef2 = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
-
+  const [selectedStyle, setSelectedStyle] = useState<StyleType | null>(null);
   // Row 1: Left to Right
   useEffect(() => {
     const scrollContainer = scrollRef1.current;
@@ -208,7 +288,7 @@ export const StylesCarousel = () => {
             style={{ scrollBehavior: 'auto' }}
           >
             {duplicatedRow1.map((style, index) => (
-              <StyleCard key={`row1-${style.id}-${index}`} style={style} index={index} />
+              <StyleCard key={`row1-${style.id}-${index}`} style={style} index={index} onSelect={setSelectedStyle} />
             ))}
           </div>
 
@@ -219,7 +299,7 @@ export const StylesCarousel = () => {
             style={{ scrollBehavior: 'auto' }}
           >
             {duplicatedRow2.map((style, index) => (
-              <StyleCard key={`row2-${style.id}-${index}`} style={style} index={index} />
+              <StyleCard key={`row2-${style.id}-${index}`} style={style} index={index} onSelect={setSelectedStyle} />
             ))}
           </div>
         </div>
@@ -250,6 +330,13 @@ export const StylesCarousel = () => {
           </div>
         </AnimatedSection>
       </div>
+
+      {/* Modal de Preview */}
+      <StylePreviewModal 
+        style={selectedStyle} 
+        isOpen={!!selectedStyle} 
+        onClose={() => setSelectedStyle(null)} 
+      />
     </section>
   );
 };
