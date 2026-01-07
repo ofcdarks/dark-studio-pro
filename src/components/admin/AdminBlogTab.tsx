@@ -90,6 +90,8 @@ export const AdminBlogTab = () => {
   const [generating, setGenerating] = useState(false);
   const [generatingCover, setGeneratingCover] = useState<string | null>(null);
   const [regeneratingContent, setRegeneratingContent] = useState<string | null>(null);
+  const [regeneratingAll, setRegeneratingAll] = useState(false);
+  const [regeneratingProgress, setRegeneratingProgress] = useState({ current: 0, total: 0 });
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -360,6 +362,78 @@ export const AdminBlogTab = () => {
     }
   };
 
+  const handleRegenerateAllContent = async () => {
+    // Find all articles with placeholder content
+    const placeholderContent = "<p>Artigo importado - edite o conteúdo completo aqui.</p>";
+    const articlesToRegenerate = articles.filter(a => a.content === placeholderContent);
+    
+    if (articlesToRegenerate.length === 0) {
+      toast.info("Nenhum artigo com conteúdo placeholder encontrado");
+      return;
+    }
+
+    setRegeneratingAll(true);
+    setRegeneratingProgress({ current: 0, total: articlesToRegenerate.length });
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < articlesToRegenerate.length; i++) {
+      const article = articlesToRegenerate[i];
+      setRegeneratingProgress({ current: i + 1, total: articlesToRegenerate.length });
+      
+      try {
+        toast.info(`Gerando: ${article.title.slice(0, 40)}...`, { duration: 2000 });
+        
+        const { data, error } = await supabase.functions.invoke("generate-blog-article", {
+          body: { 
+            topic: article.title, 
+            category: article.category,
+            mode: "keyword",
+          },
+        });
+
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        const newArticle = data.article;
+
+        const { error: updateError } = await supabase
+          .from("blog_articles")
+          .update({
+            content: newArticle.content,
+            excerpt: newArticle.excerpt,
+            meta_description: newArticle.meta_description,
+            meta_keywords: newArticle.meta_keywords,
+            read_time: newArticle.read_time,
+          })
+          .eq("id", article.id);
+
+        if (updateError) throw updateError;
+        
+        successCount++;
+      } catch (error: any) {
+        console.error(`Error regenerating ${article.title}:`, error);
+        errorCount++;
+      }
+
+      // Small delay between requests to avoid rate limiting
+      if (i < articlesToRegenerate.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+
+    setRegeneratingAll(false);
+    setRegeneratingProgress({ current: 0, total: 0 });
+    fetchArticles();
+
+    if (errorCount === 0) {
+      toast.success(`${successCount} artigos regenerados com sucesso!`);
+    } else {
+      toast.warning(`${successCount} sucesso, ${errorCount} erros`);
+    }
+  };
+
   const handleEditArticle = (article: BlogArticle) => {
     setEditingArticle(article);
     setEditForm({
@@ -481,7 +555,7 @@ export const AdminBlogTab = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">Total de Artigos</p>
           <p className="text-2xl font-bold text-foreground">{articles.length}</p>
@@ -503,6 +577,33 @@ export const AdminBlogTab = () => {
           <p className="text-2xl font-bold text-foreground">
             {new Set(articles.map((a) => a.category)).size}
           </p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Com Placeholder</p>
+          <p className="text-2xl font-bold text-warning">
+            {articles.filter((a) => a.content === "<p>Artigo importado - edite o conteúdo completo aqui.</p>").length}
+          </p>
+          {articles.filter((a) => a.content === "<p>Artigo importado - edite o conteúdo completo aqui.</p>").length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2 w-full"
+              onClick={handleRegenerateAllContent}
+              disabled={regeneratingAll}
+            >
+              {regeneratingAll ? (
+                <>
+                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  {regeneratingProgress.current}/{regeneratingProgress.total}
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-3 h-3 mr-1" />
+                  Regenerar Todos
+                </>
+              )}
+            </Button>
+          )}
         </Card>
       </div>
 
