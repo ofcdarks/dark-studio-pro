@@ -150,6 +150,72 @@ const Landing = () => {
         description="Ferramenta definitiva para criadores de canal dark no YouTube. Gerador de voz IA, análise de nichos, thumbnails otimizadas e automação completa. Escale para $10K+/mês."
         canonical="/landing"
         keywords="canal dark, youtube dark, faceless channel, canal sem aparecer, ganhar dinheiro youtube, automação youtube, gerador de voz ia, thumbnails youtube"
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "La Casa Dark CORE",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "offers": {
+              "@type": "Offer",
+              "price": "97",
+              "priceCurrency": "BRL"
+            },
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": "4.9",
+              "reviewCount": "847"
+            },
+            "description": "Ferramenta definitiva para criadores de canal dark no YouTube. Gerador de voz IA, análise de nichos, thumbnails otimizadas e automação completa."
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "La Casa Dark",
+            "url": "https://canaisdarks.com.br",
+            "logo": "https://canaisdarks.com.br/logo.gif",
+            "sameAs": []
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Preciso aparecer nos vídeos?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Não! Nosso sistema é focado em canais dark/faceless. Você nunca precisa aparecer ou usar sua voz."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Quanto tempo até ver resultados?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Nossos membros geralmente veem os primeiros resultados em 30-60 dias. Com dedicação, você pode alcançar $10K/mês em 6-12 meses."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Funciona para iniciantes?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Absolutamente! Nossa plataforma foi criada para ser intuitiva. Você não precisa de experiência prévia com YouTube ou edição."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Como funciona o gerador de voz IA?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Nossa IA gera narrações profissionais em português a partir do seu roteiro. Escolha entre diferentes vozes e estilos."
+                }
+              }
+            ]
+          }
+        ]}
       />
       
       <div className="min-h-screen bg-background text-foreground overflow-x-hidden relative">

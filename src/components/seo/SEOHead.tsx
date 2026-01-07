@@ -8,6 +8,7 @@ interface SEOHeadProps {
   ogType?: "website" | "article";
   ogImage?: string;
   keywords?: string;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 const BASE_URL = "https://canaisdarks.com.br";
@@ -22,6 +23,7 @@ export const SEOHead = ({
   ogType = "website",
   ogImage = DEFAULT_IMAGE,
   keywords,
+  jsonLd,
 }: SEOHeadProps) => {
   const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
   const canonicalUrl = canonical ? `${BASE_URL}${canonical}` : undefined;
@@ -53,6 +55,13 @@ export const SEOHead = ({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={ogImage} />
+
+      {/* JSON-LD Structured Data */}
+      {jsonLd && (
+        <script type="application/ld+json">
+          {JSON.stringify(jsonLd)}
+        </script>
+      )}
     </Helmet>
   );
 };
