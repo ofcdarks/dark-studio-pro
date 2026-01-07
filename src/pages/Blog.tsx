@@ -20,7 +20,9 @@ import {
   Wrench,
   Zap,
   Rocket,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import logo from "@/assets/logo.gif";
 
@@ -141,9 +143,12 @@ const blogPosts: BlogPost[] = [
   }
 ];
 
+const POSTS_PER_PAGE = 6;
+
 const Blog = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Extrair categorias únicas
   const categories = useMemo(() => {
@@ -165,8 +170,26 @@ const Blog = () => {
     });
   }, [searchQuery, selectedCategory]);
 
+  // Reset page when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory]);
+
   const featuredPosts = filteredPosts.filter(post => post.featured);
   const regularPosts = filteredPosts.filter(post => !post.featured);
+
+  // Pagination logic
+  const totalPages = Math.ceil(regularPosts.length / POSTS_PER_PAGE);
+  const paginatedRegularPosts = regularPosts.slice(
+    (currentPage - 1) * POSTS_PER_PAGE,
+    currentPage * POSTS_PER_PAGE
+  );
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to the "All Posts" section
+    document.getElementById('all-posts')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const blogJsonLd = {
     "@context": "https://schema.org",
@@ -353,13 +376,20 @@ const Blog = () => {
 
         {/* All Posts */}
         {regularPosts.length > 0 && (
-        <section className="py-12 px-4 bg-muted/30">
+        <section id="all-posts" className="py-12 px-4 bg-muted/30">
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-2xl font-bold mb-8">
-              {featuredPosts.length === 0 ? 'Resultados da Busca' : 'Todos os Artigos'}
-            </h2>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold">
+                {featuredPosts.length === 0 ? 'Resultados da Busca' : 'Todos os Artigos'}
+              </h2>
+              {totalPages > 1 && (
+                <span className="text-sm text-muted-foreground">
+                  Página {currentPage} de {totalPages}
+                </span>
+              )}
+            </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {regularPosts.map((post) => (
+              {paginatedRegularPosts.map((post) => (
                 <Link key={post.slug} to={`/blog/${post.slug}`}>
                   <Card 
                     className="group overflow-hidden hover:border-primary/30 transition-all duration-300 hover:shadow-md h-full"
@@ -392,6 +422,66 @@ const Blog = () => {
                 </Link>
               ))}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-10">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="h-10 w-10"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    // Show first, last, current, and adjacent pages
+                    const shouldShow = 
+                      page === 1 || 
+                      page === totalPages || 
+                      Math.abs(page - currentPage) <= 1;
+                    
+                    const showEllipsisBefore = page === currentPage - 2 && currentPage > 3;
+                    const showEllipsisAfter = page === currentPage + 2 && currentPage < totalPages - 2;
+
+                    if (showEllipsisBefore || showEllipsisAfter) {
+                      return (
+                        <span key={page} className="px-2 text-muted-foreground">
+                          ...
+                        </span>
+                      );
+                    }
+
+                    if (!shouldShow) return null;
+
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="icon"
+                        onClick={() => goToPage(page)}
+                        className="h-10 w-10"
+                      >
+                        {page}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="h-10 w-10"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </section>
         )}
