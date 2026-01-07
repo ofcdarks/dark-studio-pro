@@ -95,7 +95,7 @@ export const StylesCarousel = () => {
 
     let animationId: number;
     let scrollPosition = 0;
-    const speed = 0.5;
+    const speed = 0.4; // Linha 1 mais lenta
 
     const animate = () => {
       if (!isPaused && scrollContainer) {
@@ -119,7 +119,7 @@ export const StylesCarousel = () => {
 
     let animationId: number;
     let scrollPosition = scrollContainer.scrollWidth / 2;
-    const speed = 0.5;
+    const speed = 0.7; // Linha 2 mais rápida
 
     const animate = () => {
       if (!isPaused && scrollContainer) {
