@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Card } from "@/components/ui/card";
@@ -763,8 +764,14 @@ const VideoAnalyzer = () => {
   };
 
   return (
-    <MainLayout>
-      <PermissionGate permission="analisador_videos" featureName="Analisador de Vídeos">
+    <>
+      <SEOHead
+        title="Analisador de Vídeos"
+        description="Analise vídeos virais do YouTube e gere títulos otimizados com IA."
+        noindex={true}
+      />
+      <MainLayout>
+        <PermissionGate permission="analisador_videos" featureName="Analisador de Vídeos">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Session Indicator */}
@@ -1250,8 +1257,9 @@ const VideoAnalyzer = () => {
         steps={VIDEO_ANALYZER_TUTORIAL.steps}
         onComplete={completeTutorial}
       />
-      </PermissionGate>
-    </MainLayout>
+        </PermissionGate>
+      </MainLayout>
+    </>
   );
 };
 
