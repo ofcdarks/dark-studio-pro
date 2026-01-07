@@ -53,9 +53,12 @@ export const ComparisonSlider = () => {
           transition={{ duration: 0.4, delay: 0.2 }}
           className="flex flex-col gap-1.5"
         >
-          <div className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-destructive text-[10px] sm:text-xs font-bold text-destructive-foreground w-fit">
+          <motion.div 
+            whileHover={{ boxShadow: "0 0 20px rgba(239, 68, 68, 0.6)" }}
+            className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-destructive text-[10px] sm:text-xs font-bold text-destructive-foreground w-fit cursor-default transition-shadow"
+          >
             ANTES
-          </div>
+          </motion.div>
           <div className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-red-500/20 border border-red-500/30 flex items-center gap-1 sm:gap-1.5 w-fit">
             <DollarSign className="w-3 h-3 text-red-400" />
             <span className="text-red-400 text-[10px] sm:text-xs font-bold">R$34,90/mês</span>
@@ -68,9 +71,12 @@ export const ComparisonSlider = () => {
           transition={{ duration: 0.4, delay: 0.3 }}
           className="flex flex-col gap-1.5 items-end"
         >
-          <div className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border-2 border-emerald-500 text-[10px] sm:text-xs font-bold text-emerald-400 w-fit">
+          <motion.div 
+            whileHover={{ boxShadow: "0 0 20px rgba(16, 185, 129, 0.6)" }}
+            className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border-2 border-emerald-500 text-[10px] sm:text-xs font-bold text-emerald-400 w-fit cursor-default transition-shadow"
+          >
             DEPOIS
-          </div>
+          </motion.div>
           <div className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-green-500/20 border border-green-500/30 flex items-center gap-1 sm:gap-1.5 w-fit">
             <Rocket className="w-3 h-3 text-green-400" />
             <span className="text-green-400 text-[10px] sm:text-xs font-bold">100% GRÁTIS</span>
