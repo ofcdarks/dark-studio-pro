@@ -81,6 +81,7 @@ const CATEGORIES = [
   "Crescimento",
   "Dark Channels",
   "Afiliados",
+  "Inteligência Artificial",
 ];
 
 export const AdminBlogTab = () => {
