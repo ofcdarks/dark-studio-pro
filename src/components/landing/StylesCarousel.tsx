@@ -105,6 +105,8 @@ interface StyleCardProps {
 }
 
 const StyleCard = ({ style, index, onSelect }: StyleCardProps) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  
   return (
     <motion.div
       key={`${style.id}-${index}`}
@@ -114,12 +116,18 @@ const StyleCard = ({ style, index, onSelect }: StyleCardProps) => {
       onClick={() => onSelect(style)}
     >
       <div className="relative rounded-xl overflow-hidden border-2 border-border group-hover:border-primary/50 transition-all duration-300 shadow-lg group-hover:shadow-xl group-hover:shadow-primary/30">
-        <div className="aspect-video">
+        <div className="aspect-video bg-muted">
+          {/* Placeholder skeleton */}
+          {!isLoaded && (
+            <div className="absolute inset-0 bg-gradient-to-r from-muted via-muted-foreground/10 to-muted animate-pulse" />
+          )}
           <img 
             src={style.image} 
             alt={style.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
             loading="lazy"
+            decoding="async"
+            onLoad={() => setIsLoaded(true)}
           />
         </div>
         
