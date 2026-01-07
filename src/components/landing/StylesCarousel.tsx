@@ -15,6 +15,10 @@ import previewNoirClassico from "@/assets/style-previews/noir-classico.jpg";
 import previewDiorama from "@/assets/style-previews/diorama-cinematografico.jpg";
 import previewPixar from "@/assets/style-previews/pixar-disney.jpg";
 import previewVaporwave from "@/assets/style-previews/vaporwave.jpg";
+import previewDoubleExposure from "@/assets/style-previews/double-exposure.jpg";
+import previewDreamworks from "@/assets/style-previews/dreamworks-style.jpg";
+import previewLowPoly from "@/assets/style-previews/low-poly-stylized.jpg";
+import previewPaperCraft from "@/assets/style-previews/paper-craft-3d.jpg";
 
 // Import style preview images - Row 2
 import previewTerrorAnalogico from "@/assets/style-previews/terror-analogico.jpg";
@@ -25,8 +29,12 @@ import previewComicBook from "@/assets/style-previews/comic-book.jpg";
 import previewGoticoVitoriano from "@/assets/style-previews/gotico-vitoriano.jpg";
 import previewSynthwave from "@/assets/style-previews/synthwave.jpg";
 import previewUnrealEngine from "@/assets/style-previews/unreal-engine.jpg";
+import previewOleoClassico from "@/assets/style-previews/oleo-classico.jpg";
+import previewAquarela from "@/assets/style-previews/aquarela-digital.jpg";
+import previewNeonTokyo from "@/assets/style-previews/neon-tokyo.jpg";
+import previewClaymation from "@/assets/style-previews/claymation-3d.jpg";
 
-// Row 1 styles (left to right)
+// Row 1 styles (left to right) - 12 estilos variados
 const stylesRow1 = [
   { id: "3d-cinematic", name: "3D Cinematográfico", image: preview3DCinematic, category: "3D", description: "Miniaturas hiper-detalhadas com iluminação dramática e profundidade cinematográfica" },
   { id: "cinematografico", name: "Cinematográfico", image: previewCinematografico, category: "Realista", description: "Estética de cinema hollywoodiano com composição e cor profissionais" },
@@ -36,9 +44,13 @@ const stylesRow1 = [
   { id: "diorama", name: "Diorama", image: previewDiorama, category: "Experimental", description: "Cenas em miniatura com efeito tilt-shift e detalhes intrincados" },
   { id: "pixar", name: "Pixar/Disney", image: previewPixar, category: "3D", description: "Personagens expressivos com visual polido de animação 3D" },
   { id: "vaporwave", name: "Vaporwave", image: previewVaporwave, category: "Vibrante", description: "Estética retrô-futurista com cores pastel e elementos 80s/90s" },
+  { id: "double-exposure", name: "Double Exposure", image: previewDoubleExposure, category: "Experimental", description: "Sobreposição artística de duas imagens criando efeito visual único" },
+  { id: "dreamworks", name: "DreamWorks", image: previewDreamworks, category: "3D", description: "Estilo de animação 3D com personagens carismáticos e expressivos" },
+  { id: "low-poly", name: "Low Poly", image: previewLowPoly, category: "3D", description: "Arte geométrica minimalista com polígonos estilizados" },
+  { id: "paper-craft", name: "Paper Craft 3D", image: previewPaperCraft, category: "3D", description: "Cenas recortadas em papel com camadas e profundidade artesanal" },
 ];
 
-// Row 2 styles (right to left)
+// Row 2 styles (right to left) - 12 estilos variados
 const stylesRow2 = [
   { id: "terror", name: "Terror Analógico", image: previewTerrorAnalogico, category: "Dramático", description: "Atmosfera perturbadora com grão de filme e degradação visual" },
   { id: "surrealismo", name: "Surrealismo", image: previewSurrealismo, category: "Experimental", description: "Composições oníricas que desafiam a realidade e a lógica" },
@@ -48,6 +60,10 @@ const stylesRow2 = [
   { id: "gotico", name: "Gótico Vitoriano", image: previewGoticoVitoriano, category: "Dramático", description: "Arquitetura sombria com elementos românticos e misteriosos" },
   { id: "synthwave", name: "Synthwave", image: previewSynthwave, category: "Vibrante", description: "Néon e gradientes com estética retrofuturista dos anos 80" },
   { id: "unreal", name: "Unreal Engine", image: previewUnrealEngine, category: "3D", description: "Realismo fotográfico com iluminação e texturas de alta fidelidade" },
+  { id: "oleo-classico", name: "Óleo Clássico", image: previewOleoClassico, category: "Artístico", description: "Pintura renascentista com técnica de mestres clássicos" },
+  { id: "aquarela", name: "Aquarela Digital", image: previewAquarela, category: "Artístico", description: "Pinceladas suaves e fluidas com cores delicadas" },
+  { id: "neon-tokyo", name: "Neon Tokyo", image: previewNeonTokyo, category: "Vibrante", description: "Luzes noturnas de Tóquio com estética urbana japonesa" },
+  { id: "claymation", name: "Claymation 3D", image: previewClaymation, category: "3D", description: "Animação em massa de modelar com textura artesanal" },
 ];
 
 type StyleType = { id: string; name: string; image: string; category: string; description: string };
