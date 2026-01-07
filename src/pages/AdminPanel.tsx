@@ -123,6 +123,7 @@ const AdminPanel = () => {
     whatsapp: "",
     status: "active",
     role: "free",
+    selectedPlanName: "", // Track which specific plan was selected
   });
   const [savingUser, setSavingUser] = useState(false);
   const [availablePlans, setAvailablePlans] = useState<PlanOption[]>([]);
@@ -296,6 +297,7 @@ const AdminPanel = () => {
       whatsapp: user.whatsapp || "",
       status: user.status || "active",
       role: user.role,
+      selectedPlanName: "",
     });
     setEditModalOpen(true);
   };
@@ -317,17 +319,74 @@ const AdminPanel = () => {
 
       if (profileError) throw profileError;
 
-      // Update role if changed
-      if (editForm.role !== selectedUser.role) {
+      // Check if role/plan changed
+      const roleChanged = editForm.role !== selectedUser.role;
+      
+      if (roleChanged) {
+        // Update role
         const { error: roleError } = await supabase
           .from("user_roles")
           .update({ role: editForm.role as "admin" | "pro" | "free" })
           .eq("user_id", selectedUser.id);
 
         if (roleError) throw roleError;
+
+        // If upgrading to a paid plan (pro), add credits and send email
+        if (editForm.role === "pro" && selectedUser.role !== "pro") {
+          // Find the selected plan to get credits
+          const selectedPlan = availablePlans.find(p => p.plan_name === editForm.selectedPlanName);
+          const creditsToAdd = selectedPlan?.monthly_credits || 800; // Default to START CREATOR credits
+          const planName = selectedPlan?.plan_name || "Pro";
+          
+          // Add credits to user
+          const { data: currentCredits } = await supabase
+            .from("user_credits")
+            .select("balance")
+            .eq("user_id", selectedUser.id)
+            .single();
+
+          const newBalance = (currentCredits?.balance || 0) + creditsToAdd;
+
+          await supabase
+            .from("user_credits")
+            .upsert(
+              { user_id: selectedUser.id, balance: newBalance },
+              { onConflict: "user_id" }
+            );
+
+          // Log credit transaction
+          await supabase.from("credit_transactions").insert({
+            user_id: selectedUser.id,
+            amount: creditsToAdd,
+            transaction_type: "add",
+            description: `Plano ${planName} ativado manualmente pelo admin`,
+          });
+
+          // Send plan confirmation email
+          try {
+            await supabase.functions.invoke("send-template-test", {
+              body: {
+                to: selectedUser.email,
+                templateType: "plan_start",
+                variables: {
+                  name: selectedUser.full_name || selectedUser.email?.split("@")[0],
+                  plan_name: planName,
+                  credits: creditsToAdd,
+                },
+              },
+            });
+            toast.success(`Plano ${planName} ativado! ${creditsToAdd} créditos adicionados e email enviado.`);
+          } catch (emailError) {
+            console.error("Error sending email:", emailError);
+            toast.success(`Plano ${planName} ativado! ${creditsToAdd} créditos adicionados. (Email não enviado)`);
+          }
+        } else {
+          toast.success("Usuário atualizado com sucesso!");
+        }
+      } else {
+        toast.success("Usuário atualizado com sucesso!");
       }
 
-      toast.success("Usuário atualizado com sucesso!");
       setEditModalOpen(false);
       fetchAdminData();
     } catch (error) {
@@ -923,19 +982,29 @@ const AdminPanel = () => {
             </div>
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">Plano / Role</label>
-              <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+              <Select 
+                value={editForm.selectedPlanName || editForm.role} 
+                onValueChange={(planName) => {
+                  const plan = availablePlans.find(p => p.plan_name === planName);
+                  setEditForm({ 
+                    ...editForm, 
+                    role: plan?.role_value || "free",
+                    selectedPlanName: planName,
+                  });
+                }}
+              >
                 <SelectTrigger className="bg-secondary border-border">
                   <SelectValue placeholder="Selecione um plano" />
                 </SelectTrigger>
                 <SelectContent>
                   {availablePlans.length > 0 ? (
                     availablePlans.map((plan) => (
-                      <SelectItem key={plan.plan_name} value={plan.role_value}>
+                      <SelectItem key={plan.plan_name} value={plan.plan_name}>
                         <div className="flex items-center gap-2">
                           <span>{plan.plan_name}</span>
-                          {plan.plan_name !== "Admin" && (
+                          {plan.plan_name !== "Admin" && plan.plan_name !== "FREE" && (
                             <span className="text-xs text-muted-foreground">
-                              ({plan.monthly_credits.toLocaleString()} créditos)
+                              (+{plan.monthly_credits.toLocaleString()} créditos)
                             </span>
                           )}
                         </div>
@@ -950,9 +1019,11 @@ const AdminPanel = () => {
                   )}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                FREE = free | START/TURBO/MASTER = pro | Admin = admin
-              </p>
+              {editForm.selectedPlanName && editForm.role === "pro" && (
+                <p className="text-xs text-success mt-1">
+                  ✓ Ao salvar, {availablePlans.find(p => p.plan_name === editForm.selectedPlanName)?.monthly_credits.toLocaleString() || 0} créditos serão adicionados e email de confirmação enviado.
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
