@@ -534,6 +534,22 @@ const Landing = () => {
               <span className="text-sm md:text-base font-medium text-purple-300">WORKFLOW PROFISSIONAL</span>
             </div>
             
+            {/* Animated DaVinci Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                {/* Outer glow ring */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500 via-purple-500 to-orange-500 animate-spin-slow blur-md opacity-60" style={{ width: '100px', height: '100px', margin: '-10px' }} />
+                {/* Inner circle with icon */}
+                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-orange-500 via-red-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-purple-500/30 animate-pulse-glow">
+                  <div className="w-16 h-16 rounded-full bg-background/90 flex items-center justify-center">
+                    <span className="text-2xl font-black bg-gradient-to-r from-orange-400 via-red-400 to-purple-400 bg-clip-text text-transparent">DR</span>
+                  </div>
+                </div>
+                {/* Orbiting dot */}
+                <div className="absolute w-3 h-3 rounded-full bg-primary animate-spin-slow" style={{ top: '50%', left: '-8px', transformOrigin: '48px center' }} />
+              </div>
+            </div>
+
             <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold">
               Chega de edição
               <span className="block text-purple-400">amadora no celular</span>
