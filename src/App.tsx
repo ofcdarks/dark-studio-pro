@@ -49,6 +49,19 @@ const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 const Maintenance = lazy(() => import("./pages/Maintenance"));
 const Blog = lazy(() => import("./pages/Blog"));
 
+// Blog article pages
+const ComoGanharDinheiroYouTube = lazy(() => import("./pages/blog/ComoGanharDinheiroYouTube"));
+const NichosLucrativosYouTube = lazy(() => import("./pages/blog/NichosLucrativosYouTube"));
+const ComoCriarCanalDark = lazy(() => import("./pages/blog/ComoCriarCanalDark"));
+const RoteirosViraisIA = lazy(() => import("./pages/blog/RoteirosViraisIA"));
+const ThumbnailsProfissionais = lazy(() => import("./pages/blog/ThumbnailsProfissionais"));
+const SEOYouTube = lazy(() => import("./pages/blog/SEOYouTube"));
+const AlgoritmoYouTube = lazy(() => import("./pages/blog/AlgoritmoYouTube"));
+const FerramentasCriacaoVideos = lazy(() => import("./pages/blog/FerramentasCriacaoVideos"));
+const ShortsVirais = lazy(() => import("./pages/blog/ShortsVirais"));
+const MonetizacaoAfiliados = lazy(() => import("./pages/blog/MonetizacaoAfiliados"));
+const CrescimentoRapido = lazy(() => import("./pages/blog/CrescimentoRapido"));
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -109,6 +122,17 @@ const AppRoutes = () => {
             <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
             <Route path="/maintenance" element={<Maintenance />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/como-ganhar-dinheiro-youtube" element={<ComoGanharDinheiroYouTube />} />
+            <Route path="/blog/nichos-lucrativos-youtube" element={<NichosLucrativosYouTube />} />
+            <Route path="/blog/como-criar-canal-dark" element={<ComoCriarCanalDark />} />
+            <Route path="/blog/roteiros-virais-ia" element={<RoteirosViraisIA />} />
+            <Route path="/blog/thumbnails-profissionais" element={<ThumbnailsProfissionais />} />
+            <Route path="/blog/seo-youtube" element={<SEOYouTube />} />
+            <Route path="/blog/algoritmo-youtube" element={<AlgoritmoYouTube />} />
+            <Route path="/blog/ferramentas-criacao-videos" element={<FerramentasCriacaoVideos />} />
+            <Route path="/blog/shorts-virais" element={<ShortsVirais />} />
+            <Route path="/blog/monetizacao-afiliados" element={<MonetizacaoAfiliados />} />
+            <Route path="/blog/crescimento-rapido" element={<CrescimentoRapido />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

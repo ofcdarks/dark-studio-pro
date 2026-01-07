@@ -9,12 +9,15 @@ import {
   Calendar, 
   TrendingUp,
   Youtube,
-  Mic,
+  Smartphone,
   Image,
   FileText,
   Search,
   DollarSign,
-  Sparkles
+  Sparkles,
+  Wrench,
+  Zap,
+  Rocket
 } from "lucide-react";
 import logo from "@/assets/logo.gif";
 
@@ -31,78 +34,107 @@ interface BlogPost {
 
 const blogPosts: BlogPost[] = [
   {
-    slug: "como-criar-canal-dark-youtube-2026",
-    title: "Como Criar um Canal Dark no YouTube em 2026: Guia Completo",
-    excerpt: "Aprenda passo a passo como criar um canal dark (faceless) no YouTube que gera renda passiva. Desde a escolha do nicho até a monetização.",
-    category: "Guia Completo",
+    slug: "como-ganhar-dinheiro-youtube",
+    title: "Como Ganhar Dinheiro no YouTube em 2025: Guia Completo",
+    excerpt: "Aprenda as melhores estratégias para monetizar seu canal no YouTube, desde AdSense até métodos alternativos de renda.",
+    category: "Monetização",
     readTime: "15 min",
-    date: "2026-01-07",
-    icon: Youtube,
+    date: "2025-01-07",
+    icon: DollarSign,
     featured: true
   },
   {
-    slug: "melhores-nichos-canal-dark-2026",
-    title: "10 Nichos Mais Lucrativos para Canal Dark em 2026",
-    excerpt: "Descubra os nichos que mais pagam no YouTube para canais faceless. Análise de CPM, concorrência e potencial de crescimento.",
+    slug: "nichos-lucrativos-youtube",
+    title: "10 Nichos Mais Lucrativos do YouTube em 2025",
+    excerpt: "Descubra os nichos que mais pagam no YouTube e como escolher o melhor para você. Comparativo de CPM e potencial.",
     category: "Nichos",
-    readTime: "8 min",
-    date: "2026-01-06",
+    readTime: "12 min",
+    date: "2025-01-07",
     icon: TrendingUp,
     featured: true
   },
   {
-    slug: "geradores-voz-ia-youtube",
-    title: "Melhores Geradores de Voz IA para YouTube: Comparativo 2026",
-    excerpt: "Compare os principais geradores de voz com inteligência artificial. ElevenLabs, Google TTS, Amazon Polly e mais.",
-    category: "Ferramentas",
-    readTime: "10 min",
-    date: "2026-01-05",
-    icon: Mic
+    slug: "como-criar-canal-dark",
+    title: "Como Criar um Canal Dark do Zero: Guia Definitivo",
+    excerpt: "Aprenda passo a passo como criar um canal dark no YouTube, desde a escolha do nicho até a primeira monetização.",
+    category: "Guia Completo",
+    readTime: "20 min",
+    date: "2025-01-07",
+    icon: Youtube,
+    featured: true
   },
   {
-    slug: "thumbnails-virais-ctr-alto",
-    title: "Como Criar Thumbnails Virais com CTR Acima de 10%",
-    excerpt: "Técnicas comprovadas para criar thumbnails que chamam atenção e aumentam drasticamente suas visualizações.",
+    slug: "shorts-virais",
+    title: "Como Fazer Shorts Virais no YouTube em 2025",
+    excerpt: "Guia completo para criar Shorts que viralizam e aceleram o crescimento do seu canal. Formatos, hooks e técnicas.",
+    category: "Shorts",
+    readTime: "14 min",
+    date: "2025-01-07",
+    icon: Smartphone,
+    featured: true
+  },
+  {
+    slug: "roteiros-virais-ia",
+    title: "Como Criar Roteiros Virais com Inteligência Artificial",
+    excerpt: "Domine a arte de criar roteiros virais usando IA. Técnicas, prompts e estruturas que geram milhões de views.",
+    category: "Roteiros",
+    readTime: "18 min",
+    date: "2025-01-07",
+    icon: Sparkles
+  },
+  {
+    slug: "thumbnails-profissionais",
+    title: "Thumbnails Profissionais: Como Criar Capas que Convertem",
+    excerpt: "Domine a arte de criar thumbnails que aumentam CTR. Psicologia das cores, texto e design que funciona.",
     category: "Thumbnails",
-    readTime: "7 min",
-    date: "2026-01-04",
+    readTime: "14 min",
+    date: "2025-01-07",
     icon: Image
   },
   {
-    slug: "roteiro-viral-youtube",
-    title: "Estrutura de Roteiro Viral: Os Segredos dos Vídeos com Milhões de Views",
-    excerpt: "Descubra a estrutura de roteiro usada pelos maiores canais do YouTube. Gancho, desenvolvimento e CTA perfeito.",
-    category: "Roteiros",
-    readTime: "12 min",
-    date: "2026-01-03",
-    icon: FileText
-  },
-  {
-    slug: "monetizacao-youtube-requisitos-2026",
-    title: "Monetização YouTube 2026: Novos Requisitos e Estratégias",
-    excerpt: "Tudo sobre os requisitos atuais para monetizar seu canal. 1.000 inscritos, 4.000 horas e alternativas.",
-    category: "Monetização",
-    readTime: "9 min",
-    date: "2026-01-02",
-    icon: DollarSign
-  },
-  {
-    slug: "seo-youtube-ranquear-videos",
-    title: "SEO para YouTube: Como Ranquear Vídeos na Primeira Página",
-    excerpt: "Técnicas avançadas de SEO para YouTube. Títulos, descrições, tags e algoritmo de recomendação.",
+    slug: "seo-youtube",
+    title: "SEO para YouTube: Como Ranquear Vídeos em 2025",
+    excerpt: "Domine o algoritmo do YouTube com técnicas avançadas de SEO. Títulos, descrições, tags e recomendados.",
     category: "SEO",
-    readTime: "11 min",
-    date: "2026-01-01",
+    readTime: "16 min",
+    date: "2025-01-07",
     icon: Search
   },
   {
-    slug: "automacao-canal-youtube-ia",
-    title: "Automação de Canal YouTube com IA: O Guia Definitivo",
-    excerpt: "Como usar inteligência artificial para automatizar seu canal. Da criação de conteúdo ao upload.",
-    category: "Automação",
-    readTime: "14 min",
-    date: "2025-12-30",
-    icon: Sparkles
+    slug: "algoritmo-youtube",
+    title: "Como Funciona o Algoritmo do YouTube em 2025",
+    excerpt: "Descubra como o algoritmo decide quais vídeos mostrar. CTR, retenção, engajamento e métricas que importam.",
+    category: "Algoritmo",
+    readTime: "15 min",
+    date: "2025-01-07",
+    icon: Zap
+  },
+  {
+    slug: "ferramentas-criacao-videos",
+    title: "Melhores Ferramentas para Criar Vídeos no YouTube",
+    excerpt: "Comparativo completo das melhores ferramentas: edição, IA, narração e automação para criadores.",
+    category: "Ferramentas",
+    readTime: "20 min",
+    date: "2025-01-07",
+    icon: Wrench
+  },
+  {
+    slug: "monetizacao-afiliados",
+    title: "Monetização com Afiliados no YouTube: Guia Completo",
+    excerpt: "Aprenda a ganhar dinheiro com marketing de afiliados no YouTube, mesmo sem monetização do AdSense.",
+    category: "Afiliados",
+    readTime: "18 min",
+    date: "2025-01-07",
+    icon: DollarSign
+  },
+  {
+    slug: "crescimento-rapido",
+    title: "Estratégias de Crescimento Rápido no YouTube",
+    excerpt: "Táticas comprovadas para acelerar o crescimento do seu canal. De 0 a 1.000 inscritos em semanas.",
+    category: "Crescimento",
+    readTime: "16 min",
+    date: "2025-01-07",
+    icon: Rocket
   }
 ];
 
@@ -202,43 +234,44 @@ const Blog = () => {
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
               {featuredPosts.map((post) => (
-                <Card 
-                  key={post.slug}
-                  className="group relative overflow-hidden border-primary/20 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10"
-                >
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-amber-500" />
-                  <div className="p-6 md:p-8">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                        <post.icon className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <Badge variant="default" className="bg-primary/20 text-primary hover:bg-primary/30">
-                            {post.category}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {post.readTime}
-                          </span>
+                <Link key={post.slug} to={`/blog/${post.slug}`}>
+                  <Card 
+                    className="group relative overflow-hidden border-primary/20 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 h-full"
+                  >
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-amber-500" />
+                    <div className="p-6 md:p-8">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          <post.icon className="w-6 h-6" />
                         </div>
-                        <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
-                          {post.title}
-                        </h3>
-                        <p className="text-muted-foreground mb-4 line-clamp-2">
-                          {post.excerpt}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Calendar className="w-3 h-3" /> {new Date(post.date).toLocaleDateString('pt-BR')}
-                          </span>
-                          <Button variant="ghost" size="sm" className="gap-1 text-primary hover:text-primary">
-                            Ler artigo <ArrowRight className="w-4 h-4" />
-                          </Button>
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-3">
+                            <Badge variant="default" className="bg-primary/20 text-primary hover:bg-primary/30">
+                              {post.category}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> {post.readTime}
+                            </span>
+                          </div>
+                          <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+                            {post.title}
+                          </h3>
+                          <p className="text-muted-foreground mb-4 line-clamp-2">
+                            {post.excerpt}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Calendar className="w-3 h-3" /> {new Date(post.date).toLocaleDateString('pt-BR')}
+                            </span>
+                            <Button variant="ghost" size="sm" className="gap-1 text-primary hover:text-primary">
+                              Ler artigo <ArrowRight className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
+                </Link>
               ))}
             </div>
           </div>
@@ -250,35 +283,36 @@ const Blog = () => {
             <h2 className="text-2xl font-bold mb-8">Todos os Artigos</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {regularPosts.map((post) => (
-                <Card 
-                  key={post.slug}
-                  className="group overflow-hidden hover:border-primary/30 transition-all duration-300 hover:shadow-md"
-                >
-                  <div className="p-5">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 rounded-lg bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                        <post.icon className="w-5 h-5" />
+                <Link key={post.slug} to={`/blog/${post.slug}`}>
+                  <Card 
+                    className="group overflow-hidden hover:border-primary/30 transition-all duration-300 hover:shadow-md h-full"
+                  >
+                    <div className="p-5">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 rounded-lg bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                          <post.icon className="w-5 h-5" />
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {post.category}
+                        </Badge>
                       </div>
-                      <Badge variant="outline" className="text-xs">
-                        {post.category}
-                      </Badge>
+                      <h3 className="font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                        {post.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                        {post.excerpt}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> {post.readTime}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" /> {new Date(post.date).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
                     </div>
-                    <h3 className="font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                      {post.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {post.excerpt}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {post.readTime}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" /> {new Date(post.date).toLocaleDateString('pt-BR')}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
+                  </Card>
+                </Link>
               ))}
             </div>
           </div>
