@@ -34,6 +34,20 @@ import previewAquarela from "@/assets/style-previews/aquarela-digital.jpg";
 import previewNeonTokyo from "@/assets/style-previews/neon-tokyo.jpg";
 import previewClaymation from "@/assets/style-previews/claymation-3d.jpg";
 
+// Import style preview images - Row 3 (Minimalistas & Experimentais)
+import previewFlatDesign from "@/assets/style-previews/flat-design.jpg";
+import previewLineArt from "@/assets/style-previews/line-art.jpg";
+import previewGlitchArt from "@/assets/style-previews/glitch-art.jpg";
+import previewVoxelArt from "@/assets/style-previews/voxel-art.jpg";
+import previewInfravermelho from "@/assets/style-previews/infravermelho.jpg";
+import previewBauhaus from "@/assets/style-previews/bauhaus.jpg";
+import previewPopArt from "@/assets/style-previews/pop-art.jpg";
+import previewDataflow from "@/assets/style-previews/dataflow.jpg";
+import previewMemoriaFragmentada from "@/assets/style-previews/memoria-fragmentada.jpg";
+import previewIsometrico from "@/assets/style-previews/isometrico-arquitetonico.jpg";
+import previewVHSNostalgico from "@/assets/style-previews/vhs-nostalgico.jpg";
+import previewNarrativaFragmentada from "@/assets/style-previews/narrativa-fragmentada.jpg";
+
 // Row 1 styles (left to right) - 12 estilos variados
 const stylesRow1 = [
   { id: "3d-cinematic", name: "3D Cinematográfico", image: preview3DCinematic, category: "3D", description: "Miniaturas hiper-detalhadas com iluminação dramática e profundidade cinematográfica" },
@@ -64,6 +78,22 @@ const stylesRow2 = [
   { id: "aquarela", name: "Aquarela Digital", image: previewAquarela, category: "Artístico", description: "Pinceladas suaves e fluidas com cores delicadas" },
   { id: "neon-tokyo", name: "Neon Tokyo", image: previewNeonTokyo, category: "Vibrante", description: "Luzes noturnas de Tóquio com estética urbana japonesa" },
   { id: "claymation", name: "Claymation 3D", image: previewClaymation, category: "3D", description: "Animação em massa de modelar com textura artesanal" },
+];
+
+// Row 3 styles (left to right) - 12 estilos minimalistas e experimentais
+const stylesRow3 = [
+  { id: "flat-design", name: "Flat Design", image: previewFlatDesign, category: "Minimalista", description: "Vetorial moderno com cores sólidas e formas limpas" },
+  { id: "line-art", name: "Line Art", image: previewLineArt, category: "Minimalista", description: "Traços finos e elegantes com estética sofisticada" },
+  { id: "glitch-art", name: "Glitch Art", image: previewGlitchArt, category: "Experimental", description: "Erros digitais transformados em arte visual impactante" },
+  { id: "voxel-art", name: "Voxel Art", image: previewVoxelArt, category: "3D", description: "Estética pixelada em 3D com cubos estilizados" },
+  { id: "infravermelho", name: "Infravermelho", image: previewInfravermelho, category: "Experimental", description: "Cores surreais captadas além do espectro visível" },
+  { id: "bauhaus", name: "Bauhaus", image: previewBauhaus, category: "Minimalista", description: "Design funcional alemão com formas geométricas primárias" },
+  { id: "pop-art", name: "Pop Art", image: previewPopArt, category: "Artístico", description: "Cores vibrantes e repetição icônica estilo Andy Warhol" },
+  { id: "dataflow", name: "Dataflow", image: previewDataflow, category: "Experimental", description: "Visualização de dados com estética tecnológica futurista" },
+  { id: "memoria-fragmentada", name: "Memória Fragmentada", image: previewMemoriaFragmentada, category: "Experimental", description: "Fragmentos visuais que evocam memórias e nostalgia" },
+  { id: "isometrico", name: "Isométrico", image: previewIsometrico, category: "Minimalista", description: "Perspectiva arquitetônica com profundidade calculada" },
+  { id: "vhs-nostalgico", name: "VHS Nostálgico", image: previewVHSNostalgico, category: "Experimental", description: "Estética retrô com ruído analógico e tracking" },
+  { id: "narrativa-fragmentada", name: "Narrativa Fragmentada", image: previewNarrativaFragmentada, category: "Experimental", description: "Composição em fragmentos que conta histórias visuais" },
 ];
 
 type StyleType = { id: string; name: string; image: string; category: string; description: string };
@@ -209,8 +239,10 @@ const StylePreviewModal = ({
 export const StylesCarousel = () => {
   const scrollRef1 = useRef<HTMLDivElement>(null);
   const scrollRef2 = useRef<HTMLDivElement>(null);
+  const scrollRef3 = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<StyleType | null>(null);
+  
   // Row 1: Left to Right
   useEffect(() => {
     const scrollContainer = scrollRef1.current;
@@ -218,7 +250,7 @@ export const StylesCarousel = () => {
 
     let animationId: number;
     let scrollPosition = 0;
-    const speed = 0.4; // Linha 1 mais lenta
+    const speed = 0.4;
 
     const animate = () => {
       if (!isPaused && scrollContainer) {
@@ -242,7 +274,7 @@ export const StylesCarousel = () => {
 
     let animationId: number;
     let scrollPosition = scrollContainer.scrollWidth / 2;
-    const speed = 0.7; // Linha 2 mais rápida
+    const speed = 0.7;
 
     const animate = () => {
       if (!isPaused && scrollContainer) {
@@ -259,8 +291,33 @@ export const StylesCarousel = () => {
     return () => cancelAnimationFrame(animationId);
   }, [isPaused]);
 
+  // Row 3: Left to Right (slower)
+  useEffect(() => {
+    const scrollContainer = scrollRef3.current;
+    if (!scrollContainer) return;
+
+    let animationId: number;
+    let scrollPosition = 0;
+    const speed = 0.55;
+
+    const animate = () => {
+      if (!isPaused && scrollContainer) {
+        scrollPosition += speed;
+        if (scrollPosition >= scrollContainer.scrollWidth / 2) {
+          scrollPosition = 0;
+        }
+        scrollContainer.scrollLeft = scrollPosition;
+      }
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, [isPaused]);
+
   const duplicatedRow1 = [...stylesRow1, ...stylesRow1];
   const duplicatedRow2 = [...stylesRow2, ...stylesRow2];
+  const duplicatedRow3 = [...stylesRow3, ...stylesRow3];
 
   return (
     <section className="py-16 md:py-24 px-4 relative overflow-hidden">
@@ -316,6 +373,17 @@ export const StylesCarousel = () => {
           >
             {duplicatedRow2.map((style, index) => (
               <StyleCard key={`row2-${style.id}-${index}`} style={style} index={index} onSelect={setSelectedStyle} />
+            ))}
+          </div>
+
+          {/* Row 3 - Left to Right (Minimalistas & Experimentais) */}
+          <div 
+            ref={scrollRef3}
+            className="flex gap-4 md:gap-5 overflow-x-hidden py-2"
+            style={{ scrollBehavior: 'auto' }}
+          >
+            {duplicatedRow3.map((style, index) => (
+              <StyleCard key={`row3-${style.id}-${index}`} style={style} index={index} onSelect={setSelectedStyle} />
             ))}
           </div>
         </div>
