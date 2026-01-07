@@ -4538,49 +4538,49 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
       {/* Modal de Instruções CapCut */}
       <Dialog open={showCapcutInstructions} onOpenChange={setShowCapcutInstructions}>
-        <DialogContent className="max-w-2xl bg-card border-primary/50 rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="flex items-center gap-2 text-foreground text-base">
-              <Video className="w-4 h-4 text-primary" />
+        <DialogContent className="max-w-3xl bg-card border-primary/50 rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="flex items-center gap-3 text-foreground text-lg">
+              <Video className="w-5 h-5 text-primary" />
               Exportar para CapCut
             </DialogTitle>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 pr-2">
-            <div className="space-y-3">
+          <ScrollArea className="flex-1 pr-3">
+            <div className="space-y-5">
               {/* Nome do Projeto */}
-              <div className="space-y-1">
-                <Label className="text-xs font-medium flex items-center gap-1.5">
-                  <FileText className="w-3 h-3 text-primary" />
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary" />
                   Nome do Projeto
                 </Label>
                 <Input
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   placeholder="Meu Projeto"
-                  className="bg-secondary/50 h-8 text-sm"
+                  className="bg-secondary/50 h-10 text-base"
                 />
               </div>
 
-              {/* Seletor de Templates - Compacto */}
-              <div className="space-y-2">
-                <Label className="text-xs font-medium flex items-center gap-1.5">
-                  <Layout className="w-3 h-3 text-primary" />
+              {/* Seletor de Templates */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Layout className="w-4 h-4 text-primary" />
                   Template
                 </Label>
                 
                 <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                  <SelectTrigger className="h-8 bg-secondary/50 text-xs">
+                  <SelectTrigger className="h-10 bg-secondary/50 text-sm">
                     <SelectValue placeholder="Selecione um template" />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 z-[200] bg-popover" position="popper" sideOffset={4}>
                     {TEMPLATE_CATEGORIES.map((category) => (
                       <div key={category.id}>
-                        <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                        <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground">
                           {category.icon} {category.name}
                         </div>
                         {CAPCUT_TEMPLATES.filter(t => t.category === category.id).map((template) => (
-                          <SelectItem key={template.id} value={template.id} className="text-xs">
+                          <SelectItem key={template.id} value={template.id} className="text-sm">
                             <span className="flex items-center gap-2">
                               <span>{template.preview}</span>
                               <span>{template.name}</span>
@@ -4592,9 +4592,9 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   </SelectContent>
                 </Select>
 
-                {/* Preview compacto */}
+                {/* Preview */}
                 {selectedTemplate && (
-                  <div className="p-2 bg-secondary/30 rounded-lg border border-border">
+                  <div className="p-3 bg-secondary/30 rounded-lg border border-border">
                     <TemplatePreview 
                       template={CAPCUT_TEMPLATES.find(t => t.id === selectedTemplate) || CAPCUT_TEMPLATES[0]}
                       isActive={true}
@@ -4604,32 +4604,32 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               </div>
               
               {/* Seletor de Estilo de Legenda */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium flex items-center gap-1.5">
-                    <Type className="w-3 h-3 text-cyan-400" />
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Type className="w-4 h-4 text-cyan-400" />
                     Estilo de Legenda
                   </Label>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => setShowSubtitleSelector(!showSubtitleSelector)}
-                    className="h-6 text-[10px] px-2"
+                    className="h-7 text-xs px-3"
                   >
                     {showSubtitleSelector ? 'Ocultar' : 'Ver Todos'}
                   </Button>
                 </div>
                 
                 <Select value={selectedSubtitleStyle} onValueChange={setSelectedSubtitleStyle}>
-                  <SelectTrigger className="h-8 bg-secondary/50 text-xs">
+                  <SelectTrigger className="h-10 bg-secondary/50 text-sm">
                     <SelectValue placeholder="Selecione um estilo" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-60">
+                  <SelectContent className="max-h-60 z-[200] bg-popover" position="popper" sideOffset={4}>
                     {SUBTITLE_STYLES.map((style) => (
-                      <SelectItem key={style.id} value={style.id} className="text-xs">
-                        <span className="flex items-center gap-2">
+                      <SelectItem key={style.id} value={style.id} className="text-sm">
+                        <span className="flex items-center gap-3">
                           <span 
-                            className="w-4 h-4 rounded text-[8px] flex items-center justify-center font-bold"
+                            className="w-5 h-5 rounded text-xs flex items-center justify-center font-bold"
                             style={{ 
                               backgroundColor: style.preview.bgColor === 'transparent' ? '#1a1a2e' : style.preview.bgColor,
                               color: style.preview.textColor === 'transparent' ? '#fff' : style.preview.textColor,
@@ -4647,24 +4647,24 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                 
                 {/* Preview de legenda expandido */}
                 {showSubtitleSelector && (
-                  <div className="grid grid-cols-2 gap-2 p-2 bg-secondary/30 rounded-lg border border-border">
+                  <div className="grid grid-cols-2 gap-3 p-3 bg-secondary/30 rounded-lg border border-border">
                     {SUBTITLE_STYLES.map((style) => (
                       <button
                         key={style.id}
                         onClick={() => setSelectedSubtitleStyle(style.id)}
                         className={cn(
-                          "relative p-3 rounded-lg border-2 transition-all text-left",
+                          "relative p-4 rounded-lg border-2 transition-all text-left",
                           selectedSubtitleStyle === style.id 
                             ? "border-cyan-400 bg-cyan-400/10" 
                             : "border-border hover:border-cyan-400/50"
                         )}
                       >
                         <div 
-                          className="relative h-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded flex items-center justify-center overflow-hidden"
+                          className="relative h-10 bg-gradient-to-br from-gray-800 to-gray-900 rounded flex items-center justify-center overflow-hidden"
                         >
                           <span 
                             className={cn(
-                              "text-xs font-medium px-2 py-0.5",
+                              "text-sm font-medium px-3 py-1",
                               style.preview.fontSize,
                               style.preview.fontWeight,
                               style.preview.borderRadius,
@@ -4680,8 +4680,8 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                             Exemplo
                           </span>
                         </div>
-                        <p className="text-[10px] font-medium mt-1.5">{style.name}</p>
-                        <p className="text-[9px] text-muted-foreground line-clamp-1">{style.description}</p>
+                        <p className="text-xs font-medium mt-2">{style.name}</p>
+                        <p className="text-[11px] text-muted-foreground line-clamp-1">{style.description}</p>
                       </button>
                     ))}
                   </div>
@@ -4689,112 +4689,106 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               </div>
               
               {/* Configurações de Áudio */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium flex items-center gap-1.5">
-                    <Music className="w-3 h-3 text-green-400" />
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Music className="w-4 h-4 text-green-400" />
                     Áudio & Mixagem
                   </Label>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => setShowAudioSettings(!showAudioSettings)}
-                    className="h-6 text-[10px] px-2"
+                    className="h-7 text-xs px-3"
                   >
                     {showAudioSettings ? 'Ocultar' : 'Configurar'}
                   </Button>
                 </div>
                 
-                <div className="p-2 bg-secondary/30 rounded-lg border border-border">
-                  <p className="text-[10px] text-muted-foreground mb-2">
+                <div className="p-3 bg-secondary/30 rounded-lg border border-border">
+                  <p className="text-xs text-muted-foreground mb-3">
                     O pacote inclui pastas para você adicionar seus áudios:
                   </p>
-                  <div className="grid grid-cols-2 gap-1 text-[9px]">
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground">
                       <span className="text-green-400">📁</span> Narração
                     </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <span className="text-yellow-400">📁</span> Música Intro
-                    </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                    <div className="flex items-center gap-2 text-muted-foreground">
                       <span className="text-blue-400">📁</span> Background
-                    </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <span className="text-purple-400">📁</span> Outro / SFX
                     </div>
                   </div>
                 </div>
                 
                 {/* Configurações de volume expandidas */}
                 {showAudioSettings && (
-                  <div className="space-y-3 p-3 bg-secondary/30 rounded-lg border border-border">
-                    <p className="text-[10px] text-muted-foreground">
+                  <div className="space-y-4 p-4 bg-secondary/30 rounded-lg border border-border">
+                    <p className="text-xs text-muted-foreground">
                       Configure os volumes recomendados para a mixagem:
                     </p>
                     
                     {/* Narração */}
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] flex items-center gap-1">
-                          <Volume2 className="w-3 h-3 text-green-400" />
+                        <span className="text-sm flex items-center gap-2">
+                          <Volume2 className="w-4 h-4 text-green-400" />
                           Narração
                         </span>
-                        <span className="text-[10px] font-mono text-green-400">{audioMixSettings.narrationVolume}%</span>
+                        <span className="text-sm font-mono text-green-400">{audioMixSettings.narrationVolume}%</span>
                       </div>
                       <Slider
                         value={[audioMixSettings.narrationVolume]}
                         onValueChange={([v]) => setAudioMixSettings({...audioMixSettings, narrationVolume: v})}
                         max={100}
                         step={5}
-                        className="h-1"
+                        className="h-2"
                       />
                     </div>
                     
                     {/* Intro */}
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] flex items-center gap-1">
-                          <Music className="w-3 h-3 text-yellow-400" />
+                        <span className="text-sm flex items-center gap-2">
+                          <Music className="w-4 h-4 text-yellow-400" />
                           Música Intro
                         </span>
-                        <span className="text-[10px] font-mono text-yellow-400">{audioMixSettings.introVolume}%</span>
+                        <span className="text-sm font-mono text-yellow-400">{audioMixSettings.introVolume}%</span>
                       </div>
                       <Slider
                         value={[audioMixSettings.introVolume]}
                         onValueChange={([v]) => setAudioMixSettings({...audioMixSettings, introVolume: v})}
                         max={100}
                         step={5}
-                        className="h-1"
+                        className="h-2"
                       />
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] text-muted-foreground">Duração antes de fade:</span>
+                        <span className="text-xs text-muted-foreground">Duração antes de fade:</span>
                         <Input
                           type="number"
                           value={audioMixSettings.introDuration}
                           onChange={(e) => setAudioMixSettings({...audioMixSettings, introDuration: parseInt(e.target.value) || 5})}
-                          className="h-5 w-14 text-[10px] text-center"
+                          className="h-7 w-16 text-sm text-center"
                           min={1}
                           max={30}
                         />
-                        <span className="text-[9px] text-muted-foreground">segundos</span>
+                        <span className="text-xs text-muted-foreground">segundos</span>
                       </div>
                     </div>
                     
                     {/* Background */}
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] flex items-center gap-1">
-                          <Music className="w-3 h-3 text-blue-400" />
+                        <span className="text-sm flex items-center gap-2">
+                          <Music className="w-4 h-4 text-blue-400" />
                           Background
                         </span>
-                        <span className="text-[10px] font-mono text-blue-400">{audioMixSettings.backgroundVolume}%</span>
+                        <span className="text-sm font-mono text-blue-400">{audioMixSettings.backgroundVolume}%</span>
                       </div>
                       <Slider
                         value={[audioMixSettings.backgroundVolume]}
                         onValueChange={([v]) => setAudioMixSettings({...audioMixSettings, backgroundVolume: v})}
                         max={100}
                         step={5}
-                        className="h-1"
+                        className="h-2"
                       />
                       <div className="flex items-center gap-2">
                         <Checkbox 
@@ -4802,34 +4796,34 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                           checked={audioMixSettings.backgroundDucking}
                           onCheckedChange={(c) => setAudioMixSettings({...audioMixSettings, backgroundDucking: !!c})}
                         />
-                        <label htmlFor="ducking" className="text-[9px] text-muted-foreground">
+                        <label htmlFor="ducking" className="text-xs text-muted-foreground">
                           Ativar Ducking (reduz para {audioMixSettings.backgroundDuckingLevel}% durante narração)
                         </label>
                       </div>
                     </div>
                     
                     {/* Outro */}
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] flex items-center gap-1">
-                          <Music className="w-3 h-3 text-purple-400" />
+                        <span className="text-sm flex items-center gap-2">
+                          <Music className="w-4 h-4 text-purple-400" />
                           Música Outro
                         </span>
-                        <span className="text-[10px] font-mono text-purple-400">{audioMixSettings.outroVolume}%</span>
+                        <span className="text-sm font-mono text-purple-400">{audioMixSettings.outroVolume}%</span>
                       </div>
                       <Slider
                         value={[audioMixSettings.outroVolume]}
                         onValueChange={([v]) => setAudioMixSettings({...audioMixSettings, outroVolume: v})}
                         max={100}
                         step={5}
-                        className="h-1"
+                        className="h-2"
                       />
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Timeline Visual compacta */}
+              {/* Timeline Visual */}
               {generatedScenes.length > 0 && (
                 <SceneTimeline
                   scenes={generatedScenes.map(scene => ({
@@ -4839,52 +4833,52 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                     durationSeconds: Math.max(1, wordCountToSeconds(scene.wordCount)),
                     generatedImage: scene.generatedImage
                   }))}
-                  className="p-2 bg-secondary/30 rounded-lg border border-border"
+                  className="p-3 bg-secondary/30 rounded-lg border border-border"
                 />
               )}
             </div>
           </ScrollArea>
 
-          <div className="space-y-2 pt-2 border-t border-border">
+          <div className="space-y-3 pt-3 border-t border-border">
             {/* Botões principais */}
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {/* Botões de ação */}
               <Button
                 variant="outline"
                 onClick={handleConfirmCapcutExport}
-                className="flex-1 h-8 text-xs"
+                className="flex-1 h-10 text-sm"
               >
-                <Download className="w-3 h-3 mr-1" />
+                <Download className="w-4 h-4 mr-2" />
                 Baixar ZIP
               </Button>
               <Button
                 variant="outline"
                 onClick={openSrtPreview}
                 disabled={generatedScenes.length === 0}
-                className="flex-1 h-8 text-xs border-cyan-500/50 text-cyan-500 hover:bg-cyan-500/10"
+                className="flex-1 h-10 text-sm border-cyan-500/50 text-cyan-500 hover:bg-cyan-500/10"
               >
-                <Eye className="w-3 h-3 mr-1" />
+                <Eye className="w-4 h-4 mr-2" />
                 Preview SRT
               </Button>
             </div>
 
             {/* Exportar EDL para DaVinci Resolve */}
-            <div className="p-2 bg-secondary/50 rounded-lg border border-border">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm">🎬</span>
-                  <span className="font-medium text-xs text-foreground">DaVinci Resolve</span>
+            <div className="p-3 bg-secondary/50 rounded-lg border border-border">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🎬</span>
+                  <span className="font-medium text-sm text-foreground">DaVinci Resolve</span>
                 </div>
-                <Badge variant="outline" className="text-[9px] h-4">EDL</Badge>
+                <Badge variant="outline" className="text-xs h-5">EDL</Badge>
               </div>
               
               {/* Seletor de FPS + Botões */}
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-3 mb-2">
                 <Select value={edlFps} onValueChange={setEdlFps}>
-                  <SelectTrigger className="h-7 w-24 bg-background border-border text-xs">
+                  <SelectTrigger className="h-9 w-28 bg-background border-border text-sm">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
                     <SelectItem value="24">24 fps</SelectItem>
                     <SelectItem value="25">25 fps</SelectItem>
                     <SelectItem value="30">30 fps</SelectItem>
@@ -4895,9 +4889,9 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   size="sm"
                   onClick={handleExportXml}
                   disabled={generatedScenes.filter(s => s.generatedImage).length === 0}
-                  className="flex-1 h-7 text-xs"
+                  className="flex-1 h-9 text-sm"
                 >
-                  <FileText className="w-3 h-3 mr-1" />
+                  <FileText className="w-4 h-4 mr-2" />
                   XML
                 </Button>
                 <Button
@@ -4905,37 +4899,37 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   size="sm"
                   onClick={handleExportXmlTutorial}
                   disabled={generatedScenes.length === 0}
-                  className="h-7 text-xs border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                  className="h-9 text-sm border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
                   title="Tutorial passo a passo para importar no DaVinci"
                 >
-                  <Eye className="w-3 h-3 mr-1" />
+                  <Eye className="w-4 h-4 mr-2" />
                   Tutorial
                 </Button>
               </div>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Baixe o Tutorial para ver como importar o XML e as mídias
               </p>
             </div>
 
             {/* Gerar MP4 com FFmpeg - Em Breve */}
-            <div className="p-2 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-500/30 opacity-60">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-1.5">
-                  <Play className="w-4 h-4 text-purple-400" />
-                  <span className="font-medium text-xs text-foreground">Gerar Vídeo MP4</span>
+            <div className="p-3 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-500/30 opacity-60">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Play className="w-5 h-5 text-purple-400" />
+                  <span className="font-medium text-sm text-foreground">Gerar Vídeo MP4</span>
                 </div>
-                <Badge className="bg-amber-500/20 text-amber-300 text-[9px] h-4">EM BREVE</Badge>
+                <Badge className="bg-amber-500/20 text-amber-300 text-xs h-5">EM BREVE</Badge>
               </div>
-              <p className="text-[10px] text-muted-foreground mb-2">
+              <p className="text-xs text-muted-foreground mb-2">
                 Vídeo com narração sincronizada às imagens - aguarde nova versão
               </p>
               <Button
                 variant="outline"
                 size="sm"
                 disabled={true}
-                className="w-full h-7 text-xs border-purple-500/30 cursor-not-allowed"
+                className="w-full h-9 text-sm border-purple-500/30 cursor-not-allowed"
               >
-                <Video className="w-3 h-3 mr-1" />
+                <Video className="w-4 h-4 mr-2" />
                 Em Breve
               </Button>
             </div>
