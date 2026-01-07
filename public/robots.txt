@@ -1,6 +1,7 @@
 User-agent: Googlebot
 Allow: /landing
 Allow: /auth
+Allow: /blog
 Allow: /terms
 Allow: /privacy
 Allow: /reset-password
@@ -30,6 +31,7 @@ Disallow: /pending-approval
 User-agent: Bingbot
 Allow: /landing
 Allow: /auth
+Allow: /blog
 Allow: /terms
 Allow: /privacy
 Allow: /reset-password
@@ -65,6 +67,7 @@ Allow: /
 User-agent: *
 Allow: /landing
 Allow: /auth
+Allow: /blog
 Allow: /terms
 Allow: /privacy
 Allow: /reset-password

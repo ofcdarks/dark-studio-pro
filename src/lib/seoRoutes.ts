@@ -40,6 +40,12 @@ export const publicRoutes: SEORoute[] = [
     lastmod: today,
   },
   {
+    path: '/blog',
+    changefreq: 'daily',
+    priority: 0.9,
+    lastmod: today,
+  },
+  {
     path: '/reset-password',
     changefreq: 'yearly',
     priority: 0.3,

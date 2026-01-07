@@ -85,6 +85,13 @@ export const MobileMenu = ({ scrollToSection }: MobileMenuProps) => {
                 >
                   Planos
                 </button>
+                <Link
+                  to="/blog"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-lg font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
+                >
+                  Blog
+                </Link>
                 <button
                   onClick={() => handleNavClick("faq")}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-lg font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
