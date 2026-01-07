@@ -697,6 +697,57 @@ export type Database = {
         }
         Relationships: []
       }
+      migration_invites: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          credits_amount: number
+          email: string
+          expires_at: string | null
+          full_name: string | null
+          id: string
+          invited_by: string | null
+          notes: string | null
+          plan_name: string
+          sent_at: string | null
+          status: string
+          token: string
+          whatsapp: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          credits_amount?: number
+          email: string
+          expires_at?: string | null
+          full_name?: string | null
+          id?: string
+          invited_by?: string | null
+          notes?: string | null
+          plan_name?: string
+          sent_at?: string | null
+          status?: string
+          token?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          credits_amount?: number
+          email?: string
+          expires_at?: string | null
+          full_name?: string | null
+          id?: string
+          invited_by?: string | null
+          notes?: string | null
+          plan_name?: string
+          sent_at?: string | null
+          status?: string
+          token?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       monitored_channels: {
         Row: {
           channel_name: string | null
