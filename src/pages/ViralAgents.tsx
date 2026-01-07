@@ -35,7 +35,7 @@ import { toast } from "sonner";
 import { useTutorial } from "@/hooks/useTutorial";
 import { TutorialModal, TutorialHelpButton } from "@/components/tutorial/TutorialModal";
 import { VIRAL_AGENTS_TUTORIAL } from "@/lib/tutorialConfigs";
-import { motion, AnimatePresence } from "framer-motion";
+
 import {
   Dialog,
   DialogContent,
@@ -491,18 +491,7 @@ const ViralAgents = () => {
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-  };
+  // Simple grid animation removed - use CSS transitions instead
 
   return (
     <>
@@ -516,11 +505,8 @@ const ViralAgents = () => {
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <motion.div 
-            className="flex items-center justify-between mb-8"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+          <div 
+            className="flex items-center justify-between mb-8 animate-fade-in"
           >
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-amber-500/20 flex items-center justify-center border border-primary/30">
@@ -541,17 +527,13 @@ const ViralAgents = () => {
               <Plus className="w-4 h-4 mr-2" />
               Novo Agente
             </Button>
-          </motion.div>
+          </div>
 
-          <AnimatePresence mode="wait">
-            {selectedAgent ? (
+          {selectedAgent ? (
               /* Agent Detail View */
-              <motion.div
+              <div
                 key="detail"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
+                className="animate-fade-in"
               >
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Main Content */}
@@ -831,14 +813,12 @@ const ViralAgents = () => {
                     </Card>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ) : (
               /* Agents Grid */
-              <motion.div
+              <div
                 key="grid"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                className="animate-fade-in"
               >
                 {loading ? (
                   <div className="flex items-center justify-center py-20">
@@ -863,14 +843,15 @@ const ViralAgents = () => {
                     </Button>
                   </Card>
                 ) : (
-                  <motion.div 
+                  <div 
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
                   >
-                    {agents.map((agent) => (
-                      <motion.div key={agent.id} variants={itemVariants}>
+                    {agents.map((agent, index) => (
+                      <div 
+                        key={agent.id} 
+                        className="animate-fade-in"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
                         <Card 
                           className="p-5 bg-card/50 backdrop-blur-xl border-border/50 rounded-2xl hover:border-primary/30 transition-all duration-300 cursor-pointer group"
                           onClick={() => setSelectedAgent(agent)}
@@ -938,13 +919,12 @@ const ViralAgents = () => {
                             )}
                           </div>
                         </Card>
-                      </motion.div>
+                      </div>
                     ))}
-                  </motion.div>
+                  </div>
                 )}
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
         </div>
       </div>
 
