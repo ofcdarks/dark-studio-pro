@@ -36,7 +36,13 @@ export const ComparisonSlider = () => {
   };
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto">
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.98 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6 }}
+      className="relative w-full max-w-4xl mx-auto rounded-xl shadow-[0_0_60px_rgba(245,158,11,0.15),0_0_100px_rgba(245,158,11,0.1)]"
+    >
       {/* Top black bar */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -229,6 +235,6 @@ export const ComparisonSlider = () => {
           </button>
         </motion.div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 };
