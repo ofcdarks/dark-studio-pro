@@ -2,10 +2,18 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Crown } from "lucide-react";
 import logo from "@/assets/logo.gif";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const TermsOfService = () => {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <>
+      <SEOHead
+        title="Termos de Serviço"
+        description="Termos de serviço da plataforma La Casa Dark CORE. Regras de uso, pagamentos, propriedade intelectual e responsabilidades."
+        canonical="/termos-de-servico"
+        keywords="termos de serviço, condições de uso, la casa dark, canal dark youtube"
+      />
+      <div className="min-h-screen bg-background text-foreground">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -135,7 +143,8 @@ const TermsOfService = () => {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -45,6 +45,7 @@ import { ScrollIndicator } from "@/components/landing/ScrollIndicator";
 import { MobileMenu } from "@/components/landing/MobileMenu";
 import { ComparisonSlider } from "@/components/landing/ComparisonSlider";
 import { AnimatedCounter } from "@/components/landing/AnimatedCounter";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 import { Tool3DCard } from "@/components/landing/Tool3DCard";
 import { Dream3DCard } from "@/components/landing/Dream3DCard";
@@ -143,9 +144,17 @@ const Landing = () => {
   // Removed static operatorsOnline - now using dynamic component
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden relative">
-      {/* Global Floating Elements */}
-      <FloatingElements />
+    <>
+      <SEOHead
+        title="Ferramenta #1 para Canal Dark no YouTube"
+        description="Ferramenta definitiva para criadores de canal dark no YouTube. Gerador de voz IA, análise de nichos, thumbnails otimizadas e automação completa. Escale para $10K+/mês."
+        canonical="/landing"
+        keywords="canal dark, youtube dark, faceless channel, canal sem aparecer, ganhar dinheiro youtube, automação youtube, gerador de voz ia, thumbnails youtube"
+      />
+      
+      <div className="min-h-screen bg-background text-foreground overflow-x-hidden relative">
+        {/* Global Floating Elements */}
+        <FloatingElements />
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1078,7 +1087,8 @@ const Landing = () => {
 
       {/* Auto Chat */}
       <AutoChat />
-    </div>
+      </div>
+    </>
   );
 };
 

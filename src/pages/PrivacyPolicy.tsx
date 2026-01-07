@@ -2,15 +2,17 @@ import { motion } from "framer-motion";
 import { Crown, ArrowLeft, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Helmet } from "react-helmet";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const PrivacyPolicy = () => {
   return (
     <>
-      <Helmet>
-        <title>Política de Privacidade | La Casa Dark CORE</title>
-        <meta name="description" content="Política de privacidade da plataforma La Casa Dark CORE." />
-      </Helmet>
+      <SEOHead
+        title="Política de Privacidade"
+        description="Política de privacidade da plataforma La Casa Dark CORE. Saiba como coletamos, usamos e protegemos seus dados pessoais de acordo com a LGPD."
+        canonical="/politica-de-privacidade"
+        keywords="política de privacidade, LGPD, proteção de dados, la casa dark"
+      />
       
       <div className="min-h-screen bg-background">
         {/* Header */}

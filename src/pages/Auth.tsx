@@ -9,9 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ArrowLeft, Rocket, Gift } from "lucide-react";
 import { z } from "zod";
 import logo from "@/assets/logo.gif";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { SEOHead } from "@/components/seo/SEOHead";
 // Use WebP from public folder for faster loading
 const authBg = "/images/auth-porsche.webp";
-import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 const authSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -373,9 +374,15 @@ const Auth = () => {
 
   return (
     <>
+      <SEOHead
+        title="Login"
+        description="Acesse sua conta La Casa Dark CORE. Ferramentas de IA para criadores de canais dark no YouTube."
+        canonical="/auth"
+        noindex={true}
+      />
+      
       {/* PWA Install Prompt */}
       <InstallPrompt />
-      
       <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background with Porsche - animated */}
       <div className="absolute inset-0 overflow-hidden">
