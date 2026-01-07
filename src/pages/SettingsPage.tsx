@@ -271,6 +271,7 @@ const SettingsPage = () => {
   }, [settings]);
 
   const canUseOwnApiKeys = hasPermission('usar_api_propria');
+  const canUseImageFxCookies = hasPermission('imagefx_cookies');
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -829,7 +830,7 @@ const SettingsPage = () => {
                 , faça login e extraia os cookies usando uma extensão como "EditThisCookie" ou "Cookie-Editor".
               </p>
               <div className="space-y-4">
-                {renderApiKeyField('imagefx', 'Cookies do ImageFX', 'Cole seus cookies aqui (ex: __Secure-1PSID=xxx; ...)', !canUseOwnApiKeys, true)}
+                {renderApiKeyField('imagefx', 'Cookies do ImageFX', 'Cole seus cookies aqui (ex: __Secure-1PSID=xxx; ...)', !canUseImageFxCookies, true)}
               </div>
             </Card>
 
