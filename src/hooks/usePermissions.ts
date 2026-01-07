@@ -19,7 +19,8 @@ export type PermissionKey =
   | "analytics"
   | "pastas"
   | "usar_api_propria"
-  | "baixar_xml";
+  | "baixar_xml"
+  | "imagefx_cookies";
 
 interface Permissions {
   [key: string]: boolean;
@@ -51,6 +52,7 @@ const ALL_PERMISSIONS: Permissions = {
   pastas: true,
   usar_api_propria: true,
   baixar_xml: true,
+  imagefx_cookies: true,
 };
 
 export function usePermissions() {
