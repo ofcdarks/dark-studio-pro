@@ -23,7 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, subDays, differenceInDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, ComposedChart, Bar } from "recharts";
 
 interface PlanInfo {
   plan_name: string;
@@ -62,6 +62,7 @@ interface MRRDataPoint {
   month: string;
   mrr: number;
   subscribers: number;
+  growth: number | null;
 }
 
 export function AdminSubscriptionsTab() {
@@ -156,8 +157,22 @@ export function AdminSubscriptionsTab() {
         months.push({
           month: format(targetDate, "MMM/yy", { locale: ptBR }),
           mrr,
-          subscribers: uniqueUsers.size
+          subscribers: uniqueUsers.size,
+          growth: null // Will be calculated after
         });
+      }
+      
+      // Calculate growth percentage month over month
+      for (let i = 1; i < months.length; i++) {
+        const prevMrr = months[i - 1].mrr;
+        const currentMrr = months[i].mrr;
+        if (prevMrr > 0) {
+          months[i].growth = ((currentMrr - prevMrr) / prevMrr) * 100;
+        } else if (currentMrr > 0) {
+          months[i].growth = 100; // First month with revenue
+        } else {
+          months[i].growth = 0;
+        }
       }
       
       setMrrHistory(months);
@@ -471,7 +486,7 @@ export function AdminSubscriptionsTab() {
         </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={mrrHistory} margin={{ top: 10, right: 50, left: 0, bottom: 0 }}>
+            <ComposedChart data={mrrHistory} margin={{ top: 10, right: 50, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorMrr" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
@@ -511,9 +526,11 @@ export function AdminSubscriptionsTab() {
                   borderRadius: "8px",
                   color: "hsl(var(--foreground))"
                 }}
-                formatter={(value: number, name: string) => {
+                formatter={(value: number | null, name: string) => {
+                  if (value === null) return ["-", name];
                   if (name === "mrr") return [`R$ ${value.toFixed(2)}`, "MRR"];
                   if (name === "subscribers") return [value, "Assinantes"];
+                  if (name === "growth") return [`${value >= 0 ? "+" : ""}${value.toFixed(1)}%`, "Crescimento"];
                   return [value, name];
                 }}
                 labelStyle={{ color: "hsl(var(--muted-foreground))" }}
@@ -538,17 +555,31 @@ export function AdminSubscriptionsTab() {
                 strokeWidth={2}
                 name="subscribers"
               />
-            </AreaChart>
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="growth"
+                stroke="#f59e0b"
+                strokeWidth={2}
+                dot={{ fill: "#f59e0b", strokeWidth: 0, r: 4 }}
+                name="growth"
+                connectNulls={false}
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex justify-center gap-8 mt-4 text-sm">
+        <div className="flex justify-center flex-wrap gap-6 mt-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-primary" />
             <span className="text-muted-foreground">MRR (Receita Mensal)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-500" />
-            <span className="text-muted-foreground">Assinantes Ativos</span>
+            <span className="text-muted-foreground">Assinantes</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-amber-500" />
+            <span className="text-muted-foreground">Crescimento %</span>
           </div>
         </div>
       </Card>
