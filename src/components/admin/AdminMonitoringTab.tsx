@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -18,6 +19,11 @@ import {
   Server,
   Wifi,
   BarChart3,
+  Layers,
+  Scale,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import {
   LineChart,
@@ -30,6 +36,7 @@ import {
   AreaChart,
   Area,
 } from "recharts";
+import { cn } from "@/lib/utils";
 
 interface SystemMetrics {
   activeConnections: number;
@@ -50,6 +57,13 @@ interface ActivityData {
   users: number;
 }
 
+interface LoadBalancerConfig {
+  enabled: boolean;
+  instances: number;
+  algorithm: string;
+  lastActivated: string | null;
+}
+
 export const AdminMonitoringTab = () => {
   const [metrics, setMetrics] = useState<SystemMetrics>({
     activeConnections: 0,
@@ -66,13 +80,101 @@ export const AdminMonitoringTab = () => {
   const [activityData, setActivityData] = useState<ActivityData[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  
+  // Load Balancer state
+  const [loadBalancer, setLoadBalancer] = useState<LoadBalancerConfig>({
+    enabled: false,
+    instances: 3,
+    algorithm: "least_conn",
+    lastActivated: null,
+  });
+  const [lbLoading, setLbLoading] = useState(false);
 
   useEffect(() => {
     fetchMetrics();
+    fetchLoadBalancerConfig();
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchMetrics, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const fetchLoadBalancerConfig = async () => {
+    try {
+      const { data } = await supabase
+        .from("admin_settings")
+        .select("value")
+        .eq("key", "load_balancer_config")
+        .maybeSingle();
+      
+      if (data?.value) {
+        const config = data.value as unknown as LoadBalancerConfig;
+        setLoadBalancer(config);
+      }
+    } catch (error) {
+      console.error("Error fetching load balancer config:", error);
+    }
+  };
+
+  const toggleLoadBalancer = async (enabled: boolean) => {
+    setLbLoading(true);
+    try {
+      const newConfig: LoadBalancerConfig = {
+        ...loadBalancer,
+        enabled,
+        lastActivated: enabled ? new Date().toISOString() : loadBalancer.lastActivated,
+      };
+
+      const { error } = await supabase
+        .from("admin_settings")
+        .upsert([{
+          key: "load_balancer_config",
+          value: newConfig as unknown as null,
+          updated_at: new Date().toISOString(),
+        }], { onConflict: "key" });
+
+      if (error) throw error;
+
+      setLoadBalancer(newConfig);
+      toast.success(
+        enabled 
+          ? "Load Balancing ativado! Execute: docker-compose -f docker-compose.prod.yml up -d --scale app=3" 
+          : "Load Balancing desativado"
+      );
+    } catch (error) {
+      console.error("Error toggling load balancer:", error);
+      toast.error("Erro ao atualizar configuração");
+    } finally {
+      setLbLoading(false);
+    }
+  };
+
+  const updateInstances = async (instances: number) => {
+    setLbLoading(true);
+    try {
+      const newConfig: LoadBalancerConfig = {
+        ...loadBalancer,
+        instances,
+      };
+
+      const { error } = await supabase
+        .from("admin_settings")
+        .upsert([{
+          key: "load_balancer_config",
+          value: newConfig as unknown as null,
+          updated_at: new Date().toISOString(),
+        }], { onConflict: "key" });
+
+      if (error) throw error;
+
+      setLoadBalancer(newConfig);
+      toast.success(`Configurado para ${instances} instâncias`);
+    } catch (error) {
+      console.error("Error updating instances:", error);
+      toast.error("Erro ao atualizar instâncias");
+    } finally {
+      setLbLoading(false);
+    }
+  };
 
   const fetchMetrics = async () => {
     setLoading(true);
@@ -245,6 +347,127 @@ export const AdminMonitoringTab = () => {
           </p>
         </Card>
       </div>
+
+      {/* Load Balancer Control */}
+      <Card className={cn(
+        "p-6 border-2 transition-all",
+        loadBalancer.enabled 
+          ? "border-success/50 bg-success/5" 
+          : "border-border"
+      )}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "p-2 rounded-lg",
+              loadBalancer.enabled ? "bg-success/20" : "bg-muted"
+            )}>
+              <Scale className={cn(
+                "w-6 h-6",
+                loadBalancer.enabled ? "text-success" : "text-muted-foreground"
+              )} />
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground flex items-center gap-2">
+                Load Balancing
+                {loadBalancer.enabled && (
+                  <Badge className="bg-success/20 text-success border-success/30">
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    Ativo
+                  </Badge>
+                )}
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Distribuição de carga entre múltiplas instâncias Docker
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            {lbLoading && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+            <Switch
+              checked={loadBalancer.enabled}
+              onCheckedChange={toggleLoadBalancer}
+              disabled={lbLoading}
+            />
+          </div>
+        </div>
+
+        {loadBalancer.enabled && (
+          <div className="space-y-4 pt-4 border-t border-border">
+            {/* Instance Control */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Número de Instâncias</p>
+                <p className="text-xs text-muted-foreground">Replicas do container app</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {[2, 3, 4, 5].map((num) => (
+                  <Button
+                    key={num}
+                    variant={loadBalancer.instances === num ? "default" : "outline"}
+                    size="sm"
+                    className="w-10 h-10"
+                    onClick={() => updateInstances(num)}
+                    disabled={lbLoading}
+                  >
+                    {num}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Status Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-3 bg-background rounded-lg text-center">
+                <Layers className="w-5 h-5 text-primary mx-auto mb-1" />
+                <p className="text-lg font-bold text-foreground">{loadBalancer.instances}</p>
+                <p className="text-xs text-muted-foreground">Instâncias</p>
+              </div>
+              <div className="p-3 bg-background rounded-lg text-center">
+                <Scale className="w-5 h-5 text-success mx-auto mb-1" />
+                <p className="text-lg font-bold text-foreground">least_conn</p>
+                <p className="text-xs text-muted-foreground">Algoritmo</p>
+              </div>
+              <div className="p-3 bg-background rounded-lg text-center">
+                <Users className="w-5 h-5 text-primary mx-auto mb-1" />
+                <p className="text-lg font-bold text-foreground">{loadBalancer.instances * 300}+</p>
+                <p className="text-xs text-muted-foreground">Usuários Máx</p>
+              </div>
+              <div className="p-3 bg-background rounded-lg text-center">
+                <Zap className="w-5 h-5 text-primary mx-auto mb-1" />
+                <p className="text-lg font-bold text-foreground">{loadBalancer.instances * 150}</p>
+                <p className="text-xs text-muted-foreground">Req/s Máx</p>
+              </div>
+            </div>
+
+            {/* Deploy Command */}
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs text-muted-foreground mb-2">Comando para deploy:</p>
+              <code className="text-xs text-primary bg-background px-2 py-1 rounded block overflow-x-auto">
+                docker-compose -f docker-compose.prod.yml up -d --scale app={loadBalancer.instances}
+              </code>
+            </div>
+
+            {loadBalancer.lastActivated && (
+              <p className="text-xs text-muted-foreground">
+                Ativado em: {new Date(loadBalancer.lastActivated).toLocaleString("pt-BR")}
+              </p>
+            )}
+          </div>
+        )}
+
+        {!loadBalancer.enabled && (
+          <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg mt-4">
+            <AlertCircle className="w-5 h-5 text-muted-foreground mt-0.5" />
+            <div className="text-sm text-muted-foreground">
+              <p className="font-medium text-foreground mb-1">Load Balancing Desativado</p>
+              <p>
+                Ative para distribuir tráfego entre múltiplas instâncias, 
+                aumentando capacidade e disponibilidade. Requer VPS com Docker.
+              </p>
+            </div>
+          </div>
+        )}
+      </Card>
 
       {/* Activity Chart */}
       <Card className="p-6">
