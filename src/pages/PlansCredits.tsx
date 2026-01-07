@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useSubscription } from "@/hooks/useSubscription";
 import { 
   Check, 
   X, 
@@ -19,6 +20,7 @@ import {
   Shield,
   ArrowRight,
   LayoutDashboard,
+  Lock,
 } from "lucide-react";
 
 interface PlanData {
@@ -193,6 +195,7 @@ const COMPARISON_DATA = [
 
 export default function PlansCredits() {
   const navigate = useNavigate();
+  const { isSubscribed, planName: currentPlan, loading: subscriptionLoading } = useSubscription();
   const [plans, setPlans] = useState<PlanData[]>([]);
   const [creditPackages, setCreditPackages] = useState<CreditPackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -286,6 +289,12 @@ export default function PlansCredits() {
 
   // Handle credit package purchase
   const handleCreditPurchase = async (pkg: CreditPackage) => {
+    // Check if user has active subscription
+    if (!isSubscribed) {
+      toast.error("Você precisa ter um plano pago ativo para comprar créditos adicionais.");
+      return;
+    }
+    
     if (!pkg.stripe_price_id) {
       toast.warning("Pacote ainda não configurado para compra.");
       return;
@@ -744,6 +753,18 @@ export default function PlansCredits() {
                 Expansão Pontual de Capacidade
               </h2>
               <p className="text-muted-foreground">Reforço adicional para picos de execução</p>
+              
+              {/* Warning for users without subscription */}
+              {!subscriptionLoading && !isSubscribed && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-warning/10 border border-warning/30 text-warning"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span className="text-sm font-medium">Disponível apenas para assinantes de planos pagos</span>
+                </motion.div>
+              )}
             </motion.div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -797,11 +818,19 @@ export default function PlansCredits() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="w-full text-xs border-primary/30 transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
+                          className={`w-full text-xs border-primary/30 transition-all duration-300 ${isSubscribed ? 'group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary' : 'opacity-50 cursor-not-allowed'}`}
                           onClick={() => handleCreditPurchase(pkg)}
-                          disabled={checkoutLoading === `credits-${pkg.credits}` || !pkg.stripe_price_id}
+                          disabled={checkoutLoading === `credits-${pkg.credits}` || !pkg.stripe_price_id || !isSubscribed}
                         >
-                          {checkoutLoading === `credits-${pkg.credits}` ? "Processando..." : pkg.stripe_price_id ? "ALOCAR" : "EM BREVE"}
+                          {!isSubscribed ? (
+                            <><Lock className="w-3 h-3 mr-1" /> BLOQUEADO</>
+                          ) : checkoutLoading === `credits-${pkg.credits}` ? (
+                            "Processando..."
+                          ) : pkg.stripe_price_id ? (
+                            "ALOCAR"
+                          ) : (
+                            "EM BREVE"
+                          )}
                         </Button>
                       </motion.div>
                     </CardContent>

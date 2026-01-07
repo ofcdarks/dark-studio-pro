@@ -244,11 +244,17 @@ serve(async (req) => {
     let emailSubject = template.subject;
     let emailBody = template.body;
 
+    const formattedAmount = amount ? `R$ ${amount.toFixed(2).replace(".", ",")}` : "N/A";
+    const formattedPlanName = planName || "Premium";
+    
     const variables: Record<string, string> = {
       "{{nome}}": customerName || customerEmail.split("@")[0],
+      "{{name}}": customerName || customerEmail.split("@")[0],
       "{{email}}": customerEmail,
-      "{{plano}}": planName || "Premium",
-      "{{valor}}": amount ? `R$ ${amount.toFixed(2).replace(".", ",")}` : "N/A",
+      "{{plano}}": formattedPlanName,
+      "{{plan_name}}": formattedPlanName,
+      "{{valor}}": formattedAmount,
+      "{{amount}}": formattedAmount,
       "{{data_renovacao}}": subscriptionEnd || new Date().toLocaleDateString("pt-BR"),
       "{{data_expiracao}}": subscriptionEnd || new Date().toLocaleDateString("pt-BR"),
       "{{data}}": new Date().toLocaleDateString("pt-BR"),
