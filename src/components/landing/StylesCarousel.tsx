@@ -184,58 +184,107 @@ const StylePreviewModal = ({
   }, [isOpen, onNavigate]);
 
   const currentIndex = allStyles.findIndex(s => s.id === style.id);
+  const prevStyle = allStyles[(currentIndex - 1 + allStyles.length) % allStyles.length];
+  const nextStyle = allStyles[(currentIndex + 1) % allStyles.length];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-card border-primary/30 rounded-xl shadow-2xl">
+      <DialogContent className="max-w-4xl p-0 overflow-hidden bg-card border-primary/30 rounded-xl shadow-2xl">
         <div className="relative">
-          {/* Imagem grande com animação */}
-          <div className="relative aspect-video overflow-hidden">
-            <AnimatePresence mode="wait">
-              <motion.img 
-                key={style.id}
-                src={style.image} 
-                alt={style.name}
-                className="w-full h-full object-cover absolute inset-0"
-                initial={{ opacity: 0, scale: 1.05 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              />
-            </AnimatePresence>
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-            
-            {/* Badge categoria com animação */}
-            <div className="absolute top-4 right-4">
-              <AnimatePresence mode="wait">
-                <motion.span 
-                  key={style.category}
-                  className="px-3 py-1.5 text-sm font-semibold bg-primary text-primary-foreground rounded-full shadow-lg inline-block"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {style.category}
-                </motion.span>
-              </AnimatePresence>
-            </div>
-
-            {/* Navigation Arrows */}
-            <button
+          {/* Main image area with side thumbnails */}
+          <div className="relative flex items-stretch">
+            {/* Previous style thumbnail */}
+            <motion.button
               onClick={() => onNavigate('prev')}
-              className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/80 hover:bg-background border border-border/50 shadow-lg transition-all hover:scale-110"
+              className="hidden md:flex flex-col items-center justify-center w-24 bg-background/50 hover:bg-background/80 transition-all group cursor-pointer border-r border-border/30"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               aria-label="Estilo anterior"
             >
-              <ChevronLeft className="w-6 h-6 text-foreground" />
-            </button>
-            <button
+              <div className="relative w-16 h-16 rounded-lg overflow-hidden mb-2 ring-2 ring-transparent group-hover:ring-primary/50 transition-all">
+                <img 
+                  src={prevStyle.image} 
+                  alt={prevStyle.name}
+                  className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+              </div>
+              <ChevronLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors text-center px-1 line-clamp-2 max-w-full leading-tight">
+                {prevStyle.name}
+              </span>
+            </motion.button>
+
+            {/* Main image */}
+            <div className="relative aspect-video flex-1 overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.img 
+                  key={style.id}
+                  src={style.image} 
+                  alt={style.name}
+                  className="w-full h-full object-cover absolute inset-0"
+                  initial={{ opacity: 0, scale: 1.05 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                />
+              </AnimatePresence>
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+              
+              {/* Badge categoria com animação */}
+              <div className="absolute top-4 right-4">
+                <AnimatePresence mode="wait">
+                  <motion.span 
+                    key={style.category}
+                    className="px-3 py-1.5 text-sm font-semibold bg-primary text-primary-foreground rounded-full shadow-lg inline-block"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {style.category}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+
+              {/* Mobile Navigation Arrows */}
+              <button
+                onClick={() => onNavigate('prev')}
+                className="md:hidden absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/80 hover:bg-background border border-border/50 shadow-lg transition-all hover:scale-110"
+                aria-label="Estilo anterior"
+              >
+                <ChevronLeft className="w-6 h-6 text-foreground" />
+              </button>
+              <button
+                onClick={() => onNavigate('next')}
+                className="md:hidden absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/80 hover:bg-background border border-border/50 shadow-lg transition-all hover:scale-110"
+                aria-label="Próximo estilo"
+              >
+                <ChevronRight className="w-6 h-6 text-foreground" />
+              </button>
+            </div>
+
+            {/* Next style thumbnail */}
+            <motion.button
               onClick={() => onNavigate('next')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/80 hover:bg-background border border-border/50 shadow-lg transition-all hover:scale-110"
+              className="hidden md:flex flex-col items-center justify-center w-24 bg-background/50 hover:bg-background/80 transition-all group cursor-pointer border-l border-border/30"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               aria-label="Próximo estilo"
             >
-              <ChevronRight className="w-6 h-6 text-foreground" />
-            </button>
+              <div className="relative w-16 h-16 rounded-lg overflow-hidden mb-2 ring-2 ring-transparent group-hover:ring-primary/50 transition-all">
+                <img 
+                  src={nextStyle.image} 
+                  alt={nextStyle.name}
+                  className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors text-center px-1 line-clamp-2 max-w-full leading-tight">
+                {nextStyle.name}
+              </span>
+            </motion.button>
           </div>
           
           {/* Conteúdo com animação */}
