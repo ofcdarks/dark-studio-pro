@@ -20,9 +20,17 @@ interface ScenePrompt {
   endTimecode?: string;
   generatedImage?: string;
   generatingImage?: boolean;
-  characterName?: string; // Personagem principal nesta cena
-  emotion?: string; // Emoção dominante
-  retentionTrigger?: string; // Gatilho de retenção
+  characterName?: string;
+  emotion?: string;
+  retentionTrigger?: string;
+}
+
+interface RewriteProgress {
+  isRewriting: boolean;
+  sceneNumber: number | null;
+  originalPrompt: string | null;
+  newPrompt: string | null;
+  attemptNumber: number;
 }
 
 interface BackgroundGenerationState {
@@ -38,6 +46,7 @@ interface BackgroundGenerationState {
   failedIndexes: number[];
   rateLimitHit: boolean;
   characters: CharacterDescription[];
+  rewriteProgress: RewriteProgress;
 }
 
 interface BackgroundImageGenerationContextType {
@@ -49,6 +58,14 @@ interface BackgroundImageGenerationContextType {
   syncScenes: (scenes: ScenePrompt[]) => void;
   setCharacters: (characters: CharacterDescription[]) => void;
 }
+
+const initialRewriteProgress: RewriteProgress = {
+  isRewriting: false,
+  sceneNumber: null,
+  originalPrompt: null,
+  newPrompt: null,
+  attemptNumber: 0,
+};
 
 const initialState: BackgroundGenerationState = {
   isGenerating: false,
@@ -63,6 +80,7 @@ const initialState: BackgroundGenerationState = {
   failedIndexes: [],
   rateLimitHit: false,
   characters: [],
+  rewriteProgress: initialRewriteProgress,
 };
 
 const BackgroundImageGenerationContext = createContext<BackgroundImageGenerationContextType | null>(null);
@@ -78,18 +96,71 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
     scenesRef.current = state.scenes;
   }, [state.scenes]);
 
+  // Função para reescrever prompt bloqueado usando IA
+  const rewriteBlockedPrompt = useCallback(async (
+    originalPrompt: string,
+    sceneText: string,
+    attemptNumber: number
+  ): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-assistant", {
+        body: {
+          messages: [
+            {
+              role: "system",
+              content: `Você é um especialista em reescrever prompts de imagem que foram bloqueados por filtros de segurança.
+Sua tarefa é reescrever o prompt mantendo a essência visual, mas removendo qualquer elemento que possa ser considerado sensível.
+
+REGRAS:
+- Mantenha a cena e contexto original
+- Use linguagem descritiva e artística
+- Evite termos relacionados a violência, conteúdo adulto ou elementos controversos
+- Foque em elementos visuais cinematográficos: iluminação, composição, cores, atmosfera
+- Adicione detalhes técnicos: "cinematic lighting", "professional photography", "8K quality"
+- Se houver personagens, descreva-os de forma respeitosa e artística
+
+Retorne APENAS o novo prompt, sem explicações.`
+            },
+            {
+              role: "user",
+              content: `O seguinte prompt foi bloqueado (tentativa ${attemptNumber}):
+
+PROMPT ORIGINAL: "${originalPrompt}"
+
+CONTEXTO DA CENA: "${sceneText}"
+
+Reescreva este prompt de forma segura, mantendo a intenção visual mas evitando bloqueios.`
+            }
+          ],
+          model: "gemini-flash"
+        }
+      });
+
+      if (error) throw error;
+      
+      const newPrompt = data?.content || data?.message;
+      return typeof newPrompt === 'string' ? newPrompt.trim() : null;
+    } catch (err) {
+      console.error('[Background] Failed to rewrite prompt:', err);
+      return null;
+    }
+  }, []);
+
   const generateSingleImage = useCallback(async (
     sceneIndex: number, 
     scenes: ScenePrompt[], 
     style: string,
-    characters: CharacterDescription[]
-  ): Promise<{ index: number; success: boolean; imageUrl?: string; rateLimited?: boolean }> => {
+    characters: CharacterDescription[],
+    updateRewriteProgress?: (progress: Partial<RewriteProgress>) => void
+  ): Promise<{ index: number; success: boolean; imageUrl?: string; rateLimited?: boolean; newPrompt?: string }> => {
     const maxRetries = 3;
+    const maxRewriteAttempts = 2;
     let retries = 0;
+    let rewriteAttempts = 0;
     let lastError = "";
     let wasRateLimited = false;
+    let currentPrompt = scenes[sceneIndex].imagePrompt;
 
-    // Verificar se a cena tem um personagem e obter a seed correspondente
     const scene = scenes[sceneIndex];
     const characterSeed = scene.characterName 
       ? characters.find(c => c.name.toLowerCase() === scene.characterName?.toLowerCase())?.seed
@@ -103,15 +174,15 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
       try {
         const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
         const fullPrompt = stylePrefix
-          ? `${stylePrefix} ${scene.imagePrompt}`
-          : scene.imagePrompt;
+          ? `${stylePrefix} ${currentPrompt}`
+          : currentPrompt;
 
         const { data, error } = await supabase.functions.invoke("generate-imagefx", {
           body: {
             prompt: fullPrompt,
             aspectRatio: "LANDSCAPE",
             numberOfImages: 1,
-            seed: characterSeed, // Usar seed fixa se houver personagem
+            seed: characterSeed,
           },
         });
 
@@ -140,6 +211,39 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
             continue;
           }
           
+          // Detectar bloqueio de conteúdo e tentar reescrever
+          if ((errMsg.includes("blocked") || errMsg.includes("safety") || errMsg.includes("violates") || errMsg.includes("bloqueado") || errMsg.includes("política")) && rewriteAttempts < maxRewriteAttempts) {
+            rewriteAttempts++;
+            console.log(`[Background] Scene ${sceneIndex} blocked, attempting rewrite ${rewriteAttempts}/${maxRewriteAttempts}`);
+            
+            // Atualizar estado de reescrita
+            if (updateRewriteProgress) {
+              updateRewriteProgress({
+                isRewriting: true,
+                sceneNumber: scene.number,
+                originalPrompt: currentPrompt,
+                attemptNumber: rewriteAttempts,
+              });
+            }
+            
+            const rewrittenPrompt = await rewriteBlockedPrompt(currentPrompt, scene.text, rewriteAttempts);
+            
+            if (rewrittenPrompt) {
+              console.log(`[Background] Scene ${sceneIndex} rewritten prompt:`, rewrittenPrompt.substring(0, 100));
+              currentPrompt = rewrittenPrompt;
+              
+              if (updateRewriteProgress) {
+                updateRewriteProgress({
+                  newPrompt: rewrittenPrompt,
+                });
+              }
+              
+              // Aguardar um pouco antes de tentar novamente
+              await new Promise(resolve => setTimeout(resolve, 1500));
+              continue; // Tentar novamente com o novo prompt
+            }
+          }
+          
           const waitTime = 2000 + retries * 1000;
           await new Promise(resolve => setTimeout(resolve, waitTime));
           retries++;
@@ -163,6 +267,36 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
             continue;
           }
           
+          // Detectar bloqueio de conteúdo e tentar reescrever
+          if ((errMsg.includes("blocked") || errMsg.includes("safety") || errMsg.includes("violates") || errMsg.includes("bloqueado") || errMsg.includes("política")) && rewriteAttempts < maxRewriteAttempts) {
+            rewriteAttempts++;
+            console.log(`[Background] Scene ${sceneIndex} blocked (data error), attempting rewrite ${rewriteAttempts}/${maxRewriteAttempts}`);
+            
+            if (updateRewriteProgress) {
+              updateRewriteProgress({
+                isRewriting: true,
+                sceneNumber: scene.number,
+                originalPrompt: currentPrompt,
+                attemptNumber: rewriteAttempts,
+              });
+            }
+            
+            const rewrittenPrompt = await rewriteBlockedPrompt(currentPrompt, scene.text, rewriteAttempts);
+            
+            if (rewrittenPrompt) {
+              currentPrompt = rewrittenPrompt;
+              
+              if (updateRewriteProgress) {
+                updateRewriteProgress({
+                  newPrompt: rewrittenPrompt,
+                });
+              }
+              
+              await new Promise(resolve => setTimeout(resolve, 1500));
+              continue;
+            }
+          }
+          
           retries++;
           await new Promise(resolve => setTimeout(resolve, 2000));
           continue;
@@ -170,7 +304,24 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
 
         const url = (data as any)?.images?.[0]?.url;
         if (url) {
-          return { index: sceneIndex, success: true, imageUrl: url };
+          // Limpar estado de reescrita
+          if (updateRewriteProgress) {
+            updateRewriteProgress({
+              isRewriting: false,
+              sceneNumber: null,
+              originalPrompt: null,
+              newPrompt: null,
+              attemptNumber: 0,
+            });
+          }
+          
+          // Retornar o novo prompt se foi reescrito
+          return { 
+            index: sceneIndex, 
+            success: true, 
+            imageUrl: url,
+            newPrompt: currentPrompt !== scene.imagePrompt ? currentPrompt : undefined
+          };
         }
         
         retries++;
@@ -183,9 +334,20 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
       }
     }
     
+    // Limpar estado de reescrita em caso de falha
+    if (updateRewriteProgress) {
+      updateRewriteProgress({
+        isRewriting: false,
+        sceneNumber: null,
+        originalPrompt: null,
+        newPrompt: null,
+        attemptNumber: 0,
+      });
+    }
+    
     console.warn(`[Background] Scene ${sceneIndex} failed after ${maxRetries} retries: ${lastError}`);
     return { index: sceneIndex, success: false, rateLimited: wasRateLimited };
-  }, []);
+  }, [rewriteBlockedPrompt]);
 
   const startGeneration = useCallback(async (
     scenes: ScenePrompt[], 
@@ -217,6 +379,7 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
       failedIndexes: [],
       rateLimitHit: false,
       characters,
+      rewriteProgress: initialRewriteProgress,
     });
 
     const BATCH_SIZE = 5;
@@ -237,18 +400,26 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
           if (cancelRef.current || errorOccurred) return;
 
           try {
-            const result = await generateSingleImage(idx, scenesRef.current, style, characters);
+            // Função para atualizar estado de reescrita
+            const updateRewriteProgress = (progress: Partial<RewriteProgress>) => {
+              setState(prev => ({
+                ...prev,
+                rewriteProgress: { ...prev.rewriteProgress, ...progress }
+              }));
+            };
+
+            const result = await generateSingleImage(idx, scenesRef.current, style, characters, updateRewriteProgress);
 
             if (cancelRef.current || errorOccurred) return;
 
             if (result.success && result.imageUrl) {
-              const { index, imageUrl } = result;
+              const { index, imageUrl, newPrompt } = result;
               processed++;
 
               // Salvar no IndexedDB para persistência
               const scene = scenesRef.current[index];
               if (scene) {
-                saveImageToCache(scene.number, imageUrl, scene.imagePrompt || '').catch(err => {
+                saveImageToCache(scene.number, imageUrl, newPrompt || scene.imagePrompt || '').catch(err => {
                   console.warn('Falha ao salvar imagem no cache:', err);
                 });
               }
@@ -256,7 +427,12 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
               // Atualizar estado imediatamente quando cada imagem fica pronta
               setState(prev => {
                 const updatedScenes = [...prev.scenes];
-                updatedScenes[index] = { ...updatedScenes[index], generatedImage: imageUrl };
+                updatedScenes[index] = { 
+                  ...updatedScenes[index], 
+                  generatedImage: imageUrl,
+                  // Se o prompt foi reescrito, atualizar também
+                  ...(newPrompt ? { imagePrompt: newPrompt } : {})
+                };
                 scenesRef.current = updatedScenes;
 
                 return {
@@ -265,6 +441,7 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
                   completedImages: processed,
                   currentSceneIndex: index,
                   currentPrompt: updatedScenes[index]?.imagePrompt ?? null,
+                  rewriteProgress: initialRewriteProgress, // Limpar após sucesso
                 };
               });
             } else {
@@ -280,6 +457,7 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
                 failedImages: failed,
                 failedIndexes: [...failedIdxs],
                 rateLimitHit: rateLimitEncountered,
+                rewriteProgress: initialRewriteProgress, // Limpar após falha
               }));
             }
           } catch (error: any) {
@@ -317,6 +495,7 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
       startTime: null,
       failedIndexes: failedIdxs,
       rateLimitHit: rateLimitEncountered,
+      rewriteProgress: initialRewriteProgress,
     }));
 
     if (cancelRef.current) {

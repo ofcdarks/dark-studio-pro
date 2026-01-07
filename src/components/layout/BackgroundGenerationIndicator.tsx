@@ -1,7 +1,7 @@
 import { useBackgroundImageGeneration } from "@/hooks/useBackgroundImageGeneration";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { X, Image, Loader2 } from "lucide-react";
+import { X, Image, Loader2, Sparkles, Wand2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export const BackgroundGenerationIndicator = () => {
@@ -29,6 +29,8 @@ export const BackgroundGenerationIndicator = () => {
     return `${mins}m ${secs}s`;
   };
 
+  const { rewriteProgress } = state;
+
   return (
     <div 
       className="fixed bottom-4 right-4 z-50 bg-card border border-primary/30 rounded-lg shadow-lg p-4 w-80 cursor-pointer hover:border-primary/50 transition-colors"
@@ -37,11 +39,20 @@ export const BackgroundGenerationIndicator = () => {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Image className="h-5 w-5 text-primary" />
-            <Loader2 className="h-3 w-3 text-primary animate-spin absolute -top-1 -right-1" />
+            {rewriteProgress.isRewriting ? (
+              <Sparkles className="h-5 w-5 text-amber-500 animate-pulse" />
+            ) : (
+              <>
+                <Image className="h-5 w-5 text-primary" />
+                <Loader2 className="h-3 w-3 text-primary animate-spin absolute -top-1 -right-1" />
+              </>
+            )}
           </div>
           <span className="text-sm font-medium text-foreground">
-            Gerando imagens em background
+            {rewriteProgress.isRewriting 
+              ? `Reescrevendo prompt #${rewriteProgress.sceneNumber}`
+              : 'Gerando imagens em background'
+            }
           </span>
         </div>
         <Button
@@ -57,6 +68,28 @@ export const BackgroundGenerationIndicator = () => {
         </Button>
       </div>
 
+      {/* Indicador de reescrita de prompt bloqueado */}
+      {rewriteProgress.isRewriting && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 mb-2">
+          <div className="flex items-center gap-2 mb-1">
+            <Wand2 className="h-3.5 w-3.5 text-amber-500" />
+            <span className="text-xs font-medium text-amber-500">
+              IA reescrevendo prompt bloqueado (tentativa {rewriteProgress.attemptNumber}/2)
+            </span>
+          </div>
+          {rewriteProgress.originalPrompt && (
+            <p className="text-[10px] text-muted-foreground line-clamp-1">
+              Original: "{rewriteProgress.originalPrompt.substring(0, 40)}..."
+            </p>
+          )}
+          {rewriteProgress.newPrompt && (
+            <p className="text-[10px] text-amber-400/80 line-clamp-1 mt-0.5">
+              Novo: "{rewriteProgress.newPrompt.substring(0, 40)}..."
+            </p>
+          )}
+        </div>
+      )}
+
       <Progress value={percentage} className="h-2 mb-2" />
 
       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -67,7 +100,7 @@ export const BackgroundGenerationIndicator = () => {
         )}
       </div>
 
-      {state.currentPrompt && (
+      {state.currentPrompt && !rewriteProgress.isRewriting && (
         <p className="text-xs text-muted-foreground mt-2 line-clamp-1 italic">
           "{state.currentPrompt.substring(0, 50)}..."
         </p>
