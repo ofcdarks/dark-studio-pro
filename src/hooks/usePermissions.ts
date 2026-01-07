@@ -17,7 +17,8 @@ export type PermissionKey =
   | "analisador_canal"
   | "conversor_srt"
   | "analytics"
-  | "pastas";
+  | "pastas"
+  | "usar_api_propria";
 
 interface Permissions {
   [key: string]: boolean;
@@ -67,6 +68,7 @@ export function usePermissions(): UsePermissionsReturn {
             conversor_srt: true,
             analytics: true,
             pastas: true,
+            usar_api_propria: true,
           });
           setLoading(false);
           return;

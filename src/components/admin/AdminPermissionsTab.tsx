@@ -52,6 +52,7 @@ const FEATURES = [
   { key: "conversor_srt", label: "Conversor SRT", route: "/srt", description: "Conversão de legendas" },
   { key: "analytics", label: "Analytics da Plataforma", route: "/analytics", description: "Métricas e gráficos" },
   { key: "pastas", label: "Pastas", route: "/folders", description: "Organização de conteúdo" },
+  { key: "usar_api_propria", label: "Usar API Própria", route: "/settings", description: "Configurar chaves OpenAI/Gemini" },
 ];
 
 export const AdminPermissionsTab = () => {
