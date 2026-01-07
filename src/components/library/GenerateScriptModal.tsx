@@ -358,7 +358,7 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto bg-card border-primary/30">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-card border-primary/30">
         {/* Loading Overlay - PADRONIZADO */}
         {generating && (
           <div className="absolute inset-0 bg-background/98 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-lg p-8">
