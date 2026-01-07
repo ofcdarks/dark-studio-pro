@@ -54,6 +54,8 @@ import {
   FileSpreadsheet,
   Download,
   Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -100,6 +102,8 @@ export function AdminMigrationTab() {
   const [csvData, setCsvData] = useState<Array<{ email: string; full_name: string; plan_name: string; credits_amount: number }>>([]);
   const [importingCsv, setImportingCsv] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   
   const [newInvite, setNewInvite] = useState({
     email: "",
@@ -437,6 +441,19 @@ export function AdminMigrationTab() {
     );
   });
 
+  // Pagination
+  const totalPages = Math.ceil(filteredInvites.length / itemsPerPage);
+  const paginatedInvites = filteredInvites.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to page 1 when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
   const stats = {
     total: invites.length,
     pending: invites.filter(i => i.status === "pending").length,
@@ -514,7 +531,7 @@ export function AdminMigrationTab() {
           <Input
             placeholder="Buscar por email ou nome..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10"
           />
         </div>
@@ -540,14 +557,14 @@ export function AdminMigrationTab() {
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
-              ) : filteredInvites.length === 0 ? (
+              ) : paginatedInvites.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     {searchQuery ? "Nenhum convite encontrado para essa busca" : "Nenhum convite encontrado"}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredInvites.map((invite) => (
+                paginatedInvites.map((invite) => (
                   <TableRow key={invite.id}>
                     <TableCell className="font-medium">{invite.email}</TableCell>
                     <TableCell>{invite.full_name || "-"}</TableCell>
@@ -616,6 +633,36 @@ export function AdminMigrationTab() {
             </TableBody>
           </Table>
         </ScrollArea>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-4 border-t">
+            <p className="text-sm text-muted-foreground">
+              Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredInvites.length)} de {filteredInvites.length} convites
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Add Invite Modal */}
