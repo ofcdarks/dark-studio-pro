@@ -1225,12 +1225,12 @@ const Analytics = () => {
     const BadgeIcon = config.icon;
 
     return (
-      <Card className="p-5 relative overflow-hidden">
-        <div className="flex items-center gap-3 mb-3">
-          <div className={`w-10 h-10 rounded-lg bg-${color}/10 flex items-center justify-center`}>
-            <Icon className={`w-5 h-5 text-${color}`} />
+      <Card className="p-3 md:p-5 relative overflow-hidden">
+        <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+          <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg bg-${color}/10 flex items-center justify-center`}>
+            <Icon className={`w-4 h-4 md:w-5 md:h-5 text-${color}`} />
           </div>
-          <span className="text-muted-foreground text-sm flex items-center gap-1">
+          <span className="text-muted-foreground text-xs md:text-sm flex items-center gap-1">
             {label}
             {tooltip && (
               <TooltipProvider>
@@ -1246,13 +1246,13 @@ const Analytics = () => {
             )}
           </span>
         </div>
-        <p className="text-3xl font-bold text-foreground">{value}</p>
-        {subvalue && <p className="text-sm text-muted-foreground mt-1">{subvalue}</p>}
+        <p className="text-xl md:text-3xl font-bold text-foreground">{value}</p>
+        {subvalue && <p className="text-xs md:text-sm text-muted-foreground mt-1">{subvalue}</p>}
         
         {badge && (
-          <div className={`mt-3 flex items-center gap-2 p-2 rounded-lg ${config.bg} border ${config.border}`}>
-            <BadgeIcon className={`w-4 h-4 ${config.color} flex-shrink-0`} />
-            <span className="text-xs text-muted-foreground">{badge}</span>
+          <div className={`mt-2 md:mt-3 flex items-center gap-2 p-1.5 md:p-2 rounded-lg ${config.bg} border ${config.border}`}>
+            <BadgeIcon className={`w-3 h-3 md:w-4 md:h-4 ${config.color} flex-shrink-0`} />
+            <span className="text-[10px] md:text-xs text-muted-foreground line-clamp-2">{badge}</span>
           </div>
         )}
       </Card>
@@ -1285,14 +1285,14 @@ const Analytics = () => {
         noindex={true}
       />
       <PermissionGate permission="analytics" featureName="Analytics">
-      <div className="flex-1 overflow-auto p-6 lg:p-8">
+      <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8 flex items-start justify-between">
+          <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Analytics do YouTube</h1>
-              <p className="text-muted-foreground">
-                Estatísticas e métricas do seu canal do YouTube
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">Analytics do YouTube</h1>
+              <p className="text-sm md:text-base text-muted-foreground">
+                Estatísticas e métricas do seu canal
               </p>
             </div>
             <TutorialHelpButton onClick={openTutorial} />
@@ -1316,15 +1316,16 @@ const Analytics = () => {
 
           {/* Saved Channels */}
           {savedChannels && savedChannels.length > 0 && (
-            <Card className="p-6 mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  <Star className="w-5 h-5 text-amber-500" />
-                  Canais Fixados ({savedChannels.length}/5)
+            <Card className="p-4 md:p-6 mb-6 md:mb-8">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <h2 className="text-base md:text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Star className="w-4 h-4 md:w-5 md:h-5 text-amber-500" />
+                  <span className="hidden sm:inline">Canais Fixados</span>
+                  <span className="sm:hidden">Fixados</span> ({savedChannels.length}/5)
                 </h2>
-                <span className="text-xs text-muted-foreground">Arraste para reordenar</span>
+                <span className="text-xs text-muted-foreground hidden sm:inline">Arraste para reordenar</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
                 {savedChannels.map((channel) => (
                   <div
                     key={channel.id}
@@ -1376,46 +1377,47 @@ const Analytics = () => {
           )}
 
           {/* Channel Input */}
-          <Card className="p-6 mb-8">
-            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Youtube className="w-5 h-5 text-red-500" />
+          <Card className="p-4 md:p-6 mb-6 md:mb-8">
+            <h2 className="text-base md:text-lg font-semibold text-foreground mb-3 md:mb-4 flex items-center gap-2">
+              <Youtube className="w-4 h-4 md:w-5 md:h-5 text-red-500" />
               Selecione o Canal
             </h2>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="https://www.youtube.com/@seucanal"
-                  value={channelUrl}
-                  onChange={(e) => setChannelUrl(e.target.value)}
-                  className="bg-secondary border-border"
-                />
-              </div>
-              {monitoredChannels && monitoredChannels.length > 0 && (
-                <Select onValueChange={(value) => setChannelUrl(value)}>
-                  <SelectTrigger className="w-full sm:w-[200px]">
-                    <SelectValue placeholder="Canais monitorados" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {monitoredChannels.map((channel) => (
-                      <SelectItem key={channel.id} value={channel.channel_url}>
-                        {channel.channel_name || "Canal"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <Button
-                onClick={fetchAnalytics}
-                disabled={isAnalyzing || !hasApiKey}
-                className="flex items-center gap-2"
-              >
-                {isAnalyzing ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
+            <div className="flex flex-col gap-3">
+              <Input
+                placeholder="https://www.youtube.com/@seucanal"
+                value={channelUrl}
+                onChange={(e) => setChannelUrl(e.target.value)}
+                className="bg-secondary border-border"
+              />
+              <div className="flex flex-col sm:flex-row gap-3">
+                {monitoredChannels && monitoredChannels.length > 0 && (
+                  <Select onValueChange={(value) => setChannelUrl(value)}>
+                    <SelectTrigger className="w-full sm:w-[200px]">
+                      <SelectValue placeholder="Canais monitorados" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {monitoredChannels.map((channel) => (
+                        <SelectItem key={channel.id} value={channel.channel_url}>
+                          {channel.channel_name || "Canal"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
-                Buscar Analytics
-              </Button>
+                <Button
+                  onClick={fetchAnalytics}
+                  disabled={isAnalyzing || !hasApiKey}
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto"
+                >
+                  {isAnalyzing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  <span className="hidden sm:inline">Buscar Analytics</span>
+                  <span className="sm:hidden">Buscar</span>
+                </Button>
+              </div>
             </div>
           </Card>
 
@@ -1423,18 +1425,18 @@ const Analytics = () => {
           {analyticsData ? (
             <>
               {/* Channel Header */}
-              <Card className="p-6 mb-8">
-                <div className="flex items-start gap-4">
+              <Card className="p-4 md:p-6 mb-6 md:mb-8">
+                <div className="flex flex-col sm:flex-row items-start gap-4">
                   {analyticsData.channel.thumbnail && (
                     <img
                       src={analyticsData.channel.thumbnail}
                       alt={analyticsData.channel.name}
-                      className="w-20 h-20 rounded-full object-cover"
+                      className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover mx-auto sm:mx-0"
                     />
                   )}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      <h2 className="text-2xl font-bold text-foreground">
+                  <div className="flex-1 text-center sm:text-left">
+                    <div className="flex items-center justify-center sm:justify-start gap-2 md:gap-3 mb-2 flex-wrap">
+                      <h2 className="text-xl md:text-2xl font-bold text-foreground">
                         {analyticsData.channel.name}
                       </h2>
                       <a
@@ -1508,36 +1510,36 @@ const Analytics = () => {
                       {analyticsData.channel.description || "Sem descrição"}
                     </p>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto mt-3 sm:mt-0">
                     <Button
                       onClick={fetchAnalytics}
                       variant="outline"
                       size="sm"
                       disabled={isAnalyzing}
-                      className="flex items-center gap-2"
+                      className="flex items-center justify-center gap-2"
                     >
                       {isAnalyzing ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <RefreshCw className="w-4 h-4" />
                       )}
-                      Recarregar
+                      <span className="hidden md:inline">Recarregar</span>
                     </Button>
                     <Button
                       onClick={isChannelSaved ? () => unsaveChannel(channelUrl) : saveChannel}
                       variant={isChannelSaved ? "secondary" : "default"}
                       size="sm"
-                      className="flex items-center gap-2"
+                      className="flex items-center justify-center gap-2"
                     >
                       {isChannelSaved ? (
                         <>
                           <PinOff className="w-4 h-4" />
-                          Desfixar
+                          <span className="hidden md:inline">Desfixar</span>
                         </>
                       ) : (
                         <>
                           <Pin className="w-4 h-4" />
-                          Fixar ({savedChannels?.length || 0}/5)
+                          <span className="hidden md:inline">Fixar ({savedChannels?.length || 0}/5)</span>
                         </>
                       )}
                     </Button>
@@ -1545,19 +1547,19 @@ const Analytics = () => {
                       onClick={exportToCSV}
                       variant="outline"
                       size="sm"
-                      className="flex items-center gap-2"
+                      className="flex items-center justify-center gap-2"
                     >
                       <Download className="w-4 h-4" />
-                      CSV
+                      <span className="hidden md:inline">CSV</span>
                     </Button>
                     <Button
                       onClick={exportWeeklyPDF}
                       variant="outline"
                       size="sm"
-                      className="flex items-center gap-2"
+                      className="flex items-center justify-center gap-2"
                     >
                       <FileText className="w-4 h-4" />
-                      Relatório PDF
+                      <span className="hidden md:inline">PDF</span>
                     </Button>
                   </div>
                 </div>
@@ -3729,7 +3731,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
               </Card>
 
               {/* Main Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
                 <StatCard
                   icon={Users}
                   label="Inscritos"
@@ -3740,10 +3742,10 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                   }
                   badge={
                     analyticsData.statistics.subscribers >= 100000 
-                      ? "Excelente base! Continue engajando" 
+                      ? "Excelente base!" 
                       : analyticsData.statistics.subscribers >= 10000 
-                        ? "Bom crescimento! Foque em SEO" 
-                        : "Dica: Peça inscrições no início dos vídeos"
+                        ? "Bom crescimento!" 
+                        : "Peça inscrições no início"
                   }
                   badgeType={analyticsData.statistics.subscribers >= 100000 ? "good" : analyticsData.statistics.subscribers >= 10000 ? "tip" : "warning"}
                 />
@@ -3753,73 +3755,73 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                   value={formatNumber(analyticsData.statistics.totalViews)}
                   badge={
                     analyticsData.statistics.totalViews >= 10000000 
-                      ? "Canal com alto alcance!" 
-                      : "Dica: Otimize títulos e thumbnails"
+                      ? "Alto alcance!" 
+                      : "Otimize títulos"
                   }
                   badgeType={analyticsData.statistics.totalViews >= 10000000 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={Video}
-                  label="Total de Vídeos"
+                  label="Total Vídeos"
                   value={formatNumber(analyticsData.statistics.totalVideos)}
                   badge={
                     analyticsData.statistics.totalVideos >= 100 
-                      ? "Boa consistência de uploads!" 
-                      : "Dica: Poste pelo menos 2x por semana"
+                      ? "Boa consistência!" 
+                      : "Poste 2x/semana"
                   }
                   badgeType={analyticsData.statistics.totalVideos >= 100 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={TrendingUp}
-                  label="Engajamento Médio"
+                  label="Engajamento"
                   value={`${analyticsData.recentMetrics.avgEngagementRate}%`}
                   subvalue="Últimos 50 vídeos"
                   badge={
                     analyticsData.recentMetrics.avgEngagementRate >= 5 
-                      ? "Engajamento excelente!" 
+                      ? "Excelente!" 
                       : analyticsData.recentMetrics.avgEngagementRate >= 2 
-                        ? "Bom! Incentive comentários" 
-                        : "Melhorar: CTAs e interação"
+                        ? "Bom!" 
+                        : "Melhorar CTAs"
                   }
                   badgeType={analyticsData.recentMetrics.avgEngagementRate >= 5 ? "good" : analyticsData.recentMetrics.avgEngagementRate >= 2 ? "tip" : "warning"}
                 />
               </div>
 
               {/* Monetization Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
                 <StatCard
                   icon={DollarSign}
-                  label="RPM Estimado"
+                  label="RPM Est."
                   value={`$${analyticsData.monetization?.estimatedRPM?.toFixed(2) || "2.50"}`}
                   subvalue="Por 1000 views"
-                  tooltip="RPM médio estimado baseado em dados de mercado. Valores reais variam conforme nicho, região e tipo de conteúdo."
+                  tooltip="RPM médio estimado baseado em dados de mercado."
                   badge={
                     (analyticsData.monetization?.estimatedRPM || 2.5) >= 4 
-                      ? "RPM acima da média!" 
-                      : "Dica: Nichos de finanças e tech pagam mais"
+                      ? "Acima da média!" 
+                      : "Tech/Finanças pagam mais"
                   }
                   badgeType={(analyticsData.monetization?.estimatedRPM || 2.5) >= 4 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={DollarSign}
-                  label="Faturamento Mensal Est."
+                  label="Mensal Est."
                   value={`$${formatNumber(analyticsData.monetization?.estimatedTotalEarnings || 0)}`}
-                  subvalue="Baseado em views mensais"
-                  tooltip="Estimativa baseada nos views mensais recentes × RPM médio. Dados reais de monetização só estão disponíveis no YouTube Studio."
+                  subvalue="Views mensais"
+                  tooltip="Estimativa baseada nos views mensais."
                   badge={
                     (analyticsData.monetization?.estimatedTotalEarnings || 0) >= 1000 
-                      ? "Receita mensal sólida!" 
-                      : "Dica: Diversifique com produtos/afiliados"
+                      ? "Receita sólida!" 
+                      : "Diversifique"
                   }
                   badgeType={(analyticsData.monetization?.estimatedTotalEarnings || 0) >= 1000 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={DollarSign}
-                  label="Faturamento Recente Est."
+                  label="Recente Est."
                   value={`$${formatNumber(analyticsData.monetization?.estimatedMonthlyEarnings || 0)}`}
-                  subvalue={`Últimos ${analyticsData.recentMetrics.analyzedVideos} vídeos`}
-                  tooltip="Estimativa baseada nos views dos últimos vídeos analisados."
-                  badge="Aumente views = mais receita"
+                  subvalue={`${analyticsData.recentMetrics.analyzedVideos} vídeos`}
+                  tooltip="Estimativa baseada nos últimos vídeos."
+                  badge="+ Views = + Receita"
                   badgeType="tip"
                 />
                 <StatCard
@@ -3829,8 +3831,8 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                   subvalue={`${analyticsData.recentMetrics.analyzedVideos} vídeos`}
                   badge={
                     analyticsData.recentMetrics.avgViewsPerVideo >= analyticsData.statistics.totalViews / analyticsData.statistics.totalVideos 
-                      ? "Performance acima da média!" 
-                      : "Dica: Analise títulos dos top vídeos"
+                      ? "Acima da média!" 
+                      : "Analise top vídeos"
                   }
                   badgeType={
                     analyticsData.recentMetrics.avgViewsPerVideo >= analyticsData.statistics.totalViews / analyticsData.statistics.totalVideos 
@@ -3840,56 +3842,56 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
               </div>
 
               {/* Recent Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
                 <StatCard
                   icon={Eye}
-                  label="Média de Views"
+                  label="Média Views"
                   value={formatNumber(analyticsData.recentMetrics.avgViewsPerVideo)}
                   subvalue="Por vídeo"
                   badge={
                     analyticsData.recentMetrics.avgViewsPerVideo >= 50000 
-                      ? "Excelente alcance!" 
+                      ? "Excelente!" 
                       : analyticsData.recentMetrics.avgViewsPerVideo >= 10000 
-                        ? "Bom! Foque em retenção" 
-                        : "Dica: Melhore CTR com thumbs"
+                        ? "Bom!" 
+                        : "Melhore thumbs"
                   }
                   badgeType={analyticsData.recentMetrics.avgViewsPerVideo >= 50000 ? "good" : analyticsData.recentMetrics.avgViewsPerVideo >= 10000 ? "tip" : "warning"}
                 />
                 <StatCard
                   icon={ThumbsUp}
-                  label="Média de Likes"
+                  label="Média Likes"
                   value={formatNumber(analyticsData.recentMetrics.avgLikesPerVideo)}
                   subvalue="Por vídeo"
                   badge={
                     (analyticsData.recentMetrics.avgLikesPerVideo / analyticsData.recentMetrics.avgViewsPerVideo * 100) >= 4 
-                      ? "Ótima taxa de likes!" 
-                      : "Dica: Peça likes no meio do vídeo"
+                      ? "Ótima taxa!" 
+                      : "Peça likes"
                   }
                   badgeType={(analyticsData.recentMetrics.avgLikesPerVideo / analyticsData.recentMetrics.avgViewsPerVideo * 100) >= 4 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={MessageSquare}
-                  label="Média de Comentários"
+                  label="Média Coments"
                   value={formatNumber(analyticsData.recentMetrics.avgCommentsPerVideo)}
                   subvalue="Por vídeo"
                   badge={
                     analyticsData.recentMetrics.avgCommentsPerVideo >= 100 
-                      ? "Comunidade engajada!" 
-                      : "Dica: Faça perguntas nos vídeos"
+                      ? "Engajado!" 
+                      : "Faça perguntas"
                   }
                   badgeType={analyticsData.recentMetrics.avgCommentsPerVideo >= 100 ? "good" : "tip"}
                 />
                 <StatCard
                   icon={TrendingUp}
-                  label="Taxa de Engajamento"
+                  label="Engajamento"
                   value={`${analyticsData.recentMetrics.avgEngagementRate}%`}
-                  subvalue="(Likes + Comments) / Views"
+                  subvalue="(Likes+Coments)/Views"
                   badge={
                     analyticsData.recentMetrics.avgEngagementRate >= 6 
-                      ? "Top 10% em engajamento!" 
+                      ? "Top 10%!" 
                       : analyticsData.recentMetrics.avgEngagementRate >= 3 
-                        ? "Acima da média do YouTube" 
-                        : "Melhore CTAs e storytelling"
+                        ? "Acima da média" 
+                        : "Melhore CTAs"
                   }
                   badgeType={analyticsData.recentMetrics.avgEngagementRate >= 6 ? "good" : analyticsData.recentMetrics.avgEngagementRate >= 3 ? "tip" : "warning"}
                 />
@@ -3961,7 +3963,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
                       <GrowthIndicator 
                         value={viewsGrowth} 
                         label="Views" 
@@ -3970,7 +3972,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                       />
                       <GrowthIndicator 
                         value={videosGrowth} 
-                        label="Vídeos Postados" 
+                        label="Vídeos" 
                         current={currentMonth.videos} 
                         previous={previousMonth.videos} 
                       />
@@ -3982,7 +3984,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                       />
                       <GrowthIndicator 
                         value={avgViewsGrowth} 
-                        label="Média Views/Vídeo" 
+                        label="Média/Vídeo" 
                         current={currentMonth.avgViews} 
                         previous={previousMonth.avgViews} 
                       />
@@ -4023,14 +4025,14 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
               })()}
 
               {/* Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
                 {/* Views Trend */}
-                <Card className="p-6">
-                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                    Tendência de Views por Mês
+                <Card className="p-4 md:p-6">
+                  <h3 className="font-semibold text-foreground mb-3 md:mb-4 flex items-center gap-2 text-sm md:text-base">
+                    <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                    Views por Mês
                   </h3>
-                  <div className="h-64">
+                  <div className="h-48 md:h-64">
                     {analyticsData.trendsData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={analyticsData.trendsData}>
@@ -4044,14 +4046,16 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                           <XAxis
                             dataKey="month"
                             stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
+                            fontSize={10}
                             tickLine={false}
+                            tick={{ fontSize: 10 }}
                           />
                           <YAxis
                             stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
+                            fontSize={10}
                             tickLine={false}
                             tickFormatter={(v) => formatNumber(v)}
+                            width={50}
                           />
                           <Tooltip content={<CustomTooltip />} />
                           <Area
@@ -4065,7 +4069,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                         </AreaChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                         Sem dados suficientes
                       </div>
                     )}
@@ -4073,12 +4077,12 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                 </Card>
 
                 {/* Videos per Month */}
-                <Card className="p-6">
-                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Video className="w-5 h-5 text-primary" />
-                    Vídeos Publicados por Mês
+                <Card className="p-4 md:p-6">
+                  <h3 className="font-semibold text-foreground mb-3 md:mb-4 flex items-center gap-2 text-sm md:text-base">
+                    <Video className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                    Vídeos por Mês
                   </h3>
-                  <div className="h-64">
+                  <div className="h-48 md:h-64">
                     {analyticsData.trendsData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={analyticsData.trendsData}>
@@ -4086,14 +4090,16 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                           <XAxis
                             dataKey="month"
                             stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
+                            fontSize={10}
                             tickLine={false}
+                            tick={{ fontSize: 10 }}
                           />
                           <YAxis
                             stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
+                            fontSize={10}
                             tickLine={false}
                             allowDecimals={false}
+                            width={30}
                           />
                           <Tooltip content={<CustomTooltip />} />
                           <Bar
@@ -4105,7 +4111,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                         </BarChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                         Sem dados suficientes
                       </div>
                     )}
@@ -4114,31 +4120,31 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
               </div>
 
               {/* Top Videos - Split into Most Viewed and Most Recent */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
                 {/* Most Viewed */}
-                <Card className="p-6">
-                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Flame className="w-5 h-5 text-orange-500" />
+                <Card className="p-4 md:p-6">
+                  <h3 className="font-semibold text-foreground mb-3 md:mb-4 flex items-center gap-2 text-sm md:text-base">
+                    <Flame className="w-4 h-4 md:w-5 md:h-5 text-orange-500" />
                     Top 5 Mais Vistos
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-2 md:space-y-3">
                     {analyticsData.topVideos
                       .sort((a, b) => b.views - a.views)
                       .slice(0, 5)
                       .map((video, index) => (
                         <div
                           key={video.videoId}
-                          className="flex gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                          className="flex gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
                         >
                           <div className="relative flex-shrink-0">
-                            <span className={`absolute -top-2 -left-2 w-6 h-6 rounded-full ${index === 0 ? 'bg-amber-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-700' : 'bg-primary'} text-primary-foreground text-xs font-bold flex items-center justify-center`}>
+                            <span className={`absolute -top-1.5 -left-1.5 md:-top-2 md:-left-2 w-5 h-5 md:w-6 md:h-6 rounded-full ${index === 0 ? 'bg-amber-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-700' : 'bg-primary'} text-primary-foreground text-[10px] md:text-xs font-bold flex items-center justify-center`}>
                               {index + 1}
                             </span>
                             {video.thumbnail && (
                               <img
                                 src={video.thumbnail}
                                 alt={video.title}
-                                className="w-24 h-14 object-cover rounded"
+                                className="w-16 h-10 md:w-24 md:h-14 object-cover rounded"
                               />
                             )}
                           </div>
@@ -4147,11 +4153,11 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                               href={`https://www.youtube.com/watch?v=${video.videoId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm font-medium text-foreground hover:text-primary line-clamp-2"
+                              className="text-xs md:text-sm font-medium text-foreground hover:text-primary line-clamp-2"
                             >
                               {video.title}
                             </a>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2 md:gap-3 mt-1 text-[10px] md:text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Eye className="w-3 h-3" />
                                 {formatNumber(video.views)}
@@ -4160,7 +4166,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                                 <ThumbsUp className="w-3 h-3" />
                                 {formatNumber(video.likes)}
                               </span>
-                              <span className="flex items-center gap-1">
+                              <span className="hidden sm:flex items-center gap-1">
                                 <TrendingUp className="w-3 h-3" />
                                 {video.engagementRate}%
                               </span>
@@ -4172,29 +4178,29 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                 </Card>
 
                 {/* Most Recent */}
-                <Card className="p-6">
-                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-blue-500" />
-                    5 Vídeos Mais Recentes
+                <Card className="p-4 md:p-6">
+                  <h3 className="font-semibold text-foreground mb-3 md:mb-4 flex items-center gap-2 text-sm md:text-base">
+                    <Clock className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
+                    5 Mais Recentes
                   </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-2 md:space-y-3">
                       {(analyticsData.allVideos?.length ? [...analyticsData.allVideos] : [...analyticsData.topVideos])
                         .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
                         .slice(0, 5)
                         .map((video, index) => (
                           <div
                             key={video.videoId}
-                            className="flex gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                            className="flex gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
                           >
                             <div className="relative flex-shrink-0">
-                              <span className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">
+                              <span className="absolute -top-1.5 -left-1.5 md:-top-2 md:-left-2 w-5 h-5 md:w-6 md:h-6 rounded-full bg-blue-500 text-white text-[10px] md:text-xs font-bold flex items-center justify-center">
                                 {index + 1}
                               </span>
                               {video.thumbnail && (
                                 <img
                                   src={video.thumbnail}
                                   alt={video.title}
-                                  className="w-24 h-14 object-cover rounded"
+                                  className="w-16 h-10 md:w-24 md:h-14 object-cover rounded"
                                   loading="lazy"
                                 />
                               )}
@@ -4204,16 +4210,16 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                                 href={`https://www.youtube.com/watch?v=${video.videoId}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sm font-medium text-foreground hover:text-primary line-clamp-2"
+                                className="text-xs md:text-sm font-medium text-foreground hover:text-primary line-clamp-2"
                               >
                                 {video.title}
                               </a>
-                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-2 md:gap-3 mt-1 text-[10px] md:text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Eye className="w-3 h-3" />
                                   {formatNumber(video.views)}
                                 </span>
-                                <span className="flex items-center gap-1">
+                                <span className="hidden sm:flex items-center gap-1">
                                   <ThumbsUp className="w-3 h-3" />
                                   {formatNumber(video.likes)}
                                 </span>
