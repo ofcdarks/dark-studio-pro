@@ -282,6 +282,52 @@ export function AdminMigrationTab() {
     toast.success("Link copiado para a área de transferência!");
   };
 
+  const handleResendExpired = async (invite: MigrationInvite) => {
+    setSending(invite.id);
+    try {
+      // Set new expiration date (7 days from now)
+      const newExpiresAt = new Date();
+      newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+
+      // Update status back to pending and set new expiration
+      await supabase
+        .from("migration_invites")
+        .update({ 
+          status: "pending", 
+          expires_at: newExpiresAt.toISOString(),
+          sent_at: null,
+        })
+        .eq("id", invite.id);
+
+      // Send the invite email
+      const { error } = await supabase.functions.invoke("send-migration-invite", {
+        body: {
+          email: invite.email,
+          fullName: invite.full_name,
+          token: invite.token,
+          planName: invite.plan_name,
+          credits: invite.credits_amount,
+        },
+      });
+
+      if (error) throw error;
+
+      // Update status to sent
+      await supabase
+        .from("migration_invites")
+        .update({ status: "sent", sent_at: new Date().toISOString() })
+        .eq("id", invite.id);
+
+      toast.success(`Convite reenviado para ${invite.email} com nova data de expiração`);
+      fetchInvites();
+    } catch (error: any) {
+      console.error("Error resending invite:", error);
+      toast.error(error.message || "Erro ao reenviar convite");
+    } finally {
+      setSending(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
@@ -401,7 +447,22 @@ export function AdminMigrationTab() {
                         >
                           <Copy className="w-4 h-4" />
                         </Button>
-                        {invite.status !== "completed" && (
+                        {invite.status === "expired" ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleResendExpired(invite)}
+                            disabled={sending === invite.id}
+                            title="Reenviar com nova expiração"
+                            className="text-warning hover:text-warning"
+                          >
+                            {sending === invite.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="w-4 h-4" />
+                            )}
+                          </Button>
+                        ) : invite.status !== "completed" && (
                           <Button
                             variant="ghost"
                             size="icon"
