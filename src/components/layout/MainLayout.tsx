@@ -5,7 +5,9 @@ import { StorageIndicator } from "./StorageIndicator";
 import { CreditsDisplay } from "./CreditsDisplay";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { useAdminPushNotifications } from "@/hooks/useAdminPushNotifications";
+import { RequireWhatsAppModal } from "@/components/auth/RequireWhatsAppModal";
 import { cn } from "@/lib/utils";
 
 interface MainLayoutProps {
@@ -14,6 +16,7 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const { user } = useAuth();
+  const { profile, loading: profileLoading, refetch } = useProfile();
   const [headerVisible, setHeaderVisible] = useState(true);
   const [headerHovered, setHeaderHovered] = useState(false);
   const lastScrollY = useRef(0);
@@ -45,6 +48,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   }, []);
 
   const showHeader = headerVisible || headerHovered;
+  const showWhatsAppModal = user && !profileLoading && profile && !profile.whatsapp;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -79,6 +83,15 @@ export function MainLayout({ children }: MainLayoutProps) {
           {children}
         </div>
       </main>
+
+      {/* WhatsApp Required Modal */}
+      {showWhatsAppModal && (
+        <RequireWhatsAppModal
+          open={true}
+          userId={user.id}
+          onComplete={refetch}
+        />
+      )}
     </div>
   );
 }
