@@ -87,25 +87,13 @@ function DraggableNavItem({
       dragListener={false}
       dragControls={dragControls}
       className="list-none"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
       whileDrag={{ 
         scale: 1.02, 
         boxShadow: "0 8px 20px -4px hsl(var(--primary) / 0.3)",
         zIndex: 50 
       }}
-      transition={{ 
-        type: "spring", 
-        stiffness: 400, 
-        damping: 25 
-      }}
     >
-      <motion.div 
-        className="group"
-        whileHover={{ x: collapsed ? 0 : 4 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      >
+      <div className="group">
         <button
           onClick={() => onNavigate(item.href)}
           className={cn(
@@ -116,19 +104,17 @@ function DraggableNavItem({
           )}
         >
           {!collapsed && (
-            <motion.div
+            <div
               onPointerDown={(e) => dragControls.start(e)}
-              className="cursor-grab active:cursor-grabbing touch-none"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
+              className="cursor-grab active:cursor-grabbing touch-none hover:scale-110 active:scale-95 transition-transform"
             >
               <GripVertical className="w-4 h-4 flex-shrink-0 opacity-30 hover:opacity-70 transition-opacity" />
-            </motion.div>
+            </div>
           )}
           <item.icon className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span className="text-sm font-medium text-left flex-1">{item.label}</span>}
         </button>
-      </motion.div>
+      </div>
     </Reorder.Item>
   );
 }

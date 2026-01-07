@@ -58,11 +58,9 @@ export function Dashboard() {
   return (
     <div className="flex-1 overflow-auto bg-background relative">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <motion.div 
+        <div 
           className="absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl"
           style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.03) 0%, transparent 60%)' }}
-          animate={{ x: [0, 30, 0], y: [0, 20, 0] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
@@ -70,7 +68,7 @@ export function Dashboard() {
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-10">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
-              <motion.div className="w-2 h-2 rounded-full bg-primary" animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }} transition={{ duration: 2, repeat: Infinity }} />
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <span className="text-xs font-medium text-primary uppercase tracking-wider">Painel de Controle</span>
             </div>
             <div className="flex items-center gap-3">
