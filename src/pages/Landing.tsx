@@ -736,7 +736,7 @@ const Landing = () => {
               { value: "50K+", label: "Vídeos gerados" },
               { value: "847+", label: "Canais gerenciados" },
               { value: "98%", label: "Taxa de satisfação" },
-              { value: "$2.3M", label: "Gerados pelos usuários" },
+              { value: "15K+", label: "Vídeos analisados" },
             ].map((stat, i) => (
               <div key={i} className="text-center">
                 <p className="text-4xl md:text-5xl font-bold text-primary">{stat.value}</p>
