@@ -285,6 +285,21 @@ const Landing = () => {
       {/* Scroll indicator - mouse style */}
       <ScrollIndicator variant="mouse" />
 
+      {/* Marquee Strip - "A revolução chegou" */}
+      <div className="relative overflow-hidden bg-primary py-3 md:py-4">
+        <div className="flex animate-marquee whitespace-nowrap">
+          {[...Array(10)].map((_, i) => (
+            <span key={i} className="mx-8 md:mx-16 text-sm md:text-lg font-bold uppercase tracking-widest text-primary-foreground flex items-center gap-3 md:gap-4">
+              <Diamond className="w-4 h-4 md:w-5 md:h-5" />
+              A REVOLUÇÃO CHEGOU
+              <span className="text-primary-foreground/70">•</span>
+              NÃO HÁ ESPAÇO PARA AMADORES
+            </span>
+          ))}
+        </div>
+      </div>
+
+
       {/* Features Strip */}
       <section className="py-12 md:py-20 px-4">
         <div className="max-w-7xl mx-auto">
