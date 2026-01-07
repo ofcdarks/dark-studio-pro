@@ -18,7 +18,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, TrendingUp, Download, RefreshCw, Search, Crown, LineChart } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, TrendingUp, Download, RefreshCw, Search, Crown, LineChart, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays, differenceInDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -85,6 +95,8 @@ export function AdminSubscriptionsTab() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [plans, setPlans] = useState<PlanInfo[]>([]);
   const [mrrHistory, setMrrHistory] = useState<MRRDataPoint[]>([]);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [userToCancel, setUserToCancel] = useState<{ id: string; email: string } | null>(null);
 
   useEffect(() => {
     fetchPlans();
@@ -356,13 +368,18 @@ export function AdminSubscriptionsTab() {
     toast.success("Arquivo exportado!");
   };
 
-  const handleCancelSubscription = async (userId: string, email: string) => {
-    if (!confirm(`Tem certeza que deseja cancelar a assinatura de ${email}?`)) return;
+  const openCancelDialog = (userId: string, email: string) => {
+    setUserToCancel({ id: userId, email });
+    setCancelDialogOpen(true);
+  };
+
+  const confirmCancelSubscription = async () => {
+    if (!userToCancel) return;
     
     const { error } = await supabase
       .from("user_roles")
       .update({ role: "free" })
-      .eq("user_id", userId);
+      .eq("user_id", userToCancel.id);
 
     if (error) {
       toast.error("Erro ao cancelar assinatura");
@@ -370,6 +387,9 @@ export function AdminSubscriptionsTab() {
       toast.success("Assinatura cancelada! Usuário rebaixado para plano Free.");
       fetchSubscribers();
     }
+    
+    setCancelDialogOpen(false);
+    setUserToCancel(null);
   };
 
   const getPlanBadgeColor = (plan: string) => {
@@ -671,7 +691,7 @@ export function AdminSubscriptionsTab() {
                           size="sm"
                           variant="outline"
                           className="text-destructive hover:bg-destructive/10"
-                          onClick={() => handleCancelSubscription(sub.id, sub.email)}
+                          onClick={() => openCancelDialog(sub.id, sub.email)}
                         >
                           Cancelar
                         </Button>
@@ -743,6 +763,39 @@ export function AdminSubscriptionsTab() {
           </div>
         </Card>
       </div>
+
+      {/* Cancel Subscription Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent className="bg-card border-primary/50 rounded-xl shadow-xl">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-full bg-destructive/20">
+                <AlertTriangle className="w-6 h-6 text-destructive" />
+              </div>
+              <AlertDialogTitle className="text-xl text-foreground">
+                Cancelar Assinatura
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-muted-foreground">
+              Tem certeza que deseja cancelar a assinatura de{" "}
+              <span className="text-primary font-semibold">{userToCancel?.email}</span>?
+              <br /><br />
+              O usuário será rebaixado para o plano Free e perderá acesso aos recursos premium.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="bg-secondary border-border text-foreground hover:bg-secondary/80">
+              Manter Assinatura
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmCancelSubscription}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Confirmar Cancelamento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
