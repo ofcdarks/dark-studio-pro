@@ -1,5 +1,14 @@
 project_id = "kabnbvnephjifeazaiis"
 
+[functions.youtube-auth-url]
+verify_jwt = false
+
+[functions.youtube-oauth-callback]
+verify_jwt = false
+
+[functions.youtube-disconnect]
+verify_jwt = false
+
 [functions.validate-api-key]
 verify_jwt = false
 
