@@ -5057,42 +5057,42 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
       {/* Modal de Marcadores do YouTube */}
       <Dialog open={showYouTubeChapters} onOpenChange={setShowYouTubeChapters}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-lg bg-card border-red-500/30 rounded-xl shadow-xl">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="flex items-center gap-3 text-lg">
               <Film className="w-5 h-5 text-red-500" />
               Marcadores de Capítulo
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               Cole na descrição do seu vídeo no YouTube
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="bg-secondary/50 rounded-lg p-4 max-h-64 overflow-y-auto">
-              <pre className="text-sm text-foreground whitespace-pre-wrap font-mono">
+          <div className="space-y-5">
+            <div className="bg-secondary/50 rounded-lg p-4 max-h-72 overflow-y-auto">
+              <pre className="text-base text-foreground whitespace-pre-wrap font-mono leading-relaxed">
                 {youtubeChapters}
               </pre>
             </div>
             
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-              <p className="text-xs text-amber-600 dark:text-amber-400">
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+              <p className="text-sm text-amber-600 dark:text-amber-400">
                 <strong>💡 Dica:</strong> O YouTube exige que o primeiro capítulo comece em 00:00 
                 e que cada capítulo tenha no mínimo 10 segundos.
               </p>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
                 onClick={() => setShowYouTubeChapters(false)}
-                className="flex-1"
+                className="flex-1 h-10"
               >
                 Fechar
               </Button>
               <Button
                 onClick={copyYouTubeChapters}
-                className="flex-1 bg-red-500 text-white hover:bg-red-600"
+                className="flex-1 h-10 bg-red-500 text-white hover:bg-red-600"
               >
                 <Copy className="w-4 h-4 mr-2" />
                 Copiar Marcadores
@@ -5104,26 +5104,26 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
       {/* Modal de Geração de Vídeo MP4 */}
       <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
-        <DialogContent className="max-w-lg bg-card border-purple-500/30 rounded-xl shadow-xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
+        <DialogContent className="max-w-xl bg-card border-purple-500/30 rounded-xl shadow-xl">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="flex items-center gap-3 text-lg text-foreground">
               <Play className="w-5 h-5 text-purple-400" />
               Gerar Vídeo MP4 com Efeitos
             </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
+            <DialogDescription className="text-sm text-muted-foreground">
               Configure os efeitos e gere um vídeo diretamente no navegador
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* Resolução */}
             <div className="flex items-center justify-between">
-              <Label className="text-sm">Resolução</Label>
+              <Label className="text-sm font-medium">Resolução</Label>
               <Select value={videoResolution} onValueChange={(v) => setVideoResolution(v as "720p" | "1080p")}>
-                <SelectTrigger className="w-32 h-8">
+                <SelectTrigger className="w-36 h-10">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
                   <SelectItem value="720p">720p HD</SelectItem>
                   <SelectItem value="1080p">1080p Full HD</SelectItem>
                 </SelectContent>
@@ -5133,8 +5133,8 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
             {/* Efeito Ken Burns */}
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-sm">Efeito Ken Burns</Label>
-                <p className="text-xs text-muted-foreground">Zoom suave nas imagens</p>
+                <Label className="text-sm font-medium">Efeito Ken Burns</Label>
+                <p className="text-sm text-muted-foreground">Zoom suave nas imagens</p>
               </div>
               <Switch checked={videoKenBurns} onCheckedChange={setVideoKenBurns} />
             </div>
@@ -5142,21 +5142,21 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
             {/* Transição */}
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-sm">Transição entre cenas</Label>
-                <p className="text-xs text-muted-foreground">Efeito visual entre cenas</p>
+                <Label className="text-sm font-medium">Transição entre cenas</Label>
+                <p className="text-sm text-muted-foreground">Efeito visual entre cenas</p>
               </div>
               <Switch checked={videoTransitionEnabled} onCheckedChange={setVideoTransitionEnabled} />
             </div>
 
             {videoTransitionEnabled && (
-              <div className="space-y-3 pl-4 border-l-2 border-purple-500/30">
+              <div className="space-y-4 pl-4 border-l-2 border-purple-500/30">
                 <div className="space-y-2">
-                  <Label className="text-sm">Tipo de transição</Label>
+                  <Label className="text-sm font-medium">Tipo de transição</Label>
                   <Select value={videoTransitionType} onValueChange={(v) => setVideoTransitionType(v as any)}>
-                    <SelectTrigger className="h-8">
+                    <SelectTrigger className="h-10">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
                       <SelectItem value="fade">✨ Dissolve (Fade)</SelectItem>
                       <SelectItem value="wipeleft">⬅️ Wipe Left</SelectItem>
                       <SelectItem value="wiperight">➡️ Wipe Right</SelectItem>
@@ -5171,12 +5171,12 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   </Select>
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm">Duração</Label>
+                  <Label className="text-sm font-medium">Duração</Label>
                   <Select value={videoTransitionDuration} onValueChange={setVideoTransitionDuration}>
-                    <SelectTrigger className="w-24 h-8">
+                    <SelectTrigger className="w-28 h-10">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
                       <SelectItem value="0.3">0.3s</SelectItem>
                       <SelectItem value="0.5">0.5s</SelectItem>
                       <SelectItem value="0.8">0.8s</SelectItem>
@@ -5190,12 +5190,12 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
             {/* Filtro de cor */}
             <div className="space-y-2">
-              <Label className="text-sm">Filtro de Cor</Label>
+              <Label className="text-sm font-medium">Filtro de Cor</Label>
               <Select value={videoColorFilter} onValueChange={(v) => setVideoColorFilter(v as any)}>
-                <SelectTrigger className="h-8">
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
                   <SelectItem value="none">Sem filtro</SelectItem>
                   <SelectItem value="cinematic">🎬 Cinemático</SelectItem>
                   <SelectItem value="warm">🌅 Quente</SelectItem>
@@ -5206,8 +5206,8 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
             </div>
 
             {/* Info */}
-            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
-              <p className="text-xs text-purple-300">
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+              <p className="text-sm text-purple-300">
                 <strong>ℹ️ Info:</strong> {generatedScenes.filter(s => s.generatedImage).length} cenas serão processadas. 
                 O vídeo será gerado no navegador usando FFmpeg.wasm. 
                 Isso pode levar alguns minutos dependendo do tamanho.
@@ -5254,11 +5254,11 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
             )}
 
             {/* Botões */}
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
                 onClick={() => setShowVideoModal(false)}
-                className="flex-1"
+                className="flex-1 h-10"
                 disabled={isGeneratingVideo}
               >
                 Fechar
@@ -5267,7 +5267,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               {generatedVideoBlob && !isGeneratingVideo ? (
                 <Button
                   onClick={handleDownloadGeneratedVideo}
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90"
+                  className="flex-1 h-10 bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Baixar MP4
@@ -5276,7 +5276,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                 <Button
                   onClick={handleGenerateVideo}
                   disabled={isGeneratingVideo || generatedScenes.filter(s => s.generatedImage).length === 0}
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90"
+                  className="flex-1 h-10 bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90"
                 >
                   {isGeneratingVideo ? (
                     <>
@@ -5929,38 +5929,38 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
       {/* Modal Salvar Preset Personalizado */}
       <Dialog open={showSavePresetModal} onOpenChange={setShowSavePresetModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-lg bg-card border-amber-500/30 rounded-xl shadow-xl">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="flex items-center gap-3 text-lg">
               <Star className="w-5 h-5 text-amber-500" />
               Salvar Preset Cinematográfico
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               Salve suas configurações atuais para reutilizar em outros projetos
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="preset-name">Nome do Preset</Label>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="preset-name" className="text-sm font-medium">Nome do Preset</Label>
               <Input
                 id="preset-name"
                 placeholder="Ex: Meu Estilo Dark"
                 value={newPresetName}
                 onChange={(e) => setNewPresetName(e.target.value)}
-                className="mt-1"
+                className="h-10"
               />
             </div>
             
-            <div>
-              <Label>Ícone</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Ícone</Label>
               <div className="flex flex-wrap gap-2 mt-2">
                 {["🎨", "🎬", "🎥", "🌙", "☀️", "🔥", "❄️", "💎", "⚡", "🎭", "🌟", "🎪"].map((icon) => (
                   <button
                     key={icon}
                     onClick={() => setNewPresetIcon(icon)}
                     className={cn(
-                      "text-2xl p-2 rounded-lg border transition-all",
+                      "text-2xl p-2.5 rounded-lg border transition-all",
                       newPresetIcon === icon
                         ? "border-amber-500 bg-amber-500/20"
                         : "border-border/50 hover:bg-secondary/50"
@@ -5972,39 +5972,39 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               </div>
             </div>
             
-            <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Configurações que serão salvas:</p>
-              <div className="flex flex-wrap gap-1">
-                <Badge variant="outline" className="text-[10px]">
+            <div className="p-4 rounded-lg bg-secondary/50 border border-border/50">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Configurações que serão salvas:</p>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline" className="text-xs">
                   {TRANSITION_OPTIONS.find(t => t.id === cinematicSettings.transitionType)?.name}
                 </Badge>
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-xs">
                   {cinematicSettings.transitionDuration}s
                 </Badge>
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-xs">
                   {cinematicSettings.aspectRatio}
                 </Badge>
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-xs">
                   {cinematicSettings.fps} FPS
                 </Badge>
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-xs">
                   {COLOR_GRADING_OPTIONS.find(c => c.id === cinematicSettings.colorGrading)?.name}
                 </Badge>
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
                 onClick={() => setShowSavePresetModal(false)}
-                className="flex-1"
+                className="flex-1 h-10"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleSavePreset}
                 disabled={isSavingPreset || !newPresetName.trim()}
-                className="flex-1"
+                className="flex-1 h-10"
               >
                 {isSavingPreset ? (
                   <>
@@ -6025,38 +6025,38 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
       {/* Modal Editar Preset */}
       <Dialog open={!!editingPresetId} onOpenChange={(open) => !open && setEditingPresetId(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-lg bg-card border-primary/30 rounded-xl shadow-xl">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="flex items-center gap-3 text-lg">
               <Edit3 className="w-5 h-5 text-primary" />
               Editar Preset
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               Altere o nome e ícone do seu preset
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-preset-name">Nome do Preset</Label>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="edit-preset-name" className="text-sm font-medium">Nome do Preset</Label>
               <Input
                 id="edit-preset-name"
                 placeholder="Ex: Meu Estilo Dark"
                 value={editPresetName}
                 onChange={(e) => setEditPresetName(e.target.value)}
-                className="mt-1"
+                className="h-10"
               />
             </div>
             
-            <div>
-              <Label>Ícone</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Ícone</Label>
               <div className="flex flex-wrap gap-2 mt-2">
                 {["🎨", "🎬", "🎥", "🌙", "☀️", "🔥", "❄️", "💎", "⚡", "🎭", "🌟", "🎪"].map((icon) => (
                   <button
                     key={icon}
                     onClick={() => setEditPresetIcon(icon)}
                     className={cn(
-                      "text-2xl p-2 rounded-lg border transition-all",
+                      "text-2xl p-2.5 rounded-lg border transition-all",
                       editPresetIcon === icon
                         ? "border-primary bg-primary/20"
                         : "border-border/50 hover:bg-secondary/50"
