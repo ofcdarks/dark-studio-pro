@@ -4514,7 +4514,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                   <SelectTrigger className="h-8 bg-secondary/50 text-xs">
                     <SelectValue placeholder="Selecione um template" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-60">
+                  <SelectContent className="max-h-60 z-[200] bg-popover" position="popper" sideOffset={4}>
                     {TEMPLATE_CATEGORIES.map((category) => (
                       <div key={category.id}>
                         <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground">
