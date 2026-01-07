@@ -45,6 +45,8 @@ import {
   Youtube,
   Newspaper,
   Type,
+  Clock,
+  Calendar,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -460,15 +462,15 @@ export const AdminBlogTab = () => {
             </Button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredArticles.map((article) => (
               <div
                 key={article.id}
-                className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg"
+                className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg hover:bg-secondary/70 transition-colors"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                  {/* Thumbnail */}
-                  <div className="w-16 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
+                  {/* Thumbnail - Maior */}
+                  <div className="w-24 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0 border border-border/50">
                     {article.image_url ? (
                       <img
                         src={article.image_url}
@@ -476,42 +478,55 @@ export const AdminBlogTab = () => {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Image className="w-4 h-4 text-muted-foreground" />
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                        <Image className="w-6 h-6 text-muted-foreground/50" />
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium text-foreground truncate">{article.title}</h4>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <h4 className="font-medium text-foreground truncate max-w-md">{article.title}</h4>
                       {article.is_published ? (
-                        <Badge className="bg-success/20 text-success border-success/50">
+                        <Badge className="bg-success/20 text-success border-success/50 flex-shrink-0">
                           <Globe className="w-3 h-3 mr-1" />
                           Publicado
                         </Badge>
                       ) : (
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="flex-shrink-0">
                           <GlobeLock className="w-3 h-3 mr-1" />
                           Rascunho
                         </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{article.category}</span>
-                      <span>•</span>
-                      <span>{article.read_time}</span>
-                      <span>•</span>
-                      <span>{new Date(article.created_at).toLocaleDateString("pt-BR")}</span>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
+                      <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-medium">
+                        {article.category}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {article.read_time}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Criado: {new Date(article.created_at).toLocaleDateString("pt-BR")}
+                      </span>
+                      {article.published_at && (
+                        <span className="flex items-center gap-1 text-success">
+                          <Globe className="w-3 h-3" />
+                          Publicado: {new Date(article.published_at).toLocaleDateString("pt-BR")}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => handleGenerateCover(article)}
                     disabled={generatingCover === article.id}
                     title="Gerar imagem de capa"
+                    className="h-8 w-8"
                   >
                     {generatingCover === article.id ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -526,27 +541,37 @@ export const AdminBlogTab = () => {
                       setPreviewArticle(article);
                       setPreviewModalOpen(true);
                     }}
+                    title="Visualizar"
+                    className="h-8 w-8"
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleEditArticle(article)}>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleEditArticle(article)}
+                    title="Editar"
+                    className="h-8 w-8"
+                  >
                     <Edit className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleTogglePublish(article)}
+                    className="text-xs"
                   >
                     {article.is_published ? "Despublicar" : "Publicar"}
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-destructive hover:text-destructive"
+                    className="text-destructive hover:text-destructive h-8 w-8"
                     onClick={() => {
                       setDeletingArticle(article);
                       setDeleteDialogOpen(true);
                     }}
+                    title="Excluir"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
