@@ -191,6 +191,7 @@ const Analytics = () => {
     deadline: "",
     period_type: "all_time" as "all_time" | "monthly",
   });
+  const [isSavingNote, setIsSavingNote] = useState(false);
 
   // Fetch user's API settings
   const { data: apiSettings } = useQuery({
@@ -2599,7 +2600,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
                     toast({ title: "Estratégia completa copiada!", description: "Pronta para implementar" });
                   };
                   
-                  const [isSavingNote, setIsSavingNote] = useState(false);
+                  // isSavingNote state moved to top-level (avoid invalid hook call)
                   
                   const saveChecklistAsNote = async () => {
                     if (!user || !channelUrl || !analyticsData) return;
