@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { ThumbnailStyle } from "@/lib/thumbnailStyles";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState, memo } from "react";
 
 // Import real preview images for all styles
 // 3D & Animação
@@ -212,8 +213,9 @@ const DefaultStyleVisual = ({ style }: { style: ThumbnailStyle }) => (
   </div>
 );
 
-export const StylePreviewCard = ({ style, isSelected, onClick }: StylePreviewCardProps) => {
+export const StylePreviewCard = memo(({ style, isSelected, onClick }: StylePreviewCardProps) => {
   const previewImage = styleImages[style.id];
+  const [isLoaded, setIsLoaded] = useState(false);
   
   return (
     <motion.div
@@ -228,13 +230,26 @@ export const StylePreviewCard = ({ style, isSelected, onClick }: StylePreviewCar
       )}
     >
       {/* Preview Visual */}
-      <div className="aspect-video w-full">
+      <div className="aspect-video w-full bg-muted">
         {previewImage ? (
-          <img 
-            src={previewImage} 
-            alt={style.name}
-            className="w-full h-full object-cover"
-          />
+          <>
+            {!isLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted animate-pulse">
+                <span className="text-3xl">{style.icon}</span>
+              </div>
+            )}
+            <img 
+              src={previewImage} 
+              alt={style.name}
+              loading="lazy"
+              decoding="async"
+              onLoad={() => setIsLoaded(true)}
+              className={cn(
+                "w-full h-full object-cover transition-opacity duration-300",
+                isLoaded ? "opacity-100" : "opacity-0"
+              )}
+            />
+          </>
         ) : (
           <DefaultStyleVisual style={style} />
         )}
@@ -263,4 +278,4 @@ export const StylePreviewCard = ({ style, isSelected, onClick }: StylePreviewCar
       )}
     </motion.div>
   );
-};
+});
