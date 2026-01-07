@@ -1016,6 +1016,50 @@ export type Database = {
         }
         Relationships: []
       }
+      product_clicks: {
+        Row: {
+          article_id: string | null
+          click_date: string
+          clicked_at: string
+          id: string
+          product_title: string | null
+          product_url: string
+          referrer: string | null
+          user_agent: string | null
+          visitor_hash: string
+        }
+        Insert: {
+          article_id?: string | null
+          click_date?: string
+          clicked_at?: string
+          id?: string
+          product_title?: string | null
+          product_url: string
+          referrer?: string | null
+          user_agent?: string | null
+          visitor_hash: string
+        }
+        Update: {
+          article_id?: string | null
+          click_date?: string
+          clicked_at?: string
+          id?: string
+          product_title?: string | null
+          product_url?: string
+          referrer?: string | null
+          user_agent?: string | null
+          visitor_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_clicks_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
