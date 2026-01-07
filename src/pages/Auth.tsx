@@ -9,7 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ArrowLeft, Rocket, Gift } from "lucide-react";
 import { z } from "zod";
 import logo from "@/assets/logo.gif";
-import authBg from "@/assets/auth-porsche.jpg";
+// Use WebP from public folder for faster loading
+const authBg = "/images/auth-porsche.webp";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 const authSchema = z.object({
