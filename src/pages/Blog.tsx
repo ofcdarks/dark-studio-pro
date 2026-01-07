@@ -232,10 +232,15 @@ const NewsletterForm = () => {
       if (error) {
         if (error.code === "23505") {
           toast.info("Este email já está cadastrado!");
+          setIsSubscribed(true);
         } else {
           throw error;
         }
       } else {
+        // Send welcome email (non-blocking)
+        supabase.functions.invoke("send-newsletter-welcome", {
+          body: { email: email.toLowerCase().trim() }
+        }).catch(console.error);
         setIsSubscribed(true);
         toast.success("Inscrito com sucesso! 🎉");
       }

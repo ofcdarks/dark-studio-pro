@@ -860,6 +860,64 @@ ${EMAIL_FOOTER}`
             </td>
           </tr>
 ${EMAIL_FOOTER}`
+  },
+  newsletter_welcome: {
+    subject: "🚀 Bem-vindo à Newsletter da La Casa Dark Core!",
+    body: `${EMAIL_HEADER}
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <!-- Rocket Icon -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%); border: 2px solid #f59e0b; display: inline-flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 40px;">🚀</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <h2 style="color: #ffffff; margin: 0 0 16px 0; font-size: 28px; font-weight: 700; text-align: center;">
+                Você está <span style="color: #f59e0b;">dentro!</span> 🎉
+              </h2>
+              
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 24px 0; text-align: center;">
+                Obrigado por se inscrever na newsletter da <strong style="color: #f59e0b;">La Casa Dark Core</strong>! A partir de agora você receberá conteúdo exclusivo sobre canais dark diretamente no seu email.
+              </p>
+              
+              <!-- What to Expect Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 12px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <p style="color: #f59e0b; font-size: 14px; font-weight: 600; margin: 0 0 16px 0;">📬 O que você vai receber:</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr><td style="color: #d4d4d4; font-size: 14px; padding: 6px 0;">✓ Dicas exclusivas sobre canais dark</td></tr>
+                      <tr><td style="color: #d4d4d4; font-size: 14px; padding: 6px 0;">✓ Estratégias de viralização e monetização</td></tr>
+                      <tr><td style="color: #d4d4d4; font-size: 14px; padding: 6px 0;">✓ Novidades e atualizações da plataforma</td></tr>
+                      <tr><td style="color: #d4d4d4; font-size: 14px; padding: 6px 0;">✓ Conteúdos especiais para assinantes</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 0 0;">
+                <tr>
+                  <td align="center">
+                    <a href="{{blog_url}}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0a0a0a; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);">
+                      Ver Artigos do Blog →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #525252; font-size: 13px; line-height: 1.6; margin: 24px 0 0 0; text-align: center;">
+                Enviamos no máximo 1 email por semana. Você pode cancelar sua inscrição a qualquer momento.
+              </p>
+            </td>
+          </tr>
+${EMAIL_FOOTER}`
   }
 };
 
