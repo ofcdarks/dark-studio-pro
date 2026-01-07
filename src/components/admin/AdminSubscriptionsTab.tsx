@@ -18,10 +18,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, TrendingUp, Download, RefreshCw, Search, Crown } from "lucide-react";
+import { Loader2, TrendingUp, Download, RefreshCw, Search, Crown, LineChart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, subDays, differenceInDays } from "date-fns";
+import { format, subDays, differenceInDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 
 interface PlanInfo {
   plan_name: string;
@@ -56,6 +58,12 @@ interface SubscriptionStats {
   freeUsers: number;
 }
 
+interface MRRDataPoint {
+  month: string;
+  mrr: number;
+  subscribers: number;
+}
+
 export function AdminSubscriptionsTab() {
   const [period, setPeriod] = useState("30");
   const [status, setStatus] = useState("all");
@@ -75,9 +83,11 @@ export function AdminSubscriptionsTab() {
   const [loading, setLoading] = useState(false);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [plans, setPlans] = useState<PlanInfo[]>([]);
+  const [mrrHistory, setMrrHistory] = useState<MRRDataPoint[]>([]);
 
   useEffect(() => {
     fetchPlans();
+    fetchMRRHistory();
   }, []);
 
   useEffect(() => {
@@ -97,6 +107,62 @@ export function AdminSubscriptionsTab() {
       setPlans((data || []) as PlanInfo[]);
     } catch (error) {
       console.error("Error fetching plans:", error);
+    }
+  };
+
+  const fetchMRRHistory = async () => {
+    try {
+      // Get last 12 months of data
+      const months: MRRDataPoint[] = [];
+      
+      for (let i = 11; i >= 0; i--) {
+        const targetDate = subMonths(new Date(), i);
+        const monthStart = startOfMonth(targetDate);
+        const monthEnd = endOfMonth(targetDate);
+        
+        // Get all credit transactions in this month (indicating plan activations)
+        const { data: transactions } = await supabase
+          .from("credit_transactions")
+          .select("user_id, amount, description, created_at")
+          .eq("transaction_type", "add")
+          .gte("created_at", monthStart.toISOString())
+          .lte("created_at", monthEnd.toISOString());
+        
+        // Get unique users who had transactions (active subscribers that month)
+        const uniqueUsers = new Set(transactions?.map(t => t.user_id) || []);
+        
+        // Calculate MRR based on plan prices from descriptions
+        let mrr = 0;
+        const processedUsers = new Set<string>();
+        
+        (transactions || []).forEach(tx => {
+          if (processedUsers.has(tx.user_id)) return;
+          processedUsers.add(tx.user_id);
+          
+          if (tx.description?.includes("MASTER")) {
+            mrr += 149.90;
+          } else if (tx.description?.includes("TURBO")) {
+            mrr += 99.90;
+          } else if (tx.description?.includes("START")) {
+            mrr += 79.90;
+          } else {
+            // Default estimate based on amount
+            if (tx.amount >= 200) mrr += 149.90;
+            else if (tx.amount >= 150) mrr += 99.90;
+            else mrr += 79.90;
+          }
+        });
+        
+        months.push({
+          month: format(targetDate, "MMM/yy", { locale: ptBR }),
+          mrr,
+          subscribers: uniqueUsers.size
+        });
+      }
+      
+      setMrrHistory(months);
+    } catch (error) {
+      console.error("Error fetching MRR history:", error);
     }
   };
 
@@ -396,6 +462,66 @@ export function AdminSubscriptionsTab() {
           <p className="text-xs text-primary">Últimos {period} dias</p>
         </Card>
       </div>
+
+      {/* MRR Evolution Chart */}
+      <Card className="p-6">
+        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+          <LineChart className="w-5 h-5 text-primary" />
+          Evolução do MRR (Últimos 12 meses)
+        </h3>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={mrrHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorMrr" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="month" 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+              />
+              <YAxis 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                tickFormatter={(value) => `R$ ${value}`}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                  color: "hsl(var(--foreground))"
+                }}
+                formatter={(value: number, name: string) => {
+                  if (name === "mrr") return [`R$ ${value.toFixed(2)}`, "MRR"];
+                  return [value, "Assinantes"];
+                }}
+                labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+              />
+              <Area
+                type="monotone"
+                dataKey="mrr"
+                stroke="hsl(var(--primary))"
+                fillOpacity={1}
+                fill="url(#colorMrr)"
+                strokeWidth={2}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex justify-center gap-8 mt-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-primary" />
+            <span className="text-muted-foreground">MRR (Receita Mensal Recorrente)</span>
+          </div>
+        </div>
+      </Card>
 
       {/* Subscribers List */}
       <Card className="p-6">
