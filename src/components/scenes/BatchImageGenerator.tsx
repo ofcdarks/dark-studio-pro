@@ -9,7 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Sparkles, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Sparkles, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw, AlertTriangle, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +19,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { saveBatchImageToCache, getAllBatchCachedImages, getBatchCacheStats, clearBatchImageCache } from "@/lib/imageCache";
+import { useImageFXUsage } from "@/hooks/useImageFXUsage";
+import { useNavigate } from "react-router-dom";
 
 interface GeneratedImage {
   id: string;
@@ -45,12 +48,16 @@ interface BatchImageGeneratorProps {
 
 const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [promptsText, setPromptsText] = useState(initialPrompts);
   const [selectedStyle, setSelectedStyle] = useState("");
   const [images, setImages] = useState<GeneratedImage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  // ImageFX usage tracking
+  const { currentCount, monthLimit, remaining, isLimitReached, incrementUsage, refresh: refreshUsage } = useImageFXUsage();
   
   // Preview modal state
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -188,6 +195,14 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
     if (prompts.length === 0) {
       toast.error("Cole pelo menos um prompt de texto");
       return;
+    }
+
+    // Check ImageFX usage limit
+    if (monthLimit !== null && remaining !== null) {
+      if (remaining < prompts.length) {
+        toast.error(`Limite de imagens atingido! Você tem ${remaining} imagens restantes este mês.`);
+        return;
+      }
     }
 
     const stylePrefix = getStylePrefix();
@@ -361,6 +376,12 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
     const stats = await getBatchCacheStats();
     setCacheStats(stats);
     
+    // Increment ImageFX usage counter
+    if (successCount > 0) {
+      await incrementUsage(successCount);
+      await refreshUsage();
+    }
+    
     // Save to history with actual success count
     await saveToHistory(successCount);
     
@@ -370,6 +391,12 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
   const handleRetry = async (imageId: string) => {
     const image = images.find(img => img.id === imageId);
     if (!image) return;
+
+    // Check limit before retry
+    if (isLimitReached) {
+      toast.error("Limite de imagens atingido! Faça upgrade para continuar.");
+      return;
+    }
 
     setImages(prev => prev.map(img => 
       img.id === imageId ? { ...img, status: "generating", error: undefined } : img
@@ -393,6 +420,11 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
         setImages(prev => prev.map(img => 
           img.id === imageId ? { ...img, status: "success", imageUrl, wasRewritten } : img
         ));
+        
+        // Increment usage
+        await incrementUsage(1);
+        await refreshUsage();
+        
         if (wasRewritten) {
           toast.success("Imagem regenerada com prompt adaptado!");
         } else {
@@ -514,6 +546,12 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
   const handleEditAndRegenerate = async () => {
     if (!editingImage || !editPromptText.trim()) return;
 
+    // Check limit before regenerate
+    if (isLimitReached) {
+      toast.error("Limite de imagens atingido! Faça upgrade para continuar.");
+      return;
+    }
+
     setIsRegeneratingEdit(true);
 
     try {
@@ -539,6 +577,10 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
         
         // Save to cache
         await saveBatchImageToCache(editingImage.id, imageUrl, editPromptText, wasRewritten);
+        
+        // Increment usage
+        await incrementUsage(1);
+        await refreshUsage();
         
         toast.success(wasRewritten ? "Imagem regenerada com prompt adaptado!" : "Imagem regenerada!");
         setEditingImage(null);
@@ -694,9 +736,58 @@ Um carro esportivo na montanha`}
               </div>
             </div>
 
+            {/* ImageFX Usage Indicator */}
+            {monthLimit !== null && (
+              <div className="p-3 rounded-lg border bg-card/50">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">Uso Mensal ImageFX</span>
+                  </div>
+                  <span className={`text-sm font-bold ${isLimitReached ? 'text-destructive' : remaining !== null && remaining < 10 ? 'text-amber-500' : 'text-foreground'}`}>
+                    {currentCount}/{monthLimit}
+                  </span>
+                </div>
+                <Progress 
+                  value={(currentCount / monthLimit) * 100} 
+                  className={`h-2 ${isLimitReached ? '[&>div]:bg-destructive' : remaining !== null && remaining < 10 ? '[&>div]:bg-amber-500' : ''}`}
+                />
+                {remaining !== null && (
+                  <p className={`text-xs mt-1.5 ${isLimitReached ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {isLimitReached 
+                      ? "Limite atingido! Faça upgrade para continuar gerando."
+                      : `${remaining} imagens restantes este mês`
+                    }
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Limit Reached Warning */}
+            {isLimitReached && (
+              <div className="flex items-start gap-3 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-destructive">Limite de imagens atingido</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Você atingiu o limite de {monthLimit} imagens/mês do plano FREE.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2 border-destructive/50 text-destructive hover:bg-destructive/10"
+                    onClick={() => navigate('/plans')}
+                  >
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Fazer Upgrade
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <Button
               onClick={handleStartGeneration}
-              disabled={isGenerating || promptCount === 0}
+              disabled={isGenerating || promptCount === 0 || isLimitReached}
               className="w-full"
             >
               {isGenerating ? (
