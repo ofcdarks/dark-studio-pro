@@ -19,6 +19,8 @@ import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
 import BatchImageGenerator from "@/components/scenes/BatchImageGenerator";
 import { useCreditDeduction } from "@/hooks/useCreditDeduction";
+import { StyleSelector } from "@/components/scenes/StyleSelector";
+import { getStyleById } from "@/lib/thumbnailStyles";
 
 interface ScenePrompt {
   number: number;
@@ -26,15 +28,6 @@ interface ScenePrompt {
   imagePrompt: string;
   wordCount: number;
 }
-
-const STYLES = [
-  { value: "photorealistic", label: "Fotorealista" },
-  { value: "cinematic", label: "Cinematográfico" },
-  { value: "3d-render", label: "3D Render" },
-  { value: "anime", label: "Anime/Ilustração" },
-  { value: "dark-moody", label: "Dark/Moody" },
-  { value: "vibrant", label: "Vibrante/Colorido" },
-];
 
 const WORDS_PER_SCENE_OPTIONS = [
   { value: "25", label: "25 palavras" },
@@ -368,18 +361,12 @@ const SceneGenerator = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label>Estilo Visual</Label>
-                          <Select value={style} onValueChange={setStyle}>
-                            <SelectTrigger className="mt-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STYLES.map((s) => (
-                                <SelectItem key={s.value} value={s.value}>
-                                  {s.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div className="mt-1">
+                            <StyleSelector 
+                              selectedStyleId={style} 
+                              onStyleSelect={setStyle} 
+                            />
+                          </div>
                         </div>
                         <div>
                           <Label>Palavras por Cena</Label>
