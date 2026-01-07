@@ -19,6 +19,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { profile, loading: profileLoading, refetch } = useProfile();
   const [headerVisible, setHeaderVisible] = useState(true);
   const [headerHovered, setHeaderHovered] = useState(false);
+  const [whatsAppCompleted, setWhatsAppCompleted] = useState(false);
   const lastScrollY = useRef(0);
   const mainRef = useRef<HTMLDivElement>(null);
   
@@ -47,8 +48,13 @@ export function MainLayout({ children }: MainLayoutProps) {
     return () => mainElement.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleWhatsAppComplete = async () => {
+    await refetch();
+    setWhatsAppCompleted(true);
+  };
+
   const showHeader = headerVisible || headerHovered;
-  const showWhatsAppModal = user && !profileLoading && profile && !profile.whatsapp;
+  const showWhatsAppModal = user && !profileLoading && profile && !profile.whatsapp && !whatsAppCompleted;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -89,7 +95,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <RequireWhatsAppModal
           open={true}
           userId={user.id}
-          onComplete={refetch}
+          onComplete={handleWhatsAppComplete}
         />
       )}
     </div>
