@@ -473,14 +473,24 @@ const SettingsPage = () => {
     const showKey = showKeys[provider as keyof typeof showKeys];
 
     return (
-      <div className="space-y-2">
+      <div className={`space-y-2 relative ${isLocked ? 'opacity-60' : ''}`}>
+        {/* Lock overlay for blocked fields */}
+        {isLocked && (
+          <div className="absolute -inset-2 bg-background/50 backdrop-blur-[1px] rounded-lg z-10 flex items-center justify-center">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/20 border border-amber-500/40 rounded-full">
+              <Lock className="w-4 h-4 text-amber-500" />
+              <span className="text-xs font-medium text-amber-500">Bloqueado</span>
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <label className="text-sm text-muted-foreground">{label}</label>
             {isLocked && (
               <Badge variant="outline" className="text-xs border-amber-500/50 text-amber-500">
                 <Lock className="w-3 h-3 mr-1" />
-                Plano Anual/Master
+                Premium
               </Badge>
             )}
           </div>
@@ -543,11 +553,6 @@ const SettingsPage = () => {
             )}
           </Button>
         </div>
-        {isLocked && (
-          <p className="text-xs text-muted-foreground">
-            Disponível apenas para planos anuais ou Master. <a href="/plans" className="text-primary hover:underline">Fazer upgrade</a>
-          </p>
-        )}
       </div>
     );
   };
