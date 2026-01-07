@@ -853,6 +853,22 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Second Marquee Strip - Before Footer */}
+      <div className="relative overflow-hidden py-3 md:py-4 bg-gradient-to-r from-primary via-amber-500 to-primary">
+        {/* Shimmer overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+        <div className="flex animate-marquee whitespace-nowrap relative z-10">
+          {[...Array(10)].map((_, i) => (
+            <span key={i} className="mx-8 md:mx-16 text-sm md:text-lg font-bold uppercase tracking-widest text-primary-foreground flex items-center gap-3 md:gap-4 drop-shadow-lg">
+              <Flame className="w-4 h-4 md:w-5 md:h-5" />
+              AUTOMATIZE SUA OPERAÇÃO
+              <span className="text-primary-foreground/80">•</span>
+              ESCALE SEUS RESULTADOS
+            </span>
+          ))}
+        </div>
+      </div>
+
       {/* Footer */}
       <footer className="py-20 px-4 border-t border-border">
         <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-14">
