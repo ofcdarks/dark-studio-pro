@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1278,14 +1279,18 @@ const Analytics = () => {
   const hasApiKey = !!apiSettings?.youtube_api_key;
 
   return (
-    <MainLayout>
-      <SEOHead
-        title="Analytics de Canal"
-        description="Análise completa de canais do YouTube com métricas, metas e insights estratégicos."
-        noindex={true}
-      />
-      <PermissionGate permission="analytics" featureName="Analytics">
-      <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+    <ErrorBoundary
+      fallbackTitle="Erro ao carregar Analytics"
+      fallbackMessage="Ocorreu um erro ao carregar a página de Analytics. Isso pode acontecer se houver dados corrompidos no cache. Tente recarregar a página."
+    >
+      <MainLayout>
+        <SEOHead
+          title="Analytics de Canal"
+          description="Análise completa de canais do YouTube com métricas, metas e insights estratégicos."
+          noindex={true}
+        />
+        <PermissionGate permission="analytics" featureName="Analytics">
+        <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -4259,6 +4264,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
       />
       </PermissionGate>
     </MainLayout>
+    </ErrorBoundary>
   );
 };
 
