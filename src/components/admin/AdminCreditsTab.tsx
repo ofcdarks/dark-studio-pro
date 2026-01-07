@@ -157,15 +157,19 @@ export function AdminCreditsTab() {
           .select("id, email, full_name, whatsapp")
           .in("id", userIds);
 
-        const enriched = credits.map((credit) => {
+        // Only include credits that have a valid profile (filter out orphaned records)
+        const enriched: UserCredit[] = [];
+        for (const credit of credits) {
           const profile = profiles?.find((p) => p.id === credit.user_id);
-          return {
-            ...credit,
-            email: profile?.email || "",
-            full_name: profile?.full_name || "",
-            whatsapp: profile?.whatsapp || "",
-          };
-        });
+          if (profile) {
+            enriched.push({
+              ...credit,
+              email: profile.email || "",
+              full_name: profile.full_name || "",
+              whatsapp: profile.whatsapp || "",
+            });
+          }
+        }
         setUsersWithCredits(enriched);
       }
     } catch (error) {
