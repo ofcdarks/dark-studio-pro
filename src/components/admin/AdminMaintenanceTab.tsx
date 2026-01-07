@@ -8,23 +8,41 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Wrench, Save, Loader2, Edit2, CheckCircle, AlertTriangle, RefreshCw } from "lucide-react";
+import { Wrench, Save, Loader2, Edit2, CheckCircle, AlertTriangle, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TOOL_REGISTRY, ToolMaintenanceData, ToolMaintenanceStatus } from "@/hooks/useToolMaintenance";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+// Key for localStorage to persist simulation mode
+const SIMULATE_USER_KEY = 'admin_simulate_user_maintenance';
+
 export const AdminMaintenanceTab = () => {
   const [maintenanceData, setMaintenanceData] = useState<ToolMaintenanceData>({ tools: {} });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [simulateUserView, setSimulateUserView] = useState(() => {
+    return localStorage.getItem(SIMULATE_USER_KEY) === 'true';
+  });
   
   // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingTool, setEditingTool] = useState<{ path: string; name: string } | null>(null);
   const [editMessage, setEditMessage] = useState("");
   const [editEndTime, setEditEndTime] = useState("");
+
+  const handleSimulateToggle = (enabled: boolean) => {
+    setSimulateUserView(enabled);
+    localStorage.setItem(SIMULATE_USER_KEY, enabled.toString());
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new Event('simulateUserModeChanged'));
+    if (enabled) {
+      toast.info('Modo simulação ativado! Você verá os modais de manutenção como usuário normal.');
+    } else {
+      toast.success('Modo simulação desativado.');
+    }
+  };
 
   const fetchMaintenanceData = async () => {
     setIsLoading(true);
@@ -164,6 +182,31 @@ export const AdminMaintenanceTab = () => {
           </Button>
         </div>
       </div>
+
+      {/* Simulate User View Toggle */}
+      <Card className={`p-4 ${simulateUserView ? 'bg-purple-500/10 border-purple-500/30' : 'bg-card'}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {simulateUserView ? (
+              <Eye className="w-5 h-5 text-purple-500" />
+            ) : (
+              <EyeOff className="w-5 h-5 text-muted-foreground" />
+            )}
+            <div>
+              <p className="font-medium text-foreground">Simular Visualização de Usuário</p>
+              <p className="text-xs text-muted-foreground">
+                {simulateUserView 
+                  ? 'Ativo: Você verá os modais de manutenção como um usuário normal' 
+                  : 'Desativado: Você tem acesso de admin às ferramentas em manutenção'}
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={simulateUserView}
+            onCheckedChange={handleSimulateToggle}
+          />
+        </div>
+      </Card>
 
       {/* Tools List */}
       <Card className="p-4">
