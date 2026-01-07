@@ -10,6 +10,7 @@ import { ThemeProvider } from "next-themes";
 import { BackgroundImageGenerationProvider } from "@/hooks/useBackgroundImageGeneration";
 import { BackgroundGenerationIndicator } from "@/components/layout/BackgroundGenerationIndicator";
 import { MaintenanceGuard } from "@/components/maintenance/MaintenanceGuard";
+import { useAppDomainRedirect } from "@/hooks/useAppDomainRedirect";
 import { Loader2 } from "lucide-react";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
@@ -17,6 +18,7 @@ import Landing from "./pages/Landing";
 // Smart redirect: logged in -> dashboard, not logged in -> landing
 const RootRedirect = () => {
   const { user, loading } = useAuth();
+  useAppDomainRedirect();
   
   if (loading) {
     return (
@@ -27,6 +29,50 @@ const RootRedirect = () => {
   }
   
   return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/landing" replace />;
+};
+
+// Wrapper component that handles domain redirect for all routes
+const AppRoutes = () => {
+  useAppDomainRedirect();
+  
+  return (
+    <MaintenanceGuard>
+      <Routes>
+        <Route path="/" element={<RootRedirect />} />
+        <Route path="/landing" element={<LandingSettingsProvider><Landing /></LandingSettingsProvider>} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/analyzer" element={<ProtectedRoute><VideoAnalyzer /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute><AnalysisHistory /></ProtectedRoute>} />
+        <Route path="/explore" element={<ProtectedRoute><ExploreNiche /></ProtectedRoute>} />
+        <Route path="/folders" element={<ProtectedRoute><Folders /></ProtectedRoute>} />
+        <Route path="/channels" element={<ProtectedRoute><MonitoredChannels /></ProtectedRoute>} />
+        <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+        <Route path="/library" element={<ProtectedRoute><ViralLibrary /></ProtectedRoute>} />
+        <Route path="/agents" element={<ProtectedRoute><ViralAgents /></ProtectedRoute>} />
+        <Route path="/prompts" element={<ProtectedRoute><PromptsImages /></ProtectedRoute>} />
+        <Route path="/voice" element={<ProtectedRoute><VoiceGenerator /></ProtectedRoute>} />
+        
+        <Route path="/video-gen" element={<ProtectedRoute><VideoGenerator /></ProtectedRoute>} />
+        <Route path="/youtube" element={<ProtectedRoute><YouTubeIntegration /></ProtectedRoute>} />
+        <Route path="/search-channels" element={<ProtectedRoute><SearchChannels /></ProtectedRoute>} />
+        <Route path="/channel-analyzer" element={<ProtectedRoute><ChannelAnalyzer /></ProtectedRoute>} />
+        <Route path="/srt" element={<ProtectedRoute><SRTConverter /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+        
+        <Route path="/scenes" element={<ProtectedRoute><SceneGenerator /></ProtectedRoute>} />
+        <Route path="/plans" element={<ProtectedRoute><PlansCredits /></ProtectedRoute>} />
+        <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
+        <Route path="/maintenance" element={<Maintenance />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </MaintenanceGuard>
+  );
 };
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -69,42 +115,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <MaintenanceGuard>
-                <Routes>
-                  <Route path="/" element={<RootRedirect />} />
-                  <Route path="/landing" element={<LandingSettingsProvider><Landing /></LandingSettingsProvider>} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                  <Route path="/analyzer" element={<ProtectedRoute><VideoAnalyzer /></ProtectedRoute>} />
-                  <Route path="/history" element={<ProtectedRoute><AnalysisHistory /></ProtectedRoute>} />
-                  <Route path="/explore" element={<ProtectedRoute><ExploreNiche /></ProtectedRoute>} />
-                  <Route path="/folders" element={<ProtectedRoute><Folders /></ProtectedRoute>} />
-                  <Route path="/channels" element={<ProtectedRoute><MonitoredChannels /></ProtectedRoute>} />
-                  <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                  <Route path="/library" element={<ProtectedRoute><ViralLibrary /></ProtectedRoute>} />
-                  <Route path="/agents" element={<ProtectedRoute><ViralAgents /></ProtectedRoute>} />
-                  <Route path="/prompts" element={<ProtectedRoute><PromptsImages /></ProtectedRoute>} />
-                  <Route path="/voice" element={<ProtectedRoute><VoiceGenerator /></ProtectedRoute>} />
-                  
-                  <Route path="/video-gen" element={<ProtectedRoute><VideoGenerator /></ProtectedRoute>} />
-                  <Route path="/youtube" element={<ProtectedRoute><YouTubeIntegration /></ProtectedRoute>} />
-                  <Route path="/search-channels" element={<ProtectedRoute><SearchChannels /></ProtectedRoute>} />
-                  <Route path="/channel-analyzer" element={<ProtectedRoute><ChannelAnalyzer /></ProtectedRoute>} />
-                  <Route path="/srt" element={<ProtectedRoute><SRTConverter /></ProtectedRoute>} />
-                  <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-                  <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
-                  
-                  <Route path="/scenes" element={<ProtectedRoute><SceneGenerator /></ProtectedRoute>} />
-                  <Route path="/plans" element={<ProtectedRoute><PlansCredits /></ProtectedRoute>} />
-                  <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
-                  <Route path="/terms" element={<TermsOfService />} />
-                  <Route path="/privacy" element={<PrivacyPolicy />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
-                  <Route path="/maintenance" element={<Maintenance />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </MaintenanceGuard>
+              <AppRoutes />
               <BackgroundGenerationIndicator />
             </BrowserRouter>
           </TooltipProvider>
