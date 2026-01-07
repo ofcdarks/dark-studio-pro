@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { 
   ArrowRight, 
@@ -205,6 +206,91 @@ const formatViews = (views: number) => {
     return `${(views / 1000).toFixed(1)}k`;
   }
   return views.toString();
+};
+
+// Newsletter Form Component
+const NewsletterForm = () => {
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !email.includes("@")) {
+      toast.error("Por favor, insira um email válido");
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Save to newsletter_subscribers table
+      const { error } = await supabase
+        .from("newsletter_subscribers")
+        .insert({ email: email.toLowerCase().trim() });
+
+      if (error) {
+        if (error.code === "23505") {
+          toast.info("Este email já está cadastrado!");
+        } else {
+          throw error;
+        }
+      } else {
+        setIsSubscribed(true);
+        toast.success("Inscrito com sucesso! 🎉");
+      }
+    } catch (error) {
+      console.error("Newsletter error:", error);
+      toast.error("Erro ao se inscrever. Tente novamente.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isSubscribed) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-4">
+        <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+          <Sparkles className="w-6 h-6 text-green-500" />
+        </div>
+        <p className="text-foreground font-medium">Obrigado por se inscrever!</p>
+        <p className="text-sm text-muted-foreground">Você receberá nosso próximo conteúdo em breve.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+      <div className="flex-1 relative">
+        <Input
+          type="email"
+          placeholder="Seu melhor email..."
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="h-12 bg-background/50 border-border/50 focus:border-primary pl-4 pr-4"
+          disabled={isLoading}
+        />
+      </div>
+      <Button 
+        type="submit" 
+        disabled={isLoading}
+        className="h-12 px-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 gap-2"
+      >
+        {isLoading ? (
+          <>
+            <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+            Enviando...
+          </>
+        ) : (
+          <>
+            <Rocket className="w-4 h-4" />
+            Inscrever-se
+          </>
+        )}
+      </Button>
+    </form>
+  );
 };
 
 const Blog = () => {
@@ -748,6 +834,42 @@ const Blog = () => {
             </div>
           </section>
         )}
+
+        {/* Newsletter Section */}
+        <section className="py-16 px-4 relative overflow-hidden bg-gradient-to-b from-background to-muted/20">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="relative max-w-2xl mx-auto"
+          >
+            <Card className="p-8 md:p-10 bg-card/80 backdrop-blur-sm border-primary/20 shadow-2xl shadow-primary/5">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 border border-primary/30 mb-6">
+                  <Sparkles className="w-7 h-7 text-primary" />
+                </div>
+                
+                <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                  Receba Conteúdo <span className="text-primary">Exclusivo</span>
+                </h2>
+                
+                <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+                  Junte-se a milhares de criadores e receba dicas, estratégias e novidades 
+                  sobre canais dark diretamente no seu email.
+                </p>
+
+                <NewsletterForm />
+
+                <p className="text-xs text-muted-foreground mt-4">
+                  Enviamos no máximo 1 email por semana. Cancele quando quiser.
+                </p>
+              </div>
+            </Card>
+          </motion.div>
+        </section>
 
         {/* CTA Section - Premium */}
         <section className="py-20 px-4 relative overflow-hidden">
