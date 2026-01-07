@@ -149,16 +149,25 @@ export function CreditHistoryCard() {
   const displayedItems = showAll ? historyItems : historyItems.slice(0, 10);
 
   const getTransactionBadge = (item: HistoryItem) => {
-    const isRefund = item.operation === 'refund';
-    const isDebit = item.amount < 0;
+    // Reembolso
+    if (item.operation === 'refund') {
+      return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">Reembolso</Badge>;
+    }
     
-    if (isRefund) {
-      return <Badge className="bg-blue-500/20 text-blue-400 text-xs">Reembolso</Badge>;
+    // Créditos adicionados (compra, bônus, assinatura, renovação)
+    if (item.type === 'transaction' && item.amount > 0) {
+      const labels: Record<string, string> = {
+        'add': 'Bônus',
+        'purchase': 'Compra',
+        'subscription': 'Assinatura',
+        'bonus': 'Bônus',
+      };
+      const label = labels[item.operation] || 'Crédito';
+      return <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">{label}</Badge>;
     }
-    if (isDebit) {
-      return <Badge className="bg-destructive/20 text-destructive text-xs">Débito</Badge>;
-    }
-    return <Badge className="bg-success/20 text-success text-xs">Crédito</Badge>;
+    
+    // Débitos (uso de ferramentas)
+    return <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-xs">Uso</Badge>;
   };
 
   const extractModelFromDescription = (item: HistoryItem): string | null => {
