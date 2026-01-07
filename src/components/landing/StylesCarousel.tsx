@@ -17,7 +17,7 @@ import previewPixar from "@/assets/style-previews/pixar-disney.jpg";
 import previewVaporwave from "@/assets/style-previews/vaporwave.jpg";
 import previewDoubleExposure from "@/assets/style-previews/double-exposure.jpg";
 import previewDreamworks from "@/assets/style-previews/dreamworks-style.jpg";
-import previewLowPoly from "@/assets/style-previews/low-poly-stylized.jpg";
+import preview3DViralMinimalista from "@/assets/style-previews/3d-viral-minimalista.jpg";
 import previewPaperCraft from "@/assets/style-previews/paper-craft-3d.jpg";
 
 // Import style preview images - Row 2
@@ -60,7 +60,7 @@ const stylesRow1 = [
   { id: "vaporwave", name: "Vaporwave", image: previewVaporwave, category: "Vibrante", description: "Estética retrô-futurista com cores pastel e elementos 80s/90s" },
   { id: "double-exposure", name: "Double Exposure", image: previewDoubleExposure, category: "Experimental", description: "Sobreposição artística de duas imagens criando efeito visual único" },
   { id: "dreamworks", name: "DreamWorks", image: previewDreamworks, category: "3D", description: "Estilo de animação 3D com personagens carismáticos e expressivos" },
-  { id: "low-poly", name: "Low Poly", image: previewLowPoly, category: "3D", description: "Arte geométrica minimalista com polígonos estilizados" },
+  { id: "3d-viral-minimalista", name: "3D Viral Time Lapse", image: preview3DViralMinimalista, category: "3D", description: "Time lapse cinematográfico com transições dia/noite e cenas em evolução" },
   { id: "paper-craft", name: "Paper Craft 3D", image: previewPaperCraft, category: "3D", description: "Cenas recortadas em papel com camadas e profundidade artesanal" },
 ];
 
