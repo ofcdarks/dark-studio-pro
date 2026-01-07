@@ -41,9 +41,10 @@ export const ComparisonSlider = () => {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         whileInView={{ opacity: 1, y: 0 }}
+        whileHover={{ backgroundColor: "rgba(20, 20, 20, 1)", borderColor: "rgba(245, 158, 11, 0.3)" }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="bg-black py-4 px-5 sm:px-6 flex items-center justify-between rounded-t-xl border border-b-0 border-border"
+        className="bg-black py-4 px-5 sm:px-6 flex items-center justify-between rounded-t-xl border border-b-0 border-border cursor-default"
       >
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
@@ -147,9 +148,10 @@ export const ComparisonSlider = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
+        whileHover={{ backgroundColor: "rgba(20, 20, 20, 1)", borderColor: "rgba(245, 158, 11, 0.3)" }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
-        className="bg-black py-4 px-5 sm:px-6 flex items-center justify-between rounded-b-xl border border-t-0 border-border"
+        className="bg-black py-4 px-5 sm:px-6 flex items-center justify-between rounded-b-xl border border-t-0 border-border cursor-default"
       >
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
