@@ -96,6 +96,7 @@ export const AdminBlogTab = () => {
   const [generateYoutubeUrl, setGenerateYoutubeUrl] = useState("");
   const [generateCategory, setGenerateCategory] = useState("YouTube");
   const [generateWithCover, setGenerateWithCover] = useState(true);
+  const [generateCoverStyle, setGenerateCoverStyle] = useState("cinematic");
 
   // Edit modal
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -201,6 +202,7 @@ export const AdminBlogTab = () => {
                 title: article.title,
                 category: generateCategory,
                 articleId: savedArticle.id,
+                style: generateCoverStyle,
               },
             }
           );
@@ -656,17 +658,41 @@ export const AdminBlogTab = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="generateWithCover"
-                checked={generateWithCover}
-                onChange={(e) => setGenerateWithCover(e.target.checked)}
-                className="w-4 h-4 rounded border-border"
-              />
-              <label htmlFor="generateWithCover" className="text-sm text-muted-foreground">
-                Gerar imagem de capa automaticamente
-              </label>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="generateWithCover"
+                  checked={generateWithCover}
+                  onChange={(e) => setGenerateWithCover(e.target.checked)}
+                  className="w-4 h-4 rounded border-border"
+                />
+                <label htmlFor="generateWithCover" className="text-sm text-muted-foreground">
+                  Gerar imagem de capa automaticamente
+                </label>
+              </div>
+              {generateWithCover && (
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Estilo Visual da Capa
+                  </label>
+                  <Select value={generateCoverStyle} onValueChange={setGenerateCoverStyle}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cinematic">🎬 Cinematográfico</SelectItem>
+                      <SelectItem value="minimalist">✨ Minimalista</SelectItem>
+                      <SelectItem value="colorful">🌈 Colorido</SelectItem>
+                      <SelectItem value="tech">💻 Tech/Futurista</SelectItem>
+                      <SelectItem value="gradient">🎨 Gradiente Abstrato</SelectItem>
+                      <SelectItem value="neon">🔮 Neon/Cyberpunk</SelectItem>
+                      <SelectItem value="professional">📊 Profissional/Corporativo</SelectItem>
+                      <SelectItem value="creative">🎭 Artístico/Criativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>

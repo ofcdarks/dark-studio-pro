@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, category, articleId } = await req.json();
+    const { title, category, articleId, style } = await req.json();
 
     if (!title) {
       return new Response(
@@ -26,16 +26,28 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Generating cover image for:", title);
+    console.log("Generating cover image for:", title, "with style:", style);
+
+    // Style-specific prompt modifiers
+    const stylePrompts: Record<string, string> = {
+      cinematic: "Cinematic lighting with dramatic shadows, film-quality aesthetic, rich contrast, depth of field blur, professional movie poster feel.",
+      minimalist: "Clean minimalist design with lots of negative space, simple geometric shapes, muted color palette, elegant and sophisticated.",
+      colorful: "Vibrant and bold colors, playful gradients, energetic and dynamic composition, bright and cheerful mood.",
+      tech: "Futuristic technology aesthetic, circuit patterns, holographic elements, blue and cyan tones, digital matrix feel, sci-fi inspired.",
+      gradient: "Abstract flowing gradients, smooth color transitions, aurora-like effects, dreamy and ethereal atmosphere.",
+      neon: "Neon lights and glowing effects, cyberpunk aesthetic, dark background with bright neon accents in pink, purple and cyan.",
+      professional: "Corporate professional look, clean and structured, business-oriented, trustworthy blue and gray tones, subtle geometric patterns.",
+      creative: "Artistic and expressive, painterly brushstrokes, mixed media collage feel, creative and unique visual elements.",
+    };
+
+    const selectedStyle = stylePrompts[style || "cinematic"] || stylePrompts.cinematic;
 
     // Create a detailed prompt for blog cover image
     const imagePrompt = `Professional blog cover image for an article about: "${title}". 
 Category: ${category || "YouTube content creation"}.
-Style: Modern, clean, professional digital marketing aesthetic.
-Colors: Vibrant gradient background with purple, blue and gold accents.
-Elements: Abstract tech elements, subtle YouTube-related imagery if relevant.
+Visual Style: ${selectedStyle}
 Composition: 16:9 aspect ratio, suitable for blog hero image.
-No text or words in the image. High quality, ultra detailed, cinematic lighting.`;
+No text or words in the image. High quality, ultra detailed.`;
 
     // Generate image using Lovable AI
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
