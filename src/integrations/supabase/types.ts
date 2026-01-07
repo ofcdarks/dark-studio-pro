@@ -276,6 +276,9 @@ export type Database = {
           is_published: boolean | null
           meta_description: string | null
           meta_keywords: string[] | null
+          product_cta: string | null
+          product_title: string | null
+          product_url: string | null
           published_at: string | null
           read_time: string | null
           seo_score: number | null
@@ -295,6 +298,9 @@ export type Database = {
           is_published?: boolean | null
           meta_description?: string | null
           meta_keywords?: string[] | null
+          product_cta?: string | null
+          product_title?: string | null
+          product_url?: string | null
           published_at?: string | null
           read_time?: string | null
           seo_score?: number | null
@@ -314,6 +320,9 @@ export type Database = {
           is_published?: boolean | null
           meta_description?: string | null
           meta_keywords?: string[] | null
+          product_cta?: string | null
+          product_title?: string | null
+          product_url?: string | null
           published_at?: string | null
           read_time?: string | null
           seo_score?: number | null

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { RelatedArticles } from "@/components/blog/RelatedArticles";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Calendar, Clock, User, Share2, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, User, Share2, Loader2, ExternalLink, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.gif";
 
@@ -23,6 +23,9 @@ interface BlogArticle {
   is_published: boolean;
   created_at: string;
   published_at: string | null;
+  product_url?: string | null;
+  product_title?: string | null;
+  product_cta?: string | null;
 }
 
 const DynamicArticle = () => {
@@ -226,6 +229,32 @@ const DynamicArticle = () => {
               prose-li:marker:text-primary"
             dangerouslySetInnerHTML={{ __html: article.content }}
           />
+
+          {/* Product/Affiliate Card */}
+          {article.product_url && (
+            <div className="mt-10 p-6 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl border border-primary/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-primary/20 rounded-lg">
+                  <ShoppingBag className="w-5 h-5 text-primary" />
+                </div>
+                <span className="text-sm text-muted-foreground font-medium">Produto Recomendado</span>
+              </div>
+              {article.product_title && (
+                <h4 className="text-xl font-bold mb-4">{article.product_title}</h4>
+              )}
+              <a
+                href={article.product_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2"
+              >
+                <Button size="lg" className="gradient-button">
+                  {article.product_cta || "Saiba Mais"}
+                  <ExternalLink className="w-4 h-4 ml-2" />
+                </Button>
+              </a>
+            </div>
+          )}
 
           {/* CTA */}
           <div className="mt-16 p-8 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl border border-primary/20">
