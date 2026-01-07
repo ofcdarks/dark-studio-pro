@@ -83,13 +83,13 @@ serve(async (req) => {
 
     logStep("Reset link generated", { link: resetLink.substring(0, 50) + "..." });
 
-    // Fetch password_reset template
+    // Fetch password_recovery template (or blocked_password as fallback)
     const { data: template, error: templateError } = await supabaseAdmin
       .from("email_templates")
       .select("*")
-      .eq("template_type", "password_reset")
+      .eq("template_type", "password_recovery")
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
 
     if (templateError || !template) {
       logStep("Template not found", { error: templateError?.message });
