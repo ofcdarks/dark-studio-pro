@@ -3,6 +3,7 @@ import { Play, Zap, Rocket, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useLandingSettings } from "@/hooks/useLandingSettings";
+import videoCover from "@/assets/video-cover.jpg";
 
 const VideoShowcaseSection = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -157,14 +158,15 @@ const VideoShowcaseSection = () => {
             <div className="relative aspect-video bg-gradient-to-br from-card via-background to-card flex items-center justify-center">
                   {!isPlaying ? (
                     <>
-                      {/* Thumbnail overlay - show YouTube thumbnail if available */}
-                      {settings.videoId && (
-                        <img 
-                          src={`https://img.youtube.com/vi/${settings.videoId}/maxresdefault.jpg`}
-                          alt="Video thumbnail"
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      )}
+                      {/* Custom cover image - La Casa Dark Core themed */}
+                      <img 
+                        src={settings.videoId 
+                          ? `https://img.youtube.com/vi/${settings.videoId}/maxresdefault.jpg`
+                          : videoCover
+                        }
+                        alt="Video thumbnail"
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
                       
                       {/* Animated background pattern */}
