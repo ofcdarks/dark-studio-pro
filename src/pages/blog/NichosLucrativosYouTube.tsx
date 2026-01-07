@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Clock, Calendar, User, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SEOHead from "@/components/seo/SEOHead";
+import { RelatedArticles } from "@/components/blog/RelatedArticles";
 import coverImage from "@/assets/blog/nichos-lucrativos-youtube.jpg";
 
 const NichosLucrativosYouTube = () => {
@@ -170,19 +171,7 @@ const NichosLucrativosYouTube = () => {
             </Link>
           </div>
 
-          <div className="mt-12">
-            <h3 className="text-xl font-bold mb-6">Artigos Relacionados</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <Link to="/blog/como-ganhar-dinheiro-youtube" className="p-4 bg-card rounded-xl border border-border/50 hover:border-primary/50 transition-colors">
-                <h4 className="font-semibold mb-2">Como Ganhar Dinheiro no YouTube</h4>
-                <p className="text-sm text-muted-foreground">Guia completo de monetização</p>
-              </Link>
-              <Link to="/blog/como-criar-canal-dark" className="p-4 bg-card rounded-xl border border-border/50 hover:border-primary/50 transition-colors">
-                <h4 className="font-semibold mb-2">Como Criar um Canal Dark</h4>
-                <p className="text-sm text-muted-foreground">Passo a passo para iniciantes</p>
-              </Link>
-            </div>
-          </div>
+          <RelatedArticles currentSlug="nichos-lucrativos-youtube" currentCategory="Nichos" />
         </article>
 
         <footer className="border-t border-border/50 py-8 mt-12">
