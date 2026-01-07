@@ -1,9 +1,136 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+const DefaultHeader = {
+  "Origin": "https://labs.google",
+  "Content-Type": "application/json",
+  "Referer": "https://labs.google/fx/tools/image-fx"
+};
+
+const AspectRatio = {
+  LANDSCAPE: "IMAGE_ASPECT_RATIO_LANDSCAPE"
+} as const;
+
+function generateSessionId(): string {
+  const randomHex = Array.from(crypto.getRandomValues(new Uint8Array(8)))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `${Date.now()}-${randomHex}`;
+}
+
+async function fetchSession(cookie: string): Promise<{ access_token: string }> {
+  const res = await fetch("https://labs.google/fx/api/auth/session", {
+    headers: {
+      "Origin": "https://labs.google",
+      "Referer": "https://labs.google/fx/tools/image-fx",
+      "Cookie": cookie
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error(`Falha de autenticação (${res.status}). Verifique os cookies do ImageFX.`);
+  }
+
+  const data = await res.json();
+  if (!data.access_token) {
+    throw new Error("Resposta de sessão inválida. Atualize os cookies do ImageFX.");
+  }
+
+  return data;
+}
+
+async function getAdminImageFXCookies(): Promise<string | null> {
+  try {
+    // Buscar cookies de admin (primeiro admin encontrado)
+    const { data: adminRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'admin')
+      .limit(1)
+      .maybeSingle();
+
+    if (!adminRole) {
+      console.log('[BlogCover] No admin found');
+      return null;
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('user_api_settings')
+      .select('imagefx_cookies, imagefx_validated')
+      .eq('user_id', adminRole.user_id)
+      .maybeSingle();
+
+    if (error || !data || !data.imagefx_validated) {
+      console.log('[BlogCover] Admin cookies not found or not validated');
+      return null;
+    }
+
+    return (data as any).imagefx_cookies || null;
+  } catch (e) {
+    console.error('[BlogCover] Error fetching admin cookies:', e);
+    return null;
+  }
+}
+
+async function generateWithImageFX(cookie: string, prompt: string): Promise<string> {
+  console.log('[BlogCover] Generating with ImageFX...');
+  
+  const session = await fetchSession(cookie);
+  
+  const headers = {
+    ...DefaultHeader,
+    "Cookie": cookie,
+    "Authorization": `Bearer ${session.access_token}`
+  };
+
+  const enhancedPrompt = `${prompt}, 16:9 aspect ratio, no black bars, no letterbox, no borders, fill entire frame`;
+  
+  const payload = JSON.stringify({
+    userInput: {
+      candidatesCount: 1,
+      prompts: [enhancedPrompt],
+      seed: Math.floor(Math.random() * 2147483647)
+    },
+    clientContext: {
+      sessionId: generateSessionId(),
+      tool: "IMAGE_FX"
+    },
+    modelInput: {
+      modelNameType: "IMAGEN_3_5"
+    },
+    aspectRatio: AspectRatio.LANDSCAPE
+  });
+
+  const res = await fetch("https://aisandbox-pa.googleapis.com/v1:runImageFx", {
+    method: "POST",
+    body: payload,
+    headers
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('[BlogCover] ImageFX error:', res.status, errText);
+    throw new Error(`Erro ImageFX: ${res.status}`);
+  }
+
+  const json = await res.json();
+  const images = json?.imagePanels?.[0]?.generatedImages;
+  
+  if (!images?.length) {
+    throw new Error("Nenhuma imagem gerada pelo ImageFX");
+  }
+
+  return `data:image/png;base64,${images[0].encodedImage}`;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -20,78 +147,52 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
-    console.log("Generating cover for:", title);
-
-    let styleDesc = "cinematic dramatic lighting";
-    if (style === "minimalist") styleDesc = "minimalist with negative space";
-    else if (style === "colorful") styleDesc = "vibrant bold colors";
-    else if (style === "tech") styleDesc = "futuristic technology";
-    else if (style === "neon") styleDesc = "neon cyberpunk style";
-
-    const imagePrompt = `Professional blog cover 16:9 about "${title}". ${styleDesc}. Category: ${category || "YouTube"}. No text. Ultra detailed.`;
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [{ role: "user", content: imagePrompt }],
-        modalities: ["image", "text"],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("AI error:", response.status, errorText);
+    // Get admin's ImageFX cookies
+    const cookies = await getAdminImageFXCookies();
+    
+    if (!cookies) {
       return new Response(
-        JSON.stringify({ error: `AI error: ${response.status}` }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Cookies do ImageFX não configurados. Configure nas configurações de Admin." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const data = await response.json();
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    console.log('[BlogCover] Generating cover for:', title);
 
-    if (!imageUrl) {
-      throw new Error("Nenhuma imagem gerada");
-    }
+    let styleDesc = "cinematic dramatic lighting, professional";
+    if (style === "minimalist") styleDesc = "minimalist with negative space, clean";
+    else if (style === "colorful") styleDesc = "vibrant bold colors, energetic";
+    else if (style === "tech") styleDesc = "futuristic technology, sci-fi";
+    else if (style === "neon") styleDesc = "neon cyberpunk style, glowing";
+
+    const imagePrompt = `Professional blog cover image about "${title}". ${styleDesc}. Category: ${category || "YouTube content creation"}. High quality, ultra detailed, no text or words.`;
+
+    // Generate with ImageFX
+    const imageUrl = await generateWithImageFX(cookies, imagePrompt);
 
     // If articleId provided, upload to storage
     if (articleId) {
-      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-      
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      );
-
       const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
       const imageBuffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
       const fileName = `blog-covers/${articleId}-${Date.now()}.png`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabaseAdmin.storage
         .from("blog-images")
         .upload(fileName, imageBuffer, { contentType: "image/png", upsert: true });
 
       if (uploadError) {
-        console.error("Upload error:", uploadError);
+        console.error('[BlogCover] Upload error:', uploadError);
         return new Response(
           JSON.stringify({ success: true, image_url: imageUrl, uploaded: false }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      const { data: urlData } = supabase.storage.from("blog-images").getPublicUrl(fileName);
+      const { data: urlData } = supabaseAdmin.storage.from("blog-images").getPublicUrl(fileName);
       
-      await supabase.from("blog_articles").update({ image_url: urlData.publicUrl }).eq("id", articleId);
+      await supabaseAdmin.from("blog_articles").update({ image_url: urlData.publicUrl }).eq("id", articleId);
+
+      console.log('[BlogCover] Cover uploaded:', urlData.publicUrl);
 
       return new Response(
         JSON.stringify({ success: true, image_url: urlData.publicUrl, uploaded: true }),
@@ -104,9 +205,9 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error:", error);
+    console.error('[BlogCover] Error:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Erro desconhecido" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
