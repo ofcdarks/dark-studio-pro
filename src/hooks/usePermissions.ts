@@ -100,22 +100,13 @@ export function usePermissions() {
         isAnnual = false;
       }
       
-      // If user has 'pro' role but still showing FREE, give them PRO permissions
-      if (currentPlanName === "FREE" && roleData?.role === "pro") {
-        // Get the best available plan permissions (MASTER PRO)
-        const { data: proPlanData } = await supabase
-          .from("plan_permissions")
-          .select("permissions, plan_name")
-          .eq("plan_name", "MASTER PRO")
-          .eq("is_annual", false)
-          .maybeSingle();
-        
-        if (proPlanData) {
-          return {
-            permissions: (proPlanData.permissions as Permissions) || ALL_PERMISSIONS,
-            planName: "PRO",
-          };
-        }
+      // If user has 'pro' role, give them full PRO permissions regardless of detected plan
+      // This handles cases where Stripe subscription is not properly linked
+      if (roleData?.role === "pro") {
+        return {
+          permissions: ALL_PERMISSIONS,
+          planName: "PRO",
+        };
       }
 
       // Fetch permissions for the current plan
