@@ -4,10 +4,16 @@ import { PermissionGate } from "@/components/auth/PermissionGate";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Youtube, CheckCircle, Upload, BarChart3, Settings, Loader2, LogOut, ExternalLink } from "lucide-react";
+import { Youtube, CheckCircle, Upload, BarChart3, Settings, Loader2, LogOut, ExternalLink, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+
+const PRODUCTION_DOMAIN = "app.canaisdarks.com.br";
+const isProductionDomain = () => {
+  if (typeof window === 'undefined') return false;
+  return window.location.hostname === PRODUCTION_DOMAIN;
+};
 
 interface YouTubeConnection {
   id: string;
@@ -167,18 +173,38 @@ const YouTubeIntegration = () => {
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                   Conecte sua conta do YouTube para fazer uploads automáticos, agendar publicações e acompanhar métricas em tempo real.
                 </p>
-                <Button 
-                  onClick={handleConnect}
-                  disabled={connecting}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {connecting ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Youtube className="w-4 h-4 mr-2" />
-                  )}
-                  {connecting ? 'Conectando...' : 'Conectar com YouTube'}
-                </Button>
+                
+                {!isProductionDomain() ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center gap-2 text-amber-500 mb-2">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span className="text-sm font-medium">Ambiente de Preview Detectado</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      A conexão com o YouTube só funciona no domínio de produção para evitar erros de OAuth.
+                    </p>
+                    <Button 
+                      onClick={() => window.open(`https://${PRODUCTION_DOMAIN}/youtube`, '_blank')}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Abrir no Domínio de Produção
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    onClick={handleConnect}
+                    disabled={connecting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {connecting ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Youtube className="w-4 h-4 mr-2" />
+                    )}
+                    {connecting ? 'Conectando...' : 'Conectar com YouTube'}
+                  </Button>
+                )}
               </Card>
             ) : (
               <div className="space-y-6">
