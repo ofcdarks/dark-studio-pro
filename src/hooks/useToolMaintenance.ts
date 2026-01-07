@@ -78,6 +78,37 @@ export const useToolMaintenance = (): UseToolMaintenanceReturn => {
   // Keep track of previous maintenance states to detect when tools come back online
   const previousDataRef = useRef<ToolMaintenanceData | null>(null);
 
+  // Show browser push notification
+  const showPushNotification = useCallback((title: string, body: string, toolPath: string) => {
+    if (!('Notification' in window)) return;
+    
+    if (Notification.permission === 'granted') {
+      const notification = new Notification(title, {
+        body,
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        tag: `maintenance-end-${toolPath}`,
+        requireInteraction: false
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        window.location.href = toolPath;
+        notification.close();
+      };
+
+      // Auto close after 8 seconds
+      setTimeout(() => notification.close(), 8000);
+    }
+  }, []);
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   useEffect(() => {
     fetchMaintenanceData();
 
@@ -103,10 +134,20 @@ export const useToolMaintenance = (): UseToolMaintenanceReturn => {
               // Tool was under maintenance and is now online
               if (prevStatus?.enabled === true && status.enabled === false) {
                 const toolName = TOOL_REGISTRY.find(t => t.path === path)?.name || path;
+                const toolIcon = TOOL_REGISTRY.find(t => t.path === path)?.icon || '🔧';
+                
+                // Show toast notification (for users on the tab)
                 toast.success(`🎉 ${toolName} está disponível!`, {
                   description: 'A manutenção foi concluída.',
                   duration: 6000
                 });
+                
+                // Show browser push notification (works even when tab is not focused)
+                showPushNotification(
+                  `${toolIcon} ${toolName} Online!`,
+                  'A manutenção foi concluída. Clique para acessar.',
+                  path
+                );
               }
             });
           }
