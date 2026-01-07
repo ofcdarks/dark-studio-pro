@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import initSqlJs, { Database } from "sql.js";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  Database as DatabaseIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -104,6 +106,22 @@ export function AdminMigrationTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  
+  // SQLite import states
+  const [sqliteImportOpen, setSqliteImportOpen] = useState(false);
+  const [sqliteData, setSqliteData] = useState<Array<{ email: string; full_name: string; plan_name: string; credits_amount: number }>>([]);
+  const [sqliteTables, setSqliteTables] = useState<string[]>([]);
+  const [selectedTable, setSelectedTable] = useState("");
+  const [sqliteColumns, setSqliteColumns] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<{ email: string; name: string; plan: string; credits: string }>({
+    email: "",
+    name: "",
+    plan: "",
+    credits: "",
+  });
+  const [importingSqlite, setImportingSqlite] = useState(false);
+  const [loadingSqlite, setLoadingSqlite] = useState(false);
+  const sqliteDbRef = useRef<Database | null>(null);
   
   const [newInvite, setNewInvite] = useState({
     email: "",
@@ -417,6 +435,162 @@ export function AdminMigrationTab() {
     }
   };
 
+  // SQLite file handling
+  const handleSqliteFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoadingSqlite(true);
+    try {
+      const SQL = await initSqlJs({
+        locateFile: (filename) => `https://sql.js.org/dist/${filename}`,
+      });
+
+      const arrayBuffer = await file.arrayBuffer();
+      const db = new SQL.Database(new Uint8Array(arrayBuffer));
+      sqliteDbRef.current = db;
+
+      // Get list of tables
+      const tablesResult = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+      if (tablesResult.length > 0) {
+        const tables = tablesResult[0].values.map(row => row[0] as string);
+        setSqliteTables(tables);
+        setSqliteImportOpen(true);
+      } else {
+        toast.error("Nenhuma tabela encontrada no banco de dados");
+      }
+    } catch (error: any) {
+      console.error("Error reading SQLite file:", error);
+      toast.error("Erro ao ler arquivo SQLite: " + (error.message || "Formato inválido"));
+    } finally {
+      setLoadingSqlite(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleTableSelect = (tableName: string) => {
+    setSelectedTable(tableName);
+    setSqliteData([]);
+    setColumnMapping({ email: "", name: "", plan: "", credits: "" });
+
+    if (sqliteDbRef.current) {
+      try {
+        const columnsResult = sqliteDbRef.current.exec(`PRAGMA table_info(${tableName})`);
+        if (columnsResult.length > 0) {
+          const columns = columnsResult[0].values.map(row => row[1] as string);
+          setSqliteColumns(columns);
+
+          // Auto-detect common column names
+          const emailCol = columns.find(c => 
+            c.toLowerCase().includes("email") || c.toLowerCase().includes("e-mail")
+          );
+          const nameCol = columns.find(c => 
+            c.toLowerCase().includes("name") || c.toLowerCase().includes("nome") || c.toLowerCase().includes("full_name")
+          );
+          const planCol = columns.find(c => 
+            c.toLowerCase().includes("plan") || c.toLowerCase().includes("plano")
+          );
+          const creditsCol = columns.find(c => 
+            c.toLowerCase().includes("credit") || c.toLowerCase().includes("credito")
+          );
+
+          setColumnMapping({
+            email: emailCol || "",
+            name: nameCol || "",
+            plan: planCol || "",
+            credits: creditsCol || "",
+          });
+        }
+      } catch (error) {
+        console.error("Error reading table columns:", error);
+      }
+    }
+  };
+
+  const previewSqliteData = () => {
+    if (!sqliteDbRef.current || !selectedTable || !columnMapping.email) {
+      toast.error("Selecione a tabela e mapeie pelo menos a coluna de email");
+      return;
+    }
+
+    try {
+      const selectCols = [columnMapping.email];
+      if (columnMapping.name) selectCols.push(columnMapping.name);
+      if (columnMapping.plan) selectCols.push(columnMapping.plan);
+      if (columnMapping.credits) selectCols.push(columnMapping.credits);
+
+      const result = sqliteDbRef.current.exec(`SELECT ${selectCols.join(", ")} FROM ${selectedTable}`);
+      
+      if (result.length > 0) {
+        const data = result[0].values.map(row => {
+          let idx = 0;
+          const email = (row[idx++] as string)?.toLowerCase().trim() || "";
+          const full_name = columnMapping.name ? (row[idx++] as string)?.trim() || "" : "";
+          const plan_name = columnMapping.plan ? (row[idx++] as string)?.toUpperCase() || "FREE" : "FREE";
+          const credits_amount = columnMapping.credits ? parseInt(row[idx] as string) || 50 : 50;
+
+          return { email, full_name, plan_name, credits_amount };
+        }).filter(item => item.email && item.email.includes("@"));
+
+        if (data.length === 0) {
+          toast.error("Nenhum email válido encontrado");
+          return;
+        }
+
+        setSqliteData(data);
+        toast.success(`${data.length} registros encontrados`);
+      } else {
+        toast.error("Nenhum dado encontrado na tabela");
+      }
+    } catch (error: any) {
+      console.error("Error querying SQLite:", error);
+      toast.error("Erro ao consultar dados: " + error.message);
+    }
+  };
+
+  const handleSqliteImport = async () => {
+    if (sqliteData.length === 0) return;
+
+    setImportingSqlite(true);
+    try {
+      const invitesToInsert = sqliteData.map(item => ({
+        email: item.email,
+        full_name: item.full_name || null,
+        plan_name: item.plan_name,
+        credits_amount: item.credits_amount,
+        invited_by: user?.id,
+      }));
+
+      const { error } = await supabase
+        .from("migration_invites")
+        .insert(invitesToInsert);
+
+      if (error) throw error;
+
+      toast.success(`${sqliteData.length} convites importados com sucesso!`);
+      closeSqliteModal();
+      fetchInvites();
+    } catch (error: any) {
+      console.error("Error importing from SQLite:", error);
+      toast.error(error.message || "Erro ao importar convites");
+    } finally {
+      setImportingSqlite(false);
+    }
+  };
+
+  const closeSqliteModal = () => {
+    setSqliteImportOpen(false);
+    setSqliteData([]);
+    setSqliteTables([]);
+    setSelectedTable("");
+    setSqliteColumns([]);
+    setColumnMapping({ email: "", name: "", plan: "", credits: "" });
+    if (sqliteDbRef.current) {
+      sqliteDbRef.current.close();
+      sqliteDbRef.current = null;
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
@@ -512,6 +686,24 @@ export function AdminMigrationTab() {
                 <span>
                   <Upload className="w-4 h-4 mr-2" />
                   Importar CSV
+                </span>
+              </Button>
+            </label>
+            <label>
+              <input
+                type="file"
+                accept=".db,.sqlite,.sqlite3"
+                onChange={handleSqliteFileChange}
+                className="hidden"
+              />
+              <Button variant="outline" asChild disabled={loadingSqlite}>
+                <span>
+                  {loadingSqlite ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <DatabaseIcon className="w-4 h-4 mr-2" />
+                  )}
+                  Importar SQLite
                 </span>
               </Button>
             </label>
@@ -900,6 +1092,154 @@ export function AdminMigrationTab() {
             <Button onClick={handleCsvImport} disabled={importingCsv}>
               {importingCsv ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
               Importar {csvData.length} Convites
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* SQLite Import Modal */}
+      <Dialog open={sqliteImportOpen} onOpenChange={(open) => !open && closeSqliteModal()}>
+        <DialogContent className="bg-card border-primary/50 rounded-xl shadow-xl max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DatabaseIcon className="w-5 h-5 text-primary" />
+              Importar SQLite
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Table Selection */}
+            <div className="space-y-2">
+              <Label>Selecione a Tabela</Label>
+              <Select value={selectedTable} onValueChange={handleTableSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Escolha uma tabela..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {sqliteTables.map((table) => (
+                    <SelectItem key={table} value={table}>
+                      {table}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Column Mapping */}
+            {selectedTable && sqliteColumns.length > 0 && (
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Mapeamento de Colunas</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Email *</Label>
+                    <Select value={columnMapping.email} onValueChange={(v) => setColumnMapping(prev => ({ ...prev, email: v }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sqliteColumns.map((col) => (
+                          <SelectItem key={col} value={col}>{col}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Nome</Label>
+                    <Select value={columnMapping.name} onValueChange={(v) => setColumnMapping(prev => ({ ...prev, name: v }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Opcional" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhum</SelectItem>
+                        {sqliteColumns.map((col) => (
+                          <SelectItem key={col} value={col}>{col}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Plano</Label>
+                    <Select value={columnMapping.plan} onValueChange={(v) => setColumnMapping(prev => ({ ...prev, plan: v }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Opcional" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhum (usar FREE)</SelectItem>
+                        {sqliteColumns.map((col) => (
+                          <SelectItem key={col} value={col}>{col}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Créditos</Label>
+                    <Select value={columnMapping.credits} onValueChange={(v) => setColumnMapping(prev => ({ ...prev, credits: v }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Opcional" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhum (usar 50)</SelectItem>
+                        {sqliteColumns.map((col) => (
+                          <SelectItem key={col} value={col}>{col}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Button onClick={previewSqliteData} variant="outline" className="w-full">
+                  <Search className="w-4 h-4 mr-2" />
+                  Carregar Preview
+                </Button>
+              </div>
+            )}
+
+            {/* Data Preview */}
+            {sqliteData.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  {sqliteData.length} registros encontrados. Revise antes de importar:
+                </p>
+                <ScrollArea className="h-[250px] border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Créditos</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sqliteData.slice(0, 50).map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{item.email}</TableCell>
+                          <TableCell>{item.full_name || "-"}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{item.plan_name}</Badge>
+                          </TableCell>
+                          <TableCell>{item.credits_amount}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+                {sqliteData.length > 50 && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Mostrando 50 de {sqliteData.length} registros
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeSqliteModal}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSqliteImport} disabled={importingSqlite || sqliteData.length === 0}>
+              {importingSqlite ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+              Importar {sqliteData.length} Convites
             </Button>
           </DialogFooter>
         </DialogContent>
