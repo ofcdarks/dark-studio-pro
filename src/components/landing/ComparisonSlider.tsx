@@ -54,8 +54,9 @@ export const ComparisonSlider = () => {
           className="flex flex-col gap-1.5"
         >
           <motion.div 
-            whileHover={{ boxShadow: "0 0 20px rgba(239, 68, 68, 0.6)" }}
-            className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-destructive text-[10px] sm:text-xs font-bold text-destructive-foreground w-fit cursor-default transition-shadow"
+            whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(239, 68, 68, 0.6)" }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-destructive text-[10px] sm:text-xs font-bold text-destructive-foreground w-fit cursor-default"
           >
             ANTES
           </motion.div>
@@ -72,8 +73,9 @@ export const ComparisonSlider = () => {
           className="flex flex-col gap-1.5 items-end"
         >
           <motion.div 
-            whileHover={{ boxShadow: "0 0 20px rgba(16, 185, 129, 0.6)" }}
-            className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border-2 border-emerald-500 text-[10px] sm:text-xs font-bold text-emerald-400 w-fit cursor-default transition-shadow"
+            whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(16, 185, 129, 0.6)" }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border-2 border-emerald-500 text-[10px] sm:text-xs font-bold text-emerald-400 w-fit cursor-default"
           >
             DEPOIS
           </motion.div>
