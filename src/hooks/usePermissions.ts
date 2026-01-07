@@ -42,6 +42,36 @@ export function usePermissions(): UsePermissionsReturn {
 
     const fetchPermissions = async () => {
       try {
+        // First check if user is admin - admins have all permissions
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .single();
+
+        if (roleData?.role === "admin") {
+          // Admin has all permissions
+          setPlanName("ADMIN");
+          setPermissions({
+            analisador_videos: true,
+            gerador_cenas: true,
+            agentes_virais: true,
+            gerador_voz: true,
+            prompts_imagens: true,
+            biblioteca_viral: true,
+            explorar_nicho: true,
+            canais_monitorados: true,
+            analytics_youtube: true,
+            buscar_canais: true,
+            analisador_canal: true,
+            conversor_srt: true,
+            analytics: true,
+            pastas: true,
+          });
+          setLoading(false);
+          return;
+        }
+
         // Determine the plan name from subscription or default to FREE
         let currentPlanName = "FREE";
         let isAnnual = false;
