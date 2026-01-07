@@ -48,8 +48,9 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 const Maintenance = lazy(() => import("./pages/Maintenance"));
 const Blog = lazy(() => import("./pages/Blog"));
+const DynamicArticle = lazy(() => import("./pages/blog/DynamicArticle"));
 
-// Blog article pages
+// Static blog article pages (legacy)
 const ComoGanharDinheiroYouTube = lazy(() => import("./pages/blog/ComoGanharDinheiroYouTube"));
 const NichosLucrativosYouTube = lazy(() => import("./pages/blog/NichosLucrativosYouTube"));
 const ComoCriarCanalDark = lazy(() => import("./pages/blog/ComoCriarCanalDark"));
@@ -122,6 +123,7 @@ const AppRoutes = () => {
             <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
             <Route path="/maintenance" element={<Maintenance />} />
             <Route path="/blog" element={<Blog />} />
+            {/* Static legacy blog routes */}
             <Route path="/blog/como-ganhar-dinheiro-youtube" element={<ComoGanharDinheiroYouTube />} />
             <Route path="/blog/nichos-lucrativos-youtube" element={<NichosLucrativosYouTube />} />
             <Route path="/blog/como-criar-canal-dark" element={<ComoCriarCanalDark />} />
@@ -133,6 +135,8 @@ const AppRoutes = () => {
             <Route path="/blog/shorts-virais" element={<ShortsVirais />} />
             <Route path="/blog/monetizacao-afiliados" element={<MonetizacaoAfiliados />} />
             <Route path="/blog/crescimento-rapido" element={<CrescimentoRapido />} />
+            {/* Dynamic blog articles from database */}
+            <Route path="/blog/:slug" element={<DynamicArticle />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
