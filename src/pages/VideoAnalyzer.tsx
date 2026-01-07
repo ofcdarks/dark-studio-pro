@@ -147,7 +147,7 @@ const VideoAnalyzer = () => {
     "gemini-pro": "Gemini 2.5 Pro (2025)",
   };
 
-  // O backend decide o provedor (Laozhang/OpenAI/Gemini/Lovable) e o modelo final.
+  // O backend decide o provedor (Laozhang/OpenAI/Gemini/Platform) e o modelo final.
   // Aqui enviamos apenas o ID do modelo selecionado na UI (ex: gpt-4o, claude-4-sonnet, gemini-pro).
 
   const handleAnalyze = async () => {
