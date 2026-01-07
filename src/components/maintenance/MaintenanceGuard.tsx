@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Key for localStorage to check simulation mode
+const SIMULATE_USER_KEY = 'admin_simulate_user_maintenance';
+
 interface MaintenanceGuardProps {
   children: React.ReactNode;
 }
@@ -22,6 +25,7 @@ export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
   const [estimatedEndTime, setEstimatedEndTime] = useState<string | undefined>();
   const [isAdmin, setIsAdmin] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [isSimulatingUser, setIsSimulatingUser] = useState(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -44,10 +48,30 @@ export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
     checkAdmin();
   }, [user?.id]);
 
-  // Reset banner dismissed state when route changes
+  // Reset banner dismissed state and check simulation mode when route changes
   useEffect(() => {
     setBannerDismissed(false);
+    // Check localStorage for simulation mode
+    const simulateMode = localStorage.getItem(SIMULATE_USER_KEY) === 'true';
+    setIsSimulatingUser(simulateMode);
   }, [location.pathname]);
+
+  // Listen for storage changes (when admin toggles simulation in another tab or same page)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const simulateMode = localStorage.getItem(SIMULATE_USER_KEY) === 'true';
+      setIsSimulatingUser(simulateMode);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // Also listen for custom event for same-tab updates
+    window.addEventListener('simulateUserModeChanged', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('simulateUserModeChanged', handleStorageChange);
+    };
+  }, []);
 
   useEffect(() => {
     // Skip if still loading or no user
@@ -64,12 +88,12 @@ export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
       setMaintenanceMessage(info?.message);
       setEstimatedEndTime(info?.estimatedEndTime);
       
-      if (isAdmin) {
-        // Show banner for admins instead of blocking modal
+      if (isAdmin && !isSimulatingUser) {
+        // Show banner for admins instead of blocking modal (unless simulating)
         setShowAdminBanner(true);
         setShowModal(false);
       } else {
-        // Show blocking modal for regular users
+        // Show blocking modal for regular users or admins simulating
         setShowModal(true);
         setShowAdminBanner(false);
       }
@@ -77,7 +101,7 @@ export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
       setShowModal(false);
       setShowAdminBanner(false);
     }
-  }, [location.pathname, isUnderMaintenance, getMaintenanceInfo, isLoading, isAdmin, user]);
+  }, [location.pathname, isUnderMaintenance, getMaintenanceInfo, isLoading, isAdmin, user, isSimulatingUser]);
 
   return (
     <>
