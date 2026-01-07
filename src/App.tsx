@@ -2,16 +2,32 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { LandingSettingsProvider } from "@/hooks/useLandingSettings";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ThemeProvider } from "next-themes";
 import { BackgroundImageGenerationProvider } from "@/hooks/useBackgroundImageGeneration";
 import { BackgroundGenerationIndicator } from "@/components/layout/BackgroundGenerationIndicator";
 import { MaintenanceGuard } from "@/components/maintenance/MaintenanceGuard";
+import { Loader2 } from "lucide-react";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
+
+// Smart redirect: logged in -> dashboard, not logged in -> landing
+const RootRedirect = () => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/landing" replace />;
+};
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import VideoAnalyzer from "./pages/VideoAnalyzer";
@@ -55,7 +71,7 @@ const App = () => (
             <BrowserRouter>
               <MaintenanceGuard>
                 <Routes>
-                  <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                  <Route path="/" element={<RootRedirect />} />
                   <Route path="/landing" element={<LandingSettingsProvider><Landing /></LandingSettingsProvider>} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
