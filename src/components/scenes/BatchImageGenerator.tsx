@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Sparkles, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw, AlertTriangle, ImageIcon, Coins } from "lucide-react";
+import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Rocket, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw, AlertTriangle, ImageIcon, Coins } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
@@ -743,7 +743,7 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
               </Select>
               {selectedStyle && selectedStyle !== "none" && (
                 <p className="text-xs text-muted-foreground mt-1.5 bg-secondary/30 p-2 rounded">
-                  <Sparkles className="w-3 h-3 inline mr-1 text-primary" />
+                  <Rocket className="w-3 h-3 inline mr-1 text-primary" />
                   Prefixo: {getStylePrefix().substring(0, 80)}...
                 </p>
               )}
@@ -825,7 +825,7 @@ Um carro esportivo na montanha`}
                     className="mt-2 border-destructive/50 text-destructive hover:bg-destructive/10"
                     onClick={() => navigate('/plans')}
                   >
-                    <Sparkles className="w-3 h-3 mr-1" />
+                    <Rocket className="w-3 h-3 mr-1" />
                     Fazer Upgrade
                   </Button>
                 </div>
