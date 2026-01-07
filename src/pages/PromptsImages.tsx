@@ -5298,19 +5298,19 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
       {/* Modal de Preview do SRT */}
       <Dialog open={showSrtPreview} onOpenChange={setShowSrtPreview}>
-        <DialogContent className="max-w-2xl max-h-[85vh] bg-card border-cyan-500/30 rounded-xl shadow-xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
+        <DialogContent className="max-w-3xl max-h-[90vh] bg-card border-cyan-500/30 rounded-xl shadow-xl">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="flex items-center gap-3 text-foreground text-lg">
               <Type className="w-5 h-5 text-cyan-500" />
               Preview de Legendas SRT
             </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
+            <DialogDescription className="text-sm text-muted-foreground">
               Revise os blocos de legenda antes de baixar
             </DialogDescription>
           </DialogHeader>
           
           {srtPreviewData && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Estatísticas */}
               {(() => {
                 const fullText = srtPreviewData.blocks.map(b => b.text).join(' ');
@@ -5318,39 +5318,39 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                 const totalChars = fullText.length;
                 const lastEnd = srtPreviewData.blocks.length > 0 ? srtPreviewData.blocks[srtPreviewData.blocks.length - 1].end.split(',')[0] : '00:00:00';
                 return (
-                  <div className="grid grid-cols-5 gap-2">
-                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                      <p className="text-xl font-bold text-cyan-500">{srtPreviewData.blocks.length}</p>
-                      <p className="text-xs text-muted-foreground">Blocos</p>
+                  <div className="grid grid-cols-5 gap-3">
+                    <div className="bg-secondary/50 rounded-lg p-4 text-center">
+                      <p className="text-2xl font-bold text-cyan-500">{srtPreviewData.blocks.length}</p>
+                      <p className="text-sm text-muted-foreground">Blocos</p>
                     </div>
-                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                      <p className="text-xl font-bold text-purple-500">{totalWords.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">Palavras</p>
+                    <div className="bg-secondary/50 rounded-lg p-4 text-center">
+                      <p className="text-2xl font-bold text-purple-500">{totalWords.toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">Palavras</p>
                     </div>
-                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                      <p className="text-xl font-bold text-amber-500">{totalChars.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">Caracteres</p>
+                    <div className="bg-secondary/50 rounded-lg p-4 text-center">
+                      <p className="text-2xl font-bold text-amber-500">{totalChars.toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">Caracteres</p>
                     </div>
-                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                      <p className="text-xl font-bold text-primary">{currentWpm}</p>
-                      <p className="text-xs text-muted-foreground">WPM</p>
+                    <div className="bg-secondary/50 rounded-lg p-4 text-center">
+                      <p className="text-2xl font-bold text-primary">{currentWpm}</p>
+                      <p className="text-sm text-muted-foreground">WPM</p>
                     </div>
-                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                      <p className="text-xl font-bold text-green-500">{lastEnd}</p>
-                      <p className="text-xs text-muted-foreground">Duração</p>
+                    <div className="bg-secondary/50 rounded-lg p-4 text-center">
+                      <p className="text-2xl font-bold text-green-500">{lastEnd}</p>
+                      <p className="text-sm text-muted-foreground">Duração</p>
                     </div>
                   </div>
                 );
               })()}
 
               {/* Lista de blocos */}
-              <ScrollArea className="h-[45vh] pr-4">
-                <div className="space-y-2">
+              <ScrollArea className="h-[50vh] pr-4">
+                <div className="space-y-3">
                   {srtPreviewData.blocks.map((block, idx) => (
                     <div key={idx}>
                       <div 
                         className={cn(
-                          "p-3 rounded-lg border transition-colors",
+                          "p-4 rounded-lg border transition-colors",
                           block.charCount > 499 
                             ? "bg-red-500/10 border-red-500/30" 
                             : block.charCount > 400 
@@ -5358,34 +5358,34 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                               : "bg-secondary/50 border-border"
                         )}
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs font-mono">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className="text-sm font-mono px-3 py-1">
                               #{block.index}
                             </Badge>
-                            <span className="text-xs font-mono text-muted-foreground">
+                            <span className="text-sm font-mono text-muted-foreground">
                               {block.start.split(',')[0]} → {block.end.split(',')[0]}
                             </span>
                           </div>
                           <Badge 
                             variant={block.charCount > 499 ? "destructive" : block.charCount > 400 ? "outline" : "secondary"}
-                            className="text-xs"
+                            className="text-sm px-3 py-1"
                           >
                             {block.charCount} chars
                           </Badge>
                         </div>
-                        <p className="text-sm text-foreground leading-relaxed">
+                        <p className="text-base text-foreground leading-relaxed">
                           {block.text}
                         </p>
                       </div>
                       
                       {/* Separador visual de 10s entre blocos */}
                       {idx < srtPreviewData.blocks.length - 1 && (
-                        <div className="flex items-center gap-2 py-2">
+                        <div className="flex items-center gap-3 py-3">
                           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
-                            <Timer className="w-3 h-3 text-primary" />
-                            <span className="text-[10px] font-mono text-primary">+10s</span>
+                          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+                            <Timer className="w-4 h-4 text-primary" />
+                            <span className="text-xs font-mono text-primary">+10s</span>
                           </div>
                           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
                         </div>
@@ -5396,41 +5396,41 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
               </ScrollArea>
 
               {/* Legenda de cores */}
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded bg-secondary/50 border border-border" />
+              <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-secondary/50 border border-border" />
                   <span>≤400 chars</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded bg-amber-500/10 border border-amber-500/30" />
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-amber-500/10 border border-amber-500/30" />
                   <span>401-499 chars</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded bg-red-500/10 border border-red-500/30" />
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-red-500/10 border border-red-500/30" />
                   <span>&gt;499 chars</span>
                 </div>
               </div>
 
               {/* Botões de ação */}
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setShowSrtPreview(false)}
-                  className="flex-1"
+                  className="flex-1 h-10"
                 >
                   Fechar
                 </Button>
                 <Button
                   variant="outline"
                   onClick={copySrtFromPreview}
-                  className="flex-1"
+                  className="flex-1 h-10"
                 >
                   <Copy className="w-4 h-4 mr-2" />
                   Copiar
                 </Button>
                 <Button
                   onClick={downloadSrtFromPreview}
-                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:opacity-90"
+                  className="flex-1 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:opacity-90"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Baixar SRT
