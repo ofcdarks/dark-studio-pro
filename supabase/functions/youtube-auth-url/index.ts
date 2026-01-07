@@ -37,13 +37,18 @@ Deno.serve(async (req) => {
 
     const userId = claimsData.claims.sub;
     const clientId = Deno.env.get('YOUTUBE_CLIENT_ID');
-    const redirectUri = Deno.env.get('YOUTUBE_REDIRECT_URI');
+    const envRedirectUri = Deno.env.get('YOUTUBE_REDIRECT_URI');
+
+    const origin = req.headers.get('origin');
+    const redirectUri = origin
+      ? `${origin.replace(/\/$/, '')}/youtube`
+      : envRedirectUri;
 
     if (!clientId || !redirectUri) {
-      console.error('Missing YouTube OAuth configuration');
-      return new Response(JSON.stringify({ error: 'YouTube OAuth not configured' }), { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      console.error('Missing YouTube OAuth configuration', { hasClientId: !!clientId, hasRedirectUri: !!redirectUri });
+      return new Response(JSON.stringify({ error: 'YouTube OAuth not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -55,8 +60,8 @@ Deno.serve(async (req) => {
       'https://www.googleapis.com/auth/yt-analytics.readonly'
     ].join(' ');
 
-    // Create state with user ID for callback verification
-    const state = btoa(JSON.stringify({ userId, timestamp: Date.now() }));
+    // Create state with user ID + redirectUri (must match in token exchange)
+    const state = btoa(JSON.stringify({ userId, redirectUri, timestamp: Date.now() }));
 
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     authUrl.searchParams.set('client_id', clientId);
@@ -67,7 +72,7 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set('prompt', 'consent');
     authUrl.searchParams.set('state', state);
 
-    console.log('Generated YouTube OAuth URL for user:', userId);
+    console.log('Generated YouTube OAuth URL for user:', userId, 'redirectUri:', redirectUri);
 
     return new Response(JSON.stringify({ authUrl: authUrl.toString() }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
