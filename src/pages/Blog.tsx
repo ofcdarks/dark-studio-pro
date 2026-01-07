@@ -22,7 +22,8 @@ import {
   Rocket,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Tag
 } from "lucide-react";
 import logo from "@/assets/logo.gif";
 
@@ -35,6 +36,7 @@ interface BlogPost {
   date: string;
   icon: React.ElementType;
   featured?: boolean;
+  tags?: string[];
 }
 
 const blogPosts: BlogPost[] = [
@@ -46,7 +48,8 @@ const blogPosts: BlogPost[] = [
     readTime: "15 min",
     date: "2025-01-07",
     icon: DollarSign,
-    featured: true
+    featured: true,
+    tags: ["monetização", "adsense", "renda passiva", "youtube"]
   },
   {
     slug: "nichos-lucrativos-youtube",
@@ -56,7 +59,8 @@ const blogPosts: BlogPost[] = [
     readTime: "12 min",
     date: "2025-01-07",
     icon: TrendingUp,
-    featured: true
+    featured: true,
+    tags: ["nichos", "cpm", "dark channel", "faceless"]
   },
   {
     slug: "como-criar-canal-dark",
@@ -66,7 +70,8 @@ const blogPosts: BlogPost[] = [
     readTime: "20 min",
     date: "2025-01-07",
     icon: Youtube,
-    featured: true
+    featured: true,
+    tags: ["dark channel", "faceless", "tutorial", "iniciantes"]
   },
   {
     slug: "shorts-virais",
@@ -76,7 +81,8 @@ const blogPosts: BlogPost[] = [
     readTime: "14 min",
     date: "2025-01-07",
     icon: Smartphone,
-    featured: true
+    featured: true,
+    tags: ["shorts", "viral", "crescimento", "algoritmo"]
   },
   {
     slug: "roteiros-virais-ia",
@@ -85,7 +91,8 @@ const blogPosts: BlogPost[] = [
     category: "Roteiros",
     readTime: "18 min",
     date: "2025-01-07",
-    icon: Sparkles
+    icon: Sparkles,
+    tags: ["ia", "roteiros", "viral", "chatgpt"]
   },
   {
     slug: "thumbnails-profissionais",
@@ -94,7 +101,8 @@ const blogPosts: BlogPost[] = [
     category: "Thumbnails",
     readTime: "14 min",
     date: "2025-01-07",
-    icon: Image
+    icon: Image,
+    tags: ["thumbnails", "ctr", "design", "conversão"]
   },
   {
     slug: "seo-youtube",
@@ -103,7 +111,8 @@ const blogPosts: BlogPost[] = [
     category: "SEO",
     readTime: "16 min",
     date: "2025-01-07",
-    icon: Search
+    icon: Search,
+    tags: ["seo", "algoritmo", "ranqueamento", "tags"]
   },
   {
     slug: "algoritmo-youtube",
@@ -112,7 +121,8 @@ const blogPosts: BlogPost[] = [
     category: "Algoritmo",
     readTime: "15 min",
     date: "2025-01-07",
-    icon: Zap
+    icon: Zap,
+    tags: ["algoritmo", "ctr", "retenção", "engajamento"]
   },
   {
     slug: "ferramentas-criacao-videos",
@@ -121,7 +131,8 @@ const blogPosts: BlogPost[] = [
     category: "Ferramentas",
     readTime: "20 min",
     date: "2025-01-07",
-    icon: Wrench
+    icon: Wrench,
+    tags: ["ferramentas", "ia", "edição", "automação"]
   },
   {
     slug: "monetizacao-afiliados",
@@ -130,7 +141,8 @@ const blogPosts: BlogPost[] = [
     category: "Afiliados",
     readTime: "18 min",
     date: "2025-01-07",
-    icon: DollarSign
+    icon: DollarSign,
+    tags: ["afiliados", "monetização", "renda passiva", "marketing"]
   },
   {
     slug: "crescimento-rapido",
@@ -139,7 +151,8 @@ const blogPosts: BlogPost[] = [
     category: "Crescimento",
     readTime: "16 min",
     date: "2025-01-07",
-    icon: Rocket
+    icon: Rocket,
+    tags: ["crescimento", "inscritos", "viral", "estratégias"]
   }
 ];
 
@@ -148,6 +161,7 @@ const POSTS_PER_PAGE = 6;
 const Blog = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Extrair categorias únicas
@@ -156,24 +170,45 @@ const Blog = () => {
     return cats.sort();
   }, []);
 
+  // Extrair tags únicas
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    blogPosts.forEach(post => {
+      post.tags?.forEach(tag => tags.add(tag));
+    });
+    return Array.from(tags).sort();
+  }, []);
+
   // Filtrar posts
   const filteredPosts = useMemo(() => {
     return blogPosts.filter(post => {
       const matchesSearch = searchQuery === "" || 
         post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.category.toLowerCase().includes(searchQuery.toLowerCase());
+        post.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        post.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
       
       const matchesCategory = !selectedCategory || post.category === selectedCategory;
       
-      return matchesSearch && matchesCategory;
+      const matchesTags = selectedTags.length === 0 || 
+        selectedTags.some(tag => post.tags?.includes(tag));
+      
+      return matchesSearch && matchesCategory && matchesTags;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, selectedTags]);
 
   // Reset page when filters change
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, selectedTags]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag) 
+        : [...prev, tag]
+    );
+  };
 
   const featuredPosts = filteredPosts.filter(post => post.featured);
   const regularPosts = filteredPosts.filter(post => !post.featured);
@@ -309,11 +344,45 @@ const Blog = () => {
               ))}
             </div>
 
+            {/* Tags Filter */}
+            <div className="mt-6">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Tag className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Filtrar por tags:</span>
+                {selectedTags.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => setSelectedTags([])}
+                  >
+                    Limpar
+                  </Button>
+                )}
+              </div>
+              <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
+                {allTags.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => toggleTag(tag)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all border ${
+                      selectedTags.includes(tag)
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                    }`}
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Results Count */}
-            {(searchQuery || selectedCategory) && (
+            {(searchQuery || selectedCategory || selectedTags.length > 0) && (
               <p className="text-center text-muted-foreground mt-4">
                 {filteredPosts.length} {filteredPosts.length === 1 ? 'artigo encontrado' : 'artigos encontrados'}
                 {selectedCategory && ` em "${selectedCategory}"`}
+                {selectedTags.length > 0 && ` com tags: ${selectedTags.map(t => `#${t}`).join(', ')}`}
                 {searchQuery && ` para "${searchQuery}"`}
               </p>
             )}
