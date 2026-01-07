@@ -36,6 +36,7 @@ import { SessionIndicator } from "@/components/ui/session-indicator";
 import { useTutorial } from "@/hooks/useTutorial";
 import { TutorialModal, TutorialHelpButton } from "@/components/tutorial/TutorialModal";
 import { VIDEO_ANALYZER_TUTORIAL } from "@/lib/tutorialConfigs";
+import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 
 interface GeneratedTitle {
   id: string;
@@ -94,6 +95,9 @@ const LOADING_MESSAGES = [
 ];
 
 const VideoAnalyzer = () => {
+  // Credit deduction hook
+  const { executeWithDeduction, getEstimatedCost } = useCreditDeduction();
+  
   // Persisted states - survive navigation
   const [videoUrl, setVideoUrl] = usePersistedState("analyzer_videoUrl", "");
   const [aiModel, setAiModel] = usePersistedState("analyzer_aiModel", "gemini-pro");
@@ -155,6 +159,9 @@ const VideoAnalyzer = () => {
       return;
     }
 
+    // Multimodal usa 3 modelos, então cobra 3x
+    const modelsCount = aiModel === "multimodal" ? 3 : 1;
+
     setAnalyzing(true);
     setVideoInfo(null);
     setGeneratedTitles([]);
@@ -182,6 +189,24 @@ const VideoAnalyzer = () => {
     }, 1000);
     
     const messageInterval = progressInterval; // Keep reference for cleanup
+
+    // Deduzir créditos antes de iniciar
+    const { result: deductionData, success: deductionSuccess, error: deductionError } = await executeWithDeduction(
+      {
+        operationType: 'analyze_video_titles',
+        multiplier: modelsCount,
+        modelUsed: aiModel,
+        details: { model: aiModel, modelsCount },
+        showToast: true
+      },
+      async () => ({ proceed: true })
+    );
+
+    if (!deductionSuccess) {
+      clearInterval(messageInterval);
+      setAnalyzing(false);
+      return;
+    }
 
     try {
       // Extract video ID from URL for thumbnail fallback

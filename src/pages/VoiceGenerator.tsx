@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
+import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 
 interface GeneratedAudio {
   id: string;
@@ -33,6 +34,7 @@ const voices = [
 
 const VoiceGenerator = () => {
   const { user } = useAuth();
+  const { executeWithDeduction, getEstimatedCost } = useCreditDeduction();
   
   // Persisted states
   const [text, setText] = usePersistedState("voice_text", "");
@@ -83,43 +85,59 @@ const VoiceGenerator = () => {
       return;
     }
 
+    // TTS cobra por 100 caracteres
+    const multiplier = Math.ceil(text.length / 100);
+
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-tts', {
-        body: {
-          text: text,
-          voiceId: selectedVoice,
-          speed: speed[0]
+      const { result, success, error } = await executeWithDeduction(
+        {
+          operationType: 'generate_tts',
+          multiplier,
+          details: { textLength: text.length, voice: selectedVoice },
+          showToast: true
+        },
+        async () => {
+          const { data, error } = await supabase.functions.invoke('generate-tts', {
+            body: {
+              text: text,
+              voiceId: selectedVoice,
+              speed: speed[0]
+            }
+          });
+
+          if (error) throw error;
+          if (data.error) throw new Error(data.error);
+          
+          return data;
         }
-      });
+      );
 
-      if (error) throw error;
-
-      if (data.error) {
-        if (data.error === 'Insufficient credits') {
-          toast.error(`Créditos insuficientes. Necessário: ${data.required}, Disponível: ${data.available}`);
-        } else {
-          toast.error(data.error);
+      if (!success) {
+        if (error !== 'Saldo insuficiente') {
+          toast.error(error || 'Erro ao gerar áudio');
         }
         return;
       }
 
-      // Save to database
-      const { error: insertError } = await supabase
-        .from('generated_audios')
-        .insert({
-          user_id: user.id,
-          text: text.substring(0, 500),
-          voice_id: selectedVoice,
-          audio_url: data.audioUrl || null,
-          duration: data.duration || 0
-        });
+      if (result) {
+        // Save to database
+        const { error: insertError } = await supabase
+          .from('generated_audios')
+          .insert({
+            user_id: user.id,
+            text: text.substring(0, 500),
+            voice_id: selectedVoice,
+            audio_url: result.audioUrl || null,
+            duration: result.duration || 0
+          });
 
-      if (insertError) console.error('Error saving audio:', insertError);
+        if (insertError) console.error('Error saving audio:', insertError);
 
-      toast.success(`Áudio gerado! ${data.creditsUsed} créditos utilizados.`);
-      setText('');
-      fetchAudios();
+        toast.success(`Áudio gerado com sucesso!`);
+        setText('');
+        fetchAudios();
+      }
     } catch (error) {
       console.error('Error generating audio:', error);
       toast.error('Erro ao gerar áudio. Tente novamente.');

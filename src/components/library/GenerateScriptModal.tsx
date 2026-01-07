@@ -20,12 +20,14 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Zap, Star, Info, Copy, Check } from "lucide-react";
+import { Loader2, Zap, Star, Info, Copy, Check, AlertTriangle } from "lucide-react";
 import logoGif from "@/assets/logo.gif";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useActivityLog } from "@/hooks/useActivityLog";
+import { useCreditDeduction } from "@/hooks/useCreditDeduction";
+import { useNavigate } from "react-router-dom";
 
 interface ScriptAgent {
   id: string;
@@ -52,10 +54,14 @@ export const GenerateScriptModal = ({
 }: GenerateScriptModalProps) => {
   const { user } = useAuth();
   const { logActivity } = useActivityLog();
+  const { deduct, checkBalance, getEstimatedCost } = useCreditDeduction();
+  const navigate = useNavigate();
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentPart, setCurrentPart] = useState(0);
   const [totalParts, setTotalParts] = useState(0);
+  const [insufficientCredits, setInsufficientCredits] = useState(false);
+  const [currentBalance, setCurrentBalance] = useState(0);
   // Form state
   const [videoTitle, setVideoTitle] = useState("");
   const [duration, setDuration] = useState("5");
@@ -101,6 +107,18 @@ export const GenerateScriptModal = ({
   // Result state
   const [generatedScript, setGeneratedScript] = useState<string | null>(null);
 
+  // Check balance on open
+  useEffect(() => {
+    const checkCredits = async () => {
+      if (open && user) {
+        const { hasBalance, currentBalance: balance } = await checkBalance(estimatedCredits);
+        setCurrentBalance(balance);
+        setInsufficientCredits(!hasBalance);
+      }
+    };
+    checkCredits();
+  }, [open, user, estimatedCredits, checkBalance]);
+
   const handleGenerateScript = async () => {
     if (!videoTitle.trim()) {
       toast.error("Por favor, insira o título do vídeo");
@@ -110,6 +128,19 @@ export const GenerateScriptModal = ({
     if (!user || !agent) {
       toast.error("Erro ao gerar roteiro");
       return;
+    }
+
+    // Check balance before generating
+    const deductResult = await deduct({
+      operationType: 'generate_script',
+      multiplier: targetDuration,
+      modelUsed: aiModel,
+      details: { duration: targetDuration, model: aiModel },
+      showToast: true
+    });
+
+    if (!deductResult.success) {
+      return; // Toast already shown by deduct
     }
 
     setGenerating(true);
@@ -256,6 +287,10 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
       
     } catch (error) {
       console.error("[GenerateScript] Error generating script:", error);
+      // Reembolsar créditos em caso de erro
+      if (deductResult.shouldRefund) {
+        await deductResult.refund();
+      }
       toast.error("Erro ao gerar roteiro. Tente novamente.");
     } finally {
       setGenerating(false);
@@ -599,6 +634,27 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
               </div>
             </div>
 
+            {/* Alerta de créditos insuficientes */}
+            {insufficientCredits && (
+              <div className="flex items-center gap-3 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-destructive">Créditos insuficientes</p>
+                  <p className="text-xs text-muted-foreground">
+                    Necessário: {estimatedCredits} créditos | Disponível: {Math.ceil(currentBalance)} créditos
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/plans')}
+                  className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                >
+                  Comprar Créditos
+                </Button>
+              </div>
+            )}
+
             {/* Footer Buttons */}
             <div className="flex gap-3 pt-4 border-t border-border">
               <Button
@@ -610,7 +666,7 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
               </Button>
               <Button
                 onClick={handleGenerateScript}
-                disabled={generating || !videoTitle.trim()}
+                disabled={generating || !videoTitle.trim() || insufficientCredits}
                 className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 h-11 text-sm font-semibold"
               >
                 {generating ? (

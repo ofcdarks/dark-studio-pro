@@ -17,6 +17,7 @@ import { addBrandingFooter } from "@/lib/utils";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
 import BatchImageGenerator from "@/components/scenes/BatchImageGenerator";
+import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 
 interface ScenePrompt {
   number: number;
@@ -47,6 +48,9 @@ const WORDS_PER_SCENE_OPTIONS = [
 ];
 
 const SceneGenerator = () => {
+  // Credit deduction hook
+  const { executeWithDeduction, getEstimatedCost } = useCreditDeduction();
+  
   // Tab state
   const [activeTab, setActiveTab] = usePersistedState("scene_active_tab", "scenes");
   
@@ -170,6 +174,9 @@ const SceneGenerator = () => {
       return;
     }
 
+    // Calcular créditos baseado em lotes de 10 cenas
+    const scenesMultiplier = Math.ceil(estimatedScenes / 10);
+    
     setIsGenerating(true);
     setScenes([]);
     setProgressModalOpen(true);
@@ -185,27 +192,46 @@ const SceneGenerator = () => {
     }, 500);
 
     try {
-      const { data, error } = await supabase.functions.invoke("generate-scenes", {
-        body: {
-          script,
-          title,
-          niche,
-          style,
-          estimatedScenes,
-          wordsPerScene: parseInt(wordsPerScene),
+      const { result, success, error } = await executeWithDeduction(
+        {
+          operationType: 'generate_scenes',
+          multiplier: scenesMultiplier,
+          details: { estimatedScenes, wordsPerScene: parseInt(wordsPerScene) },
+          showToast: true
         },
-      });
+        async () => {
+          const { data, error } = await supabase.functions.invoke("generate-scenes", {
+            body: {
+              script,
+              title,
+              niche,
+              style,
+              estimatedScenes,
+              wordsPerScene: parseInt(wordsPerScene),
+            },
+          });
+
+          if (error) throw error;
+          if (!data.success) throw new Error(data.error || "Erro ao gerar cenas");
+          
+          return data;
+        }
+      );
 
       clearInterval(progressInterval);
 
-      if (error) throw error;
+      if (!success) {
+        if (error !== 'Saldo insuficiente') {
+          toast.error(error || "Erro ao gerar prompts de cenas");
+        }
+        setProgressModalOpen(false);
+        return;
+      }
 
-      if (data.success) {
-        setScenes(data.scenes);
+      if (result) {
+        setScenes(result.scenes);
         setGenerationProgress(100);
         setGenerationStatus("complete");
-      } else {
-        throw new Error(data.error || "Erro ao gerar cenas");
       }
     } catch (error) {
       clearInterval(progressInterval);
