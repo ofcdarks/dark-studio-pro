@@ -263,28 +263,27 @@ const Landing = () => {
           </AnimatedSection>
         </div>
 
-      </section>
-
-      {/* Scroll indicator - mouse style */}
-      <ScrollIndicator variant="mouse" />
-
-      {/* Marquee Strip - "A revolução chegou" with shimmer effect */}
-      <div className="relative overflow-hidden py-3 md:py-4 bg-gradient-to-r from-primary via-amber-500 to-primary">
-        {/* Shimmer overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-        <div className="flex animate-marquee whitespace-nowrap relative z-10">
-          {[...Array(10)].map((_, i) => (
-            <span key={i} className="mx-8 md:mx-16 text-sm md:text-lg font-bold uppercase tracking-widest text-primary-foreground flex items-center gap-3 md:gap-4 drop-shadow-lg">
-              <Diamond className="w-4 h-4 md:w-5 md:h-5" />
-              A REVOLUÇÃO CHEGOU
-              <span className="text-primary-foreground/80">•</span>
-              NÃO HÁ ESPAÇO PARA AMADORES
-            </span>
-          ))}
+        {/* Scroll indicator and Marquee inside hero */}
+        <div className="w-full flex flex-col items-center mt-8 md:mt-12">
+          <ScrollIndicator variant="mouse" />
+          
+          {/* Marquee Strip - "A revolução chegou" with shimmer effect */}
+          <div className="relative overflow-hidden py-3 md:py-4 bg-gradient-to-r from-primary via-amber-500 to-primary w-screen mt-6">
+            {/* Shimmer overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+            <div className="flex animate-marquee whitespace-nowrap relative z-10">
+              {[...Array(10)].map((_, i) => (
+                <span key={i} className="mx-8 md:mx-16 text-sm md:text-lg font-bold uppercase tracking-widest text-primary-foreground flex items-center gap-3 md:gap-4 drop-shadow-lg">
+                  <Diamond className="w-4 h-4 md:w-5 md:h-5" />
+                  A REVOLUÇÃO CHEGOU
+                  <span className="text-primary-foreground/80">•</span>
+                  NÃO HÁ ESPAÇO PARA AMADORES
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
-
-
+      </section>
       {/* Features Strip */}
       <section className="py-12 md:py-20 px-4">
         <div className="max-w-7xl mx-auto">
