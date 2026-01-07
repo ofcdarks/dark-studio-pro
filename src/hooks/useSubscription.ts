@@ -24,6 +24,25 @@ export function useSubscription() {
       }
 
       try {
+        // First check if user is admin
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (roleData?.role === "admin") {
+          setSubscription({
+            subscribed: true,
+            plan: "ADMIN",
+            productId: null,
+            priceId: null,
+            subscriptionEnd: null,
+          });
+          setLoading(false);
+          return;
+        }
+
         const { data, error } = await supabase.functions.invoke("check-subscription", {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
