@@ -733,11 +733,11 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
   },
   {
     id: "3d-viral-minimalista",
-    name: "3D Viral Minimalista",
-    description: "Animação 3D estilo Pixar/Blender com potencial viral",
-    icon: "🚀",
+    name: "3D Viral Minimalista Time Lapse",
+    description: "Animação 3D estilo Pixar com time lapse cinematográfico",
+    icon: "⏱️",
     category: "3d-animacao",
-    promptPrefix: "3D minimalist viral animation style, soft pastel or contrasted colors based on emotion, Pixar Blender aesthetic with simple but expressive design, soft studio lighting, cute expressive characters with big eyes, emotional storytelling composition, heartwarming atmosphere, smooth rounded shapes, clean background, cinematic 3D render, high viral potential visual, universal emotional appeal, 5-second scene composition, dreamy warm glow,"
+    promptPrefix: "3D minimalist viral animation, time lapse cinematography style, smooth passage of time effect, day-to-night transitions, seasons changing, growing and evolving scenes, Pixar Blender aesthetic, soft pastel colors, cute expressive characters with big emotional eyes, ultra smooth motion blur, cinematic slow-motion moments, heartwarming storytelling, clean minimalist background, dreamy atmospheric lighting, golden hour to blue hour transitions, ethereal time flow, universal emotional appeal, high viral potential,"
   }
 ];
 

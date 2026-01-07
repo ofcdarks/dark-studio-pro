@@ -21,7 +21,6 @@ import BatchImageGenerator from "@/components/scenes/BatchImageGenerator";
 import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 import { StyleSelector } from "@/components/scenes/StyleSelector";
 import { getStyleById } from "@/lib/thumbnailStyles";
-import { ViralVideoAnalysisModal } from "@/components/scenes/ViralVideoAnalysisModal";
 
 interface ScenePrompt {
   number: number;
@@ -67,7 +66,7 @@ const SceneGenerator = () => {
   const [progressModalOpen, setProgressModalOpen] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<"generating" | "complete">("generating");
   const [generationProgress, setGenerationProgress] = useState(0);
-  const [viralAnalysisOpen, setViralAnalysisOpen] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check if current value is custom
@@ -312,14 +311,6 @@ const SceneGenerator = () => {
                 Gere prompts de imagem para cada cena do seu roteiro ou imagens em lote
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={() => setViralAnalysisOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Rocket className="w-4 h-4" />
-              Análise Viral 3D
-            </Button>
           </div>
 
           {/* Tabs */}
@@ -698,15 +689,6 @@ const SceneGenerator = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Viral Video Analysis Modal */}
-      <ViralVideoAnalysisModal
-        open={viralAnalysisOpen}
-        onOpenChange={setViralAnalysisOpen}
-        onApplyScenes={(viralScenes) => {
-          setScenes(viralScenes);
-          setStyle("3d-viral-minimalista");
-        }}
-      />
         </PermissionGate>
       </MainLayout>
     </>
