@@ -11,12 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { topic, category, language = "pt-BR", mode = "keyword" } = await req.json();
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    const { topic, category, language = "pt-BR" } = await req.json();
 
     if (!topic) {
       return new Response(
@@ -25,7 +20,15 @@ serve(async (req) => {
       );
     }
 
-    console.log("Generating blog article for:", topic, "category:", category);
+    console.log("[Blog Article] Generating for:", topic, "category:", category);
+
+    // Get API keys from environment
+    const LAOZHANG_API_KEY = Deno.env.get("LAOZHANG_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+
+    if (!LAOZHANG_API_KEY && !OPENAI_API_KEY) {
+      throw new Error("Nenhuma chave de API disponível. Configure LAOZHANG_API_KEY ou OPENAI_API_KEY.");
+    }
 
     const systemPrompt = `Você é um especialista em marketing digital e criação de conteúdo para YouTube. 
 Escreva artigos de blog completos, profissionais e otimizados para SEO.
@@ -57,49 +60,72 @@ IMPORTANTE:
 - O artigo deve ter no mínimo 1500 palavras
 - Responda APENAS com o JSON, sem markdown ou explicações`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 8000,
-      }),
-    });
+    let data;
+    
+    // Priority: Laozhang > OpenAI
+    if (LAOZHANG_API_KEY) {
+      console.log("[Blog Article] Using Laozhang API");
+      
+      const response = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${LAOZHANG_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.7,
+          max_tokens: 8000,
+        }),
+      });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Limite de requisições excedido. Tente novamente mais tarde." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Blog Article] Laozhang error:", response.status, errorText);
+        throw new Error(`Laozhang API error: ${response.status}`);
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos insuficientes." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+
+      data = await response.json();
+    } else {
+      console.log("[Blog Article] Using OpenAI API");
+      
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.7,
+          max_tokens: 8000,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Blog Article] OpenAI error:", response.status, errorText);
+        throw new Error(`OpenAI API error: ${response.status}`);
       }
-      const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+
+      data = await response.json();
     }
 
-    const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
       throw new Error("No content generated");
     }
 
-    console.log("Raw AI response received, parsing JSON...");
+    console.log("[Blog Article] Parsing JSON response...");
 
     let articleData;
     try {
@@ -110,18 +136,18 @@ IMPORTANTE:
         throw new Error("No JSON found in response");
       }
     } catch (parseError) {
-      console.error("Failed to parse AI response:", parseError);
+      console.error("[Blog Article] Parse error:", parseError);
       throw new Error("Failed to parse article data");
     }
 
-    console.log("Article generated successfully:", articleData.title);
+    console.log("[Blog Article] Success:", articleData.title);
 
     return new Response(
       JSON.stringify({ success: true, article: articleData }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error generating blog article:", error);
+    console.error("[Blog Article] Error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
