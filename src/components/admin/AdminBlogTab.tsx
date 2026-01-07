@@ -51,6 +51,8 @@ import {
   TrendingUp,
   BarChart3,
   ShoppingBag,
+  MousePointerClick,
+  ExternalLink,
 } from "lucide-react";
 import {
   ChartContainer,
@@ -97,6 +99,18 @@ interface DailyViewData {
   label: string;
 }
 
+interface ProductClickStats {
+  total_clicks: number;
+  clicks_7d: number;
+  clicks_30d: number;
+  top_products: Array<{
+    product_title: string | null;
+    product_url: string;
+    clicks: number;
+    article_title: string | null;
+  }>;
+}
+
 const CATEGORIES = [
   "YouTube",
   "Monetização",
@@ -131,6 +145,12 @@ export const AdminBlogTab = () => {
     unique_visitors: 0,
   });
   const [dailyViews, setDailyViews] = useState<DailyViewData[]>([]);
+  const [productClickStats, setProductClickStats] = useState<ProductClickStats>({
+    total_clicks: 0,
+    clicks_7d: 0,
+    clicks_30d: 0,
+    top_products: [],
+  });
 
   // Generate modal
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
@@ -173,6 +193,7 @@ export const AdminBlogTab = () => {
     fetchArticles();
     fetchViewStats();
     fetchDailyViews();
+    fetchProductClickStats();
   }, []);
 
   const fetchArticles = async () => {
@@ -276,6 +297,87 @@ export const AdminBlogTab = () => {
       setDailyViews(chartData);
     } catch (error) {
       console.error("Error fetching daily views:", error);
+    }
+  };
+
+  const fetchProductClickStats = async () => {
+    try {
+      const now = new Date();
+      const date7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const date30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      // Get total clicks
+      const { count: totalClicks } = await supabase
+        .from("product_clicks")
+        .select("*", { count: "exact", head: true });
+
+      // Get clicks last 7 days
+      const { count: clicks7d } = await supabase
+        .from("product_clicks")
+        .select("*", { count: "exact", head: true })
+        .gte("click_date", date7d);
+
+      // Get clicks last 30 days
+      const { count: clicks30d } = await supabase
+        .from("product_clicks")
+        .select("*", { count: "exact", head: true })
+        .gte("click_date", date30d);
+
+      // Get top products by clicks
+      const { data: clicksData } = await supabase
+        .from("product_clicks")
+        .select(`
+          product_url,
+          product_title,
+          article_id
+        `);
+
+      // Aggregate clicks by product URL
+      const productClickCounts: Record<string, { 
+        clicks: number; 
+        product_title: string | null; 
+        article_id: string | null 
+      }> = {};
+      
+      clicksData?.forEach(click => {
+        if (!productClickCounts[click.product_url]) {
+          productClickCounts[click.product_url] = {
+            clicks: 0,
+            product_title: click.product_title,
+            article_id: click.article_id,
+          };
+        }
+        productClickCounts[click.product_url].clicks++;
+      });
+
+      // Get article titles for top products
+      const topProducts = await Promise.all(
+        Object.entries(productClickCounts)
+          .sort(([, a], [, b]) => b.clicks - a.clicks)
+          .slice(0, 10)
+          .map(async ([url, data]) => {
+            let articleTitle: string | null = null;
+            if (data.article_id) {
+              const article = articles.find(a => a.id === data.article_id);
+              articleTitle = article?.title || null;
+            }
+            return {
+              product_url: url,
+              product_title: data.product_title,
+              clicks: data.clicks,
+              article_title: articleTitle,
+            };
+          })
+      );
+
+      setProductClickStats({
+        total_clicks: totalClicks || 0,
+        clicks_7d: clicks7d || 0,
+        clicks_30d: clicks30d || 0,
+        top_products: topProducts,
+      });
+    } catch (error) {
+      console.error("Error fetching product click stats:", error);
     }
   };
 
@@ -996,6 +1098,84 @@ export const AdminBlogTab = () => {
           )}
         </Card>
       </div>
+
+      {/* Product Clicks Report */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <MousePointerClick className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold text-foreground">Relatório de Cliques em Produtos</h3>
+          </div>
+          <div className="flex gap-4 text-sm">
+            <div className="text-center">
+              <p className="text-muted-foreground">Total</p>
+              <p className="text-xl font-bold text-foreground">{productClickStats.total_clicks}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-muted-foreground">7 dias</p>
+              <p className="text-xl font-bold text-primary">{productClickStats.clicks_7d}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-muted-foreground">30 dias</p>
+              <p className="text-xl font-bold text-accent">{productClickStats.clicks_30d}</p>
+            </div>
+          </div>
+        </div>
+
+        {productClickStats.top_products.length > 0 ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground font-medium">Top Produtos Clicados</p>
+            {productClickStats.top_products.map((product, index) => (
+              <div 
+                key={product.product_url} 
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                    index === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">
+                      {product.product_title || "Produto sem nome"}
+                    </p>
+                    {product.article_title && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        Artigo: {product.article_title}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="font-bold text-lg text-primary">{product.clicks}</p>
+                    <p className="text-xs text-muted-foreground">cliques</p>
+                  </div>
+                  <a
+                    href={product.product_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <ShoppingBag className="w-12 h-12 text-muted-foreground/50 mb-4" />
+            <p className="text-muted-foreground">
+              Nenhum clique em produtos registrado ainda
+            </p>
+            <p className="text-sm text-muted-foreground/70 mt-1">
+              Adicione produtos aos artigos para rastrear conversões
+            </p>
+          </div>
+        )}
+      </Card>
 
       {/* Filters */}
       <Card className="p-4">

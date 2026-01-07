@@ -99,6 +99,28 @@ const DynamicArticle = () => {
     }
   };
 
+  const handleProductClick = async () => {
+    if (!article?.product_url) return;
+    
+    // Track the click
+    try {
+      await supabase.functions.invoke("track-product-click", {
+        body: {
+          articleId: article.id,
+          productUrl: article.product_url,
+          productTitle: article.product_title,
+          referrer: document.referrer,
+          userAgent: navigator.userAgent,
+        },
+      });
+    } catch (e) {
+      // Silent fail for analytics
+    }
+    
+    // Open the link
+    window.open(article.product_url, "_blank", "noopener,noreferrer");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -242,17 +264,14 @@ const DynamicArticle = () => {
               {article.product_title && (
                 <h4 className="text-xl font-bold mb-4">{article.product_title}</h4>
               )}
-              <a
-                href={article.product_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2"
+              <Button 
+                size="lg" 
+                className="gradient-button"
+                onClick={handleProductClick}
               >
-                <Button size="lg" className="gradient-button">
-                  {article.product_cta || "Saiba Mais"}
-                  <ExternalLink className="w-4 h-4 ml-2" />
-                </Button>
-              </a>
+                {article.product_cta || "Saiba Mais"}
+                <ExternalLink className="w-4 h-4 ml-2" />
+              </Button>
             </div>
           )}
 
