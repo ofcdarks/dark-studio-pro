@@ -1,10 +1,12 @@
 import { useState, useRef } from "react";
-import { Smartphone, Monitor, AlertTriangle, Check, GripVertical, DollarSign, Sparkles } from "lucide-react";
+import { Smartphone, Monitor, AlertTriangle, Check, GripVertical, DollarSign, Rocket, Volume2, VolumeX } from "lucide-react";
 import amateurImg from "@/assets/comparison-amateur.jpg";
 
 export const ComparisonSlider = () => {
   const [sliderPosition, setSliderPosition] = useState(50);
+  const [isMuted, setIsMuted] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const isDragging = useRef(false);
 
   const handleMove = (clientX: number) => {
@@ -93,13 +95,30 @@ export const ComparisonSlider = () => {
       >
         {/* Video background with sound */}
         <video 
+          ref={videoRef}
           autoPlay 
           loop 
+          muted={isMuted}
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
         >
           <source src="https://downloads.blackmagicdesign.com/videos/products/davinciresolve/landing/hero/20250331-6882b0/hero.hd.1080p.mp4" type="video/mp4" />
         </video>
+        
+        {/* Mute/Unmute Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMuted(!isMuted);
+          }}
+          className="absolute bottom-4 right-4 z-20 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/80 transition-colors"
+        >
+          {isMuted ? (
+            <VolumeX className="w-5 h-5 text-white" />
+          ) : (
+            <Volume2 className="w-5 h-5 text-white" />
+          )}
+        </button>
         
         {/* Overlay with info */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent">
@@ -162,7 +181,7 @@ export const ComparisonSlider = () => {
           DEPOIS
         </div>
         <div className="px-3 py-1.5 rounded-full bg-green-500/20 backdrop-blur border border-green-500/30 flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3 text-green-400" />
+          <Rocket className="w-3 h-3 text-green-400" />
           <span className="text-green-400 text-xs font-bold">100% GRÁTIS</span>
         </div>
       </div>
