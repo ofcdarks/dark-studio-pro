@@ -92,5 +92,6 @@ Disallow: /plans
 Disallow: /payment-success
 Disallow: /pending-approval
 
-# Sitemap
+# Sitemaps
 Sitemap: https://canaisdarks.com.br/sitemap.xml
+Sitemap: https://kabnbvnephjifeazaiis.supabase.co/functions/v1/generate-sitemap
