@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, Sparkles, ArrowRight, Eye, X, Zap } from "lucide-react";
+import { Palette, Sparkles, ArrowRight, Eye, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { AnimatedSection } from "./AnimatedSection";
@@ -155,17 +155,35 @@ const StyleCard = ({ style, index, onSelect }: StyleCardProps) => {
   );
 };
 
-// Modal de Preview do Estilo
+// Todos os estilos combinados para navegação
+const allStyles = [...stylesRow1, ...stylesRow2, ...stylesRow3];
+
+// Modal de Preview do Estilo com navegação
 const StylePreviewModal = ({ 
   style, 
   isOpen, 
-  onClose 
+  onClose,
+  onNavigate
 }: { 
   style: StyleType | null; 
   isOpen: boolean; 
   onClose: () => void;
+  onNavigate: (direction: 'prev' | 'next') => void;
 }) => {
   if (!style) return null;
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (e.key === 'ArrowLeft') onNavigate('prev');
+      if (e.key === 'ArrowRight') onNavigate('next');
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onNavigate]);
+
+  const currentIndex = allStyles.findIndex(s => s.id === style.id);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -186,13 +204,34 @@ const StylePreviewModal = ({
                 {style.category}
               </span>
             </div>
+
+            {/* Navigation Arrows */}
+            <button
+              onClick={() => onNavigate('prev')}
+              className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/80 hover:bg-background border border-border/50 shadow-lg transition-all hover:scale-110"
+              aria-label="Estilo anterior"
+            >
+              <ChevronLeft className="w-6 h-6 text-foreground" />
+            </button>
+            <button
+              onClick={() => onNavigate('next')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/80 hover:bg-background border border-border/50 shadow-lg transition-all hover:scale-110"
+              aria-label="Próximo estilo"
+            >
+              <ChevronRight className="w-6 h-6 text-foreground" />
+            </button>
           </div>
           
           {/* Conteúdo */}
           <div className="p-6 space-y-4">
-            <div>
-              <h3 className="text-2xl md:text-3xl font-bold text-foreground">{style.name}</h3>
-              <p className="text-muted-foreground mt-2 text-base md:text-lg">{style.description}</p>
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-2xl md:text-3xl font-bold text-foreground">{style.name}</h3>
+                <p className="text-muted-foreground mt-2 text-base md:text-lg">{style.description}</p>
+              </div>
+              <span className="text-sm text-muted-foreground whitespace-nowrap ml-4">
+                {currentIndex + 1} / {allStyles.length}
+              </span>
             </div>
             
             {/* Features */}
@@ -221,13 +260,13 @@ const StylePreviewModal = ({
                 onClick={onClose}
                 className="h-12 px-6 border-border hover:bg-muted"
               >
-                Ver Mais Estilos
+                Fechar
               </Button>
             </div>
             
             {/* Info extra */}
             <p className="text-xs text-muted-foreground text-center">
-              Este é apenas 1 dos <span className="text-primary font-semibold">84 estilos</span> disponíveis na plataforma
+              Use as setas ← → para navegar • Este é 1 dos <span className="text-primary font-semibold">84 estilos</span> disponíveis
             </p>
           </div>
         </div>
@@ -419,7 +458,18 @@ export const StylesCarousel = () => {
       <StylePreviewModal 
         style={selectedStyle} 
         isOpen={!!selectedStyle} 
-        onClose={() => setSelectedStyle(null)} 
+        onClose={() => setSelectedStyle(null)}
+        onNavigate={(direction) => {
+          if (!selectedStyle) return;
+          const currentIndex = allStyles.findIndex(s => s.id === selectedStyle.id);
+          if (direction === 'prev') {
+            const prevIndex = currentIndex <= 0 ? allStyles.length - 1 : currentIndex - 1;
+            setSelectedStyle(allStyles[prevIndex]);
+          } else {
+            const nextIndex = currentIndex >= allStyles.length - 1 ? 0 : currentIndex + 1;
+            setSelectedStyle(allStyles[nextIndex]);
+          }
+        }}
       />
     </section>
   );
