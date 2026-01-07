@@ -103,6 +103,7 @@ export function AdminMigrationTab() {
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [csvData, setCsvData] = useState<Array<{ email: string; full_name: string; plan_name: string; credits_amount: number }>>([]);
   const [importingCsv, setImportingCsv] = useState(false);
+  const [sendingAll, setSendingAll] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -278,6 +279,53 @@ export function AdminMigrationTab() {
       toast.error(error.message || "Erro ao enviar convite");
     } finally {
       setSending(null);
+    }
+  };
+
+  const handleSendAllPending = async () => {
+    const pendingInvites = invites.filter(i => i.status === "pending");
+    if (pendingInvites.length === 0) {
+      toast.error("Nenhum convite pendente para enviar");
+      return;
+    }
+
+    setSendingAll(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const invite of pendingInvites) {
+      try {
+        const { error } = await supabase.functions.invoke("send-migration-invite", {
+          body: {
+            email: invite.email,
+            fullName: invite.full_name,
+            token: invite.token,
+            planName: invite.plan_name,
+            credits: invite.credits_amount,
+          },
+        });
+
+        if (error) throw error;
+
+        await supabase
+          .from("migration_invites")
+          .update({ status: "sent", sent_at: new Date().toISOString() })
+          .eq("id", invite.id);
+
+        successCount++;
+      } catch (error) {
+        console.error(`Error sending invite to ${invite.email}:`, error);
+        errorCount++;
+      }
+    }
+
+    setSendingAll(false);
+    fetchInvites();
+
+    if (errorCount === 0) {
+      toast.success(`${successCount} convites enviados com sucesso!`);
+    } else {
+      toast.warning(`${successCount} enviados, ${errorCount} falharam`);
     }
   };
 
@@ -710,6 +758,19 @@ export function AdminMigrationTab() {
             <Button variant="outline" onClick={() => setBulkAddOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Adicionar em Lote
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleSendAllPending} 
+              disabled={sendingAll || stats.pending === 0}
+              className="text-primary border-primary/50 hover:bg-primary/10"
+            >
+              {sendingAll ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4 mr-2" />
+              )}
+              Enviar Todos ({stats.pending})
             </Button>
             <Button onClick={() => setAddModalOpen(true)}>
               <UserPlus className="w-4 h-4 mr-2" />
