@@ -1,5 +1,6 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -504,8 +505,14 @@ const ViralAgents = () => {
   };
 
   return (
-    <MainLayout>
-      <PermissionGate permission="agentes_virais" featureName="Agentes Virais">
+    <>
+      <SEOHead
+        title="Agentes Virais"
+        description="Gerencie seus agentes de IA para criação de roteiros virais."
+        noindex={true}
+      />
+      <MainLayout>
+        <PermissionGate permission="agentes_virais" featureName="Agentes Virais">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -1245,8 +1252,9 @@ const ViralAgents = () => {
         steps={VIRAL_AGENTS_TUTORIAL.steps}
         onComplete={completeTutorial}
       />
-      </PermissionGate>
-    </MainLayout>
+        </PermissionGate>
+      </MainLayout>
+    </>
   );
 };
 

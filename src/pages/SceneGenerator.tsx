@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -287,8 +288,14 @@ const SceneGenerator = () => {
   };
 
   return (
-    <MainLayout>
-      <PermissionGate permission="gerador_cenas" featureName="Gerador de Cenas">
+    <>
+      <SEOHead
+        title="Gerador de Cenas"
+        description="Gere prompts de imagem para cada cena do seu roteiro com IA."
+        noindex={true}
+      />
+      <MainLayout>
+        <PermissionGate permission="gerador_cenas" featureName="Gerador de Cenas">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Session Indicator */}
@@ -691,8 +698,9 @@ const SceneGenerator = () => {
           </div>
         </DialogContent>
       </Dialog>
-      </PermissionGate>
-    </MainLayout>
+        </PermissionGate>
+      </MainLayout>
+    </>
   );
 };
 

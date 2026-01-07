@@ -1,5 +1,6 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -297,8 +298,14 @@ const ViralLibrary = () => {
   );
 
   return (
-    <MainLayout>
-      <PermissionGate permission="biblioteca_viral" featureName="Biblioteca Viral">
+    <>
+      <SEOHead
+        title="Biblioteca Viral"
+        description="Acesse sua biblioteca de títulos e thumbnails virais."
+        noindex={true}
+      />
+      <MainLayout>
+        <PermissionGate permission="biblioteca_viral" featureName="Biblioteca Viral">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -818,8 +825,9 @@ const ViralLibrary = () => {
         steps={VIRAL_LIBRARY_TUTORIAL.steps}
         onComplete={completeTutorial}
       />
-      </PermissionGate>
-    </MainLayout>
+        </PermissionGate>
+      </MainLayout>
+    </>
   );
 };
 

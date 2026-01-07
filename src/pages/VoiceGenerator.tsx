@@ -1,4 +1,5 @@
 import { MainLayout } from "@/components/layout/MainLayout";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -189,8 +190,14 @@ const VoiceGenerator = () => {
   };
 
   return (
-    <MainLayout>
-      <PermissionGate permission="gerador_voz" featureName="Gerador de Voz">
+    <>
+      <SEOHead
+        title="Gerador de Voz"
+        description="Converta texto em áudio com vozes realistas usando IA."
+        noindex={true}
+      />
+      <MainLayout>
+        <PermissionGate permission="gerador_voz" featureName="Gerador de Voz">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
           {/* Session Indicator */}
@@ -330,8 +337,9 @@ const VoiceGenerator = () => {
           </Card>
         </div>
       </div>
-      </PermissionGate>
-    </MainLayout>
+        </PermissionGate>
+      </MainLayout>
+    </>
   );
 };
 
