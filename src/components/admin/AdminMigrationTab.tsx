@@ -53,6 +53,7 @@ import {
   Upload,
   FileSpreadsheet,
   Download,
+  Search,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -98,6 +99,7 @@ export function AdminMigrationTab() {
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [csvData, setCsvData] = useState<Array<{ email: string; full_name: string; plan_name: string; credits_amount: number }>>([]);
   const [importingCsv, setImportingCsv] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const [newInvite, setNewInvite] = useState({
     email: "",
@@ -426,6 +428,15 @@ export function AdminMigrationTab() {
     }
   };
 
+  const filteredInvites = invites.filter(invite => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      invite.email.toLowerCase().includes(query) ||
+      (invite.full_name?.toLowerCase().includes(query) ?? false)
+    );
+  });
+
   const stats = {
     total: invites.length,
     pending: invites.filter(i => i.status === "pending").length,
@@ -497,6 +508,16 @@ export function AdminMigrationTab() {
             </Button>
           </div>
         </div>
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por email ou nome..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
 
         {/* Invites Table */}
         <ScrollArea className="h-[500px]">
@@ -519,14 +540,14 @@ export function AdminMigrationTab() {
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
-              ) : invites.length === 0 ? (
+              ) : filteredInvites.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    Nenhum convite encontrado
+                    {searchQuery ? "Nenhum convite encontrado para essa busca" : "Nenhum convite encontrado"}
                   </TableCell>
                 </TableRow>
               ) : (
-                invites.map((invite) => (
+                filteredInvites.map((invite) => (
                   <TableRow key={invite.id}>
                     <TableCell className="font-medium">{invite.email}</TableCell>
                     <TableCell>{invite.full_name || "-"}</TableCell>
