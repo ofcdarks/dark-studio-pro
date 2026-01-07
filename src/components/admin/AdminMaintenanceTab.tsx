@@ -155,7 +155,7 @@ export const AdminMaintenanceTab = () => {
     return maintenanceData.tools?.[toolPath];
   };
 
-  const activeMaintenanceCount = Object.values(maintenanceData.tools || {}).filter(t => t.enabled).length;
+  const activeMaintenanceCount = Object.values(maintenanceData.tools || {}).filter(t => t.enabled === true).length;
 
   if (isLoading) {
     return (
