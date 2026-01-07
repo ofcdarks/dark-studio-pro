@@ -243,6 +243,14 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     icon: "📼",
     category: "experimentais",
     promptPrefix: "VHS nostalgic style, 80s/90s aesthetic, retro grain, scan lines, vintage color palette, analog warmth, retrowave,"
+  },
+  {
+    id: "3d-cinematic-miniature",
+    name: "3D Cinematográfico Miniatura",
+    description: "Animação 3D com paisagem em miniatura e timelapse",
+    icon: "🏔️",
+    category: "experimentais",
+    promptPrefix: "Production ready 3D cinematic rendering, accurate scale lighting and camera motion, miniature landscape growth animation and timelapse when scene requires environmental or structural buildup, standard 3D cinematic visualization with controlled natural movement, hyper-detailed miniature world, tilt-shift depth of field, macro photography aesthetic, epic scale in small form,"
   }
 ];
 
