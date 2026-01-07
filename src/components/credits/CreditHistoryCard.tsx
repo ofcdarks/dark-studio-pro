@@ -3,13 +3,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2, Coins, Clock, ChevronDown, ChevronUp, TrendingDown, TrendingUp, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
-import { getToolInfo, getModelName, CREDIT_COSTS } from "@/lib/creditToolsMap";
+import { getToolInfo, getModelName, getToolCost, CREDIT_COSTS } from "@/lib/creditToolsMap";
 import { cn } from "@/lib/utils";
 
 interface CreditUsageItem {
@@ -248,24 +249,47 @@ export function CreditHistoryCard() {
       {Object.keys(stats.creditsPerTool).length > 0 && (
         <div className="mb-6 p-4 rounded-lg bg-secondary/30 border border-border">
           <h4 className="text-sm font-medium text-foreground mb-3">Créditos Gastos por Ferramenta</h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {Object.entries(stats.creditsPerTool)
-              .sort(([, a], [, b]) => b - a)
-              .map(([toolName, credits]) => {
-                const uses = stats.operationCounts[toolName] || 0;
-                return (
-                  <div key={toolName} className="flex items-center justify-between text-xs p-2 rounded bg-background/50">
-                    <span className="text-muted-foreground truncate mr-2">{toolName}</span>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-xs text-destructive border-destructive/30">
-                        -{credits.toFixed(0)}
-                      </Badge>
-                      <span className="text-[10px] text-muted-foreground/70">({uses}x)</span>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
+          <TooltipProvider>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {Object.entries(stats.creditsPerTool)
+                .sort(([, a], [, b]) => b - a)
+                .map(([toolName, credits]) => {
+                  const uses = stats.operationCounts[toolName] || 0;
+                  // Find operation type by tool name
+                  const operationType = Object.entries(CREDIT_COSTS).find(
+                    ([key]) => getToolInfo(key).name === toolName
+                  )?.[0] || '';
+                  const costPerUse = getToolCost(operationType);
+                  
+                  return (
+                    <Tooltip key={toolName}>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center justify-between text-xs p-2 rounded bg-background/50 cursor-help hover:bg-background/80 transition-colors">
+                          <span className="text-muted-foreground truncate mr-2">{toolName}</span>
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className="text-xs text-destructive border-destructive/30">
+                              -{credits.toFixed(0)}
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground/70">({uses}x)</span>
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <div className="text-sm">
+                          <p className="font-medium">{toolName}</p>
+                          <p className="text-muted-foreground">
+                            Custo por uso: <span className="text-primary font-medium">{costPerUse} crédito{costPerUse !== 1 ? 's' : ''}</span>
+                          </p>
+                          <p className="text-muted-foreground">
+                            Total gasto: <span className="text-destructive font-medium">{credits.toFixed(0)} créditos</span> ({uses}x)
+                          </p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+            </div>
+          </TooltipProvider>
         </div>
       )}
 
@@ -281,57 +305,77 @@ export function CreditHistoryCard() {
         </div>
       ) : (
         <>
-          <ScrollArea className={cn(showAll ? "h-[400px]" : "")}>
-            <div className="space-y-3">
-              {displayedItems.map((item) => {
-                const modelName = extractModelFromDescription(item);
-                const formattedModel = modelName ? getModelName(modelName) : null;
-                const isDebit = item.amount < 0;
-                
-                return (
-                  <div
-                    key={`${item.type}-${item.id}`}
-                    className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 border border-border/50"
-                  >
-                    <div className="p-2 rounded-lg bg-primary/10 text-xl">
-                      {item.toolInfo.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-medium text-sm text-foreground">
-                          {item.toolInfo.name}
-                          {formattedModel && <span className="text-muted-foreground font-normal"> – {formattedModel}</span>}
-                        </span>
-                        <span className={cn(
-                          "font-bold text-sm",
-                          isDebit ? "text-destructive" : "text-success"
-                        )}>
-                          {isDebit ? '' : '+'}{item.amount.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {getTransactionBadge(item)}
-                        {formattedModel && (
-                          <Badge variant="outline" className="text-xs border-border text-muted-foreground">
-                            {formattedModel}
-                          </Badge>
-                        )}
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          {format(new Date(item.created_at), "dd MMM, HH:mm", { locale: ptBR })}
+          <TooltipProvider>
+            <ScrollArea className={cn(showAll ? "h-[400px]" : "")}>
+              <div className="space-y-3">
+                {displayedItems.map((item) => {
+                  const modelName = extractModelFromDescription(item);
+                  const formattedModel = modelName ? getModelName(modelName) : null;
+                  const isDebit = item.amount < 0;
+                  const costPerUse = item.type === 'usage' ? getToolCost(item.operation) : 0;
+                  
+                  return (
+                    <Tooltip key={`${item.type}-${item.id}`}>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 border border-border/50 cursor-help hover:bg-secondary/70 transition-colors">
+                          <div className="p-2 rounded-lg bg-primary/10 text-xl">
+                            {item.toolInfo.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="font-medium text-sm text-foreground">
+                                {item.toolInfo.name}
+                                {formattedModel && <span className="text-muted-foreground font-normal"> – {formattedModel}</span>}
+                              </span>
+                              <span className={cn(
+                                "font-bold text-sm",
+                                isDebit ? "text-destructive" : "text-success"
+                              )}>
+                                {isDebit ? '' : '+'}{item.amount.toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {getTransactionBadge(item)}
+                              {formattedModel && (
+                                <Badge variant="outline" className="text-xs border-border text-muted-foreground">
+                                  {formattedModel}
+                                </Badge>
+                              )}
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="w-3 h-3" />
+                                {format(new Date(item.created_at), "dd MMM, HH:mm", { locale: ptBR })}
+                              </div>
+                            </div>
+                            {item.description && (
+                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      {item.description && (
-                        <p className="text-xs text-muted-foreground mt-1 truncate">
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs">
+                        <div className="text-sm">
+                          <p className="font-medium">{item.toolInfo.name}</p>
+                          <p className="text-muted-foreground text-xs">{item.toolInfo.description}</p>
+                          {item.type === 'usage' && costPerUse > 0 && (
+                            <p className="mt-1 text-primary">
+                              Custo padrão: {costPerUse} crédito{costPerUse !== 1 ? 's' : ''} por uso
+                            </p>
+                          )}
+                          {item.type === 'transaction' && item.amount > 0 && (
+                            <p className="mt-1 text-success">
+                              Créditos adicionados à sua conta
+                            </p>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </TooltipProvider>
 
           {historyItems.length > 10 && (
             <Button
