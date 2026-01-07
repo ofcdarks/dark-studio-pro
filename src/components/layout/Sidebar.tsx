@@ -40,6 +40,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CreditsDisplay } from "./CreditsDisplay";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CreditHistoryModal } from "@/components/credits/CreditHistoryModal";
 
 interface NavItem {
   icon: React.ElementType;
@@ -98,6 +99,7 @@ export function Sidebar() {
   const [navItems, setNavItems] = useState<NavItem[]>(defaultNavItems);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const { signOut, user } = useAuth();
   const { profile, role } = useProfile();
   const { storageUsed, storageLimit, usagePercent } = useStorage();
@@ -375,7 +377,7 @@ export function Sidebar() {
               Comprar Créditos
             </Button>
             <button
-              onClick={() => navigate("/settings")}
+              onClick={() => setHistoryModalOpen(true)}
               className="w-full text-xs text-muted-foreground hover:text-primary transition-colors"
             >
               Ver Histórico
@@ -383,12 +385,19 @@ export function Sidebar() {
           </div>
         ) : (
           <div className="flex justify-center">
-            <Coins className={cn(
-              "w-5 h-5",
-              isLowCredits ? "text-destructive animate-pulse" : "text-primary"
-            )} />
+            <button onClick={() => setHistoryModalOpen(true)}>
+              <Coins className={cn(
+                "w-5 h-5 cursor-pointer hover:scale-110 transition-transform",
+                isLowCredits ? "text-destructive animate-pulse" : "text-primary"
+              )} />
+            </button>
           </div>
         )}
+
+        <CreditHistoryModal 
+          open={historyModalOpen} 
+          onOpenChange={setHistoryModalOpen} 
+        />
 
         {/* Storage Section */}
         {!collapsed ? (
