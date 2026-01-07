@@ -48,7 +48,14 @@ import {
   Clock,
   Calendar,
   Wand2,
+  TrendingUp,
 } from "lucide-react";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -77,6 +84,12 @@ interface BlogViewStats {
   views_7d: number;
   views_30d: number;
   unique_visitors: number;
+}
+
+interface DailyViewData {
+  date: string;
+  views: number;
+  label: string;
 }
 
 const CATEGORIES = [
@@ -112,6 +125,7 @@ export const AdminBlogTab = () => {
     views_30d: 0,
     unique_visitors: 0,
   });
+  const [dailyViews, setDailyViews] = useState<DailyViewData[]>([]);
 
   // Generate modal
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
@@ -147,6 +161,7 @@ export const AdminBlogTab = () => {
   useEffect(() => {
     fetchArticles();
     fetchViewStats();
+    fetchDailyViews();
   }, []);
 
   const fetchArticles = async () => {
@@ -205,6 +220,51 @@ export const AdminBlogTab = () => {
       });
     } catch (error) {
       console.error("Error fetching view stats:", error);
+    }
+  };
+
+  const fetchDailyViews = async () => {
+    try {
+      const now = new Date();
+      const date30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      // Get all views from last 30 days
+      const { data: viewsData } = await supabase
+        .from("blog_page_views")
+        .select("view_date")
+        .gte("view_date", date30d.toISOString().split('T')[0])
+        .order("view_date", { ascending: true });
+
+      // Aggregate by date
+      const viewsByDate: Record<string, number> = {};
+      
+      // Initialize all dates with 0
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        const dateStr = d.toISOString().split('T')[0];
+        viewsByDate[dateStr] = 0;
+      }
+
+      // Count views per day
+      viewsData?.forEach(v => {
+        if (viewsByDate[v.view_date] !== undefined) {
+          viewsByDate[v.view_date]++;
+        }
+      });
+
+      // Convert to array format for chart
+      const chartData: DailyViewData[] = Object.entries(viewsByDate).map(([date, views]) => {
+        const d = new Date(date);
+        return {
+          date,
+          views,
+          label: `${d.getDate()}/${d.getMonth() + 1}`,
+        };
+      });
+
+      setDailyViews(chartData);
+    } catch (error) {
+      console.error("Error fetching daily views:", error);
     }
   };
 
@@ -769,6 +829,63 @@ export const AdminBlogTab = () => {
           </Button>
         </Card>
       </div>
+
+      {/* Views Trend Chart */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold text-foreground">Tendência de Visitas (30 dias)</h3>
+          </div>
+          <span className="text-sm text-muted-foreground">
+            Total: {dailyViews.reduce((sum, d) => sum + d.views, 0).toLocaleString()} visitas
+          </span>
+        </div>
+        <ChartContainer
+          config={{
+            views: {
+              label: "Visitas",
+              color: "hsl(var(--primary))",
+            },
+          }}
+          className="h-[200px] w-full"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={dailyViews} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis 
+                dataKey="label" 
+                axisLine={false} 
+                tickLine={false}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                interval="preserveStartEnd"
+              />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                width={40}
+              />
+              <ChartTooltip
+                content={<ChartTooltipContent indicator="line" />}
+                cursor={{ stroke: "hsl(var(--muted-foreground))", strokeDasharray: "4 4" }}
+              />
+              <Area
+                type="monotone"
+                dataKey="views"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                fill="url(#viewsGradient)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </Card>
 
       {/* Filters */}
       <Card className="p-4">
