@@ -305,6 +305,7 @@ const Landing = () => {
               <button onClick={() => scrollToSection("funcionalidades")} className="text-lg text-muted-foreground hover:text-foreground transition-colors">Funcionalidades</button>
               <button onClick={() => scrollToSection("como-funciona")} className="text-lg text-muted-foreground hover:text-foreground transition-colors">Como Funciona</button>
               <button onClick={() => scrollToSection("planos")} className="text-lg text-muted-foreground hover:text-foreground transition-colors">Planos</button>
+              <Link to="/blog" className="text-lg text-muted-foreground hover:text-foreground transition-colors">Blog</Link>
               <button onClick={() => scrollToSection("faq")} className="text-lg text-muted-foreground hover:text-foreground transition-colors">FAQ</button>
             </div>
 

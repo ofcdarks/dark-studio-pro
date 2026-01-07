@@ -47,6 +47,7 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 const Maintenance = lazy(() => import("./pages/Maintenance"));
+const Blog = lazy(() => import("./pages/Blog"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -107,6 +108,7 @@ const AppRoutes = () => {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
             <Route path="/maintenance" element={<Maintenance />} />
+            <Route path="/blog" element={<Blog />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

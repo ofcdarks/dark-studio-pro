@@ -18,6 +18,7 @@ const publicRoutes: SEORoute[] = [
   { path: '/', changefreq: 'weekly', priority: 1.0, lastmod: today },
   { path: '/landing', changefreq: 'weekly', priority: 1.0, lastmod: today },
   { path: '/auth', changefreq: 'monthly', priority: 0.8, lastmod: today },
+  { path: '/blog', changefreq: 'daily', priority: 0.9, lastmod: today },
   { path: '/reset-password', changefreq: 'yearly', priority: 0.3, lastmod: today },
   { path: '/terms', changefreq: 'yearly', priority: 0.4, lastmod: today },
   { path: '/privacy', changefreq: 'yearly', priority: 0.4, lastmod: today },
