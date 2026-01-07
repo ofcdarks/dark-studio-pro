@@ -195,10 +195,11 @@ export const StylesCarousel = () => {
           className="relative space-y-4 md:space-y-6"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
+          style={{
+            WebkitMaskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
+            maskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
+          }}
         >
-          {/* Fade edges - suave e gradual - cobre toda a altura */}
-          <div className="absolute left-0 -top-4 -bottom-4 w-40 md:w-56 lg:w-72 bg-gradient-to-r from-background via-background/90 via-50% to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 -top-4 -bottom-4 w-40 md:w-56 lg:w-72 bg-gradient-to-l from-background via-background/90 via-50% to-transparent z-10 pointer-events-none" />
           
           {/* Row 1 - Left to Right */}
           <div 
