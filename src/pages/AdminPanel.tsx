@@ -57,6 +57,7 @@ import {
   Globe,
   UserPlus,
   BarChart3,
+  FileText,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,6 +76,7 @@ import { AdminMaintenanceTab } from "@/components/admin/AdminMaintenanceTab";
 import { AdminGlobalMaintenanceTab } from "@/components/admin/AdminGlobalMaintenanceTab";
 import { AdminMigrationTab } from "@/components/admin/AdminMigrationTab";
 import { AdminMonitoringTab } from "@/components/admin/AdminMonitoringTab";
+import { AdminBlogTab } from "@/components/admin/AdminBlogTab";
 
 interface AdminStats {
   totalUsers: number;
@@ -632,6 +634,10 @@ const AdminPanel = () => {
                 <BarChart3 className="w-4 h-4" />
                 Monitoramento
               </TabsTrigger>
+              <TabsTrigger value="blog" className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Blog
+              </TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -955,6 +961,10 @@ const AdminPanel = () => {
 
             <TabsContent value="monitoring">
               <AdminMonitoringTab />
+            </TabsContent>
+
+            <TabsContent value="blog">
+              <AdminBlogTab />
             </TabsContent>
           </Tabs>
         </div>
