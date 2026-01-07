@@ -53,6 +53,7 @@ import {
   Youtube,
   Layout,
   Wrench,
+  Globe,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,6 +69,7 @@ import { AdminStorageTab } from "@/components/admin/AdminStorageTab";
 import { AdminNotificationsTab } from "@/components/admin/AdminNotificationsTab";
 import { AdminLandingTab } from "@/components/admin/AdminLandingTab";
 import { AdminMaintenanceTab } from "@/components/admin/AdminMaintenanceTab";
+import { AdminGlobalMaintenanceTab } from "@/components/admin/AdminGlobalMaintenanceTab";
 
 interface AdminStats {
   totalUsers: number;
@@ -625,7 +627,11 @@ const AdminPanel = () => {
               </TabsTrigger>
               <TabsTrigger value="maintenance" className="flex items-center gap-2">
                 <Wrench className="w-4 h-4" />
-                Manutenção
+                Manutenção Ferramentas
+              </TabsTrigger>
+              <TabsTrigger value="global-maintenance" className="flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                Manutenção Global
               </TabsTrigger>
             </TabsList>
 
@@ -938,6 +944,10 @@ const AdminPanel = () => {
 
             <TabsContent value="maintenance">
               <AdminMaintenanceTab />
+            </TabsContent>
+
+            <TabsContent value="global-maintenance">
+              <AdminGlobalMaintenanceTab />
             </TabsContent>
           </Tabs>
         </div>
