@@ -18,7 +18,6 @@ import {
   Image,
   Search,
   DollarSign,
-  Sparkles,
   Wrench,
   Zap,
   Rocket,
@@ -120,7 +119,7 @@ const blogPosts: BlogPost[] = [
     category: "Roteiros",
     readTime: "18 min",
     date: "2025-01-07",
-    icon: Sparkles,
+    icon: Zap,
     tags: ["ia", "roteiros", "viral", "chatgpt"],
     image: imgRoteiros,
     views: 5432
@@ -252,7 +251,7 @@ const NewsletterForm = () => {
     return (
       <div className="flex flex-col items-center gap-3 py-4">
         <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-          <Sparkles className="w-6 h-6 text-green-500" />
+          <Rocket className="w-6 h-6 text-green-500" />
         </div>
         <p className="text-foreground font-medium">Obrigado por se inscrever!</p>
         <p className="text-sm text-muted-foreground">Você receberá nosso próximo conteúdo em breve.</p>
@@ -599,7 +598,7 @@ const Blog = () => {
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center gap-3 mb-10">
                 <div className="p-2 rounded-lg bg-primary/10">
-                  <Sparkles className="w-5 h-5 text-primary" />
+                  <Rocket className="w-5 h-5 text-primary" />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold">Artigos em Destaque</h2>
               </div>
@@ -849,7 +848,7 @@ const Blog = () => {
             <Card className="p-8 md:p-10 bg-card/80 backdrop-blur-sm border-primary/20 shadow-2xl shadow-primary/5">
               <div className="text-center">
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 border border-primary/30 mb-6">
-                  <Sparkles className="w-7 h-7 text-primary" />
+                  <Rocket className="w-7 h-7 text-primary" />
                 </div>
                 
                 <h2 className="text-2xl md:text-3xl font-bold mb-3">

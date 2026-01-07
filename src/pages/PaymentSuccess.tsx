@@ -11,8 +11,7 @@ import {
   LayoutDashboard,
   Rocket,
   Crown,
-  Star,
-  Sparkles
+  Star
 } from "lucide-react";
 
 export default function PaymentSuccess() {
@@ -155,7 +154,7 @@ export default function PaymentSuccess() {
                 animate={{ rotate: [0, 360] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
               >
-                <Sparkles className="w-6 h-6 text-primary" />
+                <Rocket className="w-6 h-6 text-primary" />
               </motion.div>
               <span className="text-xl font-bold text-foreground">
                 Seus créditos já estão disponíveis!
@@ -164,7 +163,7 @@ export default function PaymentSuccess() {
                 animate={{ rotate: [0, -360] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
               >
-                <Sparkles className="w-6 h-6 text-primary" />
+                <Rocket className="w-6 h-6 text-primary" />
               </motion.div>
             </motion.div>
 

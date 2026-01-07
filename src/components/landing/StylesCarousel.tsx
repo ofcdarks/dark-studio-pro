@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, Sparkles, ArrowRight, Eye, Zap, ChevronLeft, ChevronRight } from "lucide-react";
+import { Palette, Rocket, ArrowRight, Eye, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { AnimatedSection } from "./AnimatedSection";
@@ -414,7 +414,7 @@ export const StylesCarousel = () => {
           <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 rounded-full bg-card border border-primary/30">
             <Palette className="w-4 h-4 md:w-5 md:h-5 text-primary" />
             <span className="text-sm md:text-base font-medium text-primary">BIBLIOTECA VISUAL</span>
-            <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+            <Rocket className="w-4 h-4 md:w-5 md:h-5 text-primary" />
           </div>
           <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic">
             <span className="text-primary">85 Estilos</span> Visuais
