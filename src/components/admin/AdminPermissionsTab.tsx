@@ -54,6 +54,7 @@ const FEATURES = [
   { key: "pastas", label: "Pastas", route: "/folders", description: "Organização de conteúdo" },
   { key: "usar_api_propria", label: "Usar API Própria", route: "/settings", description: "Configurar chaves OpenAI/Gemini" },
   { key: "baixar_xml", label: "Baixar XML", route: "/scenes", description: "Exportar XML para DaVinci" },
+  { key: "imagefx_cookies", label: "ImageFX Cookies", route: "/scenes", description: "Geração de imagens via ImageFX" },
 ];
 
 export const AdminPermissionsTab = () => {
