@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useStorage } from "@/hooks/useStorage";
 import { useCredits } from "@/hooks/useCredits";
-import { supabase } from "@/integrations/supabase/client";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useNavigate, useLocation } from "react-router-dom";
 import logo from "@/assets/logo.gif";
 import {
@@ -18,11 +18,8 @@ import {
   Bot,
   Image,
   Mic,
-  Images,
   Film,
   Youtube,
-  Search,
-  TrendingUp,
   FileText,
   Settings,
   HardDrive,
@@ -38,7 +35,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CreditsDisplay } from "./CreditsDisplay";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CreditHistoryModal } from "@/components/credits/CreditHistoryModal";
 
@@ -50,60 +46,38 @@ interface NavItem {
   category?: string;
 }
 
-// Categorias para separadores visuais
-const categories: Record<string, string> = {
-  home: "",
-  pesquisa: "Pesquisa",
-  planejamento: "Planejamento",
-  analise: "Análise",
-  criacao: "Criação",
-  producao: "Produção",
-  publicacao: "Publicação",
-  metricas: "Métricas",
-  organizacao: "Organização",
-};
-
 // Ordem cronológica de produção de vídeo
 const defaultNavItems: NavItem[] = [
   { id: "home", icon: Home, label: "Início", href: "/", category: "home" },
-  // Pesquisa e Análise
   { id: "explore", icon: Compass, label: "Explorar Nicho", href: "/explore", category: "pesquisa" },
   { id: "channel-analyzer", icon: BarChart3, label: "Análise de Canais", href: "/channel-analyzer", category: "pesquisa" },
-  // Planejamento
   { id: "library", icon: Library, label: "Biblioteca Virais", href: "/library", category: "planejamento" },
   { id: "channels", icon: Eye, label: "Canais Monitorados", href: "/channels", category: "planejamento" },
-  // Análise de conteúdo
   { id: "analyzer", icon: Video, label: "Analisador de Vídeos", href: "/analyzer", category: "analise" },
   { id: "history", icon: History, label: "Histórico de Análises", href: "/history", category: "analise" },
-  // Criação
   { id: "agents", icon: Bot, label: "Agentes Virais", href: "/agents", category: "criacao" },
   { id: "scenes", icon: Film, label: "Gerador de Cenas", href: "/scenes", category: "criacao" },
   { id: "prompts", icon: Image, label: "Prompts e Imagens", href: "/prompts", category: "criacao" },
-  // Produção
   { id: "voice", icon: Mic, label: "Gerador de Voz", href: "/voice", category: "producao" },
-  // { id: "video-gen", icon: Film, label: "Gerador de Vídeo", href: "/video-gen", category: "producao" }, // Em Breve
   { id: "srt", icon: FileText, label: "Conversor SRT", href: "/srt", category: "producao" },
-  // Publicação
   { id: "youtube", icon: Youtube, label: "Integração YouTube", href: "/youtube", category: "publicacao" },
-  // Métricas
   { id: "analytics", icon: BarChart3, label: "Analytics", href: "/analytics", category: "metricas" },
-  // Organização
   { id: "folders", icon: FolderOpen, label: "Pastas e Histórico", href: "/folders", category: "organizacao" },
   { id: "settings", icon: Settings, label: "Configurações", href: "/settings", category: "organizacao" },
 ];
-
-const SIDEBAR_ORDER_KEY = "sidebar-nav-order";
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [navItems, setNavItems] = useState<NavItem[]>(defaultNavItems);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  
   const { signOut, user } = useAuth();
-  const { profile, role } = useProfile();
+  const { role } = useProfile();
   const { storageUsed, storageLimit, usagePercent } = useStorage();
   const { balance: creditsBalance, loading: creditsLoading } = useCredits();
+  const { sidebarOrder, saveSidebarOrder, isLoading: prefsLoading } = useUserPreferences();
+  
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -125,79 +99,12 @@ export function Sidebar() {
     return reorderedItems;
   }, []);
 
-  // Load saved order from database or localStorage fallback
+  // Apply saved order from useUserPreferences
   useEffect(() => {
-    const loadOrder = async () => {
-      if (!user?.id) {
-        // Fallback to localStorage for non-authenticated users
-        const savedOrder = localStorage.getItem(SIDEBAR_ORDER_KEY);
-        if (savedOrder) {
-          try {
-            const orderIds: string[] = JSON.parse(savedOrder);
-            setNavItems(reorderItems(orderIds));
-          } catch {
-            setNavItems(defaultNavItems);
-          }
-        }
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('user_preferences')
-          .select('sidebar_order')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (error) throw error;
-
-        if (data?.sidebar_order && data.sidebar_order.length > 0) {
-          setNavItems(reorderItems(data.sidebar_order));
-        } else {
-          // Check localStorage and migrate to database
-          const savedOrder = localStorage.getItem(SIDEBAR_ORDER_KEY);
-          if (savedOrder) {
-            const orderIds: string[] = JSON.parse(savedOrder);
-            setNavItems(reorderItems(orderIds));
-            // Migrate to database
-            await supabase
-              .from('user_preferences')
-              .upsert({ user_id: user.id, sidebar_order: orderIds });
-            localStorage.removeItem(SIDEBAR_ORDER_KEY);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading sidebar order:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadOrder();
-  }, [user?.id, reorderItems]);
-
-  // Save order to database
-  const saveOrder = useCallback(async (orderIds: string[]) => {
-    if (!user?.id) {
-      localStorage.setItem(SIDEBAR_ORDER_KEY, JSON.stringify(orderIds));
-      return;
+    if (!prefsLoading && sidebarOrder && sidebarOrder.length > 0) {
+      setNavItems(reorderItems(sidebarOrder));
     }
-
-    try {
-      await supabase
-        .from('user_preferences')
-        .upsert({ 
-          user_id: user.id, 
-          sidebar_order: orderIds,
-          updated_at: new Date().toISOString()
-        });
-    } catch (err) {
-      console.error('Error saving sidebar order:', err);
-      // Fallback to localStorage
-      localStorage.setItem(SIDEBAR_ORDER_KEY, JSON.stringify(orderIds));
-    }
-  }, [user?.id]);
+  }, [sidebarOrder, prefsLoading, reorderItems]);
 
   const handleDragStart = (itemId: string) => {
     setDraggedItem(itemId);
@@ -218,7 +125,7 @@ export function Sidebar() {
     newItems.splice(targetIndex, 0, removed);
 
     setNavItems(newItems);
-    saveOrder(newItems.map(i => i.id));
+    saveSidebarOrder(newItems.map(i => i.id));
     setDraggedItem(null);
   };
 
@@ -228,16 +135,7 @@ export function Sidebar() {
 
   const resetOrder = async () => {
     setNavItems(defaultNavItems);
-    if (user?.id) {
-      await supabase
-        .from('user_preferences')
-        .upsert({ 
-          user_id: user.id, 
-          sidebar_order: null,
-          updated_at: new Date().toISOString()
-        });
-    }
-    localStorage.removeItem(SIDEBAR_ORDER_KEY);
+    saveSidebarOrder(defaultNavItems.map(i => i.id));
   };
 
   const handleLogout = async () => {
