@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Clock, Calendar, User, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SEOHead from "@/components/seo/SEOHead";
+import { RelatedArticles } from "@/components/blog/RelatedArticles";
 import coverImage from "@/assets/blog/roteiros-virais-ia.jpg";
 
 const RoteirosViraisIA = () => {
@@ -193,19 +194,7 @@ const RoteirosViraisIA = () => {
             </Link>
           </div>
 
-          <div className="mt-12">
-            <h3 className="text-xl font-bold mb-6">Artigos Relacionados</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <Link to="/blog/como-criar-canal-dark" className="p-4 bg-card rounded-xl border border-border/50 hover:border-primary/50 transition-colors">
-                <h4 className="font-semibold mb-2">Como Criar um Canal Dark</h4>
-                <p className="text-sm text-muted-foreground">Guia completo para iniciantes</p>
-              </Link>
-              <Link to="/blog/thumbnails-profissionais" className="p-4 bg-card rounded-xl border border-border/50 hover:border-primary/50 transition-colors">
-                <h4 className="font-semibold mb-2">Thumbnails que Convertem</h4>
-                <p className="text-sm text-muted-foreground">Design que aumenta CTR</p>
-              </Link>
-            </div>
-          </div>
+          <RelatedArticles currentSlug="roteiros-virais-ia" currentCategory="Roteiros" />
         </article>
 
         <footer className="border-t border-border/50 py-8 mt-12">

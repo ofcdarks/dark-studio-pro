@@ -3,6 +3,7 @@ import { ArrowLeft, Clock, Calendar, User, Share2 } from "lucide-react";
 import coverImage from "@/assets/blog/como-ganhar-dinheiro-youtube.jpg";
 import { Button } from "@/components/ui/button";
 import SEOHead from "@/components/seo/SEOHead";
+import { RelatedArticles } from "@/components/blog/RelatedArticles";
 
 const ComoGanharDinheiroYouTube = () => {
   const articleJsonLd = {
@@ -220,20 +221,7 @@ const ComoGanharDinheiroYouTube = () => {
             </Link>
           </div>
 
-          {/* Related Articles */}
-          <div className="mt-12">
-            <h3 className="text-xl font-bold mb-6">Artigos Relacionados</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <Link to="/blog/nichos-lucrativos-youtube" className="p-4 bg-card rounded-xl border border-border/50 hover:border-primary/50 transition-colors">
-                <h4 className="font-semibold mb-2">10 Nichos Mais Lucrativos do YouTube</h4>
-                <p className="text-sm text-muted-foreground">Descubra os nichos que mais pagam em 2025</p>
-              </Link>
-              <Link to="/blog/como-criar-canal-dark" className="p-4 bg-card rounded-xl border border-border/50 hover:border-primary/50 transition-colors">
-                <h4 className="font-semibold mb-2">Como Criar um Canal Dark do Zero</h4>
-                <p className="text-sm text-muted-foreground">Guia passo a passo para iniciantes</p>
-              </Link>
-            </div>
-          </div>
+          <RelatedArticles currentSlug="como-ganhar-dinheiro-youtube" currentCategory="Monetização" />
         </article>
 
         {/* Footer */}

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Clock, Calendar, User, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SEOHead from "@/components/seo/SEOHead";
+import { RelatedArticles } from "@/components/blog/RelatedArticles";
 import coverImage from "@/assets/blog/shorts-virais.jpg";
 
 const ShortsVirais = () => {
@@ -187,19 +188,7 @@ const ShortsVirais = () => {
             </Link>
           </div>
 
-          <div className="mt-12">
-            <h3 className="text-xl font-bold mb-6">Artigos Relacionados</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <Link to="/blog/algoritmo-youtube" className="p-4 bg-card rounded-xl border border-border/50 hover:border-primary/50 transition-colors">
-                <h4 className="font-semibold mb-2">Como Funciona o Algoritmo</h4>
-                <p className="text-sm text-muted-foreground">Entenda o que faz vídeos viralizarem</p>
-              </Link>
-              <Link to="/blog/crescimento-rapido" className="p-4 bg-card rounded-xl border border-border/50 hover:border-primary/50 transition-colors">
-                <h4 className="font-semibold mb-2">Estratégias de Crescimento Rápido</h4>
-                <p className="text-sm text-muted-foreground">Acelere o crescimento do seu canal</p>
-              </Link>
-            </div>
-          </div>
+          <RelatedArticles currentSlug="shorts-virais" currentCategory="Shorts" />
         </article>
 
         <footer className="border-t border-border/50 py-8 mt-12">
