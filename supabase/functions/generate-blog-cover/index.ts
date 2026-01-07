@@ -92,7 +92,8 @@ async function generateWithImageFX(cookie: string, prompt: string): Promise<stri
     "Authorization": `Bearer ${session.access_token}`
   };
 
-  const enhancedPrompt = `${prompt}, 16:9 aspect ratio, no black bars, no letterbox, no borders, fill entire frame`;
+  // Prompt otimizado para blog covers em 16:9 landscape
+  const enhancedPrompt = `${prompt}, 16:9 wide landscape aspect ratio, no black bars, no letterbox, no borders, fill entire frame horizontally, professional blog header image, high resolution 1200x630 pixels`;
   
   const payload = JSON.stringify({
     userInput: {
@@ -129,7 +130,7 @@ async function generateWithImageFX(cookie: string, prompt: string): Promise<stri
     throw new Error("Nenhuma imagem gerada pelo ImageFX");
   }
 
-  return `data:image/png;base64,${images[0].encodedImage}`;
+  return images[0].encodedImage; // Return raw base64 without data URI prefix
 }
 
 serve(async (req) => {
@@ -167,23 +168,29 @@ serve(async (req) => {
 
     const imagePrompt = `Professional blog cover image about "${title}". ${styleDesc}. Category: ${category || "YouTube content creation"}. High quality, ultra detailed, no text or words.`;
 
-    // Generate with ImageFX
-    const imageUrl = await generateWithImageFX(cookies, imagePrompt);
+    // Generate with ImageFX - returns raw base64
+    const base64Image = await generateWithImageFX(cookies, imagePrompt);
 
-    // If articleId provided, upload to storage
+    // If articleId provided, upload optimized image to storage
     if (articleId) {
-      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
-      const imageBuffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
-      const fileName = `blog-covers/${articleId}-${Date.now()}.png`;
+      const imageBuffer = Uint8Array.from(atob(base64Image), (c) => c.charCodeAt(0));
+      
+      // Use WebP format for better compression and performance
+      const fileName = `blog-covers/${articleId}-${Date.now()}.webp`;
 
       const { error: uploadError } = await supabaseAdmin.storage
         .from("blog-images")
-        .upload(fileName, imageBuffer, { contentType: "image/png", upsert: true });
+        .upload(fileName, imageBuffer, { 
+          contentType: "image/webp", 
+          upsert: true,
+          cacheControl: "public, max-age=31536000" // Cache for 1 year
+        });
 
       if (uploadError) {
         console.error('[BlogCover] Upload error:', uploadError);
+        // Fallback: return base64 data URI
         return new Response(
-          JSON.stringify({ success: true, image_url: imageUrl, uploaded: false }),
+          JSON.stringify({ success: true, image_url: `data:image/png;base64,${base64Image}`, uploaded: false }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -192,7 +199,7 @@ serve(async (req) => {
       
       await supabaseAdmin.from("blog_articles").update({ image_url: urlData.publicUrl }).eq("id", articleId);
 
-      console.log('[BlogCover] Cover uploaded:', urlData.publicUrl);
+      console.log('[BlogCover] Optimized cover uploaded:', urlData.publicUrl);
 
       return new Response(
         JSON.stringify({ success: true, image_url: urlData.publicUrl, uploaded: true }),
@@ -200,8 +207,9 @@ serve(async (req) => {
       );
     }
 
+    // Return base64 data URI for preview
     return new Response(
-      JSON.stringify({ success: true, image_url: imageUrl, uploaded: false }),
+      JSON.stringify({ success: true, image_url: `data:image/png;base64,${base64Image}`, uploaded: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
