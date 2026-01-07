@@ -52,14 +52,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     
-    // Se cadastro bem-sucedido, enviar email de boas-vindas customizado
+    // Se cadastro bem-sucedido, enviar email de pendente de aprovação
     if (!error) {
       try {
-        await supabase.functions.invoke("send-welcome-email", {
+        await supabase.functions.invoke("send-pending-email", {
           body: { email, fullName },
         });
       } catch (e) {
-        console.error("Erro ao enviar email de boas-vindas:", e);
+        console.error("Erro ao enviar email de pendente:", e);
       }
     }
     

@@ -201,10 +201,47 @@ const AdminPanel = () => {
         .in("id", pendingUsers.map(u => u.id));
 
       if (error) throw error;
-      toast.success(`${pendingUsers.length} usuários aprovados!`);
+      
+      // Enviar email de aprovação para cada usuário
+      for (const user of pendingUsers) {
+        try {
+          await supabase.functions.invoke("send-approved-email", {
+            body: { email: user.email, fullName: user.full_name },
+          });
+        } catch (e) {
+          console.error(`Erro ao enviar email para ${user.email}:`, e);
+        }
+      }
+      
+      toast.success(`${pendingUsers.length} usuários aprovados e notificados!`);
       fetchAdminData();
     } catch (error) {
       toast.error("Erro ao aprovar usuários");
+    }
+  };
+
+  const handleApproveUser = async (user: UserWithRole) => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ status: "active" })
+        .eq("id", user.id);
+
+      if (error) throw error;
+      
+      // Enviar email de aprovação
+      try {
+        await supabase.functions.invoke("send-approved-email", {
+          body: { email: user.email, fullName: user.full_name },
+        });
+      } catch (e) {
+        console.error(`Erro ao enviar email para ${user.email}:`, e);
+      }
+      
+      toast.success(`Usuário ${user.email} aprovado e notificado!`);
+      fetchAdminData();
+    } catch (error) {
+      toast.error("Erro ao aprovar usuário");
     }
   };
 
@@ -597,6 +634,17 @@ const AdminPanel = () => {
                                 </td>
                                 <td className="py-4">
                                   <div className="flex items-center gap-1">
+                                    {user.status === "pending" && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-success hover:text-success hover:bg-success/10"
+                                        onClick={() => handleApproveUser(user)}
+                                        title="Aprovar"
+                                      >
+                                        <CheckCircle className="w-4 h-4" />
+                                      </Button>
+                                    )}
                                     <Button
                                       variant="ghost"
                                       size="icon"
