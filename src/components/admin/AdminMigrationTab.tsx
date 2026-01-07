@@ -50,6 +50,9 @@ import {
   XCircle,
   Copy,
   Plus,
+  Upload,
+  FileSpreadsheet,
+  Download,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -92,6 +95,9 @@ export function AdminMigrationTab() {
   const [bulkPlan, setBulkPlan] = useState("FREE");
   const [bulkCredits, setBulkCredits] = useState(50);
   const [addingBulk, setAddingBulk] = useState(false);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
+  const [csvData, setCsvData] = useState<Array<{ email: string; full_name: string; plan_name: string; credits_amount: number }>>([]);
+  const [importingCsv, setImportingCsv] = useState(false);
   
   const [newInvite, setNewInvite] = useState({
     email: "",
@@ -282,6 +288,83 @@ export function AdminMigrationTab() {
     toast.success("Link copiado para a área de transferência!");
   };
 
+  const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split("\n").filter(line => line.trim());
+      
+      // Skip header row if it exists
+      const startIndex = lines[0]?.toLowerCase().includes("email") ? 1 : 0;
+      
+      const parsedData = lines.slice(startIndex).map(line => {
+        // Support both comma and semicolon as separators
+        const parts = line.includes(";") ? line.split(";") : line.split(",");
+        const email = parts[0]?.trim().toLowerCase() || "";
+        const full_name = parts[1]?.trim() || "";
+        const plan_name = parts[2]?.trim().toUpperCase() || "FREE";
+        const credits_amount = parseInt(parts[3]?.trim()) || 50;
+
+        return { email, full_name, plan_name, credits_amount };
+      }).filter(item => item.email && item.email.includes("@"));
+
+      if (parsedData.length === 0) {
+        toast.error("Nenhum email válido encontrado no arquivo");
+        return;
+      }
+
+      setCsvData(parsedData);
+      setCsvImportOpen(true);
+    };
+    reader.readAsText(file);
+    
+    // Reset file input
+    e.target.value = "";
+  };
+
+  const handleCsvImport = async () => {
+    if (csvData.length === 0) return;
+
+    setImportingCsv(true);
+    try {
+      const invitesToInsert = csvData.map(item => ({
+        email: item.email,
+        full_name: item.full_name || null,
+        plan_name: item.plan_name,
+        credits_amount: item.credits_amount,
+        invited_by: user?.id,
+      }));
+
+      const { error } = await supabase
+        .from("migration_invites")
+        .insert(invitesToInsert);
+
+      if (error) throw error;
+
+      toast.success(`${csvData.length} convites importados com sucesso!`);
+      setCsvImportOpen(false);
+      setCsvData([]);
+      fetchInvites();
+    } catch (error: any) {
+      console.error("Error importing CSV:", error);
+      toast.error(error.message || "Erro ao importar convites");
+    } finally {
+      setImportingCsv(false);
+    }
+  };
+
+  const downloadCsvTemplate = () => {
+    const template = "email,nome,plano,creditos\ncliente@exemplo.com,João Silva,FREE,50\noutro@exemplo.com,Maria Santos,START CREATOR,150";
+    const blob = new Blob([template], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "template_migracao.csv";
+    link.click();
+  };
+
   const handleResendExpired = async (invite: MigrationInvite) => {
     setSending(invite.id);
     try {
@@ -381,11 +464,29 @@ export function AdminMigrationTab() {
               Convide clientes da versão anterior para se cadastrar com seus planos e créditos
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={fetchInvites} disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
               Atualizar
             </Button>
+            <Button variant="outline" onClick={downloadCsvTemplate}>
+              <Download className="w-4 h-4 mr-2" />
+              Template CSV
+            </Button>
+            <label>
+              <input
+                type="file"
+                accept=".csv,.txt"
+                onChange={handleCsvFileChange}
+                className="hidden"
+              />
+              <Button variant="outline" asChild>
+                <span>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Importar CSV
+                </span>
+              </Button>
+            </label>
             <Button variant="outline" onClick={() => setBulkAddOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Adicionar em Lote
@@ -682,6 +783,59 @@ export function AdminMigrationTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* CSV Import Preview Modal */}
+      <Dialog open={csvImportOpen} onOpenChange={setCsvImportOpen}>
+        <DialogContent className="bg-card border-primary/50 rounded-xl shadow-xl max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5 text-primary" />
+              Importar CSV - Preview
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              {csvData.length} registros encontrados. Revise antes de importar:
+            </p>
+
+            <ScrollArea className="h-[300px] border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Plano</TableHead>
+                    <TableHead>Créditos</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {csvData.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{item.email}</TableCell>
+                      <TableCell>{item.full_name || "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{item.plan_name}</Badge>
+                      </TableCell>
+                      <TableCell>{item.credits_amount}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCsvImportOpen(false); setCsvData([]); }}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCsvImport} disabled={importingCsv}>
+              {importingCsv ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+              Importar {csvData.length} Convites
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
