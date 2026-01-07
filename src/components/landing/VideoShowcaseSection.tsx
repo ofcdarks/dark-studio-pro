@@ -1,13 +1,27 @@
 import { motion } from "framer-motion";
 import { Play, Zap, Rocket, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLandingSettings } from "@/hooks/useLandingSettings";
-import videoCover from "@/assets/video-cover.jpg";
+import videoCover from "@/assets/video-cover-futuristic.jpg";
 
 const VideoShowcaseSection = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const { settings } = useLandingSettings();
+  const [thumbnailSrc, setThumbnailSrc] = useState(() =>
+    settings.videoId
+      ? `https://img.youtube.com/vi/${settings.videoId}/maxresdefault.jpg`
+      : videoCover
+  );
+
+  useEffect(() => {
+    setThumbnailSrc(
+      settings.videoId
+        ? `https://img.youtube.com/vi/${settings.videoId}/maxresdefault.jpg`
+        : videoCover
+    );
+  }, [settings.videoId]);
+
 
   return (
     <section id="demo" className="py-24 relative overflow-hidden">
