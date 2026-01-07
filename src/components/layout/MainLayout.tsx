@@ -5,6 +5,7 @@ import { StorageIndicator } from "./StorageIndicator";
 import { CreditsDisplay } from "./CreditsDisplay";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminPushNotifications } from "@/hooks/useAdminPushNotifications";
 import { cn } from "@/lib/utils";
 
 interface MainLayoutProps {
@@ -17,6 +18,9 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [headerHovered, setHeaderHovered] = useState(false);
   const lastScrollY = useRef(0);
   const mainRef = useRef<HTMLDivElement>(null);
+  
+  // Enable push notifications for admins
+  useAdminPushNotifications();
 
   useEffect(() => {
     const mainElement = mainRef.current;
