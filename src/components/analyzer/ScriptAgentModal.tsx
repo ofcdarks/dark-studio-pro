@@ -234,7 +234,7 @@ ${ctaFinal ? "[CTA]\n\"Se você gostou deste conteúdo, deixe seu like e se insc
                 <SelectTrigger className="mt-1 bg-secondary border-border">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
                   <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                   <SelectItem value="es">Español</SelectItem>
@@ -290,7 +290,7 @@ ${ctaFinal ? "[CTA]\n\"Se você gostou deste conteúdo, deixe seu like e se insc
               <SelectTrigger className="mt-1 bg-secondary border-border">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
                 <SelectItem value="claude-sonnet">
                   <div className="flex items-center gap-2">
                     Claude 4 Sonnet
