@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Sidebar } from "./Sidebar";
+import { MobileSidebar } from "./MobileSidebar";
 import { NotificationsBell } from "./NotificationsBell";
 import { StorageIndicator } from "./StorageIndicator";
 import { CreditsDisplay } from "./CreditsDisplay";
@@ -9,6 +10,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAdminPushNotifications } from "@/hooks/useAdminPushNotifications";
 import { RequireWhatsAppModal } from "@/components/auth/RequireWhatsAppModal";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -22,6 +24,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [whatsAppCompleted, setWhatsAppCompleted] = useState(false);
   const lastScrollY = useRef(0);
   const mainRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
   
   // Enable push notifications for admins
   useAdminPushNotifications();
@@ -58,25 +61,40 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      {/* Desktop Sidebar */}
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
+      
+      {/* Mobile Sidebar */}
+      <MobileSidebar />
+      
       <main className="flex-1 flex flex-col overflow-hidden">
         {user && (
           <>
-            {/* Invisible hover zone at top */}
-            <div 
-              className="fixed top-0 right-0 h-4 w-96 z-40"
-              onMouseEnter={() => setHeaderHovered(true)}
-              onMouseLeave={() => setHeaderHovered(false)}
-            />
+            {/* Invisible hover zone at top - desktop only */}
+            {!isMobile && (
+              <div 
+                className="fixed top-0 right-0 h-4 w-96 z-40"
+                onMouseEnter={() => setHeaderHovered(true)}
+                onMouseLeave={() => setHeaderHovered(false)}
+              />
+            )}
             <div 
               className={cn(
-                "fixed top-0 right-0 z-50 flex items-center gap-3 px-6 py-4 bg-gradient-to-l from-background via-background/95 to-transparent transition-all duration-300",
-                showHeader ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+                "fixed top-0 z-50 flex items-center gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4 bg-gradient-to-l from-background via-background/95 to-transparent transition-all duration-300",
+                // Mobile: always visible, positioned after menu button
+                isMobile 
+                  ? "right-0 translate-y-0 opacity-100" 
+                  : cn(
+                      "right-0",
+                      showHeader ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+                    )
               )}
-              onMouseEnter={() => setHeaderHovered(true)}
-              onMouseLeave={() => setHeaderHovered(false)}
+              onMouseEnter={() => !isMobile && setHeaderHovered(true)}
+              onMouseLeave={() => !isMobile && setHeaderHovered(false)}
             >
-              <CreditsDisplay collapsed={false} showRefresh={false} />
+              {!isMobile && <CreditsDisplay collapsed={false} showRefresh={false} />}
               <StorageIndicator />
               <ThemeToggle />
               <NotificationsBell />
@@ -84,8 +102,8 @@ export function MainLayout({ children }: MainLayoutProps) {
           </>
         )}
         {/* Spacer for fixed header */}
-        {user && <div className="h-16 flex-shrink-0" />}
-        <div ref={mainRef} className="flex-1 overflow-auto">
+        {user && <div className="h-14 md:h-16 flex-shrink-0" />}
+        <div ref={mainRef} className="flex-1 overflow-auto px-3 md:px-0">
           {children}
         </div>
       </main>
