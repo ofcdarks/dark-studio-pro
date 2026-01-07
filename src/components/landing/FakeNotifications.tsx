@@ -39,8 +39,21 @@ const planColors: Record<string, string> = {
 const FakeNotifications = () => {
   const [currentNotification, setCurrentNotification] = useState<number | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isPageVisible, setIsPageVisible] = useState(true);
+
+  // Pause notifications when page is not visible (tab inactive)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   useEffect(() => {
+    if (!isPageVisible) return;
+
     const showNotification = () => {
       const randomIndex = Math.floor(Math.random() * notifications.length);
       setCurrentNotification(randomIndex);
@@ -56,16 +69,16 @@ const FakeNotifications = () => {
       showNotification();
     }, 3000);
 
-    // Regular interval
+    // Regular interval - longer to reduce CPU usage
     const interval = setInterval(() => {
       showNotification();
-    }, 8000 + Math.random() * 4000);
+    }, 12000 + Math.random() * 6000);
 
     return () => {
       clearTimeout(initialTimeout);
       clearInterval(interval);
     };
-  }, []);
+  }, [isPageVisible]);
 
   if (currentNotification === null) return null;
 
