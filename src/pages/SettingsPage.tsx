@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { useStorage } from "@/hooks/useStorage";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { resetAllTutorials } from "@/hooks/useTutorial";
@@ -32,6 +33,7 @@ const SettingsPage = () => {
   const { profile, loading: profileLoading, refetch: refetchProfile } = useProfile();
   const { settings, loading: settingsLoading, validating, validateApiKey, saveSettings, isValidated } = useApiSettings();
   const { registerUpload, unregisterUpload, canUpload } = useStorage();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
 
   const [userPlan, setUserPlan] = useState<UserPlan>('free');
   const [profileData, setProfileData] = useState({ full_name: '', email: '' });
@@ -180,7 +182,7 @@ const SettingsPage = () => {
     }
   }, [settings]);
 
-  const canUseOwnApiKeys = userPlan === 'admin' || userPlan === 'master' || userPlan === 'annual';
+  const canUseOwnApiKeys = hasPermission('usar_api_propria');
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -550,7 +552,7 @@ const SettingsPage = () => {
     );
   };
 
-  if (profileLoading || settingsLoading) {
+  if (profileLoading || settingsLoading || permissionsLoading) {
     return (
       <MainLayout>
         <div className="flex-1 flex items-center justify-center">
