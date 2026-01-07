@@ -60,7 +60,7 @@ export function usePermissions() {
   const { subscription, loading: subscriptionLoading } = useSubscription();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['permissions', user?.id, subscription?.priceId],
+    queryKey: ['permissions', user?.id, subscription?.priceId, subscription?.plan],
     queryFn: async (): Promise<PermissionsData> => {
       if (!user) return { permissions: {}, planName: null };
 
@@ -79,6 +79,7 @@ export function usePermissions() {
       let currentPlanName = "FREE";
       let isAnnual = false;
 
+      // First try to get plan from Stripe price ID
       if (subscription?.priceId) {
         const { data: planData } = await supabase
           .from("plan_permissions")
@@ -91,6 +92,31 @@ export function usePermissions() {
           isAnnual = planData.is_annual || false;
         }
       }
+      
+      // If still FREE but subscription says otherwise, use the plan name from subscription
+      if (currentPlanName === "FREE" && subscription?.plan && subscription.plan !== "FREE") {
+        currentPlanName = subscription.plan;
+        // Try to detect annual based on plan name or default to false
+        isAnnual = false;
+      }
+      
+      // If user has 'pro' role but still showing FREE, give them PRO permissions
+      if (currentPlanName === "FREE" && roleData?.role === "pro") {
+        // Get the best available plan permissions (MASTER PRO)
+        const { data: proPlanData } = await supabase
+          .from("plan_permissions")
+          .select("permissions, plan_name")
+          .eq("plan_name", "MASTER PRO")
+          .eq("is_annual", false)
+          .maybeSingle();
+        
+        if (proPlanData) {
+          return {
+            permissions: (proPlanData.permissions as Permissions) || ALL_PERMISSIONS,
+            planName: "PRO",
+          };
+        }
+      }
 
       // Fetch permissions for the current plan
       const { data: permissionsData } = await supabase
@@ -99,6 +125,21 @@ export function usePermissions() {
         .eq("plan_name", currentPlanName)
         .eq("is_annual", isAnnual)
         .maybeSingle();
+
+      // If no permissions found for exact match, try without annual filter
+      if (!permissionsData) {
+        const { data: fallbackData } = await supabase
+          .from("plan_permissions")
+          .select("permissions")
+          .eq("plan_name", currentPlanName)
+          .limit(1)
+          .maybeSingle();
+        
+        return {
+          permissions: (fallbackData?.permissions as Permissions) || {},
+          planName: currentPlanName,
+        };
+      }
 
       return {
         permissions: (permissionsData?.permissions as Permissions) || {},
