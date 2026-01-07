@@ -49,13 +49,14 @@ import {
   Calendar,
   Wand2,
   TrendingUp,
+  BarChart3,
 } from "lucide-react";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -830,62 +831,146 @@ export const AdminBlogTab = () => {
         </Card>
       </div>
 
-      {/* Views Trend Chart */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-foreground">Tendência de Visitas (30 dias)</h3>
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Views Trend Chart */}
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-foreground">Tendência de Visitas (30 dias)</h3>
+            </div>
+            <span className="text-sm text-muted-foreground">
+              Total: {dailyViews.reduce((sum, d) => sum + d.views, 0).toLocaleString()} visitas
+            </span>
           </div>
-          <span className="text-sm text-muted-foreground">
-            Total: {dailyViews.reduce((sum, d) => sum + d.views, 0).toLocaleString()} visitas
-          </span>
-        </div>
-        <ChartContainer
-          config={{
-            views: {
-              label: "Visitas",
-              color: "hsl(var(--primary))",
-            },
-          }}
-          className="h-[200px] w-full"
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={dailyViews} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis 
-                dataKey="label" 
-                axisLine={false} 
-                tickLine={false}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                interval="preserveStartEnd"
-              />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                width={40}
-              />
-              <ChartTooltip
-                content={<ChartTooltipContent indicator="line" />}
-                cursor={{ stroke: "hsl(var(--muted-foreground))", strokeDasharray: "4 4" }}
-              />
-              <Area
-                type="monotone"
-                dataKey="views"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2}
-                fill="url(#viewsGradient)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </Card>
+          <ChartContainer
+            config={{
+              views: {
+                label: "Visitas",
+                color: "hsl(var(--primary))",
+              },
+            }}
+            className="h-[300px] w-full"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={dailyViews} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis 
+                  dataKey="label" 
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  interval="preserveStartEnd"
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  width={40}
+                />
+                <ChartTooltip
+                  content={<ChartTooltipContent indicator="line" />}
+                  cursor={{ stroke: "hsl(var(--muted-foreground))", strokeDasharray: "4 4" }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="views"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  fill="url(#viewsGradient)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        </Card>
+
+        {/* Top 10 Articles Chart */}
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-accent" />
+              <h3 className="font-semibold text-foreground">Top 10 Artigos Mais Visualizados</h3>
+            </div>
+          </div>
+          <ChartContainer
+            config={{
+              views: {
+                label: "Visitas",
+                color: "hsl(var(--accent))",
+              },
+            }}
+            className="h-[300px] w-full"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={articles
+                  .filter(a => (a.view_count || 0) > 0)
+                  .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+                  .slice(0, 10)
+                  .map(a => ({
+                    name: a.title.length > 30 ? a.title.substring(0, 30) + "..." : a.title,
+                    fullTitle: a.title,
+                    views: a.view_count || 0,
+                  }))}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 5, bottom: 5 }}
+              >
+                <XAxis 
+                  type="number" 
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                />
+                <YAxis 
+                  type="category" 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                  width={150}
+                />
+                <ChartTooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg">
+                          <p className="text-sm font-medium text-foreground">{data.fullTitle}</p>
+                          <p className="text-sm text-muted-foreground">{data.views.toLocaleString()} visitas</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="views" radius={[0, 4, 4, 0]}>
+                  {articles
+                    .filter(a => (a.view_count || 0) > 0)
+                    .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+                    .slice(0, 10)
+                    .map((_, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={index === 0 ? "hsl(var(--primary))" : `hsl(var(--accent) / ${1 - index * 0.08})`}
+                      />
+                    ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+          {articles.filter(a => (a.view_count || 0) > 0).length === 0 && (
+            <div className="flex items-center justify-center h-[260px] text-muted-foreground text-sm">
+              Nenhum artigo com visitas registradas ainda
+            </div>
+          )}
+        </Card>
+      </div>
 
       {/* Filters */}
       <Card className="p-4">
