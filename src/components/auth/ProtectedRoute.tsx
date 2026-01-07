@@ -24,14 +24,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     if (user) {
       checkUserStatus();
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, location.pathname]);
 
   const checkUserStatus = async () => {
+    if (!user?.id) {
+      setCheckingStatus(false);
+      return;
+    }
+    
     try {
+      // Pequeno delay para garantir que o trigger handle_new_user completou
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const { data, error } = await supabase
         .from("profiles")
         .select("status")
-        .eq("id", user?.id)
+        .eq("id", user.id)
         .single();
 
       if (!error && data) {
@@ -39,8 +47,24 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         
         // Se status é pending e não está na página de pending, redireciona
         if (data.status === "pending" && location.pathname !== "/pending-approval") {
-          navigate("/pending-approval");
+          navigate("/pending-approval", { replace: true });
+          return;
         }
+      } else if (error) {
+        console.error("Erro ao buscar status:", error);
+        // Se não encontrou o perfil, pode ser um novo usuário - aguarda um pouco mais
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const { data: retryData } = await supabase
+          .from("profiles")
+          .select("status")
+          .eq("id", user.id)
+          .single();
+          
+        if (retryData?.status === "pending" && location.pathname !== "/pending-approval") {
+          navigate("/pending-approval", { replace: true });
+          return;
+        }
+        setUserStatus(retryData?.status || null);
       }
     } catch (e) {
       console.error("Erro ao verificar status:", e);
