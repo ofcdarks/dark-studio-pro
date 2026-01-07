@@ -125,7 +125,7 @@ const TermsOfUse = () => {
                   <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">9. Contato</h2>
                   <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
                     Para dúvidas sobre estes termos, entre em contato através do e-mail: 
-                    <span className="text-primary"> suporte@canaisdarks.com.br</span>
+                    <a href="mailto:suporte@canaisdarks.com.br" className="text-primary hover:underline">suporte@canaisdarks.com.br</a>
                   </p>
                 </section>
               </div>

@@ -1050,7 +1050,7 @@ const Landing = () => {
             <ul className="space-y-3 text-lg text-muted-foreground">
               <li>
                 <span className="text-foreground">Email:</span><br />
-                suporte@canaisdarks.com.br
+                <a href="mailto:suporte@canaisdarks.com.br" className="text-primary hover:underline">suporte@canaisdarks.com.br</a>
               </li>
               <li>
                 <span className="text-foreground">Horário:</span><br />
