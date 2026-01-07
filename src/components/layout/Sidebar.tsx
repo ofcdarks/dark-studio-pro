@@ -33,6 +33,7 @@ import {
   History,
   GripVertical,
   RotateCcw,
+  Coins,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -336,6 +337,57 @@ export function Sidebar() {
 
       {/* Bottom Section */}
       <div className="p-4 border-t border-sidebar-border space-y-4">
+        {/* Credits Section */}
+        {!collapsed ? (
+          <div className="p-3 rounded-xl bg-secondary/50 border border-border space-y-2">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Coins className="w-4 h-4 text-primary" />
+              <span className="text-sm">Créditos</span>
+            </div>
+            <div className="text-2xl font-bold text-primary">
+              {profile?.credits?.toLocaleString() ?? 0}
+            </div>
+            <Button 
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              size="sm"
+              onClick={() => navigate("/plans")}
+            >
+              Comprar Créditos
+            </Button>
+            <button
+              onClick={() => navigate("/settings")}
+              className="w-full text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Ver Histórico
+            </button>
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <Coins className="w-5 h-5 text-primary" />
+          </div>
+        )}
+
+        {/* Storage Section */}
+        {!collapsed ? (
+          <div className="p-3 rounded-xl bg-secondary/50 border border-border space-y-2">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <HardDrive className="w-4 h-4" />
+              <span className="text-sm">Armazenamento</span>
+            </div>
+            <div className="text-lg font-bold text-foreground">
+              {storageUsed.toFixed(2)} GB
+            </div>
+            <div className="text-xs text-muted-foreground">
+              de {storageLimit.toFixed(1)} GB
+            </div>
+            <Progress value={Math.min(usagePercent, 100)} className="h-1.5" />
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <HardDrive className="w-5 h-5 text-muted-foreground" />
+          </div>
+        )}
+
         {/* Plan */}
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
           <Crown className="w-5 h-5 text-primary flex-shrink-0" />
@@ -343,14 +395,6 @@ export function Sidebar() {
             <div className="flex-1">
               <div className="text-sm text-muted-foreground">Plano Atual</div>
               <div className="text-foreground font-semibold">{roleLabels[userRole]}</div>
-              {userRole !== "admin" && (
-                <Button 
-                  className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90"
-                  onClick={() => navigate("/plans")}
-                >
-                  Fazer Upgrade
-                </Button>
-              )}
             </div>
           )}
         </div>
