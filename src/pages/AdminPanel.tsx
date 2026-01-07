@@ -54,6 +54,7 @@ import {
   Layout,
   Wrench,
   Globe,
+  UserPlus,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +71,7 @@ import { AdminNotificationsTab } from "@/components/admin/AdminNotificationsTab"
 import { AdminLandingTab } from "@/components/admin/AdminLandingTab";
 import { AdminMaintenanceTab } from "@/components/admin/AdminMaintenanceTab";
 import { AdminGlobalMaintenanceTab } from "@/components/admin/AdminGlobalMaintenanceTab";
+import { AdminMigrationTab } from "@/components/admin/AdminMigrationTab";
 
 interface AdminStats {
   totalUsers: number;
@@ -633,6 +635,10 @@ const AdminPanel = () => {
                 <Globe className="w-4 h-4" />
                 Manutenção Global
               </TabsTrigger>
+              <TabsTrigger value="migration" className="flex items-center gap-2">
+                <UserPlus className="w-4 h-4" />
+                Migração de Clientes
+              </TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -948,6 +954,10 @@ const AdminPanel = () => {
 
             <TabsContent value="global-maintenance">
               <AdminGlobalMaintenanceTab />
+            </TabsContent>
+
+            <TabsContent value="migration">
+              <AdminMigrationTab />
             </TabsContent>
           </Tabs>
         </div>
