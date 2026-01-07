@@ -453,7 +453,7 @@ const Landing = () => {
       <div className="relative overflow-hidden py-3 md:py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500">
         {/* Shimmer overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-        <div className="flex animate-marquee whitespace-nowrap relative z-10">
+        <div className="flex animate-marquee-fast whitespace-nowrap relative z-10">
           {[...Array(10)].map((_, i) => (
             <span key={i} className="mx-8 md:mx-16 text-sm md:text-lg font-bold uppercase tracking-widest text-primary-foreground flex items-center gap-3 md:gap-4 drop-shadow-lg">
               <Crown className="w-4 h-4 md:w-5 md:h-5" />

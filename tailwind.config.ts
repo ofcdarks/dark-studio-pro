@@ -102,7 +102,8 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         "slide-in": "slide-in 0.3s ease-out",
-        marquee: "marquee 20s linear infinite",
+        marquee: "marquee 25s linear infinite",
+        "marquee-fast": "marquee 15s linear infinite",
         "marquee-reverse": "marquee-reverse 20s linear infinite",
       },
       fontFamily: {
