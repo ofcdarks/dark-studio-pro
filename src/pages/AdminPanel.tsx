@@ -89,6 +89,13 @@ interface UserWithRole extends UserData {
   role: string;
 }
 
+interface PlanOption {
+  plan_name: string;
+  role_value: string;
+  monthly_credits: number;
+  is_annual: boolean;
+}
+
 const AdminPanel = () => {
   const { role } = useProfile();
   const [stats, setStats] = useState<AdminStats>({
@@ -118,9 +125,11 @@ const AdminPanel = () => {
     role: "free",
   });
   const [savingUser, setSavingUser] = useState(false);
+  const [availablePlans, setAvailablePlans] = useState<PlanOption[]>([]);
 
   useEffect(() => {
     fetchAdminData();
+    fetchAvailablePlans();
   }, []);
 
   // Reset to page 1 when search term changes
@@ -164,6 +173,40 @@ const AdminPanel = () => {
       toast.error("Erro ao carregar dados");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailablePlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("plan_permissions")
+        .select("plan_name, monthly_credits, is_annual")
+        .eq("is_annual", false)
+        .order("monthly_credits", { ascending: true });
+
+      if (error) throw error;
+
+      // Map plan names to role values
+      const planRoleMap: Record<string, string> = {
+        "FREE": "free",
+        "START CREATOR": "pro",
+        "TURBO MAKER": "pro",
+        "MASTER PRO": "pro",
+      };
+
+      const plans: PlanOption[] = [
+        { plan_name: "Admin", role_value: "admin", monthly_credits: 999999, is_annual: false },
+        ...(data || []).map(p => ({
+          plan_name: p.plan_name,
+          role_value: planRoleMap[p.plan_name] || "free",
+          monthly_credits: p.monthly_credits || 0,
+          is_annual: p.is_annual || false,
+        })),
+      ];
+
+      setAvailablePlans(plans);
+    } catch (error) {
+      console.error("Error fetching plans:", error);
     }
   };
 
@@ -865,17 +908,37 @@ const AdminPanel = () => {
               </Select>
             </div>
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Plano</label>
+              <label className="text-sm text-muted-foreground mb-2 block">Plano / Role</label>
               <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
                 <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione um plano" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="free">Free</SelectItem>
-                  <SelectItem value="pro">Pro</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  {availablePlans.length > 0 ? (
+                    availablePlans.map((plan) => (
+                      <SelectItem key={plan.plan_name} value={plan.role_value}>
+                        <div className="flex items-center gap-2">
+                          <span>{plan.plan_name}</span>
+                          {plan.plan_name !== "Admin" && (
+                            <span className="text-xs text-muted-foreground">
+                              ({plan.monthly_credits.toLocaleString()} créditos)
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <>
+                      <SelectItem value="free">Free</SelectItem>
+                      <SelectItem value="pro">Pro</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                FREE = free | START/TURBO/MASTER = pro | Admin = admin
+              </p>
             </div>
           </div>
           <DialogFooter>
