@@ -538,7 +538,7 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
                     <SelectTrigger className="bg-secondary/50 border-border h-11 text-sm">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
                       <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
                       <SelectItem value="en-US">English (US)</SelectItem>
                       <SelectItem value="es">Español</SelectItem>
@@ -605,7 +605,7 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
                   <SelectTrigger className="bg-secondary/50 border-primary/50 h-11 text-sm">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
                     <SelectItem value="gemini-flash">
                       <span className="flex items-center gap-2">
                         Gemini 2.5 Flash

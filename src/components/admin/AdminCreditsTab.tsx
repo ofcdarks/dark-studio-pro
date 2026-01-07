@@ -438,7 +438,7 @@ export function AdminCreditsTab() {
               <SelectTrigger className="bg-secondary border-border">
                 <SelectValue placeholder="Valor Personalizado" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
                 <SelectItem value="custom">Valor Personalizado</SelectItem>
                 <SelectItem value="100">100 créditos</SelectItem>
                 <SelectItem value="500">500 créditos</SelectItem>

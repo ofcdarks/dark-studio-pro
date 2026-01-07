@@ -130,7 +130,7 @@ export function FolderSelect({
             <SelectValue placeholder={placeholder} />
           </div>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
           <SelectItem value="none">Sem pasta</SelectItem>
           {isLoading ? (
             <div className="flex justify-center py-2">
