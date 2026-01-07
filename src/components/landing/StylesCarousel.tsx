@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Palette, Sparkles, ArrowRight } from "lucide-react";
+import { Palette, Sparkles, ArrowRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { AnimatedSection } from "./AnimatedSection";
@@ -54,53 +54,61 @@ interface StyleCardProps {
   index: number;
 }
 
-const StyleCard = ({ style, index }: StyleCardProps) => (
-  <motion.div
-    key={`${style.id}-${index}`}
-    className="flex-shrink-0 w-56 md:w-72 group"
-    whileHover={{ scale: 1.08, y: -12 }}
-    transition={{ duration: 0.3 }}
-  >
-    <div className="relative rounded-xl overflow-hidden border-2 border-border group-hover:border-primary/50 transition-all duration-300 shadow-lg group-hover:shadow-xl group-hover:shadow-primary/30">
-      <div className="aspect-video">
-        <img 
-          src={style.image} 
-          alt={style.name}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          loading="lazy"
-        />
-      </div>
-      
-      {/* Overlay gradiente - expande no hover */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent opacity-80 group-hover:opacity-95 transition-opacity duration-300" />
-      
-      {/* Badge categoria */}
-      <div className="absolute top-3 right-3">
-        <span className="px-2 py-1 text-xs font-medium bg-primary/90 text-primary-foreground rounded-full shadow-lg">
-          {style.category}
-        </span>
-      </div>
-      
-      {/* Conteúdo - expande no hover */}
-      <div className="absolute bottom-0 left-0 right-0 p-3 transform transition-all duration-300">
-        <h4 className="font-bold text-base md:text-lg text-foreground mb-0 group-hover:mb-2 transition-all duration-300">
-          {style.name}
-        </h4>
+const StyleCard = ({ style, index }: StyleCardProps) => {
+  const navigate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.location.href = '/auth';
+  };
+
+  return (
+    <motion.div
+      key={`${style.id}-${index}`}
+      className="flex-shrink-0 w-56 md:w-72 group cursor-pointer"
+      whileHover={{ scale: 1.08, y: -12 }}
+      transition={{ duration: 0.3 }}
+      onClick={navigate}
+    >
+      <div className="relative rounded-xl overflow-hidden border-2 border-border group-hover:border-primary/50 transition-all duration-300 shadow-lg group-hover:shadow-xl group-hover:shadow-primary/30">
+        <div className="aspect-video">
+          <img 
+            src={style.image} 
+            alt={style.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            loading="lazy"
+          />
+        </div>
         
-        {/* Descrição - aparece no hover */}
-        <p className="text-xs md:text-sm text-muted-foreground leading-tight max-h-0 opacity-0 group-hover:max-h-20 group-hover:opacity-100 transition-all duration-300 overflow-hidden">
-          {style.description}
-        </p>
+        {/* Overlay gradiente - expande no hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent opacity-80 group-hover:opacity-95 transition-opacity duration-300" />
         
-        {/* Indicador visual */}
-        <div className="flex items-center gap-1.5 mt-0 group-hover:mt-2 max-h-0 opacity-0 group-hover:max-h-8 group-hover:opacity-100 transition-all duration-300">
-          <Sparkles className="w-3 h-3 text-primary" />
-          <span className="text-xs text-primary font-medium">Clique para explorar</span>
+        {/* Badge categoria */}
+        <div className="absolute top-3 right-3">
+          <span className="px-2 py-1 text-xs font-medium bg-primary/90 text-primary-foreground rounded-full shadow-lg">
+            {style.category}
+          </span>
+        </div>
+        
+        {/* Conteúdo - expande no hover */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 transform transition-all duration-300">
+          <h4 className="font-bold text-base md:text-lg text-foreground mb-0 group-hover:mb-2 transition-all duration-300">
+            {style.name}
+          </h4>
+          
+          {/* Descrição - aparece no hover */}
+          <p className="text-xs md:text-sm text-muted-foreground leading-tight max-h-0 opacity-0 group-hover:max-h-20 group-hover:opacity-100 transition-all duration-300 overflow-hidden">
+            {style.description}
+          </p>
+          
+          {/* Indicador visual */}
+          <div className="flex items-center gap-1.5 mt-0 group-hover:mt-2 max-h-0 opacity-0 group-hover:max-h-8 group-hover:opacity-100 transition-all duration-300">
+            <Eye className="w-3 h-3 text-primary" />
+            <span className="text-xs text-primary font-medium">Clique para explorar</span>
+          </div>
         </div>
       </div>
-    </div>
-  </motion.div>
-);
+    </motion.div>
+  );
+};
 
 export const StylesCarousel = () => {
   const scrollRef1 = useRef<HTMLDivElement>(null);
