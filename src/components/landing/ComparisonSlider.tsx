@@ -12,7 +12,7 @@ export const ComparisonSlider = () => {
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = clientX - rect.left;
-    const percentage = Math.min(Math.max((x / rect.width) * 100, 5), 95);
+    const percentage = Math.min(Math.max((x / rect.width) * 100, 0), 100);
     setSliderPosition(percentage);
   };
 
@@ -91,11 +91,10 @@ export const ComparisonSlider = () => {
         className="absolute inset-0"
         style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
       >
-        {/* Video background */}
+        {/* Video background with sound */}
         <video 
           autoPlay 
           loop 
-          muted 
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
         >
