@@ -60,44 +60,26 @@ const testimonials = [
 ];
 
 const TestimonialsSection = () => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const duplicatedTestimonials = [...testimonials, ...testimonials, ...testimonials];
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const duplicatedTestimonials = [...testimonials, ...testimonials];
 
+  // Intersection Observer - only animate when visible
   useEffect(() => {
-    const scrollContainer = scrollRef.current;
-    if (!scrollContainer) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    let animationId: number;
-    let scrollPosition = 0;
-    const scrollSpeed = 0.5;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
 
-    const animate = () => {
-      scrollPosition += scrollSpeed;
-      
-      if (scrollPosition >= (scrollContainer.scrollWidth / 3)) {
-        scrollPosition = 0;
-      }
-      
-      scrollContainer.scrollLeft = scrollPosition;
-      animationId = requestAnimationFrame(animate);
-    };
-
-    animationId = requestAnimationFrame(animate);
-
-    const handleMouseEnter = () => cancelAnimationFrame(animationId);
-    const handleMouseLeave = () => {
-      animationId = requestAnimationFrame(animate);
-    };
-
-    scrollContainer.addEventListener('mouseenter', handleMouseEnter);
-    scrollContainer.addEventListener('mouseleave', handleMouseLeave);
-
-    return () => {
-      cancelAnimationFrame(animationId);
-      scrollContainer.removeEventListener('mouseenter', handleMouseEnter);
-      scrollContainer.removeEventListener('mouseleave', handleMouseLeave);
-    };
+    observer.observe(container);
+    return () => observer.disconnect();
   }, []);
+
+  const shouldAnimate = isVisible && !isPaused;
 
   return (
     <section className="py-24 relative overflow-hidden">
@@ -126,16 +108,34 @@ const TestimonialsSection = () => {
         </motion.div>
       </div>
 
-      {/* Carousel */}
-      <div className="relative overflow-hidden">
+      {/* Carousel - CSS animation for GPU acceleration */}
+      <div 
+        ref={containerRef}
+        className="relative overflow-hidden"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        <style>{`
+          @keyframes scrollTestimonials2 {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+          }
+          .testimonial-track-2 {
+            animation: scrollTestimonials2 50s linear infinite;
+            will-change: transform;
+          }
+          .testimonial-paused-2 {
+            animation-play-state: paused;
+          }
+        `}</style>
+
         {/* Gradient masks */}
         <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
         <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
         
         <div 
-          ref={scrollRef}
-          className="flex gap-6 overflow-x-hidden py-4 px-6"
-          style={{ scrollBehavior: 'auto' }}
+          className={`flex gap-6 py-4 px-6 testimonial-track-2 ${!shouldAnimate ? 'testimonial-paused-2' : ''}`}
+          style={{ width: 'max-content' }}
         >
           {duplicatedTestimonials.map((testimonial, index) => (
             <motion.div

@@ -1,112 +1,97 @@
-import { useEffect, useRef } from "react";
-
-interface Particle {
-  x: number;
-  y: number;
-  size: number;
-  speedX: number;
-  speedY: number;
-  opacity: number;
-  color: string;
-}
+import { useEffect, useRef, useState, memo } from "react";
 
 interface ParticleBackgroundProps {
   particleCount?: number;
   className?: string;
 }
 
-export const ParticleBackground = ({ particleCount = 50, className = "" }: ParticleBackgroundProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<Particle[]>([]);
-  const animationRef = useRef<number>();
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const resizeCanvas = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    };
-
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
-
-    // Initialize particles
-    const colors = [
-      "rgba(245, 158, 11, 0.6)", // Primary amber
-      "rgba(245, 158, 11, 0.3)",
-      "rgba(255, 191, 0, 0.4)",
-      "rgba(251, 146, 60, 0.3)",
-    ];
-
-    particlesRef.current = Array.from({ length: particleCount }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
+// Optimized: Uses CSS animations instead of canvas for GPU acceleration
+// Only animates when visible via Intersection Observer
+export const ParticleBackground = memo(({ particleCount = 30, className = "" }: ParticleBackgroundProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [particles] = useState(() => 
+    Array.from({ length: particleCount }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
       size: Math.random() * 3 + 1,
-      speedX: (Math.random() - 0.5) * 0.5,
-      speedY: (Math.random() - 0.5) * 0.5,
-      opacity: Math.random() * 0.5 + 0.2,
-      color: colors[Math.floor(Math.random() * colors.length)],
-    }));
+      duration: 15 + Math.random() * 20,
+      delay: Math.random() * -20,
+      opacity: Math.random() * 0.4 + 0.1,
+    }))
+  );
 
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Intersection Observer - only animate when visible
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-      particlesRef.current.forEach((particle, i) => {
-        // Update position
-        particle.x += particle.speedX;
-        particle.y += particle.speedY;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
 
-        // Wrap around edges
-        if (particle.x < 0) particle.x = canvas.width;
-        if (particle.x > canvas.width) particle.x = 0;
-        if (particle.y < 0) particle.y = canvas.height;
-        if (particle.y > canvas.height) particle.y = 0;
-
-        // Draw particle with glow
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        ctx.fillStyle = particle.color;
-        ctx.fill();
-
-        // Draw connections to nearby particles
-        particlesRef.current.slice(i + 1).forEach(other => {
-          const dx = particle.x - other.x;
-          const dy = particle.y - other.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-
-          if (distance < 100) {
-            ctx.beginPath();
-            ctx.moveTo(particle.x, particle.y);
-            ctx.lineTo(other.x, other.y);
-            ctx.strokeStyle = `rgba(245, 158, 11, ${0.1 * (1 - distance / 100)})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
-        });
-      });
-
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      window.removeEventListener("resize", resizeCanvas);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [particleCount]);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={`absolute inset-0 pointer-events-none ${className}`}
-    />
+    <div 
+      ref={containerRef}
+      className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
+    >
+      <style>{`
+        @keyframes floatParticle {
+          0%, 100% { 
+            transform: translate(0, 0) scale(1);
+            opacity: var(--particle-opacity);
+          }
+          25% { 
+            transform: translate(30px, -40px) scale(1.1);
+            opacity: calc(var(--particle-opacity) * 1.2);
+          }
+          50% { 
+            transform: translate(-20px, -60px) scale(0.9);
+            opacity: calc(var(--particle-opacity) * 0.8);
+          }
+          75% { 
+            transform: translate(-40px, -30px) scale(1.05);
+            opacity: var(--particle-opacity);
+          }
+        }
+        .particle {
+          position: absolute;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(245, 158, 11, 0.8) 0%, rgba(245, 158, 11, 0) 70%);
+          will-change: transform, opacity;
+        }
+        .particle-animate {
+          animation: floatParticle var(--duration) ease-in-out infinite;
+          animation-delay: var(--delay);
+        }
+        .particle-paused {
+          animation-play-state: paused;
+        }
+      `}</style>
+      
+      {particles.map((particle) => (
+        <div
+          key={particle.id}
+          className={`particle ${isVisible ? 'particle-animate' : 'particle-paused'}`}
+          style={{
+            left: `${particle.left}%`,
+            top: `${particle.top}%`,
+            width: `${particle.size * 4}px`,
+            height: `${particle.size * 4}px`,
+            '--particle-opacity': particle.opacity,
+            '--duration': `${particle.duration}s`,
+            '--delay': `${particle.delay}s`,
+          } as React.CSSProperties}
+        />
+      ))}
+    </div>
   );
-};
+});
+
+ParticleBackground.displayName = 'ParticleBackground';
