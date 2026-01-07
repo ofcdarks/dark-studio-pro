@@ -44,6 +44,7 @@ import FloatingElements from "@/components/landing/FloatingElements";
 import { ScrollIndicator } from "@/components/landing/ScrollIndicator";
 import { MobileMenu } from "@/components/landing/MobileMenu";
 import { ComparisonSlider } from "@/components/landing/ComparisonSlider";
+import { AnimatedCounter } from "@/components/landing/AnimatedCounter";
 
 import { Tool3DCard } from "@/components/landing/Tool3DCard";
 import { Dream3DCard } from "@/components/landing/Dream3DCard";
@@ -738,10 +739,7 @@ const Landing = () => {
               { value: "98%", label: "Taxa de satisfação" },
               { value: "15K+", label: "Vídeos analisados" },
             ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <p className="text-4xl md:text-5xl font-bold text-primary">{stat.value}</p>
-                <p className="text-base text-muted-foreground mt-2">{stat.label}</p>
-              </div>
+              <AnimatedCounter key={i} value={stat.value} label={stat.label} />
             ))}
           </div>
 
