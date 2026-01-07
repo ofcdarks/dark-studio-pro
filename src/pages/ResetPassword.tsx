@@ -10,12 +10,35 @@ import logo from "@/assets/logo.gif";
 import authBg from "@/assets/auth-porsche.jpg";
 
 const passwordSchema = z.object({
-  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
-  confirmPassword: z.string().min(6, "Confirme sua senha"),
+  password: z.string()
+    .min(8, "Senha deve ter no mínimo 8 caracteres")
+    .regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula")
+    .regex(/[a-z]/, "Senha deve conter pelo menos uma letra minúscula")
+    .regex(/[0-9]/, "Senha deve conter pelo menos um número")
+    .regex(/[^A-Za-z0-9]/, "Senha deve conter pelo menos um caractere especial"),
+  confirmPassword: z.string().min(8, "Confirme sua senha"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
 });
+
+// Password strength checker
+const getPasswordStrength = (password: string) => {
+  let strength = 0;
+  if (password.length >= 8) strength++;
+  if (password.length >= 12) strength++;
+  if (/[A-Z]/.test(password)) strength++;
+  if (/[a-z]/.test(password)) strength++;
+  if (/[0-9]/.test(password)) strength++;
+  if (/[^A-Za-z0-9]/.test(password)) strength++;
+  return strength;
+};
+
+const getStrengthLabel = (strength: number) => {
+  if (strength <= 2) return { label: "Fraca", color: "bg-red-500" };
+  if (strength <= 4) return { label: "Média", color: "bg-yellow-500" };
+  return { label: "Forte", color: "bg-green-500" };
+};
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -250,11 +273,45 @@ const ResetPassword = () => {
                 </div>
               </div>
 
+              {/* Password Strength Indicator */}
+              {password.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Força da senha:</span>
+                    <span className={`font-medium ${
+                      getStrengthLabel(getPasswordStrength(password)).color === "bg-red-500" ? "text-red-500" :
+                      getStrengthLabel(getPasswordStrength(password)).color === "bg-yellow-500" ? "text-yellow-500" :
+                      "text-green-500"
+                    }`}>
+                      {getStrengthLabel(getPasswordStrength(password)).label}
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-secondary/50 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-300 ${getStrengthLabel(getPasswordStrength(password)).color}`}
+                      style={{ width: `${(getPasswordStrength(password) / 6) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Password Requirements */}
-              <div className="text-xs text-muted-foreground space-y-1 p-3 rounded-lg bg-secondary/30">
+              <div className="text-xs text-muted-foreground space-y-1.5 p-3 rounded-lg bg-secondary/30">
                 <p className="font-medium text-foreground mb-2">Requisitos da senha:</p>
-                <p className={password.length >= 6 ? "text-green-500" : ""}>
-                  • Mínimo de 6 caracteres {password.length >= 6 && "✓"}
+                <p className={password.length >= 8 ? "text-green-500" : ""}>
+                  • Mínimo de 8 caracteres {password.length >= 8 && "✓"}
+                </p>
+                <p className={/[A-Z]/.test(password) ? "text-green-500" : ""}>
+                  • Uma letra maiúscula {/[A-Z]/.test(password) && "✓"}
+                </p>
+                <p className={/[a-z]/.test(password) ? "text-green-500" : ""}>
+                  • Uma letra minúscula {/[a-z]/.test(password) && "✓"}
+                </p>
+                <p className={/[0-9]/.test(password) ? "text-green-500" : ""}>
+                  • Um número {/[0-9]/.test(password) && "✓"}
+                </p>
+                <p className={/[^A-Za-z0-9]/.test(password) ? "text-green-500" : ""}>
+                  • Um caractere especial (!@#$%...) {/[^A-Za-z0-9]/.test(password) && "✓"}
                 </p>
                 <p className={password === confirmPassword && password.length > 0 ? "text-green-500" : ""}>
                   • As senhas devem coincidir {password === confirmPassword && password.length > 0 && "✓"}
