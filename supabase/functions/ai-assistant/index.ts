@@ -1319,11 +1319,11 @@ Forneça uma dica personalizada baseada nessas estatísticas.`;
         console.log(`[AI Assistant] Using OpenAI API directly with model: ${selectedModel}`);
       } else if (apiProvider === 'gemini') {
         apiKey = userApiKeyToUse;
-        selectedModel = "gemini-1.5-flash";
-        apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        selectedModel = "gemini-2.0-flash";
+        apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
         if (model === "gemini-pro" || model?.includes("pro")) {
-          selectedModel = "gemini-1.5-pro";
-          apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+          selectedModel = "gemini-2.0-pro-exp";
+          apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro-exp:generateContent?key=${apiKey}`;
         }
         requestHeaders = {
           "Content-Type": "application/json",
