@@ -119,7 +119,7 @@ const TermsOfService = () => {
           <section className="mb-12">
             <h2 className="text-2xl font-bold text-foreground mb-4">9. Contato</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Para dúvidas sobre estes termos, entre em contato através do email: <a href="mailto:suporte@lacasadark.com" className="text-primary hover:underline">suporte@lacasadark.com</a>
+              Para dúvidas sobre estes termos, entre em contato através do email: <a href="mailto:suporte@canaisdarks.com.br" className="text-primary hover:underline">suporte@canaisdarks.com.br</a>
             </p>
           </section>
         </article>
