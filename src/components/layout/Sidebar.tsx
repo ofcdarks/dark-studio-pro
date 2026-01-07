@@ -343,32 +343,31 @@ export function Sidebar() {
 
       {/* Bottom Section */}
       <div className="p-4 border-t border-sidebar-border space-y-4">
-        {/* Credits Section */}
+        {/* Credits Section - Compact */}
         {!collapsed ? (
           <div className={cn(
-            "p-3 rounded-xl bg-secondary/50 border space-y-2 transition-all",
+            "p-2 rounded-lg bg-secondary/50 border space-y-1.5 transition-all",
             isLowCredits 
-              ? "border-primary/50 animate-pulse shadow-[0_0_15px_hsl(var(--primary)/0.3)]" 
+              ? "border-primary/50 animate-pulse shadow-[0_0_10px_hsl(var(--primary)/0.2)]" 
               : "border-border"
           )}>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Coins className={cn("w-4 h-4", isLowCredits ? "text-destructive" : "text-primary")} />
-              <span className="text-sm">Créditos</span>
-              {isLowCredits && (
-                <span className="ml-auto text-xs text-destructive font-medium">Baixo!</span>
-              )}
-            </div>
-            <div className={cn(
-              "text-2xl font-bold",
-              isLowCredits ? "text-destructive" : "text-primary"
-            )}>
-              {creditsLoading ? "..." : creditsBalance.toLocaleString()}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Coins className={cn("w-3.5 h-3.5", isLowCredits ? "text-destructive" : "text-primary")} />
+                <span className="text-xs text-muted-foreground">Créditos</span>
+              </div>
+              <span className={cn(
+                "text-base font-bold",
+                isLowCredits ? "text-destructive" : "text-primary"
+              )}>
+                {creditsLoading ? "..." : creditsBalance.toLocaleString()}
+              </span>
             </div>
             <Button 
               className={cn(
-                "w-full",
+                "w-full h-7 text-xs",
                 isLowCredits 
-                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 animate-pulse" 
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" 
                   : "bg-primary text-primary-foreground hover:bg-primary/90"
               )}
               size="sm"
@@ -378,7 +377,7 @@ export function Sidebar() {
             </Button>
             <button
               onClick={() => setHistoryModalOpen(true)}
-              className="w-full text-xs text-muted-foreground hover:text-primary transition-colors"
+              className="w-full text-[10px] text-muted-foreground hover:text-primary transition-colors"
             >
               Ver Histórico
             </button>
@@ -399,20 +398,24 @@ export function Sidebar() {
           onOpenChange={setHistoryModalOpen} 
         />
 
-        {/* Storage Section */}
+        {/* Storage Section - Compact */}
         {!collapsed ? (
-          <div className="p-3 rounded-xl bg-secondary/50 border border-border space-y-2">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <HardDrive className="w-4 h-4" />
-              <span className="text-sm">Armazenamento</span>
+          <div className="p-2 rounded-lg bg-secondary/50 border border-border space-y-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <HardDrive className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Armazenamento</span>
+              </div>
+              <span className="text-sm font-bold text-primary">
+                {storageUsed.toFixed(2)} GB
+              </span>
             </div>
-            <div className="text-lg font-bold text-foreground">
-              {storageUsed.toFixed(2)} GB
+            <div className="flex items-center gap-2">
+              <Progress value={Math.min(usagePercent, 100)} className="h-1 flex-1" />
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                de {storageLimit.toFixed(1)} GB
+              </span>
             </div>
-            <div className="text-xs text-muted-foreground">
-              de {storageLimit.toFixed(1)} GB
-            </div>
-            <Progress value={Math.min(usagePercent, 100)} className="h-1.5" />
           </div>
         ) : (
           <div className="flex justify-center">
