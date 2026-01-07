@@ -47,6 +47,8 @@ import { MobileMenu } from "@/components/landing/MobileMenu";
 import { Tool3DCard } from "@/components/landing/Tool3DCard";
 import { Dream3DCard } from "@/components/landing/Dream3DCard";
 import logo from "@/assets/logo.gif";
+import demoCoverFuturistic from "@/assets/video-cover-futuristic.jpg";
+
 
 // Dream images
 import creditCardImg from "@/assets/dreams/credit-card.jpg";
@@ -329,6 +331,15 @@ const Landing = () => {
 
           <AnimatedSection animation="scale" delay={200}>
             <Card className="aspect-video bg-card border-primary/30 relative overflow-hidden group cursor-pointer">
+              {/* Futuristic demo cover */}
+              <img
+                src={demoCoverFuturistic}
+                alt="Capa futurista da demonstração da plataforma"
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
+
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <div className="w-20 h-20 md:w-32 md:h-32 rounded-full bg-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-primary/50">
                   <Play className="w-10 h-10 md:w-16 md:h-16 text-primary-foreground ml-1 md:ml-2" fill="currentColor" />
