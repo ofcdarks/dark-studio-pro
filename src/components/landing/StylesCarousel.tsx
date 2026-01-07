@@ -368,7 +368,7 @@ const StylePreviewModal = ({
             
             {/* Info extra */}
             <p className="text-xs text-muted-foreground text-center">
-              Use as setas ← → para navegar • Este é 1 dos <span className="text-primary font-semibold">84 estilos</span> disponíveis
+              Use as setas ← → para navegar • Este é 1 dos <span className="text-primary font-semibold">85 estilos</span> disponíveis
             </p>
           </div>
         </div>
@@ -417,7 +417,7 @@ export const StylesCarousel = () => {
             <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
           </div>
           <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic">
-            <span className="text-primary">84 Estilos</span> Visuais
+            <span className="text-primary">85 Estilos</span> Visuais
           </h2>
           <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic">
             Prontos para Usar
@@ -509,7 +509,7 @@ export const StylesCarousel = () => {
           <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 pt-4">
             <div className="flex items-center gap-8 md:gap-12">
               {[
-                { value: "84", label: "Estilos" },
+                { value: "85", label: "Estilos" },
                 { value: "7", label: "Categorias" },
                 { value: "∞", label: "Possibilidades" },
               ].map((stat, i) => (
