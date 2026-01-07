@@ -370,83 +370,28 @@ const StylePreviewModal = ({
 };
 
 export const StylesCarousel = () => {
-  const scrollRef1 = useRef<HTMLDivElement>(null);
-  const scrollRef2 = useRef<HTMLDivElement>(null);
-  const scrollRef3 = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<StyleType | null>(null);
   
-  // Row 1: Left to Right
+  // Intersection Observer - pause animations when not visible
   useEffect(() => {
-    const scrollContainer = scrollRef1.current;
-    if (!scrollContainer) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    let animationId: number;
-    let scrollPosition = 0;
-    const speed = 0.4;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
 
-    const animate = () => {
-      if (!isPaused && scrollContainer) {
-        scrollPosition += speed;
-        if (scrollPosition >= scrollContainer.scrollWidth / 2) {
-          scrollPosition = 0;
-        }
-        scrollContainer.scrollLeft = scrollPosition;
-      }
-      animationId = requestAnimationFrame(animate);
-    };
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
 
-    animationId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationId);
-  }, [isPaused]);
-
-  // Row 2: Right to Left
-  useEffect(() => {
-    const scrollContainer = scrollRef2.current;
-    if (!scrollContainer) return;
-
-    let animationId: number;
-    let scrollPosition = scrollContainer.scrollWidth / 2;
-    const speed = 0.7;
-
-    const animate = () => {
-      if (!isPaused && scrollContainer) {
-        scrollPosition -= speed;
-        if (scrollPosition <= 0) {
-          scrollPosition = scrollContainer.scrollWidth / 2;
-        }
-        scrollContainer.scrollLeft = scrollPosition;
-      }
-      animationId = requestAnimationFrame(animate);
-    };
-
-    animationId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationId);
-  }, [isPaused]);
-
-  // Row 3: Left to Right (slower)
-  useEffect(() => {
-    const scrollContainer = scrollRef3.current;
-    if (!scrollContainer) return;
-
-    let animationId: number;
-    let scrollPosition = 0;
-    const speed = 0.55;
-
-    const animate = () => {
-      if (!isPaused && scrollContainer) {
-        scrollPosition += speed;
-        if (scrollPosition >= scrollContainer.scrollWidth / 2) {
-          scrollPosition = 0;
-        }
-        scrollContainer.scrollLeft = scrollPosition;
-      }
-      animationId = requestAnimationFrame(animate);
-    };
-
-    animationId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationId);
-  }, [isPaused]);
+  const shouldAnimate = isVisible && !isPaused;
 
   const duplicatedRow1 = [...stylesRow1, ...stylesRow1];
   const duplicatedRow2 = [...stylesRow2, ...stylesRow2];
@@ -476,8 +421,9 @@ export const StylesCarousel = () => {
           </p>
         </AnimatedSection>
 
-        {/* Carousels Container */}
+        {/* Carousels Container - CSS animations for GPU acceleration */}
         <div 
+          ref={containerRef}
           className="relative space-y-4 md:space-y-6"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
@@ -486,38 +432,67 @@ export const StylesCarousel = () => {
             maskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
           }}
         >
+          {/* CSS Keyframes for GPU-accelerated animations */}
+          <style>{`
+            @keyframes scrollLeft {
+              from { transform: translateX(0); }
+              to { transform: translateX(-50%); }
+            }
+            @keyframes scrollRight {
+              from { transform: translateX(-50%); }
+              to { transform: translateX(0); }
+            }
+            .carousel-row-1 {
+              animation: scrollLeft 80s linear infinite;
+              will-change: transform;
+            }
+            .carousel-row-2 {
+              animation: scrollRight 60s linear infinite;
+              will-change: transform;
+            }
+            .carousel-row-3 {
+              animation: scrollLeft 70s linear infinite;
+              will-change: transform;
+            }
+            .carousel-paused {
+              animation-play-state: paused !important;
+            }
+          `}</style>
           
           {/* Row 1 - Left to Right */}
-          <div 
-            ref={scrollRef1}
-            className="flex gap-4 md:gap-5 overflow-x-hidden py-2"
-            style={{ scrollBehavior: 'auto' }}
-          >
-            {duplicatedRow1.map((style, index) => (
-              <StyleCard key={`row1-${style.id}-${index}`} style={style} index={index} onSelect={setSelectedStyle} />
-            ))}
+          <div className="overflow-hidden py-2">
+            <div 
+              className={`flex gap-4 md:gap-5 carousel-row-1 ${!shouldAnimate ? 'carousel-paused' : ''}`}
+              style={{ width: 'max-content' }}
+            >
+              {duplicatedRow1.map((style, index) => (
+                <StyleCard key={`row1-${style.id}-${index}`} style={style} index={index} onSelect={setSelectedStyle} />
+              ))}
+            </div>
           </div>
 
           {/* Row 2 - Right to Left */}
-          <div 
-            ref={scrollRef2}
-            className="flex gap-4 md:gap-5 overflow-x-hidden py-2"
-            style={{ scrollBehavior: 'auto' }}
-          >
-            {duplicatedRow2.map((style, index) => (
-              <StyleCard key={`row2-${style.id}-${index}`} style={style} index={index} onSelect={setSelectedStyle} />
-            ))}
+          <div className="overflow-hidden py-2">
+            <div 
+              className={`flex gap-4 md:gap-5 carousel-row-2 ${!shouldAnimate ? 'carousel-paused' : ''}`}
+              style={{ width: 'max-content' }}
+            >
+              {duplicatedRow2.map((style, index) => (
+                <StyleCard key={`row2-${style.id}-${index}`} style={style} index={index} onSelect={setSelectedStyle} />
+              ))}
+            </div>
           </div>
 
           {/* Row 3 - Left to Right (Minimalistas & Experimentais) */}
-          <div 
-            ref={scrollRef3}
-            className="flex gap-4 md:gap-5 overflow-x-hidden py-2"
-            style={{ scrollBehavior: 'auto' }}
-          >
-            {duplicatedRow3.map((style, index) => (
-              <StyleCard key={`row3-${style.id}-${index}`} style={style} index={index} onSelect={setSelectedStyle} />
-            ))}
+          <div className="overflow-hidden py-2">
+            <div 
+              className={`flex gap-4 md:gap-5 carousel-row-3 ${!shouldAnimate ? 'carousel-paused' : ''}`}
+              style={{ width: 'max-content' }}
+            >
+              {duplicatedRow3.map((style, index) => (
+                <StyleCard key={`row3-${style.id}-${index}`} style={style} index={index} onSelect={setSelectedStyle} />
+              ))}
+            </div>
           </div>
         </div>
 
