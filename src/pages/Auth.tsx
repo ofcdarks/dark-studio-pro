@@ -11,6 +11,7 @@ import { z } from "zod";
 import logo from "@/assets/logo.gif";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { getAppBaseUrl } from "@/lib/appUrl";
 // Use WebP from public folder for faster loading
 const authBg = "/images/auth-porsche.webp";
 
@@ -162,7 +163,7 @@ const Auth = () => {
         email: migrationInvite.email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: `${getAppBaseUrl()}/dashboard`,
           data: {
             full_name: fullName,
           },
