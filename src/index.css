@@ -1,3 +1,9 @@
+@import "@fontsource/outfit/400.css";
+@import "@fontsource/outfit/500.css";
+@import "@fontsource/outfit/600.css";
+@import "@fontsource/outfit/700.css";
+@import "@fontsource/outfit/800.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,12 +12,6 @@
 * {
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.15s ease;
 }
-
-@import "@fontsource/outfit/400.css";
-@import "@fontsource/outfit/500.css";
-@import "@fontsource/outfit/600.css";
-@import "@fontsource/outfit/700.css";
-@import "@fontsource/outfit/800.css";
 
 @layer base {
   :root {
