@@ -47,6 +47,7 @@ import {
   Type,
   Clock,
   Calendar,
+  Wand2,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -87,6 +88,7 @@ export const AdminBlogTab = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatingCover, setGeneratingCover] = useState<string | null>(null);
+  const [regeneratingContent, setRegeneratingContent] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -312,6 +314,48 @@ export const AdminBlogTab = () => {
       toast.error(error.message || "Erro ao gerar imagem de capa");
     } finally {
       setGeneratingCover(null);
+    }
+  };
+
+  const handleRegenerateContent = async (article: BlogArticle) => {
+    setRegeneratingContent(article.id);
+    try {
+      toast.info("Gerando conteúdo completo...");
+
+      const { data, error } = await supabase.functions.invoke("generate-blog-article", {
+        body: { 
+          topic: article.title, 
+          category: article.category,
+          mode: "keyword",
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const newArticle = data.article;
+
+      // Update article with new content
+      const { error: updateError } = await supabase
+        .from("blog_articles")
+        .update({
+          content: newArticle.content,
+          excerpt: newArticle.excerpt,
+          meta_description: newArticle.meta_description,
+          meta_keywords: newArticle.meta_keywords,
+          read_time: newArticle.read_time,
+        })
+        .eq("id", article.id);
+
+      if (updateError) throw updateError;
+
+      toast.success("Conteúdo gerado com sucesso!");
+      fetchArticles();
+    } catch (error: any) {
+      console.error("Error regenerating content:", error);
+      toast.error(error.message || "Erro ao gerar conteúdo");
+    } finally {
+      setRegeneratingContent(null);
     }
   };
 
@@ -576,6 +620,23 @@ export const AdminBlogTab = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {/* Regenerate content button - show only for placeholder content */}
+                  {article.content === "<p>Artigo importado - edite o conteúdo completo aqui.</p>" && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRegenerateContent(article)}
+                      disabled={regeneratingContent === article.id}
+                      title="Gerar conteúdo com IA"
+                      className="h-8 w-8 text-primary"
+                    >
+                      {regeneratingContent === article.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Wand2 className="w-4 h-4" />
+                      )}
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
