@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload, History, Video, FileText, Play, Rocket, Mic, RotateCcw } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload, History, Video, FileText, Play, Rocket, Mic, RotateCcw, Clock, Lightbulb } from "lucide-react";
 import { CreditHistoryCard } from "@/components/credits/CreditHistoryCard";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -17,9 +18,94 @@ import { useProfile } from "@/hooks/useProfile";
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { useStorage } from "@/hooks/useStorage";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { resetAllTutorials } from "@/hooks/useTutorial";
+
+// Directive frequency options
+const DIRECTIVE_FREQUENCY_OPTIONS = [
+  { value: '6', label: 'A cada 6 horas' },
+  { value: '12', label: 'A cada 12 horas' },
+  { value: '24', label: 'Uma vez por dia (padrão)' },
+  { value: '48', label: 'A cada 2 dias' },
+  { value: '168', label: 'Uma vez por semana' },
+];
+
+function DirectiveFrequencyCard() {
+  const { directiveUpdateHours, saveDirectiveUpdateHours, isLoading } = useUserPreferences();
+  const [saving, setSaving] = useState(false);
+
+  const handleChange = async (value: string) => {
+    setSaving(true);
+    try {
+      await saveDirectiveUpdateHours(parseInt(value));
+      toast.success('Frequência de atualização salva!');
+    } catch (error) {
+      console.error('Error saving directive frequency:', error);
+      toast.error('Erro ao salvar configuração');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center gap-2 mb-6">
+        <Lightbulb className="w-5 h-5 text-primary" />
+        <h3 className="font-semibold text-foreground">Diretivas IA do Dashboard</h3>
+      </div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg border border-border">
+          <div className="flex-1 mr-4">
+            <p className="font-medium text-foreground flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" />
+              Frequência de Atualização
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Define com que frequência a IA gera novas dicas no Dashboard. Atualizações são gratuitas e não consomem créditos.
+            </p>
+          </div>
+          <Select
+            value={directiveUpdateHours.toString()}
+            onValueChange={handleChange}
+            disabled={saving}
+          >
+            <SelectTrigger className="w-[200px] bg-secondary border-border">
+              <SelectValue placeholder="Selecione..." />
+            </SelectTrigger>
+            <SelectContent>
+              {DIRECTIVE_FREQUENCY_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-start gap-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+          <Coins className="w-4 h-4 text-green-500 mt-0.5" />
+          <div>
+            <p className="text-sm text-green-500 font-medium">100% Gratuito</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              As diretivas IA são geradas automaticamente sem custo de créditos, independentemente da frequência escolhida.
+            </p>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 type UserPlan = 'free' | 'pro' | 'admin' | 'master' | 'annual';
 
@@ -744,7 +830,7 @@ const SettingsPage = () => {
             <Card className="p-6">
               <div className="flex items-center gap-2 mb-6">
                 <Bell className="w-5 h-5 text-primary" />
-                <h3 className="font-semibold text-foreground">Notificações</h3>
+                <h3 className="font-semibold text-foreground">Notificações & Atualizações</h3>
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
@@ -782,6 +868,9 @@ const SettingsPage = () => {
                 </div>
               </div>
             </Card>
+
+            {/* Directive Update Frequency */}
+            <DirectiveFrequencyCard />
 
             <Card className="p-6">
               <div className="flex items-center gap-2 mb-6">

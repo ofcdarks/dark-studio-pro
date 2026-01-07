@@ -1321,6 +1321,7 @@ export type Database = {
       user_preferences: {
         Row: {
           created_at: string
+          directive_update_hours: number | null
           id: string
           notify_new_features: boolean | null
           notify_viral_videos: boolean | null
@@ -1332,6 +1333,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          directive_update_hours?: number | null
           id?: string
           notify_new_features?: boolean | null
           notify_viral_videos?: boolean | null
@@ -1343,6 +1345,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          directive_update_hours?: number | null
           id?: string
           notify_new_features?: boolean | null
           notify_viral_videos?: boolean | null
