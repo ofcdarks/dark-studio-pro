@@ -1,7 +1,9 @@
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { 
   ArrowRight, 
@@ -17,7 +19,8 @@ import {
   Sparkles,
   Wrench,
   Zap,
-  Rocket
+  Rocket,
+  X
 } from "lucide-react";
 import logo from "@/assets/logo.gif";
 
@@ -139,8 +142,31 @@ const blogPosts: BlogPost[] = [
 ];
 
 const Blog = () => {
-  const featuredPosts = blogPosts.filter(post => post.featured);
-  const regularPosts = blogPosts.filter(post => !post.featured);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Extrair categorias únicas
+  const categories = useMemo(() => {
+    const cats = [...new Set(blogPosts.map(post => post.category))];
+    return cats.sort();
+  }, []);
+
+  // Filtrar posts
+  const filteredPosts = useMemo(() => {
+    return blogPosts.filter(post => {
+      const matchesSearch = searchQuery === "" || 
+        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        post.category.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesCategory = !selectedCategory || post.category === selectedCategory;
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [searchQuery, selectedCategory]);
+
+  const featuredPosts = filteredPosts.filter(post => post.featured);
+  const regularPosts = filteredPosts.filter(post => !post.featured);
 
   const blogJsonLd = {
     "@context": "https://schema.org",
@@ -215,17 +241,64 @@ const Blog = () => {
               Guias completos, tutoriais e estratégias para criar canais faceless que geram 
               renda passiva. Conteúdo 100% gratuito.
             </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <Badge variant="secondary" className="text-sm py-1.5 px-3">Canal Dark</Badge>
-              <Badge variant="secondary" className="text-sm py-1.5 px-3">Faceless Channel</Badge>
-              <Badge variant="secondary" className="text-sm py-1.5 px-3">Voz IA</Badge>
-              <Badge variant="secondary" className="text-sm py-1.5 px-3">Monetização</Badge>
-              <Badge variant="secondary" className="text-sm py-1.5 px-3">Thumbnails</Badge>
+            {/* Search Bar */}
+            <div className="max-w-xl mx-auto mb-8">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Buscar artigos..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-12 pr-10 h-12 text-base bg-background/50 border-border/50 focus:border-primary"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Category Filter */}
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button
+                variant={selectedCategory === null ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory(null)}
+                className="rounded-full"
+              >
+                Todos
+              </Button>
+              {categories.map((category) => (
+                <Button
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(selectedCategory === category ? null : category)}
+                  className="rounded-full"
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
+
+            {/* Results Count */}
+            {(searchQuery || selectedCategory) && (
+              <p className="text-center text-muted-foreground mt-4">
+                {filteredPosts.length} {filteredPosts.length === 1 ? 'artigo encontrado' : 'artigos encontrados'}
+                {selectedCategory && ` em "${selectedCategory}"`}
+                {searchQuery && ` para "${searchQuery}"`}
+              </p>
+            )}
           </div>
         </section>
 
         {/* Featured Posts */}
+        {featuredPosts.length > 0 && (
         <section className="py-12 px-4">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
@@ -276,11 +349,15 @@ const Blog = () => {
             </div>
           </div>
         </section>
+        )}
 
         {/* All Posts */}
+        {regularPosts.length > 0 && (
         <section className="py-12 px-4 bg-muted/30">
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-2xl font-bold mb-8">Todos os Artigos</h2>
+            <h2 className="text-2xl font-bold mb-8">
+              {featuredPosts.length === 0 ? 'Resultados da Busca' : 'Todos os Artigos'}
+            </h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {regularPosts.map((post) => (
                 <Link key={post.slug} to={`/blog/${post.slug}`}>
@@ -317,6 +394,29 @@ const Blog = () => {
             </div>
           </div>
         </section>
+        )}
+
+        {/* No Results */}
+        {filteredPosts.length === 0 && (
+          <section className="py-16 px-4">
+            <div className="max-w-md mx-auto text-center">
+              <Search className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Nenhum artigo encontrado</h3>
+              <p className="text-muted-foreground mb-6">
+                Tente buscar por outros termos ou remover os filtros aplicados.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory(null);
+                }}
+              >
+                Limpar filtros
+              </Button>
+            </div>
+          </section>
+        )}
 
         {/* CTA Section */}
         <section className="py-16 px-4">
