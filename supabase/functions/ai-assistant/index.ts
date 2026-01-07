@@ -486,26 +486,35 @@ serve(async (req) => {
       throw new Error("Nenhuma chave de API disponível. Configure suas chaves em Configurações.");
     }
 
+    // Dashboard insight é gratuito (não debita créditos)
+    if (type === "dashboard_insight") {
+      shouldDebitCredits = false;
+    }
+
     // Calcular créditos necessários para esta operação
-    const creditsNeeded = calculateCreditsForOperation(type, model || 'gemini', { 
-      duration: duration ? parseInt(duration) : 5 
-    });
-    
-    console.log(`[AI Assistant] Operation: ${type}, Model: ${model || 'gemini'}, Provider: ${apiProvider}, Credits needed: ${creditsNeeded}, User: ${userId}, Debit credits: ${shouldDebitCredits}`);
+    const creditsNeeded = type === "dashboard_insight"
+      ? 0
+      : calculateCreditsForOperation(type, model || "gemini", {
+          duration: duration ? parseInt(duration) : 5,
+        });
+
+    console.log(
+      `[AI Assistant] Operation: ${type}, Model: ${model || "gemini"}, Provider: ${apiProvider}, Credits needed: ${creditsNeeded}, User: ${userId}, Debit credits: ${shouldDebitCredits}`
+    );
 
     // Verificar e debitar créditos se shouldDebitCredits for true
-    if (userId && shouldDebitCredits) {
+    if (userId && shouldDebitCredits && creditsNeeded > 0) {
       const creditResult = await checkAndDebitCredits(userId, creditsNeeded, type, { model });
-      
+
       if (!creditResult.success) {
-        return new Response(
-          JSON.stringify({ error: creditResult.error }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: creditResult.error }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
       console.log(`[AI Assistant] Credits debited. New balance: ${creditResult.newBalance}`);
     } else if (!shouldDebitCredits) {
-      console.log('[AI Assistant] Using own API keys - no credits debited');
+      console.log("[AI Assistant] No credits debited");
     }
 
     let systemPrompt = "";
