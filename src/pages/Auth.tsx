@@ -260,6 +260,10 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent double submit
+    if (loading) return;
+    
     setLoading(true);
 
     try {
