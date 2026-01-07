@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useStorage } from "@/hooks/useStorage";
+import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
 import logo from "@/assets/logo.gif";
@@ -100,8 +101,11 @@ export function Sidebar() {
   const { signOut, user } = useAuth();
   const { profile, role } = useProfile();
   const { storageUsed, storageLimit, usagePercent } = useStorage();
+  const { balance: creditsBalance, loading: creditsLoading } = useCredits();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  const isLowCredits = creditsBalance < 50;
 
   // Reorder items based on saved order
   const reorderItems = useCallback((orderIds: string[]) => {
@@ -339,16 +343,32 @@ export function Sidebar() {
       <div className="p-4 border-t border-sidebar-border space-y-4">
         {/* Credits Section */}
         {!collapsed ? (
-          <div className="p-3 rounded-xl bg-secondary/50 border border-border space-y-2">
+          <div className={cn(
+            "p-3 rounded-xl bg-secondary/50 border space-y-2 transition-all",
+            isLowCredits 
+              ? "border-primary/50 animate-pulse shadow-[0_0_15px_hsl(var(--primary)/0.3)]" 
+              : "border-border"
+          )}>
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Coins className="w-4 h-4 text-primary" />
+              <Coins className={cn("w-4 h-4", isLowCredits ? "text-destructive" : "text-primary")} />
               <span className="text-sm">Créditos</span>
+              {isLowCredits && (
+                <span className="ml-auto text-xs text-destructive font-medium">Baixo!</span>
+              )}
             </div>
-            <div className="text-2xl font-bold text-primary">
-              {profile?.credits?.toLocaleString() ?? 0}
+            <div className={cn(
+              "text-2xl font-bold",
+              isLowCredits ? "text-destructive" : "text-primary"
+            )}>
+              {creditsLoading ? "..." : creditsBalance.toLocaleString()}
             </div>
             <Button 
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              className={cn(
+                "w-full",
+                isLowCredits 
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 animate-pulse" 
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+              )}
               size="sm"
               onClick={() => navigate("/plans")}
             >
@@ -363,7 +383,10 @@ export function Sidebar() {
           </div>
         ) : (
           <div className="flex justify-center">
-            <Coins className="w-5 h-5 text-primary" />
+            <Coins className={cn(
+              "w-5 h-5",
+              isLowCredits ? "text-destructive animate-pulse" : "text-primary"
+            )} />
           </div>
         )}
 
