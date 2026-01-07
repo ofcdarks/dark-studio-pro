@@ -12,6 +12,9 @@ import previewClaymation from "@/assets/style-previews/claymation-3d.jpg";
 import previewVoxel from "@/assets/style-previews/voxel-art.jpg";
 import previewAnime3D from "@/assets/style-previews/anime-3d.jpg";
 import previewPixar from "@/assets/style-previews/pixar-disney.jpg";
+import previewUnrealEngine from "@/assets/style-previews/unreal-engine.jpg";
+import previewPaperCraft3D from "@/assets/style-previews/paper-craft-3d.jpg";
+import previewNeon3D from "@/assets/style-previews/neon-3d.jpg";
 
 // Realistas
 import previewFotoRealista from "@/assets/style-previews/foto-realista.jpg";
@@ -88,6 +91,9 @@ const styleImages: Record<string, string> = {
   "voxel-art": previewVoxel,
   "anime-3d": previewAnime3D,
   "pixar-disney": previewPixar,
+  "unreal-engine": previewUnrealEngine,
+  "paper-craft-3d": previewPaperCraft3D,
+  "neon-3d": previewNeon3D,
   // Realistas
   "foto-realista": previewFotoRealista,
   "cinematografico": previewCinematografico,
