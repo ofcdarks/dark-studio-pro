@@ -766,6 +766,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          imagefx_monthly_limit: number | null
           is_annual: boolean | null
           monthly_credits: number | null
           permissions: Json
@@ -778,6 +779,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          imagefx_monthly_limit?: number | null
           is_annual?: boolean | null
           monthly_credits?: number | null
           permissions?: Json
@@ -790,6 +792,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          imagefx_monthly_limit?: number | null
           is_annual?: boolean | null
           monthly_credits?: number | null
           permissions?: Json
