@@ -1236,7 +1236,7 @@ const PromptsImages = () => {
       if (error.name === 'AbortError') {
         toast({ title: "Cancelado", description: "Nenhum arquivo foi salvo" });
       } else if (error.name === 'SecurityError' || error.message?.includes('cross-origin') || error.message?.includes('sandboxed')) {
-        // Erro de segurança do iframe - comum no preview do Lovable
+        // Erro de segurança do iframe - comum em ambientes sandboxed
         console.log("Erro de segurança detectado, API bloqueada no iframe");
         toast({ 
           title: "⚠️ Acesso bloqueado no preview", 

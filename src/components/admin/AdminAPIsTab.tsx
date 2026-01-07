@@ -633,7 +633,7 @@ export function AdminAPIsTab() {
                     <SelectItem value="gemini">Google Gemini</SelectItem>
                     <SelectItem value="claude">Anthropic Claude</SelectItem>
                     <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
-                    <SelectItem value="lovable">Lovable AI</SelectItem>
+                    <SelectItem value="platform">Platform AI</SelectItem>
                     <SelectItem value="laozhang">Laozhang AI</SelectItem>
                   </SelectContent>
                 </Select>
