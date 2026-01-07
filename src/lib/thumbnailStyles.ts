@@ -37,6 +37,11 @@ export const THUMBNAIL_STYLE_CATEGORIES = [
     id: "experimentais",
     name: "Estilos Experimentais 2025",
     icon: "🎨"
+  },
+  {
+    id: "3d-animacao",
+    name: "3D & Animação",
+    icon: "🎮"
   }
 ];
 
@@ -244,12 +249,14 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     category: "experimentais",
     promptPrefix: "VHS nostalgic style, 80s/90s aesthetic, retro grain, scan lines, vintage color palette, analog warmth, retrowave,"
   },
+
+  // 3D & Animação
   {
     id: "3d-cinematic-miniature",
     name: "3D Cinematográfico Miniatura",
     description: "Animação 3D com paisagem em miniatura e timelapse",
     icon: "🏔️",
-    category: "experimentais",
+    category: "3d-animacao",
     promptPrefix: "Production ready 3D cinematic rendering, accurate scale lighting and camera motion, miniature landscape growth animation and timelapse when scene requires environmental or structural buildup, standard 3D cinematic visualization with controlled natural movement, hyper-detailed miniature world, tilt-shift depth of field, macro photography aesthetic, epic scale in small form,"
   },
   {
@@ -257,7 +264,7 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     name: "Isométrico Arquitetônico",
     description: "Perspectiva isométrica com detalhes arquitetônicos",
     icon: "🏛️",
-    category: "experimentais",
+    category: "3d-animacao",
     promptPrefix: "Isometric architectural rendering, 3D isometric perspective, detailed architectural visualization, clean geometric shapes, precise angles, modern architectural design, blueprint aesthetic with color, technical illustration style, urban planning visualization,"
   },
   {
@@ -265,7 +272,7 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     name: "Low Poly Stylized",
     description: "Arte 3D estilizada com polígonos",
     icon: "💎",
-    category: "experimentais",
+    category: "3d-animacao",
     promptPrefix: "Low poly 3D art style, stylized geometric shapes, flat shaded polygons, vibrant color palette, modern game aesthetic, minimalist 3D design, crystal-like facets, angular beauty, indie game art style,"
   },
   {
@@ -273,7 +280,7 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     name: "Claymation 3D",
     description: "Estilo stop-motion com argila",
     icon: "🎭",
-    category: "experimentais",
+    category: "3d-animacao",
     promptPrefix: "Claymation style, 3D clay animation aesthetic, stop-motion look, handcrafted texture, plasticine material, Wallace and Gromit inspired, tactile organic shapes, warm handmade feeling,"
   },
   {
@@ -281,8 +288,24 @@ export const THUMBNAIL_STYLES: ThumbnailStyle[] = [
     name: "Voxel Art 3D",
     description: "Cubos 3D estilo Minecraft",
     icon: "🧱",
-    category: "experimentais",
+    category: "3d-animacao",
     promptPrefix: "Voxel art style, 3D cube-based aesthetic, Minecraft inspired, blocky geometric design, retro gaming meets 3D, pixel art in three dimensions, colorful voxel world, charming cubic characters,"
+  },
+  {
+    id: "anime-3d",
+    name: "Anime 3D",
+    description: "Anime renderizado em 3D",
+    icon: "🌸",
+    category: "3d-animacao",
+    promptPrefix: "3D anime style, cel-shaded rendering, Japanese animation in 3D, vibrant anime colors, expressive 3D characters, Genshin Impact aesthetic, stylized 3D animation,"
+  },
+  {
+    id: "pixar-disney",
+    name: "Pixar/Disney 3D",
+    description: "Animação estilo estúdio premium",
+    icon: "✨",
+    category: "3d-animacao",
+    promptPrefix: "Pixar Disney 3D animation style, premium studio quality, subsurface scattering skin, detailed hair simulation, expressive characters, theatrical lighting, family-friendly aesthetic, award-winning animation quality,"
   }
 ];
 
