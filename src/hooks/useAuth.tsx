@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     
-    // Se cadastro bem-sucedido, atualizar profile com whatsapp e enviar email de pendente
+    // Se cadastro bem-sucedido, atualizar profile com whatsapp e enviar emails
     if (!error && data.user) {
       // Atualizar o profile com o whatsapp
       try {
@@ -65,13 +65,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Erro ao atualizar whatsapp:", e);
       }
       
-      // Enviar email de pendente de aprovação
+      // Enviar email de pendente de aprovação para o usuário
       try {
         await supabase.functions.invoke("send-pending-email", {
           body: { email, fullName },
         });
       } catch (e) {
         console.error("Erro ao enviar email de pendente:", e);
+      }
+      
+      // Notificar admins sobre novo cadastro
+      try {
+        await supabase.functions.invoke("send-admin-notification", {
+          body: { userEmail: email, userName: fullName, userWhatsapp: whatsapp },
+        });
+      } catch (e) {
+        console.error("Erro ao notificar admins:", e);
       }
     }
     
