@@ -45,6 +45,7 @@ export const publicRoutes: SEORoute[] = [
     priority: 0.9,
     lastmod: today,
   },
+  { path: '/blog/como-usar-ia-para-criar-videos-virais-no-youtube', changefreq: 'monthly', priority: 0.8, lastmod: today },
   { path: '/blog/como-ganhar-dinheiro-youtube', changefreq: 'monthly', priority: 0.8, lastmod: today },
   { path: '/blog/nichos-lucrativos-youtube', changefreq: 'monthly', priority: 0.8, lastmod: today },
   { path: '/blog/como-criar-canal-dark', changefreq: 'monthly', priority: 0.8, lastmod: today },
