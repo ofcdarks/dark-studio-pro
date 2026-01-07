@@ -1,29 +1,115 @@
-import { useState } from "react";
+import { useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StylePreviewCard } from "./StylePreviewCard";
 import { 
   THUMBNAIL_STYLE_CATEGORIES, 
-  THUMBNAIL_STYLES, 
   getStylesByCategory,
   getStyleById,
   ThumbnailStyle 
 } from "@/lib/thumbnailStyles";
 import { Palette, ChevronDown } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 interface StyleSelectorProps {
   selectedStyleId: string;
   onStyleSelect: (styleId: string) => void;
 }
 
+// Virtualizado grid de estilos
+const VirtualizedStyleGrid = ({ 
+  styles, 
+  selectedStyleId, 
+  onSelect,
+  categoryId
+}: { 
+  styles: ThumbnailStyle[];
+  selectedStyleId: string;
+  onSelect: (style: ThumbnailStyle) => void;
+  categoryId: string;
+}) => {
+  const parentRef = useRef<HTMLDivElement>(null);
+  
+  // Calcular número de colunas baseado no tamanho
+  const columns = 3;
+  const rowCount = Math.ceil(styles.length / columns);
+  
+  const virtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 200, // altura estimada de cada row
+    overscan: 2,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
+  return (
+    <div 
+      ref={parentRef} 
+      className="h-[55vh] overflow-auto pr-2"
+    >
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={categoryId}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            {virtualItems.map((virtualRow) => {
+              const startIndex = virtualRow.index * columns;
+              const rowStyles = styles.slice(startIndex, startIndex + columns);
+              
+              return (
+                <div
+                  key={virtualRow.key}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                  className="grid grid-cols-2 md:grid-cols-3 gap-4 px-1"
+                >
+                  {rowStyles.map((style) => (
+                    <StylePreviewCard
+                      key={style.id}
+                      style={style}
+                      isSelected={selectedStyleId === style.id}
+                      onClick={() => onSelect(style)}
+                    />
+                  ))}
+                </div>
+              );
+            })}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
 export const StyleSelector = ({ selectedStyleId, onStyleSelect }: StyleSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("3d-animacao");
   
   const selectedStyle = getStyleById(selectedStyleId);
+  
+  const categoryStyles = useMemo(() => 
+    getStylesByCategory(activeCategory), 
+    [activeCategory]
+  );
   
   const handleSelect = (style: ThumbnailStyle) => {
     onStyleSelect(style.id);
@@ -69,31 +155,18 @@ export const StyleSelector = ({ selectedStyleId, onStyleSelect }: StyleSelectorP
             ))}
           </TabsList>
           
-          <ScrollArea className="h-[55vh] mt-4 pr-4">
-            {THUMBNAIL_STYLE_CATEGORIES.map((cat) => (
-              <TabsContent key={cat.id} value={cat.id} className="mt-0">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={cat.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="grid grid-cols-2 md:grid-cols-3 gap-4"
-                  >
-                    {getStylesByCategory(cat.id).map((style) => (
-                      <StylePreviewCard
-                        key={style.id}
-                        style={style}
-                        isSelected={selectedStyleId === style.id}
-                        onClick={() => handleSelect(style)}
-                      />
-                    ))}
-                  </motion.div>
-                </AnimatePresence>
-              </TabsContent>
-            ))}
-          </ScrollArea>
+          {THUMBNAIL_STYLE_CATEGORIES.map((cat) => (
+            <TabsContent key={cat.id} value={cat.id} className="mt-4">
+              {activeCategory === cat.id && (
+                <VirtualizedStyleGrid
+                  styles={categoryStyles}
+                  selectedStyleId={selectedStyleId}
+                  onSelect={handleSelect}
+                  categoryId={cat.id}
+                />
+              )}
+            </TabsContent>
+          ))}
         </Tabs>
       </DialogContent>
     </Dialog>
