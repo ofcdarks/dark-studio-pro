@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ArrowLeft, Rocket } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ArrowLeft, Rocket, Gift } from "lucide-react";
 import { z } from "zod";
 import logo from "@/assets/logo.gif";
 import authBg from "@/assets/auth-porsche.jpg";
@@ -25,11 +26,30 @@ const signupSchema = z.object({
   whatsapp: z.string().min(10, "WhatsApp é obrigatório (mínimo 10 dígitos)"),
 });
 
+interface MigrationInvite {
+  id: string;
+  email: string;
+  full_name: string | null;
+  plan_name: string;
+  credits_amount: number;
+  token: string;
+  status: string;
+  expires_at: string | null;
+}
+
 const Auth = () => {
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get("invite");
+  
   const [isLogin, setIsLogin] = useState(true);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [isMigration, setIsMigration] = useState(false);
+  const [migrationInvite, setMigrationInvite] = useState<MigrationInvite | null>(null);
+  const [migrationLoading, setMigrationLoading] = useState(false);
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -46,6 +66,194 @@ const Auth = () => {
     const timer = setTimeout(() => setIsVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
+
+  // Check for migration invite
+  useEffect(() => {
+    if (inviteToken) {
+      fetchMigrationInvite(inviteToken);
+    }
+  }, [inviteToken]);
+
+  const fetchMigrationInvite = async (token: string) => {
+    setMigrationLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("migration_invites")
+        .select("*")
+        .eq("token", token)
+        .maybeSingle();
+
+      if (error || !data) {
+        toast({
+          title: "Convite inválido",
+          description: "Este link de convite não é válido ou expirou",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data.status === "completed") {
+        toast({
+          title: "Convite já utilizado",
+          description: "Este convite já foi utilizado. Faça login normalmente.",
+          variant: "default",
+        });
+        return;
+      }
+
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        toast({
+          title: "Convite expirado",
+          description: "Este convite expirou. Entre em contato com o suporte.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Valid invite - set up migration form
+      setMigrationInvite(data);
+      setIsMigration(true);
+      setEmail(data.email);
+      setFullName(data.full_name || "");
+    } catch (error) {
+      console.error("Error fetching invite:", error);
+    } finally {
+      setMigrationLoading(false);
+    }
+  };
+
+  const handleMigrationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!migrationInvite) return;
+    
+    if (password !== confirmPassword) {
+      toast({
+        title: "Senhas não conferem",
+        description: "A senha e a confirmação devem ser iguais",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Senha muito curta",
+        description: "A senha deve ter no mínimo 6 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (whatsapp.length < 10) {
+      toast({
+        title: "WhatsApp inválido",
+        description: "Digite um número de WhatsApp válido",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Create user account
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: migrationInvite.email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+
+      if (signUpError) {
+        // Check if user already exists
+        if (signUpError.message.includes("already registered")) {
+          toast({
+            title: "Email já cadastrado",
+            description: "Este email já possui uma conta. Tente fazer login.",
+            variant: "destructive",
+          });
+          setIsMigration(false);
+          return;
+        }
+        throw signUpError;
+      }
+
+      if (authData.user) {
+        // Wait a bit for the trigger to create the profile
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Update profile with WhatsApp and set status to active
+        await supabase
+          .from("profiles")
+          .update({ 
+            whatsapp, 
+            full_name: fullName,
+            status: "active" 
+          })
+          .eq("id", authData.user.id);
+
+        // Update user role based on plan
+        const roleMap: Record<string, "free" | "pro" | "admin"> = {
+          "FREE": "free",
+          "START CREATOR": "pro",
+          "TURBO MAKER": "pro",
+          "MASTER PRO": "pro",
+        };
+        const role = roleMap[migrationInvite.plan_name] || "free";
+
+        if (role !== "free") {
+          await supabase
+            .from("user_roles")
+            .update({ role })
+            .eq("user_id", authData.user.id);
+        }
+
+        // Add credits
+        await supabase
+          .from("user_credits")
+          .upsert({
+            user_id: authData.user.id,
+            balance: migrationInvite.credits_amount,
+          }, { onConflict: "user_id" });
+
+        // Log credit transaction
+        await supabase.from("credit_transactions").insert({
+          user_id: authData.user.id,
+          amount: migrationInvite.credits_amount,
+          transaction_type: "add",
+          description: `Créditos de migração - Plano ${migrationInvite.plan_name}`,
+        });
+
+        // Mark invite as completed
+        await supabase
+          .from("migration_invites")
+          .update({ 
+            status: "completed", 
+            completed_at: new Date().toISOString() 
+          })
+          .eq("id", migrationInvite.id);
+
+        toast({
+          title: "🎉 Conta criada com sucesso!",
+          description: `Bem-vindo! Você recebeu ${migrationInvite.credits_amount} créditos do plano ${migrationInvite.plan_name}.`,
+        });
+
+        navigate("/dashboard");
+      }
+    } catch (error: any) {
+      console.error("Migration error:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar conta",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,8 +478,128 @@ const Auth = () => {
           </div>
 
 
-          {/* Recovery Form */}
-          {isRecovery ? (
+          {/* Migration Loading */}
+          {migrationLoading ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">Verificando convite...</p>
+            </div>
+          ) : isMigration && migrationInvite ? (
+            /* Migration Form */
+            <form onSubmit={handleMigrationSubmit} className="space-y-4 relative">
+              {/* Welcome banner */}
+              <div className="p-4 rounded-lg bg-primary/10 border border-primary/30 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Gift className="w-5 h-5 text-primary" />
+                  <span className="font-semibold text-primary">Bem-vindo de volta!</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Você receberá <strong className="text-primary">{migrationInvite.credits_amount} créditos</strong> do plano <strong className="text-primary">{migrationInvite.plan_name}</strong>
+                </p>
+              </div>
+
+              {/* Email (readonly) */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-primary" />
+                  E-mail
+                </label>
+                <Input
+                  type="email"
+                  value={email}
+                  disabled
+                  className="bg-secondary/30 border-border/50 h-11 text-muted-foreground"
+                />
+              </div>
+
+              {/* Full Name */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                  Nome completo <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Seu nome completo"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="bg-secondary/50 border-border/50 h-11"
+                  required
+                />
+              </div>
+
+              {/* WhatsApp */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                  WhatsApp <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  type="tel"
+                  placeholder="5511999999999"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ''))}
+                  className="bg-secondary/50 border-border/50 h-11"
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">Apenas números com DDD</p>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-primary" />
+                  Nova Senha <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Mínimo 6 caracteres"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="bg-secondary/50 border-border/50 h-11 pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-primary" />
+                  Confirmar Senha <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Confirme sua senha"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="bg-secondary/50 border-border/50 h-11"
+                  required
+                />
+              </div>
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                className="w-full h-14 text-base font-semibold gradient-button text-primary-foreground mt-4"
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                ) : (
+                  <ArrowRight className="w-5 h-5 mr-2" />
+                )}
+                Ativar Minha Conta
+              </Button>
+            </form>
+          ) : isRecovery ? (
+            /* Recovery Form */
             <form onSubmit={handleRecovery} className="space-y-4 relative">
               <div className="text-center mb-4">
                 <h2 className="text-lg font-semibold text-foreground">Recuperar Acesso</h2>

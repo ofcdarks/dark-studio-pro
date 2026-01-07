@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.send-admin-notification]
 verify_jwt = false
+
+[functions.send-migration-invite]
+verify_jwt = false
