@@ -45,6 +45,7 @@ import { ScrollIndicator } from "@/components/landing/ScrollIndicator";
 import { MobileMenu } from "@/components/landing/MobileMenu";
 import { ComparisonSlider } from "@/components/landing/ComparisonSlider";
 import { AnimatedCounter } from "@/components/landing/AnimatedCounter";
+import { StylesCarousel } from "@/components/landing/StylesCarousel";
 import { SEOHead } from "@/components/seo/SEOHead";
 
 import { Tool3DCard } from "@/components/landing/Tool3DCard";
@@ -599,6 +600,9 @@ const Landing = () => {
           </div>
         </div>
       </section>
+
+      {/* Styles Carousel Section */}
+      <StylesCarousel />
 
       {/* DaVinci Resolve Section - Professional Upgrade */}
       <section className="py-16 md:py-24 px-4 relative overflow-hidden">
