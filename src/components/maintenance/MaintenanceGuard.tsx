@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useToolMaintenance, TOOL_REGISTRY } from "@/hooks/useToolMaintenance";
 import { MaintenanceModal } from "./MaintenanceModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +16,7 @@ interface MaintenanceGuardProps {
 
 export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { isUnderMaintenance, getMaintenanceInfo, isLoading } = useToolMaintenance();
   const [showModal, setShowModal] = useState(false);
@@ -26,6 +27,7 @@ export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [isSimulatingUser, setIsSimulatingUser] = useState(false);
+  const [globalMaintenanceActive, setGlobalMaintenanceActive] = useState(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -47,6 +49,35 @@ export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
     
     checkAdmin();
   }, [user?.id]);
+
+  // Check for global maintenance
+  useEffect(() => {
+    const checkGlobalMaintenance = async () => {
+      // Skip check for maintenance page and auth-related routes
+      const skipPaths = ['/maintenance', '/auth', '/landing', '/terms', '/privacy', '/reset-password'];
+      if (skipPaths.some(p => location.pathname.startsWith(p))) {
+        setGlobalMaintenanceActive(false);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('admin_settings')
+        .select('value')
+        .eq('key', 'global_maintenance')
+        .maybeSingle();
+
+      const value = data?.value as Record<string, unknown> | null;
+      const isActive = Boolean(value?.is_active);
+      setGlobalMaintenanceActive(isActive);
+
+      // Redirect non-admin users to maintenance page
+      if (isActive && !isAdmin && user) {
+        navigate('/maintenance');
+      }
+    };
+
+    checkGlobalMaintenance();
+  }, [location.pathname, isAdmin, user, navigate]);
 
   // Reset banner dismissed state and check simulation mode when route changes
   useEffect(() => {

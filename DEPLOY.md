@@ -89,6 +89,20 @@ docker-compose down
 
 ---
 
+## Modo Manutenção
+
+### Antes de um Deploy
+1. Acesse o **Painel Admin** → **Manutenção Global**
+2. Ative o modo manutenção
+3. Configure a mensagem e previsão de retorno
+4. Todos os usuários serão redirecionados para `/maintenance`
+5. Após o deploy, desative o modo manutenção
+
+### URL de Manutenção
+- https://app.canaisdarks.com.br/maintenance
+
+---
+
 ## Verificação
 
 Após deploy, verifique:
@@ -96,6 +110,7 @@ Após deploy, verifique:
 - [ ] https://canaisdarks.com.br → Redireciona para landing  
 - [ ] https://app.canaisdarks.com.br → Abre aplicação completa
 - [ ] Health check: https://app.canaisdarks.com.br/health
+- [ ] Modo manutenção funciona corretamente
 
 ---
 
