@@ -6,6 +6,7 @@ import { useStorage } from "@/hooks/useStorage";
 import { useCredits } from "@/hooks/useCredits";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Reorder, useDragControls, motion } from "framer-motion";
 import logo from "@/assets/logo.gif";
 import {
   Home,
@@ -66,13 +67,78 @@ const defaultNavItems: NavItem[] = [
   { id: "settings", icon: Settings, label: "Configurações", href: "/settings", category: "organizacao" },
 ];
 
+// Component for individual draggable nav item
+function DraggableNavItem({ 
+  item, 
+  collapsed, 
+  isActive, 
+  onNavigate 
+}: { 
+  item: NavItem; 
+  collapsed: boolean; 
+  isActive: boolean;
+  onNavigate: (href: string) => void;
+}) {
+  const dragControls = useDragControls();
+
+  return (
+    <Reorder.Item
+      value={item}
+      dragListener={false}
+      dragControls={dragControls}
+      className="list-none"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      whileDrag={{ 
+        scale: 1.02, 
+        boxShadow: "0 8px 20px -4px hsl(var(--primary) / 0.3)",
+        zIndex: 50 
+      }}
+      transition={{ 
+        type: "spring", 
+        stiffness: 400, 
+        damping: 25 
+      }}
+    >
+      <motion.div 
+        className="group"
+        whileHover={{ x: collapsed ? 0 : 4 }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      >
+        <button
+          onClick={() => onNavigate(item.href)}
+          className={cn(
+            "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-colors duration-200",
+            isActive
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+          )}
+        >
+          {!collapsed && (
+            <motion.div
+              onPointerDown={(e) => dragControls.start(e)}
+              className="cursor-grab active:cursor-grabbing touch-none"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <GripVertical className="w-4 h-4 flex-shrink-0 opacity-30 hover:opacity-70 transition-opacity" />
+            </motion.div>
+          )}
+          <item.icon className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span className="text-sm font-medium text-left flex-1">{item.label}</span>}
+        </button>
+      </motion.div>
+    </Reorder.Item>
+  );
+}
+
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [navItems, setNavItems] = useState<NavItem[]>(defaultNavItems);
-  const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   
-  const { signOut, user } = useAuth();
+  const { signOut } = useAuth();
   const { role } = useProfile();
   const { storageUsed, storageLimit, usagePercent } = useStorage();
   const { balance: creditsBalance, loading: creditsLoading } = useCredits();
@@ -106,34 +172,12 @@ export function Sidebar() {
     }
   }, [sidebarOrder, prefsLoading, reorderItems]);
 
-  const handleDragStart = (itemId: string) => {
-    setDraggedItem(itemId);
+  const handleReorder = (newOrder: NavItem[]) => {
+    setNavItems(newOrder);
+    saveSidebarOrder(newOrder.map(i => i.id));
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (targetId: string) => {
-    if (!draggedItem || draggedItem === targetId) return;
-
-    const draggedIndex = navItems.findIndex(item => item.id === draggedItem);
-    const targetIndex = navItems.findIndex(item => item.id === targetId);
-
-    const newItems = [...navItems];
-    const [removed] = newItems.splice(draggedIndex, 1);
-    newItems.splice(targetIndex, 0, removed);
-
-    setNavItems(newItems);
-    saveSidebarOrder(newItems.map(i => i.id));
-    setDraggedItem(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedItem(null);
-  };
-
-  const resetOrder = async () => {
+  const resetOrder = () => {
     setNavItems(defaultNavItems);
     saveSidebarOrder(defaultNavItems.map(i => i.id));
   };
@@ -205,38 +249,24 @@ export function Sidebar() {
             </Tooltip>
           </div>
         )}
-        <div className="space-y-0.5">
+        
+        <Reorder.Group 
+          axis="y" 
+          values={navItems} 
+          onReorder={handleReorder}
+          className="space-y-0.5"
+          layoutScroll
+        >
           {navItems.map((item) => (
-            <div
+            <DraggableNavItem
               key={item.id}
-              draggable
-              onDragStart={() => handleDragStart(item.id)}
-              onDragOver={handleDragOver}
-              onDrop={() => handleDrop(item.id)}
-              onDragEnd={handleDragEnd}
-              className={cn(
-                "group cursor-grab active:cursor-grabbing",
-                draggedItem === item.id && "opacity-50"
-              )}
-            >
-              <button
-                onClick={() => navigate(item.href)}
-                className={cn(
-                  "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200",
-                  location.pathname === item.href
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
-                )}
-              >
-                {!collapsed && (
-                  <GripVertical className="w-4 h-4 flex-shrink-0 opacity-0 group-hover:opacity-50 transition-opacity" />
-                )}
-                <item.icon className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span className="text-sm font-medium text-left flex-1">{item.label}</span>}
-              </button>
-            </div>
+              item={item}
+              collapsed={collapsed}
+              isActive={location.pathname === item.href || (item.href === "/" && location.pathname === "/dashboard")}
+              onNavigate={navigate}
+            />
           ))}
-        </div>
+        </Reorder.Group>
       </nav>
 
       {/* Bottom Section */}
