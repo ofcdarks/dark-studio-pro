@@ -34,11 +34,11 @@ ENV VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
 RUN npm run build
 
 # ============================================
-# Production stage - Nginx
+# Production stage - Nginx (optimized for 1000+ users)
 # ============================================
 FROM nginx:alpine AS production
 
-# Install curl for health checks
+# Install curl for health checks and performance tools
 RUN apk add --no-cache curl
 
 # Remove default nginx config
@@ -50,12 +50,18 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copy built assets from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+# Pre-compress static assets with gzip for gzip_static
+RUN find /usr/share/nginx/html -type f \( -name "*.js" -o -name "*.css" -o -name "*.html" -o -name "*.json" -o -name "*.svg" \) -exec gzip -k -9 {} \;
+
 # Create health check endpoint
 RUN echo "OK" > /usr/share/nginx/html/health
 
 # Set proper permissions
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html
+
+# Increase nginx worker file limit
+RUN echo "worker_rlimit_nofile 100000;" > /etc/nginx/conf.d/worker-limit.conf || true
 
 # Expose port 80
 EXPOSE 80
@@ -64,5 +70,5 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost/health || exit 1
 
-# Start nginx
+# Start nginx with optimized settings
 CMD ["nginx", "-g", "daemon off;"]
