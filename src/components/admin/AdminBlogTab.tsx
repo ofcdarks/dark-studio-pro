@@ -92,6 +92,8 @@ export const AdminBlogTab = () => {
   const [regeneratingContent, setRegeneratingContent] = useState<string | null>(null);
   const [regeneratingAll, setRegeneratingAll] = useState(false);
   const [regeneratingProgress, setRegeneratingProgress] = useState({ current: 0, total: 0 });
+  const [regeneratingCovers, setRegeneratingCovers] = useState(false);
+  const [coversProgress, setCoversProgress] = useState({ current: 0, total: 0 });
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -434,6 +436,63 @@ export const AdminBlogTab = () => {
     }
   };
 
+  const handleRegenerateAllCovers = async () => {
+    // Find all articles
+    const articlesToUpdate = articles;
+    
+    if (articlesToUpdate.length === 0) {
+      toast.info("Nenhum artigo encontrado");
+      return;
+    }
+
+    setRegeneratingCovers(true);
+    setCoversProgress({ current: 0, total: articlesToUpdate.length });
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < articlesToUpdate.length; i++) {
+      const article = articlesToUpdate[i];
+      setCoversProgress({ current: i + 1, total: articlesToUpdate.length });
+      
+      try {
+        toast.info(`Gerando capa: ${article.title.slice(0, 30)}...`, { duration: 2000 });
+        
+        const { data, error } = await supabase.functions.invoke("generate-blog-cover", {
+          body: { 
+            title: article.title, 
+            category: article.category,
+            articleId: article.id,
+            style: "cinematic"
+          },
+        });
+
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        
+        successCount++;
+      } catch (error: any) {
+        console.error(`Error regenerating cover for ${article.title}:`, error);
+        errorCount++;
+      }
+
+      // Delay between requests to avoid rate limiting
+      if (i < articlesToUpdate.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    }
+
+    setRegeneratingCovers(false);
+    setCoversProgress({ current: 0, total: 0 });
+    fetchArticles();
+
+    if (errorCount === 0) {
+      toast.success(`${successCount} capas regeneradas com WebP otimizado!`);
+    } else {
+      toast.warning(`${successCount} sucesso, ${errorCount} erros`);
+    }
+  };
+
   const handleEditArticle = (article: BlogArticle) => {
     setEditingArticle(article);
     setEditForm({
@@ -555,7 +614,7 @@ export const AdminBlogTab = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">Total de Artigos</p>
           <p className="text-2xl font-bold text-foreground">{articles.length}</p>
@@ -589,7 +648,7 @@ export const AdminBlogTab = () => {
               size="sm"
               className="mt-2 w-full"
               onClick={handleRegenerateAllContent}
-              disabled={regeneratingAll}
+              disabled={regeneratingAll || regeneratingCovers}
             >
               {regeneratingAll ? (
                 <>
@@ -604,6 +663,31 @@ export const AdminBlogTab = () => {
               )}
             </Button>
           )}
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Capas WebP</p>
+          <p className="text-2xl font-bold text-accent">
+            {articles.filter((a) => a.image_url?.includes('.webp')).length}/{articles.length}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2 w-full"
+            onClick={handleRegenerateAllCovers}
+            disabled={regeneratingCovers || regeneratingAll}
+          >
+            {regeneratingCovers ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                {coversProgress.current}/{coversProgress.total}
+              </>
+            ) : (
+              <>
+                <ImagePlus className="w-3 h-3 mr-1" />
+                Regenerar Capas
+              </>
+            )}
+          </Button>
         </Card>
       </div>
 
