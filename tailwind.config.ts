@@ -92,6 +92,10 @@ export default {
           "0%": { transform: "translateX(0%)" },
           "100%": { transform: "translateX(-50%)" },
         },
+        "marquee-reverse": {
+          "0%": { transform: "translateX(-50%)" },
+          "100%": { transform: "translateX(0%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -99,6 +103,7 @@ export default {
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         "slide-in": "slide-in 0.3s ease-out",
         marquee: "marquee 20s linear infinite",
+        "marquee-reverse": "marquee-reverse 20s linear infinite",
       },
       fontFamily: {
         sans: ["Plus Jakarta Sans", "ui-sans-serif", "system-ui", "sans-serif"],
