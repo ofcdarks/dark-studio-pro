@@ -189,20 +189,36 @@ const StylePreviewModal = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl p-0 overflow-hidden bg-card border-primary/30 rounded-xl shadow-2xl">
         <div className="relative">
-          {/* Imagem grande */}
-          <div className="relative aspect-video">
-            <img 
-              src={style.image} 
-              alt={style.name}
-              className="w-full h-full object-cover"
-            />
+          {/* Imagem grande com animação */}
+          <div className="relative aspect-video overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.img 
+                key={style.id}
+                src={style.image} 
+                alt={style.name}
+                className="w-full h-full object-cover absolute inset-0"
+                initial={{ opacity: 0, scale: 1.05 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              />
+            </AnimatePresence>
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
             
-            {/* Badge categoria */}
+            {/* Badge categoria com animação */}
             <div className="absolute top-4 right-4">
-              <span className="px-3 py-1.5 text-sm font-semibold bg-primary text-primary-foreground rounded-full shadow-lg">
-                {style.category}
-              </span>
+              <AnimatePresence mode="wait">
+                <motion.span 
+                  key={style.category}
+                  className="px-3 py-1.5 text-sm font-semibold bg-primary text-primary-foreground rounded-full shadow-lg inline-block"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {style.category}
+                </motion.span>
+              </AnimatePresence>
             </div>
 
             {/* Navigation Arrows */}
@@ -222,17 +238,26 @@ const StylePreviewModal = ({
             </button>
           </div>
           
-          {/* Conteúdo */}
+          {/* Conteúdo com animação */}
           <div className="p-6 space-y-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-2xl md:text-3xl font-bold text-foreground">{style.name}</h3>
-                <p className="text-muted-foreground mt-2 text-base md:text-lg">{style.description}</p>
-              </div>
-              <span className="text-sm text-muted-foreground whitespace-nowrap ml-4">
-                {currentIndex + 1} / {allStyles.length}
-              </span>
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={style.id}
+                className="flex items-start justify-between"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+              >
+                <div>
+                  <h3 className="text-2xl md:text-3xl font-bold text-foreground">{style.name}</h3>
+                  <p className="text-muted-foreground mt-2 text-base md:text-lg">{style.description}</p>
+                </div>
+                <span className="text-sm text-muted-foreground whitespace-nowrap ml-4">
+                  {currentIndex + 1} / {allStyles.length}
+                </span>
+              </motion.div>
+            </AnimatePresence>
             
             {/* Features */}
             <div className="flex flex-wrap gap-2">
