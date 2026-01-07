@@ -10,8 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload, History, Video, FileText, Play, Rocket, Mic, RotateCcw, Clock, Lightbulb } from "lucide-react";
+import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload, History, Video, FileText, Play, Rocket, Mic, RotateCcw, Clock, Lightbulb, RefreshCw } from "lucide-react";
 import { CreditHistoryCard } from "@/components/credits/CreditHistoryCard";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
@@ -272,6 +273,23 @@ const SettingsPage = () => {
 
   const canUseOwnApiKeys = hasPermission('usar_api_propria');
   const canUseImageFxCookies = hasPermission('imagefx_cookies');
+  const queryClient = useQueryClient();
+  const [syncingPlan, setSyncingPlan] = useState(false);
+
+  const handleSyncPlan = async () => {
+    setSyncingPlan(true);
+    try {
+      // Invalidate subscription and permissions cache
+      await queryClient.invalidateQueries({ queryKey: ['subscription'] });
+      await queryClient.invalidateQueries({ queryKey: ['permissions'] });
+      toast.success('Plano sincronizado com sucesso!');
+    } catch (error) {
+      console.error('Error syncing plan:', error);
+      toast.error('Erro ao sincronizar plano');
+    } finally {
+      setSyncingPlan(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -665,11 +683,26 @@ const SettingsPage = () => {
       />
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Configurações</h1>
-            <p className="text-muted-foreground">
-              Gerencie suas preferências e integrações
-            </p>
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Configurações</h1>
+              <p className="text-muted-foreground">
+                Gerencie suas preferências e integrações
+              </p>
+            </div>
+            <Button 
+              onClick={handleSyncPlan} 
+              variant="outline" 
+              disabled={syncingPlan}
+              className="border-border"
+            >
+              {syncingPlan ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-2" />
+              )}
+              Sincronizar Plano
+            </Button>
           </div>
 
           <div className="space-y-6">
