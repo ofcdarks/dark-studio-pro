@@ -52,6 +52,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     
+    // Se cadastro bem-sucedido, enviar email de boas-vindas customizado
+    if (!error) {
+      try {
+        await supabase.functions.invoke("send-welcome-email", {
+          body: { email, fullName },
+        });
+      } catch (e) {
+        console.error("Erro ao enviar email de boas-vindas:", e);
+      }
+    }
+    
     return { error: error as Error | null };
   };
 
