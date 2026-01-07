@@ -50,19 +50,28 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     ViteImageOptimizer({
+      // Optimize existing formats
       jpg: {
-        quality: 80,
+        quality: 85,
       },
       jpeg: {
-        quality: 80,
+        quality: 85,
       },
       png: {
-        quality: 80,
+        quality: 85,
+        compressionLevel: 9,
       },
+      // WebP output settings
       webp: {
-        quality: 80,
+        quality: 85,
         lossless: false,
+        nearLossless: false,
+        smartSubsample: true,
+        effort: 4,
       },
+      // Enable caching for faster rebuilds
+      cache: true,
+      cacheLocation: 'node_modules/.cache/image-optimizer',
     }),
     VitePWA({
       registerType: "autoUpdate",
