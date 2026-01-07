@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Film, Copy, Check, Image, Images, Download, ArrowRight, Upload, FileText, Sparkles, CheckCircle2 } from "lucide-react";
+import { Loader2, Film, Copy, Check, Image, Images, Download, ArrowRight, Upload, FileText, Sparkles, CheckCircle2, Rocket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { addBrandingFooter } from "@/lib/utils";
@@ -21,6 +21,7 @@ import BatchImageGenerator from "@/components/scenes/BatchImageGenerator";
 import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 import { StyleSelector } from "@/components/scenes/StyleSelector";
 import { getStyleById } from "@/lib/thumbnailStyles";
+import { ViralVideoAnalysisModal } from "@/components/scenes/ViralVideoAnalysisModal";
 
 interface ScenePrompt {
   number: number;
@@ -66,6 +67,7 @@ const SceneGenerator = () => {
   const [progressModalOpen, setProgressModalOpen] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<"generating" | "complete">("generating");
   const [generationProgress, setGenerationProgress] = useState(0);
+  const [viralAnalysisOpen, setViralAnalysisOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check if current value is custom
@@ -303,11 +305,21 @@ const SceneGenerator = () => {
             }}
           />
 
-          <div className="mb-6 mt-4">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Gerador de Cenas</h1>
-            <p className="text-muted-foreground">
-              Gere prompts de imagem para cada cena do seu roteiro ou imagens em lote
-            </p>
+          <div className="mb-6 mt-4 flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Gerador de Cenas</h1>
+              <p className="text-muted-foreground">
+                Gere prompts de imagem para cada cena do seu roteiro ou imagens em lote
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => setViralAnalysisOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Rocket className="w-4 h-4" />
+              Análise Viral 3D
+            </Button>
           </div>
 
           {/* Tabs */}
@@ -685,6 +697,16 @@ const SceneGenerator = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Viral Video Analysis Modal */}
+      <ViralVideoAnalysisModal
+        open={viralAnalysisOpen}
+        onOpenChange={setViralAnalysisOpen}
+        onApplyScenes={(viralScenes) => {
+          setScenes(viralScenes);
+          setStyle("3d-viral-minimalista");
+        }}
+      />
         </PermissionGate>
       </MainLayout>
     </>
