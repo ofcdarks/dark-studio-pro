@@ -1,4 +1,4 @@
-import { Youtube, Instagram, Mail, Crown } from "lucide-react";
+import { Youtube, Instagram, Mail, Crown, Zap, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Footer = () => {
@@ -38,6 +38,18 @@ const Footer = () => {
             </ul>
           </div>
         </div>
+        {/* Feature Badges */}
+        <div className="flex flex-wrap justify-center gap-3 md:gap-4 mb-8">
+          <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-card border border-primary/30">
+            <Zap className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+            <span className="text-sm md:text-base">Melhores APIs do mercado</span>
+          </div>
+          <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-card border border-border">
+            <Check className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
+            <span className="text-sm md:text-base text-muted-foreground">Ferramenta em constante atualização</span>
+          </div>
+        </div>
+        
         <div className="pt-8 border-t border-border/50 text-center">
           <p className="text-muted-foreground text-sm">© 2026 La Casa Dark CORE. Todos os direitos reservados.</p>
         </div>
