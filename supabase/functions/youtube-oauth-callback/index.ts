@@ -31,16 +31,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { userId } = stateData;
+    const { userId, redirectUri: redirectUriFromState } = stateData;
 
     const clientId = Deno.env.get('YOUTUBE_CLIENT_ID');
     const clientSecret = Deno.env.get('YOUTUBE_CLIENT_SECRET');
-    const redirectUri = Deno.env.get('YOUTUBE_REDIRECT_URI');
+    const redirectUri = redirectUriFromState || Deno.env.get('YOUTUBE_REDIRECT_URI');
 
-    if (!clientId || !clientSecret || !redirectUri) {
-      return new Response(JSON.stringify({ error: 'YouTube OAuth not configured' }), { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    if (!clientId || !clientSecret || !redirectUri || !userId) {
+      console.error('YouTube OAuth not configured', {
+        hasClientId: !!clientId,
+        hasClientSecret: !!clientSecret,
+        hasRedirectUri: !!redirectUri,
+        hasUserId: !!userId,
+      });
+      return new Response(JSON.stringify({ error: 'YouTube OAuth not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
