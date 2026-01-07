@@ -14,6 +14,14 @@ const authSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
   fullName: z.string().optional(),
+  whatsapp: z.string().optional(),
+});
+
+const signupSchema = z.object({
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
+  fullName: z.string().min(2, "Nome é obrigatório"),
+  whatsapp: z.string().min(10, "WhatsApp é obrigatório (mínimo 10 dígitos)"),
 });
 
 const Auth = () => {
@@ -22,6 +30,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberPassword, setRememberPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -42,7 +51,14 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const validation = authSchema.safeParse({ email, password, fullName: isLogin ? undefined : fullName });
+      // Use different validation for login vs signup
+      const schema = isLogin ? authSchema : signupSchema;
+      const validation = schema.safeParse({ 
+        email, 
+        password, 
+        fullName: isLogin ? undefined : fullName,
+        whatsapp: isLogin ? undefined : whatsapp 
+      });
       
       if (!validation.success) {
         toast({
@@ -74,7 +90,7 @@ const Auth = () => {
           navigate("/dashboard");
         }
       } else {
-        const { error } = await signUp(email, password, fullName);
+        const { error } = await signUp(email, password, fullName, whatsapp);
         if (error) {
           let message = "Erro ao criar conta";
           if (error.message.includes("already registered")) {
@@ -87,10 +103,10 @@ const Auth = () => {
           });
         } else {
           toast({
-            title: "Conta criada!",
-            description: "Você já pode acessar a plataforma",
+            title: "Cadastro realizado!",
+            description: "Aguarde aprovação do administrador para acessar",
           });
-          navigate("/dashboard");
+          navigate("/pending-approval");
         }
       }
     } catch (error) {
@@ -303,18 +319,35 @@ const Auth = () => {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4 relative">
               {!isLogin && (
-                <div>
-                  <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
-                    Nome completo
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Seu nome"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="bg-secondary/50 border-border/50 h-11"
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                      Nome completo <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Seu nome completo"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="bg-secondary/50 border-border/50 h-11"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-1.5 flex items-center gap-2">
+                      WhatsApp <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      type="tel"
+                      placeholder="5511999999999"
+                      value={whatsapp}
+                      onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ''))}
+                      className="bg-secondary/50 border-border/50 h-11"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Apenas números com DDD</p>
+                  </div>
+                </>
               )}
               
               {/* Email */}

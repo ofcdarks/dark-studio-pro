@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName?: string, whatsapp?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
@@ -38,22 +38,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
+  const signUp = async (email: string, password: string, fullName?: string, whatsapp?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName,
+          whatsapp: whatsapp,
         },
       },
     });
     
-    // Se cadastro bem-sucedido, enviar email de pendente de aprovação
-    if (!error) {
+    // Se cadastro bem-sucedido, atualizar profile com whatsapp e enviar email de pendente
+    if (!error && data.user) {
+      // Atualizar o profile com o whatsapp
+      try {
+        await supabase
+          .from("profiles")
+          .update({ whatsapp: whatsapp })
+          .eq("id", data.user.id);
+      } catch (e) {
+        console.error("Erro ao atualizar whatsapp:", e);
+      }
+      
+      // Enviar email de pendente de aprovação
       try {
         await supabase.functions.invoke("send-pending-email", {
           body: { email, fullName },

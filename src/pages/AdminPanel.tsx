@@ -314,12 +314,17 @@ const AdminPanel = () => {
         .update({ status: newStatus })
         .eq("id", selectedUser.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating user status:", error);
+        throw error;
+      }
+      
       toast.success(newStatus === "blocked" ? "Usuário bloqueado!" : "Usuário desbloqueado!");
       setLockDialogOpen(false);
       fetchAdminData();
-    } catch (error) {
-      toast.error("Erro ao atualizar status do usuário");
+    } catch (error: any) {
+      console.error("Error updating user status:", error);
+      toast.error(`Erro ao atualizar status: ${error?.message || 'Erro desconhecido'}`);
     }
   };
 
@@ -330,11 +335,16 @@ const AdminPanel = () => {
         .update({ status: "inactive" })
         .eq("id", userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error disabling user:", error);
+        throw error;
+      }
+      
       toast.success("Usuário desativado!");
       fetchAdminData();
-    } catch (error) {
-      toast.error("Erro ao desativar usuário");
+    } catch (error: any) {
+      console.error("Error disabling user:", error);
+      toast.error(`Erro ao desativar usuário: ${error?.message || 'Erro desconhecido'}`);
     }
   };
 
@@ -348,20 +358,32 @@ const AdminPanel = () => {
 
     try {
       // Delete user role first
-      await supabase.from("user_roles").delete().eq("user_id", selectedUser.id);
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", selectedUser.id);
       
-      // Delete profile (cascade will handle related data)
-      const { error } = await supabase
+      if (roleError) {
+        console.error("Error deleting user role:", roleError);
+      }
+      
+      // Delete profile
+      const { error: profileError } = await supabase
         .from("profiles")
         .delete()
         .eq("id", selectedUser.id);
 
-      if (error) throw error;
+      if (profileError) {
+        console.error("Error deleting profile:", profileError);
+        throw profileError;
+      }
+      
       toast.success("Usuário excluído!");
       setDeleteDialogOpen(false);
       fetchAdminData();
-    } catch (error) {
-      toast.error("Erro ao excluir usuário");
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast.error(`Erro ao excluir usuário: ${error?.message || 'Erro desconhecido'}`);
     }
   };
 
@@ -616,8 +638,19 @@ const AdminPanel = () => {
                                   />
                                 </td>
                                 <td className="py-4 pr-4 text-sm text-foreground">{user.email}</td>
-                                <td className="py-4 pr-4 text-sm text-primary">
-                                  {user.whatsapp || "N/A"}
+                                <td className="py-4 pr-4 text-sm">
+                                  {user.whatsapp ? (
+                                    <a 
+                                      href={`https://wa.me/${user.whatsapp.replace(/\D/g, '')}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:underline"
+                                    >
+                                      {user.whatsapp}
+                                    </a>
+                                  ) : (
+                                    <span className="text-muted-foreground">N/A</span>
+                                  )}
                                 </td>
                                 <td className="py-4 pr-4 text-sm text-muted-foreground">
                                   {user.full_name || "N/A"}
