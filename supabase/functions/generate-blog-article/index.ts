@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { topic, category, language = "pt-BR" } = await req.json();
+    const { topic, category, language = "pt-BR", productName, productUrl, productCta } = await req.json();
 
     if (!topic) {
       return new Response(
@@ -20,7 +20,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("[Blog Article] Generating for:", topic, "category:", category);
+    console.log("[Blog Article] Generating for:", topic, "category:", category, "product:", productName);
 
     // Get API keys from environment
     const LAOZHANG_API_KEY = Deno.env.get("LAOZHANG_API_KEY");
@@ -34,7 +34,8 @@ serve(async (req) => {
 Escreva artigos de blog completos, profissionais e otimizados para SEO.
 O conteúdo deve ser informativo, envolvente e prático.
 Use uma linguagem acessível mas profissional.
-Sempre inclua exemplos práticos e dicas acionáveis.`;
+Sempre inclua exemplos práticos e dicas acionáveis.
+${productName ? `IMPORTANTE: Você deve mencionar e recomendar o produto "${productName}" de forma natural no artigo, inserindo-o no contexto mais relevante (pode ser no meio ou final do artigo). Apresente-o como uma solução recomendada para o leitor.` : ''}`;
 
     const userPrompt = `Escreva um artigo de blog completo sobre: "${topic}"
 Categoria: ${category || "YouTube"}

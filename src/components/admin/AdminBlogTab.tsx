@@ -50,6 +50,7 @@ import {
   Wand2,
   TrendingUp,
   BarChart3,
+  ShoppingBag,
 } from "lucide-react";
 import {
   ChartContainer,
@@ -139,6 +140,9 @@ export const AdminBlogTab = () => {
   const [generateCategory, setGenerateCategory] = useState("YouTube");
   const [generateWithCover, setGenerateWithCover] = useState(true);
   const [generateCoverStyle, setGenerateCoverStyle] = useState("cinematic");
+  const [generateProductName, setGenerateProductName] = useState("");
+  const [generateProductUrl, setGenerateProductUrl] = useState("");
+  const [generateProductCta, setGenerateProductCta] = useState("Saiba Mais");
 
   // Edit modal
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -334,6 +338,9 @@ export const AdminBlogTab = () => {
           category: generateCategory,
           mode: generateMode,
           youtubeUrl: generateYoutubeUrl,
+          productName: generateProductName.trim() || null,
+          productUrl: generateProductUrl.trim() || null,
+          productCta: generateProductCta.trim() || "Saiba Mais",
         },
       });
 
@@ -355,6 +362,9 @@ export const AdminBlogTab = () => {
           meta_description: article.meta_description,
           meta_keywords: article.meta_keywords,
           is_published: false,
+          product_url: generateProductUrl.trim() || null,
+          product_title: generateProductName.trim() || null,
+          product_cta: generateProductCta.trim() || "Saiba Mais",
         })
         .select()
         .single();
@@ -394,6 +404,9 @@ export const AdminBlogTab = () => {
       setGenerateTopic("");
       setGenerateYoutubeUrl("");
       setGenerateMode("keyword");
+      setGenerateProductName("");
+      setGenerateProductUrl("");
+      setGenerateProductCta("Saiba Mais");
       fetchArticles();
     } catch (error: any) {
       console.error("Error generating article:", error);
@@ -1320,6 +1333,44 @@ export const AdminBlogTab = () => {
                   </Select>
                 </div>
               )}
+            </div>
+
+            {/* Product Section */}
+            <div className="border-t border-border pt-4 space-y-3">
+              <p className="text-sm font-medium text-foreground">Produto/Afiliado (opcional)</p>
+              <p className="text-xs text-muted-foreground -mt-2">
+                A IA vai incluir o produto no melhor local do artigo
+              </p>
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Nome do Produto
+                </label>
+                <Input
+                  placeholder="Ex: Curso de YouTube PRO"
+                  value={generateProductName}
+                  onChange={(e) => setGenerateProductName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Link do Produto
+                </label>
+                <Input
+                  placeholder="https://..."
+                  value={generateProductUrl}
+                  onChange={(e) => setGenerateProductUrl(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Texto do Botão (CTA)
+                </label>
+                <Input
+                  placeholder="Saiba Mais"
+                  value={generateProductCta}
+                  onChange={(e) => setGenerateProductCta(e.target.value)}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
