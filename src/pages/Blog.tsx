@@ -227,7 +227,7 @@ const NewsletterForm = () => {
     try {
       // Save to newsletter_subscribers table
       const { error } = await supabase
-        .from("newsletter_subscribers")
+        .from("newsletter_subscribers" as any)
         .insert({ email: email.toLowerCase().trim() });
 
       if (error) {
