@@ -3,8 +3,10 @@ import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Zap, Shield, Rocket, Play, Star, Crown, Flame } from "lucide-react";
 import { Link } from "react-router-dom";
-import heroBg from "@/assets/hero-porsche.jpg";
 import { useLandingSettings } from "@/hooks/useLandingSettings";
+
+// Use public path for faster loading (served directly by CDN/Nginx)
+const heroBg = "/images/hero-porsche.jpg";
 
 const allOperators = [
   { initials: "JM" }, { initials: "AL" }, { initials: "CS" }, { initials: "RB" },
@@ -51,6 +53,9 @@ const HeroSection = () => {
           alt="Luxury Porsche"
           className="absolute inset-0 w-full h-full object-cover"
           style={{ opacity: 0.7 }}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
         />
         {/* Minimal overlay - only on left side for text readability */}
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/40 to-transparent" />
