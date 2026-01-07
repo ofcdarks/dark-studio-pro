@@ -1,4 +1,5 @@
 import { MainLayout } from "@/components/layout/MainLayout";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -403,6 +404,7 @@ const ChannelAnalyzer = () => {
 
   return (
     <MainLayout>
+      <PermissionGate permission="analisador_canal" featureName="Analisador de Canal">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Session Indicator */}
@@ -1107,6 +1109,7 @@ const ChannelAnalyzer = () => {
           </AnimatePresence>
         </div>
       </div>
+      </PermissionGate>
     </MainLayout>
   );
 };

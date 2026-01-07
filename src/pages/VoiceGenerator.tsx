@@ -1,4 +1,5 @@
 import { MainLayout } from "@/components/layout/MainLayout";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -171,6 +172,7 @@ const VoiceGenerator = () => {
 
   return (
     <MainLayout>
+      <PermissionGate permission="gerador_voz" featureName="Gerador de Voz">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
           {/* Session Indicator */}
@@ -310,6 +312,7 @@ const VoiceGenerator = () => {
           </Card>
         </div>
       </div>
+      </PermissionGate>
     </MainLayout>
   );
 };

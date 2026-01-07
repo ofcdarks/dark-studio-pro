@@ -1,4 +1,5 @@
 import { MainLayout } from "@/components/layout/MainLayout";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import JSZip from "jszip";
@@ -3151,6 +3152,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
 
   return (
     <MainLayout>
+      <PermissionGate permission="prompts_imagens" featureName="Prompts e Imagens">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Session Indicator */}
@@ -6087,6 +6089,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
         steps={PROMPTS_IMAGES_TUTORIAL.steps}
         onComplete={completeTutorial}
       />
+      </PermissionGate>
     </MainLayout>
   );
 };

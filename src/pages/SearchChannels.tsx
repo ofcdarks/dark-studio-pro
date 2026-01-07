@@ -1,4 +1,5 @@
 import { MainLayout } from "@/components/layout/MainLayout";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,6 +85,7 @@ const SearchChannels = () => {
 
   return (
     <MainLayout>
+      <PermissionGate permission="buscar_canais" featureName="Buscar Canais">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Session Indicator */}
@@ -181,6 +183,7 @@ const SearchChannels = () => {
           </div>
         </div>
       </div>
+      </PermissionGate>
     </MainLayout>
   );
 };

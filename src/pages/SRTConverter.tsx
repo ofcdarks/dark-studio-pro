@@ -1,4 +1,5 @@
 import { MainLayout } from "@/components/layout/MainLayout";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -278,6 +279,7 @@ const SRTConverter = () => {
 
   return (
     <MainLayout>
+      <PermissionGate permission="conversor_srt" featureName="Conversor SRT">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-5xl mx-auto">
           {/* Session Indicator */}
@@ -542,6 +544,7 @@ const SRTConverter = () => {
         steps={SRT_CONVERTER_TUTORIAL.steps}
         onComplete={completeTutorial}
       />
+      </PermissionGate>
     </MainLayout>
   );
 };
