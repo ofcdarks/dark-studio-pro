@@ -29,13 +29,13 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const { email, fullName } = await req.json();
+    const { email, fullName, planName } = await req.json();
     
     if (!email) {
       throw new Error("Email é obrigatório");
     }
 
-    logStep("Email received", { email, fullName });
+    logStep("Email received", { email, fullName, planName });
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -43,6 +43,38 @@ serve(async (req) => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false }
     });
+
+    // Fetch user's plan if not provided
+    let userPlanName = planName || "FREE";
+    
+    if (!planName) {
+      // Try to get user's role to determine plan
+      const { data: userData } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+      
+      if (userData?.id) {
+        const { data: roleData } = await supabaseAdmin
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userData.id)
+          .maybeSingle();
+        
+        if (roleData?.role) {
+          // Map role to display name
+          const roleMap: Record<string, string> = {
+            'admin': 'ADMIN',
+            'pro': 'PRO',
+            'free': 'FREE'
+          };
+          userPlanName = roleMap[roleData.role] || 'FREE';
+        }
+      }
+    }
+
+    logStep("Plan determined", { userPlanName });
 
     // Fetch access_approved template
     const { data: template, error: templateError } = await supabaseAdmin
@@ -82,12 +114,14 @@ serve(async (req) => {
     let emailBody = template.body;
 
     const userName = fullName || email.split("@")[0] || "Operador";
-    const dashboardUrl = `${req.headers.get("origin") || "https://premium-channel-hub.lovable.app"}/dashboard`;
+    const dashboardUrl = `${req.headers.get("origin") || "https://app.canaisdarks.com.br"}/dashboard`;
 
     const variables: Record<string, string> = {
       "{{nome}}": userName,
       "{{name}}": userName,
       "{{email}}": email,
+      "{{plan_name}}": userPlanName,
+      "{{plano}}": userPlanName,
       "{{dashboard_link}}": dashboardUrl,
       "{{action_link}}": dashboardUrl,
       "{{data}}": new Date().toLocaleDateString("pt-BR"),
