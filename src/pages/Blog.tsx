@@ -481,9 +481,9 @@ const Blog = () => {
               {/* Stats */}
               <div className="flex flex-wrap items-center justify-center gap-8 mb-10">
                 {[
+                  { value: "100%", label: "Gratuito" },
                   { value: "11+", label: "Artigos" },
-                  { value: "100k+", label: "Leitores" },
-                  { value: "4.9★", label: "Avaliação" }
+                  { value: "2026", label: "Atualizado" }
                 ].map((stat, i) => (
                   <div key={i} className="text-center">
                     <div className="text-2xl md:text-3xl font-bold text-primary">{stat.value}</div>
