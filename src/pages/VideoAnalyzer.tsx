@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -738,6 +739,7 @@ const VideoAnalyzer = () => {
 
   return (
     <MainLayout>
+      <PermissionGate permission="analisador_videos" featureName="Analisador de Vídeos">
       <div className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Session Indicator */}
@@ -1223,6 +1225,7 @@ const VideoAnalyzer = () => {
         steps={VIDEO_ANALYZER_TUTORIAL.steps}
         onComplete={completeTutorial}
       />
+      </PermissionGate>
     </MainLayout>
   );
 };
