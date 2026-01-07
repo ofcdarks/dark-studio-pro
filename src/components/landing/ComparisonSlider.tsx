@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
-import { Smartphone, Monitor, AlertTriangle, Check, GripVertical } from "lucide-react";
+import { Smartphone, Monitor, AlertTriangle, Check, GripVertical, DollarSign, Sparkles } from "lucide-react";
 import amateurImg from "@/assets/comparison-amateur.jpg";
-import cinematicImg from "@/assets/comparison-cinematic.jpg";
 
 export const ComparisonSlider = () => {
   const [sliderPosition, setSliderPosition] = useState(50);
@@ -87,17 +86,21 @@ export const ComparisonSlider = () => {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMwMDAiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PHJlY3Qgd2lkdGg9IjIiIGhlaWdodD0iMiIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjA1Ii8+PC9zdmc+')] opacity-40 pointer-events-none" />
       </div>
 
-      {/* DaVinci Side (Right - Pro) */}
+      {/* DaVinci Side (Right - Pro) - Video Background */}
       <div 
         className="absolute inset-0"
         style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
       >
-        {/* Cinematic image background */}
-        <img 
-          src={cinematicImg} 
-          alt="DaVinci Resolve cinematic grading" 
+        {/* Video background */}
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline
           className="absolute inset-0 w-full h-full object-cover"
-        />
+        >
+          <source src="https://downloads.blackmagicdesign.com/videos/products/davinciresolve/landing/hero/20250331-6882b0/hero.hd.1080p.mp4" type="video/mp4" />
+        </video>
         
         {/* Overlay with info */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent">
@@ -145,12 +148,24 @@ export const ComparisonSlider = () => {
         </div>
       </div>
 
-      {/* Corner labels */}
-      <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-destructive/80 backdrop-blur text-xs font-bold text-destructive-foreground">
-        ANTES
+      {/* Corner labels with pricing */}
+      <div className="absolute top-4 left-4 flex flex-col gap-2">
+        <div className="px-3 py-1.5 rounded-full bg-destructive/80 backdrop-blur text-xs font-bold text-destructive-foreground">
+          ANTES
+        </div>
+        <div className="px-3 py-1.5 rounded-full bg-red-500/20 backdrop-blur border border-red-500/30 flex items-center gap-1.5">
+          <DollarSign className="w-3 h-3 text-red-400" />
+          <span className="text-red-400 text-xs font-bold">R$34,90/mês</span>
+        </div>
       </div>
-      <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-primary/80 backdrop-blur text-xs font-bold text-primary-foreground">
-        DEPOIS
+      <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
+        <div className="px-3 py-1.5 rounded-full bg-primary/80 backdrop-blur text-xs font-bold text-primary-foreground">
+          DEPOIS
+        </div>
+        <div className="px-3 py-1.5 rounded-full bg-green-500/20 backdrop-blur border border-green-500/30 flex items-center gap-1.5">
+          <Sparkles className="w-3 h-3 text-green-400" />
+          <span className="text-green-400 text-xs font-bold">100% GRÁTIS</span>
+        </div>
       </div>
     </div>
   );
