@@ -147,10 +147,10 @@ const Landing = () => {
   return (
     <>
       <SEOHead
-        title="Ferramenta #1 para Canal Dark no YouTube"
-        description="Ferramenta definitiva para criadores de canal dark no YouTube. Gerador de voz IA, análise de nichos, thumbnails otimizadas e automação completa. Escale para $10K+/mês."
+        title="Canal Dark YouTube: Ferramenta #1 para Vídeos Virais 2026"
+        description="Crie vídeos virais para canal dark no YouTube sem aparecer. Gerador de voz IA, thumbnails otimizadas, roteiros virais e automação completa. 847+ criadores faturando $10K+/mês."
         canonical="/landing"
-        keywords="canal dark, youtube dark, faceless channel, canal sem aparecer, ganhar dinheiro youtube, automação youtube, gerador de voz ia, thumbnails youtube"
+        keywords="canal dark youtube, vídeos virais, faceless channel, canal sem aparecer, ganhar dinheiro youtube 2026, automação youtube, gerador de voz ia, thumbnails virais, roteiro viral, como criar canal dark, monetização youtube, nicho lucrativo youtube, canal faceless, vídeo viral ia, dark channel, youtube sem aparecer, renda passiva youtube, criar vídeos com ia, canal automático youtube, edição davinci resolve"
         jsonLd={[
           {
             "@context": "https://schema.org",
@@ -158,25 +158,45 @@ const Landing = () => {
             "name": "La Casa Dark CORE",
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
+            "url": "https://canaisdarks.com.br",
             "offers": {
               "@type": "Offer",
               "price": "97",
-              "priceCurrency": "BRL"
+              "priceCurrency": "BRL",
+              "availability": "https://schema.org/InStock"
             },
             "aggregateRating": {
               "@type": "AggregateRating",
               "ratingValue": "4.9",
-              "reviewCount": "847"
+              "reviewCount": "847",
+              "bestRating": "5",
+              "worstRating": "1"
             },
-            "description": "Ferramenta definitiva para criadores de canal dark no YouTube. Gerador de voz IA, análise de nichos, thumbnails otimizadas e automação completa."
+            "description": "Plataforma completa para criadores de canal dark no YouTube. Gerador de voz IA, análise de nichos virais, thumbnails otimizadas, roteiros com gatilhos mentais e automação 24/7.",
+            "featureList": [
+              "Gerador de Voz IA Ultra-Realista",
+              "Análise de Títulos Virais",
+              "Gerador de Thumbnails 4x",
+              "Roteiros com Gatilhos Mentais",
+              "Automação de Canal 24/7",
+              "Analytics Avançado",
+              "Integração YouTube Completa"
+            ]
           },
           {
             "@context": "https://schema.org",
             "@type": "Organization",
             "name": "La Casa Dark",
+            "alternateName": "La Casa Dark CORE",
             "url": "https://canaisdarks.com.br",
             "logo": "https://canaisdarks.com.br/logo.gif",
-            "sameAs": []
+            "description": "Plataforma líder em automação de canais dark no YouTube. Ajudamos criadores a faturar $10K+/mês com vídeos virais sem aparecer.",
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "email": "suporte@canaisdarks.com.br",
+              "contactType": "customer service",
+              "availableLanguage": ["Portuguese"]
+            }
           },
           {
             "@context": "https://schema.org",
@@ -184,26 +204,26 @@ const Landing = () => {
             "mainEntity": [
               {
                 "@type": "Question",
-                "name": "Preciso aparecer nos vídeos?",
+                "name": "O que é um canal dark no YouTube?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Não! Nosso sistema é focado em canais dark/faceless. Você nunca precisa aparecer ou usar sua voz."
+                  "text": "Canal dark (ou faceless channel) é um canal do YouTube onde o criador não aparece nos vídeos. Usa narração com IA, imagens e vídeos de stock para criar conteúdo viral sem expor sua identidade."
                 }
               },
               {
                 "@type": "Question",
-                "name": "Quanto tempo até ver resultados?",
+                "name": "Quanto tempo leva para monetizar um canal dark?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Nossos membros geralmente veem os primeiros resultados em 30-60 dias. Com dedicação, você pode alcançar $10K/mês em 6-12 meses."
+                  "text": "Com nossa plataforma, membros geralmente atingem os requisitos de monetização (1.000 inscritos e 4.000 horas) em 30-90 dias. Com dedicação, você pode alcançar $10K/mês em 6-12 meses."
                 }
               },
               {
                 "@type": "Question",
-                "name": "Funciona para iniciantes?",
+                "name": "Preciso saber editar vídeos?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Absolutamente! Nossa plataforma foi criada para ser intuitiva. Você não precisa de experiência prévia com YouTube ou edição."
+                  "text": "Não! Nossa plataforma gera roteiros, prompts de imagens, narração com IA e até legendas SRT automaticamente. Você pode usar o DaVinci Resolve (gratuito) para montar tudo facilmente."
                 }
               },
               {
@@ -211,10 +231,55 @@ const Landing = () => {
                 "name": "Como funciona o gerador de voz IA?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Nossa IA gera narrações profissionais em português a partir do seu roteiro. Escolha entre diferentes vozes e estilos."
+                  "text": "Nossa IA gera narrações profissionais em português brasileiro a partir do seu roteiro. Escolha entre diferentes vozes masculinas e femininas com qualidade de estúdio."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Quais nichos funcionam para canal dark?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Os nichos mais lucrativos incluem: finanças, curiosidades, mistérios, história, tecnologia, motivação, true crime, ciência e natureza. Nossa ferramenta de análise ajuda você a encontrar sub-nichos inexplorados."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "A plataforma é segura para uso no YouTube?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Sim! Nosso conteúdo é 100% original, gerado por IA proprietária. Não há risco de copyright strikes. Mais de 847 criadores usam nossa plataforma com sucesso."
                 }
               }
             ]
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "La Casa Dark CORE - Plataforma de Vídeos Virais",
+            "description": "Crie vídeos virais para canal dark no YouTube sem aparecer",
+            "url": "https://canaisdarks.com.br/landing",
+            "mainEntity": {
+              "@type": "Product",
+              "name": "La Casa Dark CORE",
+              "description": "Plataforma completa para criação de canais dark no YouTube",
+              "brand": {
+                "@type": "Brand",
+                "name": "La Casa Dark"
+              },
+              "review": {
+                "@type": "Review",
+                "reviewRating": {
+                  "@type": "Rating",
+                  "ratingValue": "5",
+                  "bestRating": "5"
+                },
+                "author": {
+                  "@type": "Person",
+                  "name": "Ricardo Mendes"
+                },
+                "reviewBody": "Já testei várias plataformas. Essa é de longe a mais completa e profissional do mercado."
+              }
+            }
           }
         ]}
       />

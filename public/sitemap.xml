@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  La Casa Dark CORE - Sitemap
+  Plataforma #1 para criação de vídeos virais e canais dark no YouTube
+  Keywords: canal dark youtube, vídeos virais, faceless channel, automação youtube
+  Updated: 2026-01-07
+-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Homepage / Landing -->
+  <!-- Homepage / Landing - Página principal com todas as informações -->
   <url>
     <loc>https://canaisdarks.com.br/</loc>
     <lastmod>2026-01-07</lastmod>
@@ -14,7 +20,7 @@
     <priority>1.0</priority>
   </url>
   
-  <!-- Authentication -->
+  <!-- Authentication - Acesso à plataforma -->
   <url>
     <loc>https://canaisdarks.com.br/auth</loc>
     <lastmod>2026-01-07</lastmod>
@@ -28,7 +34,7 @@
     <priority>0.3</priority>
   </url>
   
-  <!-- Legal Pages -->
+  <!-- Legal Pages - Termos e Privacidade -->
   <url>
     <loc>https://canaisdarks.com.br/terms</loc>
     <lastmod>2026-01-07</lastmod>
@@ -40,13 +46,5 @@
     <lastmod>2026-01-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
-  </url>
-  
-  <!-- Maintenance (public fallback page) -->
-  <url>
-    <loc>https://canaisdarks.com.br/maintenance</loc>
-    <lastmod>2026-01-07</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.1</priority>
   </url>
 </urlset>
