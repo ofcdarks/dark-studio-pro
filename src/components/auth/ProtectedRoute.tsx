@@ -42,84 +42,68 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
     
     try {
+      const provider = user.app_metadata?.provider;
+
+      // Para cadastro/login via Google: garante que o profile/role exista antes de checar status
+      if (provider === "google") {
+        try {
+          await supabase.functions.invoke("ensure-user-profile");
+          // pequena folga para o backend persistir (evita corrida)
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        } catch (e) {
+          console.error("Erro ao garantir profile do Google:", e);
+        }
+      }
+
       // Delay mais longo para usuários novos do Google OAuth (trigger pode demorar)
-      const isOAuthUser = user.app_metadata?.provider === "google";
+      const isOAuthUser = provider === "google";
       const initialDelay = isOAuthUser ? 1500 : 500;
-      
-      await new Promise(resolve => setTimeout(resolve, initialDelay));
-      
+
+      await new Promise((resolve) => setTimeout(resolve, initialDelay));
+
       let retries = 0;
       const maxRetries = 3;
-      let data = null;
-      let error = null;
-      
+      let data: { status: string | null } | null = null;
+      let error: any = null;
+
       // Retry loop para garantir que o profile foi criado
       while (retries < maxRetries) {
         const result = await supabase
           .from("profiles")
           .select("status")
           .eq("id", user.id)
-          .single();
-          
-        data = result.data;
+          .maybeSingle();
+
+        data = result.data as { status: string | null } | null;
         error = result.error;
-        
-        if (data) break;
-        
+
+        if (data?.status) break;
+
         retries++;
         if (retries < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
 
       if (!error && data) {
         setUserStatus(data.status);
-        
+
         // Se status é pending e não está na página de pending, redireciona
         if (data.status === "pending" && location.pathname !== "/pending-approval") {
-          // Para usuários Google OAuth novos, enviar emails de notificação
-          if (user.app_metadata?.provider === "google") {
-            try {
-              // Enviar email de pendente para o usuário
-              await supabase.functions.invoke("send-pending-email", {
-                body: { 
-                  email: user.email, 
-                  fullName: user.user_metadata?.full_name || user.email?.split("@")[0] 
-                },
-              });
-              
-              // Notificar admins sobre novo cadastro
-              await supabase.functions.invoke("send-admin-notification", {
-                body: { 
-                  userEmail: user.email, 
-                  userName: user.user_metadata?.full_name || user.email?.split("@")[0],
-                  userWhatsapp: null 
-                },
-              });
-            } catch (e) {
-              console.error("Erro ao enviar emails de notificação:", e);
-            }
-          }
-          
           navigate("/pending-approval", { replace: true });
           return;
         }
-      } else if (error) {
+      } else {
         console.error("Erro ao buscar status:", error);
-        // Se não encontrou o perfil após retries, pode ser um problema - aguarda mais
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        const { data: retryData } = await supabase
-          .from("profiles")
-          .select("status")
-          .eq("id", user.id)
-          .single();
-          
-        if (retryData?.status === "pending" && location.pathname !== "/pending-approval") {
+
+        // Se for Google e ainda não há profile/status, trata como pending (primeiro acesso)
+        if (provider === "google" && location.pathname !== "/pending-approval") {
+          setUserStatus("pending");
           navigate("/pending-approval", { replace: true });
           return;
         }
-        setUserStatus(retryData?.status || null);
+
+        setUserStatus(null);
       }
     } catch (e) {
       console.error("Erro ao verificar status:", e);
