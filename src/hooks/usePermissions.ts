@@ -18,7 +18,8 @@ export type PermissionKey =
   | "conversor_srt"
   | "analytics"
   | "pastas"
-  | "usar_api_propria";
+  | "usar_api_propria"
+  | "baixar_xml";
 
 interface Permissions {
   [key: string]: boolean;
@@ -69,6 +70,7 @@ export function usePermissions(): UsePermissionsReturn {
             analytics: true,
             pastas: true,
             usar_api_propria: true,
+            baixar_xml: true,
           });
           setLoading(false);
           return;

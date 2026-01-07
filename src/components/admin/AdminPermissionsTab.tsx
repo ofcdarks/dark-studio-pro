@@ -53,6 +53,7 @@ const FEATURES = [
   { key: "analytics", label: "Analytics da Plataforma", route: "/analytics", description: "Métricas e gráficos" },
   { key: "pastas", label: "Pastas", route: "/folders", description: "Organização de conteúdo" },
   { key: "usar_api_propria", label: "Usar API Própria", route: "/settings", description: "Configurar chaves OpenAI/Gemini" },
+  { key: "baixar_xml", label: "Baixar XML", route: "/scenes", description: "Exportar XML para DaVinci" },
 ];
 
 export const AdminPermissionsTab = () => {
