@@ -31,7 +31,7 @@ export const MaintenanceModal = ({
           <div className="mx-auto w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-4 animate-pulse">
             <Wrench className="w-8 h-8 text-primary" />
           </div>
-          <DialogTitle className="text-xl font-bold text-foreground">
+          <DialogTitle className="text-xl font-bold text-foreground text-center">
             Ferramenta em Manutenção
           </DialogTitle>
         </DialogHeader>
