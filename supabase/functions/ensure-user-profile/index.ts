@@ -64,19 +64,68 @@ serve(async (req) => {
       (user.user_metadata?.picture as string | undefined) ||
       null;
 
-    // Create profile if missing, without overriding existing status (approved users stay approved)
-    const { error: profileError } = await adminClient
+    // Check if profile exists first
+    const { data: existingProfile } = await adminClient
       .from("profiles")
-      .upsert(
-        {
+      .select("id, status, full_name")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    let profileError = null;
+    
+    if (!existingProfile) {
+      // Create new profile with pending status
+      const { error } = await adminClient
+        .from("profiles")
+        .insert({
           id: user.id,
           email: user.email,
           full_name: fullName,
           avatar_url: avatarUrl,
           status: "pending",
-        },
-        { onConflict: "id", ignoreDuplicates: true },
-      );
+        });
+      profileError = error;
+      
+      // Notify admins about new Google signup
+      if (!error) {
+        try {
+          await fetch(`${supabaseUrl}/functions/v1/send-pending-email`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${serviceRoleKey}`,
+            },
+            body: JSON.stringify({ email: user.email, fullName }),
+          });
+          
+          await fetch(`${supabaseUrl}/functions/v1/send-admin-notification`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${serviceRoleKey}`,
+            },
+            body: JSON.stringify({ 
+              userEmail: user.email, 
+              userName: fullName,
+              userWhatsapp: null 
+            }),
+          });
+        } catch (notifyError) {
+          console.error("Error sending notifications:", notifyError);
+        }
+      }
+    } else {
+      // Update existing profile metadata but don't change status
+      const { error } = await adminClient
+        .from("profiles")
+        .update({
+          email: user.email,
+          full_name: fullName || existingProfile.full_name,
+          avatar_url: avatarUrl,
+        })
+        .eq("id", user.id);
+      profileError = error;
+    }
 
     if (profileError) {
       console.error("ensure-user-profile: profile upsert error", profileError);
