@@ -97,6 +97,8 @@ export const AdminMaintenanceTab = () => {
     const newData = { ...maintenanceData };
     if (!newData.tools) newData.tools = {};
     
+    const toolName = TOOL_REGISTRY.find(t => t.path === toolPath)?.name || toolPath;
+    
     if (enabled) {
       newData.tools[toolPath] = {
         enabled: true,
@@ -108,9 +110,15 @@ export const AdminMaintenanceTab = () => {
         newData.tools[toolPath] = {
           ...newData.tools[toolPath],
           enabled: false,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          // Mark when maintenance ended for notification purposes
+          endedAt: new Date().toISOString()
         };
       }
+      // Show success message that maintenance ended
+      toast.success(`✅ ${toolName} está online novamente!`, {
+        description: 'Usuários serão notificados automaticamente.'
+      });
     }
 
     await saveMaintenanceData(newData);

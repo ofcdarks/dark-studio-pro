@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface ToolMaintenanceStatus {
   enabled: boolean;
   message?: string;
   estimatedEndTime?: string;
   updatedAt?: string;
+  endedAt?: string;
 }
 
 export interface ToolMaintenanceData {
@@ -59,9 +61,12 @@ export const useToolMaintenance = (): UseToolMaintenanceReturn => {
       }
 
       if (data?.value) {
-        setMaintenanceData(data.value as unknown as ToolMaintenanceData);
+        const typedData = data.value as unknown as ToolMaintenanceData;
+        setMaintenanceData(typedData);
+        previousDataRef.current = typedData;
       } else {
         setMaintenanceData({ tools: {} });
+        previousDataRef.current = { tools: {} };
       }
     } catch (err) {
       console.error('Error in fetchMaintenanceData:', err);
@@ -70,8 +75,53 @@ export const useToolMaintenance = (): UseToolMaintenanceReturn => {
     }
   }, []);
 
+  // Keep track of previous maintenance states to detect when tools come back online
+  const previousDataRef = useRef<ToolMaintenanceData | null>(null);
+
   useEffect(() => {
     fetchMaintenanceData();
+
+    // Subscribe to realtime changes on admin_settings
+    const channel = supabase
+      .channel('maintenance-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'admin_settings',
+          filter: 'key=eq.tool_maintenance'
+        },
+        (payload) => {
+          console.log('[Maintenance] Settings updated:', payload);
+          const newValue = payload.new.value as unknown as ToolMaintenanceData;
+          
+          // Check if any tool came back online
+          if (previousDataRef.current?.tools && newValue?.tools) {
+            Object.entries(newValue.tools).forEach(([path, status]) => {
+              const prevStatus = previousDataRef.current?.tools[path];
+              // Tool was under maintenance and is now online
+              if (prevStatus?.enabled === true && status.enabled === false) {
+                const toolName = TOOL_REGISTRY.find(t => t.path === path)?.name || path;
+                toast.success(`🎉 ${toolName} está disponível!`, {
+                  description: 'A manutenção foi concluída.',
+                  duration: 6000
+                });
+              }
+            });
+          }
+
+          setMaintenanceData(newValue);
+          previousDataRef.current = newValue;
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Maintenance] Subscription status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchMaintenanceData]);
 
   const isUnderMaintenance = useCallback((toolPath: string): boolean => {
