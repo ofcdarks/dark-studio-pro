@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -18,17 +18,19 @@ interface CreditUsage {
   created_at: string;
 }
 
+// Cache: 2 minutos (créditos mudam com uso)
+const CREDITS_STALE_TIME = 2 * 60 * 1000;
+const CREDITS_GC_TIME = 10 * 60 * 1000;
+
 export const useCredits = () => {
   const { user } = useAuth();
-  const [balance, setBalance] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
-  const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
-  const [usage, setUsage] = useState<CreditUsage[]>([]);
+  const queryClient = useQueryClient();
 
-  const fetchBalance = async () => {
-    if (!user) return;
-    
-    try {
+  const { data: balance = 0, isLoading: loading } = useQuery({
+    queryKey: ['user-credits', user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      
       const { data, error } = await supabase
         .from('user_credits')
         .select('balance')
@@ -37,70 +39,71 @@ export const useCredits = () => {
 
       if (error) throw error;
       
-      // Se não existir, criar com 50 créditos (FREE plan)
       if (!data) {
-        const { error: insertError } = await supabase
+        await supabase
           .from('user_credits')
           .insert({ user_id: user.id, balance: 50 });
-        
-        if (!insertError) {
-          setBalance(50);
-        }
-      } else {
-        setBalance(Math.ceil(data.balance));
+        return 50;
       }
-    } catch (error) {
-      console.error('Error fetching credits:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      
+      return Math.ceil(data.balance);
+    },
+    enabled: !!user,
+    staleTime: CREDITS_STALE_TIME,
+    gcTime: CREDITS_GC_TIME,
+  });
 
-  const fetchTransactions = async (limit = 20) => {
-    if (!user) return;
-
-    try {
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['credit-transactions', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      
       const { data, error } = await supabase
         .from('credit_transactions')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .limit(20);
 
       if (error) throw error;
-      setTransactions(data || []);
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-    }
-  };
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: CREDITS_STALE_TIME,
+    gcTime: CREDITS_GC_TIME,
+  });
 
-  const fetchUsage = async (limit = 20) => {
-    if (!user) return;
-
-    try {
+  const { data: usage = [] } = useQuery({
+    queryKey: ['credit-usage', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      
       const { data, error } = await supabase
         .from('credit_usage')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .limit(20);
 
       if (error) throw error;
-      setUsage(data || []);
-    } catch (error) {
-      console.error('Error fetching usage:', error);
-    }
-  };
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: CREDITS_STALE_TIME,
+    gcTime: CREDITS_GC_TIME,
+  });
 
   const refreshBalance = () => {
-    fetchBalance();
+    queryClient.invalidateQueries({ queryKey: ['user-credits', user?.id] });
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchBalance();
-    }
-  }, [user]);
+  const fetchTransactions = () => {
+    queryClient.invalidateQueries({ queryKey: ['credit-transactions', user?.id] });
+  };
+
+  const fetchUsage = () => {
+    queryClient.invalidateQueries({ queryKey: ['credit-usage', user?.id] });
+  };
 
   return {
     balance,
