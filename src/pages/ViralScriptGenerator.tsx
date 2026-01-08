@@ -624,16 +624,11 @@ export default function ViralScriptGenerator() {
     }
   }, [isGenerating]);
 
-  // Calculate estimated credits based on duration
+  // Calculate estimated credits: 1 credit per minute
   useEffect(() => {
-    const wordsPerMinute = 150;
-    const totalWords = duration * wordsPerMinute;
-    const creditsPerWord = 0.02;
-    const modelMultiplier = aiModel === "gpt-4o" ? 1.5 : aiModel === "claude-4-sonnet" ? 1.3 : 1.0;
-    const formulaMultiplier = selectedFormula === "channel-based" ? 1.5 : 1.0;
-    const estimated = Math.ceil(totalWords * creditsPerWord * modelMultiplier * formulaMultiplier);
+    const estimated = Math.ceil(duration); // 1 crédito por minuto
     setEstimatedCredits(estimated);
-  }, [duration, aiModel, selectedFormula]);
+  }, [duration]);
 
   // Check credits on mount
   useEffect(() => {
@@ -1220,7 +1215,8 @@ COMECE O ROTEIRO AGORA COM UM HOOK EXPLOSIVO:`;
 
         if (error) throw error;
 
-        const partContent = data?.content || data?.message || "";
+        // API returns 'result' field, not 'content'
+        const partContent = data?.result || data?.content || data?.message || "";
         fullScript += (part > 1 ? "\n\n" : "") + partContent;
         setGeneratedScript(fullScript);
       }
