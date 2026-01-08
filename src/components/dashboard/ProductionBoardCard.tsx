@@ -218,19 +218,9 @@ export function ProductionBoardCard() {
             <CardTitle className="text-lg">Escada de Produção</CardTitle>
             {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
-              {completedTasks}/{totalTasks} concluídas
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="hidden md:flex"
-            >
-              {isExpanded ? 'Compacto' : 'Expandir'}
-            </Button>
-          </div>
+          <Badge variant="outline" className="text-xs">
+            {completedTasks}/{totalTasks} concluídas
+          </Badge>
         </div>
       </CardHeader>
       <CardContent>
@@ -255,13 +245,11 @@ export function ProductionBoardCard() {
           </Button>
         </div>
 
-        <div className={`grid gap-3 ${isExpanded ? 'md:grid-cols-5' : 'md:grid-cols-3'}`}>
-          {(isExpanded ? columns : columns.slice(0, 3)).map((column) => (
+        <div className={`grid gap-3 ${isExpanded ? 'md:grid-cols-5' : 'md:grid-cols-5'}`}>
+          {columns.map((column) => (
             <div
               key={column.id}
-              className={`rounded-lg p-2 ${column.color} min-h-[200px] ${
-                !isExpanded && columns.indexOf(column) > 2 ? 'hidden md:block' : ''
-              }`}
+              className={`rounded-lg p-2 ${column.color} min-h-[280px]`}
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(column.id)}
             >
@@ -272,7 +260,7 @@ export function ProductionBoardCard() {
                 </Badge>
               </div>
 
-              <ScrollArea className="h-[180px]">
+              <ScrollArea className="h-[240px]">
                 <div className="space-y-2 pr-2">
                   {getTasksByColumn(column.id).map((task) => (
                     <div
