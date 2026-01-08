@@ -588,12 +588,12 @@ Forneça uma dica personalizada baseada nessas estatísticas.`;
         const lang = language === "pt-BR" ? "Português Brasileiro" : language === "es" ? "Espanhol" : "Inglês";
         systemPrompt = `Você é um especialista em análise de títulos virais do YouTube.
         
-        ⚠️ REGRA CRÍTICA ABSOLUTA - DADOS DO VÍDEO:
-        - Os DADOS REAIS do vídeo (título, views, canal, descrição) serão fornecidos pelo usuário
-        - Você DEVE usar EXATAMENTE o título original fornecido nos dados
-        - NUNCA invente ou imagine um título diferente do que foi fornecido
-        - Se o título fornecido for "La BATALLA TECNOLÓGICA que NADIE Vio: MAYAS vs. AZTECAS", USE EXATAMENTE ESSE TÍTULO como base
-        - NÃO crie títulos sobre outros assuntos (egípcios, hititas, etc) - mantenha o tema EXATO do vídeo original
+        ⚠️ REGRA CRÍTICA ABSOLUTA - DADOS DO VÍDEO (NÃO NEGOCIÁVEL):
+        - Os DADOS REAIS do vídeo (título, canal, views, descrição, tags) serão fornecidos pelo usuário
+        - Você DEVE usar EXATAMENTE o título original fornecido nos dados (copiar e colar)
+        - NUNCA invente/assuma um tema diferente do que foi fornecido
+        - NUNCA introduza novas entidades principais (povos, países, personagens, épocas) que NÃO estejam no título/descrição do vídeo
+        - Se o vídeo for sobre um tema específico (ex: um "milionário" e um "anel"), os títulos gerados devem permanecer nesse MESMO tema
         
         Sua tarefa:
         1. Identifique a fórmula/estrutura EXATA do título original fornecido e por que ele funciona
@@ -636,12 +636,11 @@ Forneça uma dica personalizada baseada nessas estatísticas.`;
         - É ABSOLUTAMENTE PROIBIDO copiar o título original 100%
         - NENHUM título gerado pode ser idêntico ao original
         - TODOS os títulos devem ter MELHORIAS e ADIÇÕES ao original
-        - Se o original é "O SEGREDO dos Incas", você NÃO pode gerar "O SEGREDO dos Incas" - deve ser DIFERENTE e MELHORADO
         
         🚫 REGRA #2 - MANTENHA O TEMA EXATO DO VÍDEO:
-        - Se o vídeo é sobre MAIAS vs ASTECAS, gere títulos sobre MAIAS e ASTECAS
-        - NÃO mude para outros povos (egípcios, hititas, etc) a menos que sejam mencionados no vídeo original
-        - O tema central do vídeo NUNCA pode mudar
+        - Extraia 3-7 palavras-chave/entidades do título original (nomes, objetos, evento, relação)
+        - Todo título gerado DEVE conter pelo menos 2 dessas palavras-chave/entidades
+        - NÃO mude o assunto central (ex: não trocar "anel" por "guerra"; não trocar "milionário" por "egípcios")
         
         3. FÓRMULA ORIGINAL SEMPRE PRESENTE: Cada título DEVE usar a mesma fórmula viral identificada, mas aplicada de forma DIFERENTE e MELHORADA mantendo o tema.
         
@@ -657,14 +656,11 @@ Forneça uma dica personalizada baseada nessas estatísticas.`;
            - Todos os títulos em ${lang}
            - Um título deve ter isBest: true
         
-        EXEMPLO DE APLICAÇÃO (SE O VÍDEO FOR SOBRE MAIAS VS ASTECAS):
-        Original: "La BATALLA TECNOLÓGICA que NADIE Vio: MAYAS vs. AZTECAS"
-        Fórmula: Evento secreto + CAIXA ALTA + confronto histórico
-        
-        ❌ ERRADO: "O SEGREDO MILITAR: EGÍPCIOS vs HITITAS" (MUDOU O TEMA - PROIBIDO!)
-        ✅ CERTO: "A ARMA SECRETA Maia que DERROTOU os Astecas" (Mantém o tema + melhora)
-        ✅ CERTO: "O CONFLITO OCULTO: MAYAS vs AZTECAS que Ninguém Conhece" (Mantém povos + melhora)
-        ✅ CERTO: "3 SEGREDOS da Guerra MAIA-ASTECA que Historiadores Escondem" (Mantém tema + adiciona número)`;
+        ✅ CHECKLIST ANTES DE RESPONDER:
+        - [ ] O videoInfo.title é idêntico ao título fornecido?
+        - [ ] Nenhum título mudou o tema/entidades principais?
+        - [ ] Todos os títulos têm melhorias (não são cópia)?
+        - [ ] JSON válido, sem texto fora do JSON?`;
         userPrompt = prompt || `Analise este vídeo: ${JSON.stringify(videoData)}`;
         break;
 
