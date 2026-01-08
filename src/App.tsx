@@ -21,24 +21,35 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
-// Lazy load all other pages for better performance
-const VideoAnalyzer = lazy(() => import("./pages/VideoAnalyzer"));
-const ExploreNiche = lazy(() => import("./pages/ExploreNiche"));
+// Lazy load pages with preload capability for faster navigation
+const lazyWithPreload = <T extends React.ComponentType<any>>(
+  importFn: () => Promise<{ default: T }>
+) => {
+  const Component = lazy(importFn);
+  (Component as any).preload = importFn;
+  return Component;
+};
+
+// Core tools - preload immediately after initial render
+const VideoAnalyzer = lazyWithPreload(() => import("./pages/VideoAnalyzer"));
+const ExploreNiche = lazyWithPreload(() => import("./pages/ExploreNiche"));
+const ViralAgents = lazyWithPreload(() => import("./pages/ViralAgents"));
+const SceneGenerator = lazyWithPreload(() => import("./pages/SceneGenerator"));
+const PromptsImages = lazyWithPreload(() => import("./pages/PromptsImages"));
+const ChannelAnalyzer = lazyWithPreload(() => import("./pages/ChannelAnalyzer"));
+
+// Secondary tools - lazy loaded
 const Folders = lazy(() => import("./pages/Folders"));
 const MonitoredChannels = lazy(() => import("./pages/MonitoredChannels"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const ViralLibrary = lazy(() => import("./pages/ViralLibrary"));
-const ViralAgents = lazy(() => import("./pages/ViralAgents"));
-const PromptsImages = lazy(() => import("./pages/PromptsImages"));
 const VoiceGenerator = lazy(() => import("./pages/VoiceGenerator"));
 const VideoGenerator = lazy(() => import("./pages/VideoGenerator"));
 const YouTubeIntegration = lazy(() => import("./pages/YouTubeIntegration"));
 const SearchChannels = lazy(() => import("./pages/SearchChannels"));
-const ChannelAnalyzer = lazy(() => import("./pages/ChannelAnalyzer"));
 const SRTConverter = lazy(() => import("./pages/SRTConverter"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
-const SceneGenerator = lazy(() => import("./pages/SceneGenerator"));
 const AnalysisHistory = lazy(() => import("./pages/AnalysisHistory"));
 const PlansCredits = lazy(() => import("./pages/PlansCredits"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
@@ -49,6 +60,25 @@ const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 const Maintenance = lazy(() => import("./pages/Maintenance"));
 const Blog = lazy(() => import("./pages/Blog"));
 const DynamicArticle = lazy(() => import("./pages/blog/DynamicArticle"));
+
+// Preload core tools after initial render
+if (typeof window !== 'undefined') {
+  requestIdleCallback?.(() => {
+    (VideoAnalyzer as any).preload?.();
+    (ExploreNiche as any).preload?.();
+    (ViralAgents as any).preload?.();
+    (SceneGenerator as any).preload?.();
+    (PromptsImages as any).preload?.();
+    (ChannelAnalyzer as any).preload?.();
+  }) || setTimeout(() => {
+    (VideoAnalyzer as any).preload?.();
+    (ExploreNiche as any).preload?.();
+    (ViralAgents as any).preload?.();
+    (SceneGenerator as any).preload?.();
+    (PromptsImages as any).preload?.();
+    (ChannelAnalyzer as any).preload?.();
+  }, 2000);
+}
 
 // Static blog article pages (legacy)
 const ComoGanharDinheiroYouTube = lazy(() => import("./pages/blog/ComoGanharDinheiroYouTube"));
