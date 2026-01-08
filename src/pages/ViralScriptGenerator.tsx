@@ -32,13 +32,15 @@ import {
   Film,
   Mic,
   Users,
-  Lock
+  Lock,
+  History
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 import { useActivityLog } from "@/hooks/useActivityLog";
+import { ScriptHistoryModal } from "@/components/scripts/ScriptHistoryModal";
 import logoGif from "@/assets/logo.gif";
 
 // Extended viral formulas based on proven YouTube patterns
@@ -597,6 +599,9 @@ export default function ViralScriptGenerator() {
   // Retention analysis
   const [retentionScore, setRetentionScore] = useState<number | null>(null);
   const [retentionTips, setRetentionTips] = useState<string[]>([]);
+
+  // History modal
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   // Credits
   const [hasEnoughCredits, setHasEnoughCredits] = useState(true);
@@ -1311,6 +1316,19 @@ COMECE AGORA - Hook magnético em ${languageName}:`;
     ? VIRAL_FORMULAS 
     : VIRAL_FORMULAS.filter(f => f.category === formulaTab);
 
+  // Load script from history
+  const handleLoadScript = (script: { title: string; content: string; duration: number; language: string; model_used: string | null }) => {
+    setTitle(script.title);
+    setDuration(script.duration);
+    setLanguage(script.language);
+    if (script.model_used) {
+      setAiModel(script.model_used);
+    }
+    setGeneratedScript(script.content);
+    analyzeRetention(script.content);
+    toast.success("Roteiro carregado com sucesso!");
+  };
+
   return (
     <MainLayout>
       <SEOHead 
@@ -1318,21 +1336,38 @@ COMECE AGORA - Hook magnético em ${languageName}:`;
         description="Crie roteiros virais otimizados para retenção máxima no YouTube"
       />
 
+      {/* History Modal */}
+      <ScriptHistoryModal
+        open={showHistoryModal}
+        onOpenChange={setShowHistoryModal}
+        onLoadScript={handleLoadScript}
+      />
+
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg shadow-primary/20">
-              <Rocket className="h-6 w-6 text-primary-foreground" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg shadow-primary/20">
+                <Rocket className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">
+                  Gerador de Roteiros Virais
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  Roteiros de 5min a 3h com foco em retenção e viralização máxima
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                Gerador de Roteiros Virais
-              </h1>
-              <p className="text-muted-foreground text-sm">
-                Roteiros de 5min a 3h com foco em retenção e viralização máxima
-              </p>
-            </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowHistoryModal(true)}
+              className="gap-2"
+            >
+              <History className="h-4 w-4" />
+              Histórico
+            </Button>
           </div>
         </div>
 
