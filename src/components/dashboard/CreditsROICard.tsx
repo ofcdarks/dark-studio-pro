@@ -56,17 +56,22 @@ export function CreditsROICard() {
       // Map to display format
       const typeLabels: Record<string, { label: string; icon: React.ReactNode }> = {
         "script_generation": { label: "Roteiros", icon: <FileText className="w-4 h-4" /> },
+        "generate_script_with_formula": { label: "Roteiros", icon: <FileText className="w-4 h-4" /> },
         "image_generation": { label: "Imagens", icon: <Image className="w-4 h-4" /> },
+        "batch_images": { label: "Imagens Lote", icon: <Image className="w-4 h-4" /> },
         "audio_generation": { label: "Áudios", icon: <Mic className="w-4 h-4" /> },
         "title_generation": { label: "Títulos", icon: <Type className="w-4 h-4" /> },
+        "analyze_video_titles": { label: "Títulos", icon: <Type className="w-4 h-4" /> },
         "video_analysis": { label: "Análises", icon: <TrendingUp className="w-4 h-4" /> },
         "scene_generation": { label: "Cenas", icon: <Image className="w-4 h-4" /> },
+        "scene_prompts": { label: "Cenas", icon: <Image className="w-4 h-4" /> },
         "thumbnail_generation": { label: "Thumbnails", icon: <Image className="w-4 h-4" /> },
+        "dashboard_insight": { label: "Insights IA", icon: <TrendingUp className="w-4 h-4" /> },
       };
 
       const tools: ToolUsage[] = Object.entries(usageByType)
         .map(([type, data]) => ({
-          label: typeLabels[type]?.label || type,
+          label: typeLabels[type]?.label || type.replace(/_/g, ' ').slice(0, 15),
           icon: typeLabels[type]?.icon || <Coins className="w-4 h-4" />,
           count: data.count,
           credits: data.credits,
@@ -121,22 +126,22 @@ export function CreditsROICard() {
               <TooltipProvider>
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Uso por Ferramenta</p>
-                  {toolsUsage.map((tool) => (
-                    <Tooltip key={tool.label}>
+                  {toolsUsage.map((tool, index) => (
+                    <Tooltip key={`${tool.label}-${index}`}>
                       <TooltipTrigger asChild>
-                        <div className="flex items-center justify-between p-2 rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors cursor-default">
-                          <div className="flex items-center gap-2">
-                            <div className="text-primary">{tool.icon}</div>
-                            <span className="text-sm text-foreground">{tool.label}</span>
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors cursor-default gap-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="text-primary flex-shrink-0">{tool.icon}</div>
+                            <span className="text-sm text-foreground truncate">{tool.label}</span>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-muted-foreground">{tool.count}x</span>
-                            <span className="text-sm font-medium text-primary">{tool.credits} cr</span>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{tool.count}x</span>
+                            <span className="text-sm font-medium text-primary whitespace-nowrap">{tool.credits.toLocaleString()} cr</span>
                           </div>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="left">
-                        <p>Custo médio: {tool.avgCost} créditos por {tool.label.toLowerCase().slice(0, -1)}</p>
+                        <p>Custo médio: {tool.avgCost} créditos</p>
                       </TooltipContent>
                     </Tooltip>
                   ))}
