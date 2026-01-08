@@ -676,18 +676,31 @@ const Landing = () => {
 
       {/* AI Models Transparency Section */}
       <section className="py-20 md:py-32 px-4 relative overflow-hidden">
-        {/* Background Effects */}
+        {/* Animated Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-card/20 to-background" />
-        <ParallaxLayer depth={0.2} className="absolute top-20 left-0 w-80 md:w-[500px] h-80 md:h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
-        <ParallaxLayer depth={0.4} className="absolute bottom-20 right-0 w-60 md:w-[400px] h-60 md:h-[400px] bg-purple-500/5 rounded-full blur-[80px] pointer-events-none" />
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-purple-500/10 to-primary/10 animate-pulse" style={{ animationDuration: '4s' }} />
+          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-amber-500/5 to-transparent animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
+        </div>
+        <ParallaxLayer depth={0.2} className="absolute top-20 left-0 w-80 md:w-[500px] h-80 md:h-[500px] bg-primary/8 rounded-full blur-[120px] pointer-events-none" />
+        <ParallaxLayer depth={0.4} className="absolute bottom-20 right-0 w-60 md:w-[400px] h-60 md:h-[400px] bg-purple-500/8 rounded-full blur-[100px] pointer-events-none" />
         
         <div className="max-w-7xl mx-auto relative">
-          {/* Header */}
+          {/* Header with Elite Badge */}
           <AnimatedSection className="text-center space-y-6 md:space-y-8 mb-16 md:mb-20">
-            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/20 via-purple-500/20 to-primary/20 border border-primary/30 backdrop-blur-sm">
-              <Eye className="w-5 h-5 text-primary animate-pulse" />
-              <span className="text-sm md:text-base font-bold tracking-wider text-primary uppercase">Transparência Total</span>
-              <Shield className="w-5 h-5 text-primary" />
+            <div className="flex flex-col items-center gap-4">
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/20 via-purple-500/20 to-primary/20 border border-primary/30 backdrop-blur-xl">
+                <Eye className="w-5 h-5 text-primary animate-pulse" />
+                <span className="text-sm md:text-base font-bold tracking-wider text-primary uppercase">Transparência Total</span>
+                <Shield className="w-5 h-5 text-primary" />
+              </div>
+              
+              {/* Elite Only Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/30 to-yellow-500/20 border border-amber-400/50 backdrop-blur-xl shadow-lg shadow-amber-500/20">
+                <Crown className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-bold tracking-wider text-amber-300 uppercase">Exclusivo Elite</span>
+                <Diamond className="w-4 h-4 text-amber-400" />
+              </div>
             </div>
             
             <h2 className="text-4xl md:text-5xl lg:text-7xl font-black">
@@ -702,38 +715,51 @@ const Landing = () => {
               <span className="text-destructive font-semibold line-through"> sistema oculto</span>. 
               Aqui você <span className="text-primary font-bold">escolhe exatamente</span> qual motor usar em cada ferramenta.
             </p>
+
+            {/* Vacancy Counter */}
+            <div className="inline-flex items-center gap-4 px-8 py-4 rounded-2xl bg-gradient-to-r from-red-500/10 via-orange-500/10 to-red-500/10 border border-red-500/30 backdrop-blur-xl">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-red-400 font-bold text-lg">Vagas Limitadas:</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-3xl md:text-4xl font-black text-foreground">47</span>
+                <span className="text-muted-foreground font-medium">restantes</span>
+              </div>
+            </div>
           </AnimatedSection>
 
-          {/* AI Models Grid - Premium Cards */}
+          {/* AI Models Grid - Glass Premium Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-16">
             {/* GPT-4.1 */}
             <AnimatedItem index={0} staggerDelay={100}>
-              <Card className="group relative p-8 bg-gradient-to-br from-card via-card to-green-950/20 border-2 border-green-500/20 hover:border-green-500/60 transition-all duration-500 overflow-hidden h-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-green-500 via-emerald-400 to-green-500" />
+              <Card className="group relative p-8 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-green-500/50 transition-all duration-500 overflow-hidden h-full shadow-2xl hover:shadow-green-500/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-green-400/60 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-green-400/30 to-transparent" />
                 
                 <div className="relative space-y-5">
                   <div className="flex items-center justify-between">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                      <Cpu className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center shadow-lg shadow-green-500/20 group-hover:scale-110 group-hover:shadow-green-500/40 transition-all duration-300">
+                      <Cpu className="w-8 h-8 text-green-400" />
                     </div>
-                    <div className="px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30">
+                    <div className="px-3 py-1.5 rounded-full bg-green-500/20 border border-green-500/30 backdrop-blur-sm">
                       <span className="text-xs font-bold text-green-400">PREMIUM</span>
                     </div>
                   </div>
                   
                   <div>
                     <h3 className="font-black text-xl text-foreground">GPT-4.1</h3>
-                    <p className="text-sm text-green-400 font-semibold">OpenAI</p>
+                    <p className="text-sm text-green-400/80 font-semibold">OpenAI</p>
                   </div>
                   
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground/80 leading-relaxed">
                     O mais avançado da OpenAI. Roteiros criativos e análises com precisão cirúrgica.
                   </p>
                   
                   <div className="flex flex-wrap gap-2 pt-2">
-                    <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/25 font-medium">Roteiros</span>
-                    <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/25 font-medium">Análises</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/10 text-green-400/90 border border-green-500/20 font-medium backdrop-blur-sm">Roteiros</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/10 text-green-400/90 border border-green-500/20 font-medium backdrop-blur-sm">Análises</span>
                   </div>
                 </div>
               </Card>
@@ -741,32 +767,33 @@ const Landing = () => {
 
             {/* Claude 4 Sonnet */}
             <AnimatedItem index={1} staggerDelay={100}>
-              <Card className="group relative p-8 bg-gradient-to-br from-card via-card to-orange-950/20 border-2 border-orange-500/20 hover:border-orange-500/60 transition-all duration-500 overflow-hidden h-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500" />
+              <Card className="group relative p-8 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-orange-500/50 transition-all duration-500 overflow-hidden h-full shadow-2xl hover:shadow-orange-500/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-400/60 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-400/30 to-transparent" />
                 
                 <div className="relative space-y-5">
                   <div className="flex items-center justify-between">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                      <Target className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-600/20 backdrop-blur-sm border border-orange-500/30 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-110 group-hover:shadow-orange-500/40 transition-all duration-300">
+                      <Target className="w-8 h-8 text-orange-400" />
                     </div>
-                    <div className="px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/30">
+                    <div className="px-3 py-1.5 rounded-full bg-orange-500/20 border border-orange-500/30 backdrop-blur-sm">
                       <span className="text-xs font-bold text-orange-400">CRIATIVO</span>
                     </div>
                   </div>
                   
                   <div>
                     <h3 className="font-black text-xl text-foreground">Claude 4 Sonnet</h3>
-                    <p className="text-sm text-orange-400 font-semibold">Anthropic</p>
+                    <p className="text-sm text-orange-400/80 font-semibold">Anthropic</p>
                   </div>
                   
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground/80 leading-relaxed">
                     Raciocínio avançado e respostas equilibradas. Conteúdo de altíssima qualidade.
                   </p>
                   
                   <div className="flex flex-wrap gap-2 pt-2">
-                    <span className="text-xs px-3 py-1.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/25 font-medium">Títulos</span>
-                    <span className="text-xs px-3 py-1.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/25 font-medium">Criativo</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-orange-500/10 text-orange-400/90 border border-orange-500/20 font-medium backdrop-blur-sm">Títulos</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-orange-500/10 text-orange-400/90 border border-orange-500/20 font-medium backdrop-blur-sm">Criativo</span>
                   </div>
                 </div>
               </Card>
@@ -774,32 +801,33 @@ const Landing = () => {
 
             {/* Gemini 2.5 Pro */}
             <AnimatedItem index={2} staggerDelay={100}>
-              <Card className="group relative p-8 bg-gradient-to-br from-card via-card to-blue-950/20 border-2 border-blue-500/20 hover:border-blue-500/60 transition-all duration-500 overflow-hidden h-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500" />
+              <Card className="group relative p-8 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-blue-500/50 transition-all duration-500 overflow-hidden h-full shadow-2xl hover:shadow-blue-500/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/60 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
                 
                 <div className="relative space-y-5">
                   <div className="flex items-center justify-between">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                      <Globe className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-600/20 backdrop-blur-sm border border-blue-500/30 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 group-hover:shadow-blue-500/40 transition-all duration-300">
+                      <Globe className="w-8 h-8 text-blue-400" />
                     </div>
-                    <div className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30">
+                    <div className="px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-500/30 backdrop-blur-sm">
                       <span className="text-xs font-bold text-blue-400">MULTIMODAL</span>
                     </div>
                   </div>
                   
                   <div>
                     <h3 className="font-black text-xl text-foreground">Gemini 2.5 Pro</h3>
-                    <p className="text-sm text-blue-400 font-semibold">Google</p>
+                    <p className="text-sm text-blue-400/80 font-semibold">Google</p>
                   </div>
                   
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground/80 leading-relaxed">
                     Multimodal com contexto massivo. Análises visuais e textuais integradas.
                   </p>
                   
                   <div className="flex flex-wrap gap-2 pt-2">
-                    <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/25 font-medium">Imagens</span>
-                    <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/25 font-medium">Contexto</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-400/90 border border-blue-500/20 font-medium backdrop-blur-sm">Imagens</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-400/90 border border-blue-500/20 font-medium backdrop-blur-sm">Contexto</span>
                   </div>
                 </div>
               </Card>
@@ -807,109 +835,115 @@ const Landing = () => {
 
             {/* DeepSeek */}
             <AnimatedItem index={3} staggerDelay={100}>
-              <Card className="group relative p-8 bg-gradient-to-br from-card via-card to-purple-950/20 border-2 border-purple-500/20 hover:border-purple-500/60 transition-all duration-500 overflow-hidden h-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-500 via-violet-400 to-purple-500" />
+              <Card className="group relative p-8 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-purple-500/50 transition-all duration-500 overflow-hidden h-full shadow-2xl hover:shadow-purple-500/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-400/60 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-400/30 to-transparent" />
                 
                 <div className="relative space-y-5">
                   <div className="flex items-center justify-between">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                      <Gauge className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-violet-600/20 backdrop-blur-sm border border-purple-500/30 flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:scale-110 group-hover:shadow-purple-500/40 transition-all duration-300">
+                      <Gauge className="w-8 h-8 text-purple-400" />
                     </div>
-                    <div className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30">
+                    <div className="px-3 py-1.5 rounded-full bg-purple-500/20 border border-purple-500/30 backdrop-blur-sm">
                       <span className="text-xs font-bold text-purple-400">EFICIENTE</span>
                     </div>
                   </div>
                   
                   <div>
                     <h3 className="font-black text-xl text-foreground">DeepSeek V3</h3>
-                    <p className="text-sm text-purple-400 font-semibold">DeepSeek AI</p>
+                    <p className="text-sm text-purple-400/80 font-semibold">DeepSeek AI</p>
                   </div>
                   
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground/80 leading-relaxed">
                     Alta performance com custo otimizado. Raciocínio profundo e rápido.
                   </p>
                   
                   <div className="flex flex-wrap gap-2 pt-2">
-                    <span className="text-xs px-3 py-1.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/25 font-medium">Raciocínio</span>
-                    <span className="text-xs px-3 py-1.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/25 font-medium">Veloz</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-purple-500/10 text-purple-400/90 border border-purple-500/20 font-medium backdrop-blur-sm">Raciocínio</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-purple-500/10 text-purple-400/90 border border-purple-500/20 font-medium backdrop-blur-sm">Veloz</span>
                   </div>
                 </div>
               </Card>
             </AnimatedItem>
           </div>
 
-          {/* Transparency Features - Enhanced */}
+          {/* Transparency Features - Glass Premium */}
           <AnimatedSection>
-            <Card className="relative p-8 md:p-14 bg-gradient-to-br from-card/95 via-card/80 to-primary/5 border-2 border-primary/30 overflow-hidden">
+            <Card className="relative p-8 md:p-14 bg-card/30 backdrop-blur-2xl border border-white/10 overflow-hidden shadow-2xl">
               {/* Decorative Elements */}
-              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-primary via-purple-500 via-50% to-primary" />
-              <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
-              <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl" />
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/40 to-transparent" />
+              <div className="absolute -top-20 -right-20 w-60 h-60 bg-primary/10 rounded-full blur-[80px]" />
+              <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-purple-500/10 rounded-full blur-[80px]" />
               
               <div className="relative">
                 <div className="text-center mb-12">
-                  <h3 className="text-2xl md:text-3xl font-black mb-3">Por que somos diferentes?</h3>
-                  <p className="text-muted-foreground text-lg">Enquanto outros escondem, nós mostramos tudo</p>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/20 to-amber-500/20 border border-primary/30 backdrop-blur-xl mb-6">
+                    <Crown className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-bold tracking-wider text-primary uppercase">Vantagens Exclusivas</span>
+                  </div>
+                  <h3 className="text-2xl md:text-4xl font-black mb-3">Por que somos diferentes?</h3>
+                  <p className="text-muted-foreground/80 text-lg">Enquanto outros escondem, nós mostramos tudo</p>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-                  <div className="text-center space-y-4 group">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:border-primary/60 transition-all duration-300">
+                  <div className="text-center space-y-4 group p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/5 hover:border-primary/30 transition-all duration-300">
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-300">
                       <Eye className="w-10 h-10 text-primary" />
                     </div>
                     <h4 className="font-bold text-xl">Zero Segredos</h4>
-                    <p className="text-muted-foreground leading-relaxed text-sm">
+                    <p className="text-muted-foreground/80 leading-relaxed text-sm">
                       Você vê exatamente qual motor está gerando cada conteúdo. Nada é escondido.
                     </p>
                   </div>
 
-                  <div className="text-center space-y-4 group">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 border border-purple-500/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:border-purple-500/60 transition-all duration-300">
+                  <div className="text-center space-y-4 group p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/5 hover:border-purple-500/30 transition-all duration-300">
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 border border-purple-500/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-purple-500/20 transition-all duration-300">
                       <Key className="w-10 h-10 text-purple-400" />
                     </div>
                     <h4 className="font-bold text-xl">Suas Próprias Chaves</h4>
-                    <p className="text-muted-foreground leading-relaxed text-sm">
+                    <p className="text-muted-foreground/80 leading-relaxed text-sm">
                       Quer usar suas próprias API keys? Você pode. O sistema suporta nativamente.
                     </p>
                   </div>
 
-                  <div className="text-center space-y-4 group">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:border-amber-500/60 transition-all duration-300">
+                  <div className="text-center space-y-4 group p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/5 hover:border-amber-500/30 transition-all duration-300">
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-amber-500/20 transition-all duration-300">
                       <Bot className="w-10 h-10 text-amber-400" />
                     </div>
                     <h4 className="font-bold text-xl">Agentes Personalizados</h4>
-                    <p className="text-muted-foreground leading-relaxed text-sm">
+                    <p className="text-muted-foreground/80 leading-relaxed text-sm">
                       Crie seus próprios agentes com o modelo de IA que preferir. Totalmente customizável.
                     </p>
                   </div>
 
-                  <div className="text-center space-y-4 group">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:border-green-500/60 transition-all duration-300">
+                  <div className="text-center space-y-4 group p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/5 hover:border-green-500/30 transition-all duration-300">
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-green-500/20 transition-all duration-300">
                       <Shield className="w-10 h-10 text-green-400" />
                     </div>
                     <h4 className="font-bold text-xl">Você Manda</h4>
-                    <p className="text-muted-foreground leading-relaxed text-sm">
+                    <p className="text-muted-foreground/80 leading-relaxed text-sm">
                       Escolha o motor ideal para cada tarefa. O poder está nas suas mãos.
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-12 pt-10 border-t border-border/50">
+                <div className="mt-12 pt-10 border-t border-white/10">
                   <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
-                    <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20">
+                    <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-gradient-to-r from-primary/10 to-purple-500/10 border border-white/10 backdrop-blur-sm">
                       <Layers className="w-8 h-8 text-primary" />
                       <div>
                         <p className="font-bold text-lg">Modo Multimodal</p>
-                        <p className="text-sm text-muted-foreground">Compare 4 motores simultaneamente</p>
+                        <p className="text-sm text-muted-foreground/80">Compare 4 motores simultaneamente</p>
                       </div>
                     </div>
                     
                     <Link to="/auth">
-                      <Button size="lg" className="gradient-button text-primary-foreground font-bold h-14 md:h-16 px-8 md:px-12 text-lg glow-primary">
-                        <Rocket className="w-6 h-6 mr-3" />
-                        Testar Agora Mesmo
-                        <ArrowRight className="w-6 h-6 ml-3" />
+                      <Button size="lg" className="gradient-button text-primary-foreground font-bold h-14 md:h-16 px-8 md:px-12 text-lg glow-primary group">
+                        <Rocket className="w-6 h-6 mr-3 group-hover:animate-bounce" />
+                        Garantir Minha Vaga
+                        <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
                   </div>
