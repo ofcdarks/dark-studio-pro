@@ -7,6 +7,7 @@ interface UserPreferences {
   theme: string;
   sidebar_order: string[] | null;
   directive_update_hours: number;
+  pomodoro_enabled: boolean;
 }
 
 export function useUserPreferences() {
@@ -34,17 +35,29 @@ export function useUserPreferences() {
 
         if (error) throw error;
 
+        // Check localStorage for pomodoro visibility
+        const pomodoroLocalStorage = localStorage.getItem('pomodoro_visible');
+        const pomodoroEnabled = pomodoroLocalStorage !== 'false';
+
         if (data) {
           setPreferences({
             theme: data.theme || 'dark',
             sidebar_order: data.sidebar_order,
-            directive_update_hours: data.directive_update_hours ?? 24
+            directive_update_hours: data.directive_update_hours ?? 24,
+            pomodoro_enabled: pomodoroEnabled
           });
           
           // Apply saved theme from DB only on first load
           if (data.theme && !isInitialized.current) {
             setNextTheme(data.theme);
           }
+        } else {
+          setPreferences({
+            theme: 'dark',
+            sidebar_order: null,
+            directive_update_hours: 24,
+            pomodoro_enabled: pomodoroEnabled
+          });
         }
         
         isInitialized.current = true;
@@ -69,11 +82,17 @@ export function useUserPreferences() {
     // Update local state immediately
     setPreferences(prev => prev 
       ? { ...prev, [key]: value } 
-      : { theme: 'dark', sidebar_order: null, directive_update_hours: 24, [key]: value }
+      : { theme: 'dark', sidebar_order: null, directive_update_hours: 24, pomodoro_enabled: true, [key]: value }
     );
 
-    // Save to database if user is logged in
-    if (user?.id) {
+    // For pomodoro, save to localStorage and dispatch event
+    if (key === 'pomodoro_enabled') {
+      localStorage.setItem('pomodoro_visible', String(value));
+      window.dispatchEvent(new Event('pomodoro-visibility-changed'));
+    }
+
+    // Save to database if user is logged in (except pomodoro which uses localStorage)
+    if (user?.id && key !== 'pomodoro_enabled') {
       try {
         await supabase
           .from('user_preferences')
@@ -110,6 +129,11 @@ export function useUserPreferences() {
     await savePreference('directive_update_hours', hours);
   }, [savePreference]);
 
+  // Save pomodoro enabled state
+  const savePomodoroEnabled = useCallback(async (enabled: boolean) => {
+    await savePreference('pomodoro_enabled', enabled);
+  }, [savePreference]);
+
   return {
     theme: resolvedTheme || theme || 'dark',
     setTheme: saveTheme,
@@ -120,6 +144,9 @@ export function useUserPreferences() {
     saveSidebarOrder,
     // Directive update hours
     directiveUpdateHours: preferences?.directive_update_hours ?? 24,
-    saveDirectiveUpdateHours
+    saveDirectiveUpdateHours,
+    // Pomodoro
+    pomodoroEnabled: preferences?.pomodoro_enabled ?? true,
+    savePomodoroEnabled
   };
 }

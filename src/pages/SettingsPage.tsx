@@ -109,6 +109,55 @@ function DirectiveFrequencyCard() {
   );
 }
 
+function PomodoroToggle() {
+  const { pomodoroEnabled, savePomodoroEnabled, isLoading } = useUserPreferences();
+  const [saving, setSaving] = useState(false);
+
+  const handleToggle = async (checked: boolean) => {
+    setSaving(true);
+    try {
+      await savePomodoroEnabled(checked);
+      toast.success(checked ? 'Pomodoro ativado!' : 'Pomodoro desativado!');
+    } catch (error) {
+      console.error('Error toggling pomodoro:', error);
+      toast.error('Erro ao salvar configuração');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+        <div>
+          <p className="font-medium text-foreground">Pomodoro Flutuante</p>
+          <p className="text-sm text-muted-foreground">Timer de produtividade no Dashboard</p>
+        </div>
+        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-primary/10">
+          <Timer className="w-4 h-4 text-primary" />
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Pomodoro Flutuante</p>
+          <p className="text-sm text-muted-foreground">Timer de produtividade no Dashboard</p>
+        </div>
+      </div>
+      <Switch 
+        checked={pomodoroEnabled}
+        onCheckedChange={handleToggle}
+        disabled={saving}
+      />
+    </div>
+  );
+}
+
 type UserPlan = 'free' | 'pro' | 'admin' | 'master' | 'annual';
 
 interface NotificationPrefs {
@@ -974,24 +1023,7 @@ const SettingsPage = () => {
               <div className="mt-6 pt-6 border-t border-border">
                 <h4 className="text-sm font-medium text-foreground mb-3">Ferramentas</h4>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-foreground">Pomodoro Flutuante</p>
-                      <p className="text-sm text-muted-foreground">Reabrir o timer Pomodoro flutuante</p>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="border-border text-foreground hover:bg-secondary"
-                      onClick={() => {
-                        localStorage.setItem('pomodoro-visible', 'true');
-                        toast.success('Pomodoro reaberto! Vá ao Dashboard para vê-lo.');
-                      }}
-                    >
-                      <Timer className="w-4 h-4 mr-2" />
-                      Reabrir
-                    </Button>
-                  </div>
+                  <PomodoroToggle />
                   <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
                     <div>
                       <p className="font-medium text-foreground">Resetar Tutoriais</p>

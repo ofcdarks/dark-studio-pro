@@ -48,17 +48,25 @@ export function FloatingPomodoro() {
   const dragControls = useDragControls();
   const constraintsRef = useRef<HTMLDivElement>(null);
 
+  // Listen for visibility changes from settings
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const saved = localStorage.getItem(VISIBILITY_KEY);
+      setIsVisible(saved !== 'false');
+    };
+
+    window.addEventListener('pomodoro-visibility-changed', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('pomodoro-visibility-changed', handleVisibilityChange);
+    };
+  }, []);
+
   // Save position to localStorage
   const handleDragEnd = (_: any, info: any) => {
     const newPosition = { x: position.x + info.offset.x, y: position.y + info.offset.y };
     setPosition(newPosition);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newPosition));
   };
-
-  // Save visibility preference
-  useEffect(() => {
-    localStorage.setItem(VISIBILITY_KEY, String(isVisible));
-  }, [isVisible]);
 
   // Load state from database
   useEffect(() => {
@@ -257,11 +265,13 @@ export function FloatingPomodoro() {
   };
 
   const handleClose = () => {
+    localStorage.setItem(VISIBILITY_KEY, 'false');
     setIsVisible(false);
+    window.dispatchEvent(new Event('pomodoro-visibility-changed'));
     toast.info(
       <div className="flex items-center gap-2">
         <Timer className="h-4 w-4" />
-        <span>Pomodoro fechado. Acesse via Configurações para reabrir.</span>
+        <span>Pomodoro desativado. Reative em Configurações.</span>
       </div>,
       { duration: 3000 }
     );
