@@ -359,51 +359,47 @@ serve(async (req) => {
         userApiKeyToUse = adminApiKeys.laozhang;
         apiProvider = 'laozhang';
         
-        // Laozhang supports many models - map the UI model ID to a Laozhang model name
+        // Laozhang supports only 4 models as per docs: gpt-4.1, gemini-2.5-pro, deepseek-chat
         const laozhangModelMap: Record<string, string> = {
-          // GPT Models
-          "gpt-4o": "gpt-4o",
-          "gpt-4o-2025": "gpt-4o",
-          "openai/gpt-5": "gpt-4o",
-          "openai/gpt-5-mini": "gpt-4o-mini",
-          "gpt-5": "gpt-4o",
-          "gpt-4o-mini": "gpt-4o-mini",
-          "gpt-4-turbo": "gpt-4-turbo",
+          // GPT Models -> gpt-4.1 (GPT-4.1 Fast)
+          "gpt-4o": "gpt-4.1",
+          "gpt-4o-2025": "gpt-4.1",
+          "openai/gpt-5": "gpt-4.1",
+          "openai/gpt-5-mini": "gpt-4.1",
+          "gpt-5": "gpt-4.1",
+          "gpt-4o-mini": "gpt-4.1",
+          "gpt-4-turbo": "gpt-4.1",
+          "gpt-4.1": "gpt-4.1",
 
-          // Claude Models - claude-sonnet-4-20250514 is the latest supported
-          "claude-4-sonnet": "claude-sonnet-4-20250514",
-          "claude": "claude-sonnet-4-20250514",
-          "claude-3-5-sonnet": "claude-3-5-sonnet-20241022",
-          "claude-3-opus": "claude-3-opus-20240229",
-          "claude-sonnet": "claude-sonnet-4-20250514",
+          // Claude Models -> deepseek-chat (best alternative for reasoning)
+          "claude-4-sonnet": "deepseek-chat",
+          "claude": "deepseek-chat",
+          "claude-3-5-sonnet": "deepseek-chat",
+          "claude-3-opus": "deepseek-chat",
+          "claude-sonnet": "deepseek-chat",
+          "deepseek-chat": "deepseek-chat",
 
-          // Gemini Models - Laozhang supports gemini-2.5-pro and gemini-2.5-flash
-          "gemini": "gemini-2.5-flash",
-          "gemini-flash": "gemini-2.5-flash",
+          // Gemini Models -> gemini-2.5-pro
+          "gemini": "gemini-2.5-pro",
+          "gemini-flash": "gemini-2.5-pro",
           "gemini-pro": "gemini-2.5-pro",
-          "gemini-2.5-flash": "gemini-2.5-flash",
+          "gemini-2.5-flash": "gemini-2.5-pro",
           "gemini-2.5-pro": "gemini-2.5-pro",
-          "google/gemini-2.5-flash": "gemini-2.5-flash",
+          "google/gemini-2.5-flash": "gemini-2.5-pro",
           "google/gemini-2.5-pro": "gemini-2.5-pro",
         };
         
         // Try exact match first, then partial match, then default
         if (model && laozhangModelMap[model]) {
           laozhangModel = laozhangModelMap[model];
-        } else if (model?.includes("gpt-4o")) {
-          laozhangModel = "gpt-4o";
-        } else if (model?.includes("gpt-5") || model?.includes("gpt")) {
-          laozhangModel = "gpt-4o";
-        } else if (model?.includes("claude-4") || model?.includes("claude-sonnet-4")) {
-          laozhangModel = "claude-sonnet-4-20250514";
-        } else if (model?.includes("claude")) {
-          laozhangModel = "claude-sonnet-4-20250514";
-        } else if (model?.includes("gemini-pro") || model?.includes("gemini-2.5-pro")) {
-          laozhangModel = "gemini-2.5-pro";
+        } else if (model?.includes("gpt")) {
+          laozhangModel = "gpt-4.1";
+        } else if (model?.includes("claude") || model?.includes("deepseek")) {
+          laozhangModel = "deepseek-chat";
         } else if (model?.includes("gemini")) {
-          laozhangModel = "gemini-2.5-flash";
+          laozhangModel = "gemini-2.5-pro";
         } else {
-          laozhangModel = "gpt-4o-mini"; // Default cost-effective model
+          laozhangModel = "gpt-4.1"; // Default model
         }
         console.log(`[AI Assistant] Using Laozhang AI (platform credits) - Requested: ${model}, Using: ${laozhangModel}`);
       } else if (adminApiKeys?.openai && adminApiKeys.openai_validated) {
