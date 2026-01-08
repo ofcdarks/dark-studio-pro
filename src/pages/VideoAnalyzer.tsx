@@ -161,8 +161,8 @@ const VideoAnalyzer = () => {
       return;
     }
 
-    // Multimodal usa 3 modelos, então cobra 3x
-    const modelsCount = aiModel === "multimodal" ? 3 : 1;
+    // Multimodal usa 4 modelos, então cobra 4x
+    const modelsCount = aiModel === "multimodal" ? 4 : 1;
 
     setAnalyzing(true);
     setVideoInfo(null);
@@ -318,7 +318,7 @@ const VideoAnalyzer = () => {
       let modelsToUse: { id: string; label: string }[] = [];
       
       if (aiModel === "multimodal") {
-        // Use all 3 Laozhang models for multimodal
+        // Use all 4 Laozhang models for multimodal
         modelsToUse = [
           { id: "gpt-4.1", label: "GPT-4.1" },
           { id: "claude-sonnet-4-20250514", label: "Claude 4 Sonnet" },
@@ -834,7 +834,7 @@ const VideoAnalyzer = () => {
                     <label className="text-base text-muted-foreground">Motor de IA</label>
                     <Badge variant="outline" className="text-primary border-primary text-sm px-3 py-1">
                       <Zap className="w-4 h-4 mr-1" />
-                      Custo estimado: 6 créditos
+                      Custo estimado: {aiModel === "multimodal" ? "24 créditos" : "6 créditos"}
                     </Badge>
                   </div>
                   <Select value={aiModel} onValueChange={setAiModel}>
@@ -850,7 +850,7 @@ const VideoAnalyzer = () => {
                     </SelectContent>
                   </Select>
                   <p className="text-sm text-muted-foreground mt-2">
-                    {aiModel === "multimodal" ? "Multimodal: 15 títulos (5 de cada modelo)" : "Modo único: 5 títulos"}
+                    {aiModel === "multimodal" ? "Multimodal: 20 títulos (5 de cada modelo)" : "Modo único: 5 títulos"}
                   </p>
                 </div>
 
