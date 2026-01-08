@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Rocket, Loader2, RefreshCw, ImagePlus, Video } from "lucide-react";
+import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Rocket, Loader2, RefreshCw, ImagePlus, Video, Lock, LockOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -175,6 +175,7 @@ export function ScriptPreviewTimeline({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [audioDuration, setAudioDuration] = useState("");
+  const [isDurationLocked, setIsDurationLocked] = useState(false);
   const [isImproving, setIsImproving] = useState(false);
   const [regenerateAfterImprove, setRegenerateAfterImprove] = useState(true);
   
@@ -450,7 +451,10 @@ export function ScriptPreviewTimeline({
       onSyncAudio(clampedWpm);
     }
     
-    toast.success(`✅ Sincronizado! WPM: ${clampedWpm} | Duração: ${formatTimecode(durationSeconds)} | ${totalWords} palavras`);
+    // TRAVAR A DURAÇÃO após sincronizar
+    setIsDurationLocked(true);
+    
+    toast.success(`✅ Sincronizado e travado! WPM: ${clampedWpm} | Duração: ${formatTimecode(durationSeconds)} | ${totalWords} palavras`);
   };
 
   if (!script.trim() || previewScenes.length === 0) {
@@ -529,34 +533,63 @@ export function ScriptPreviewTimeline({
         </div>
       </div>
 
-      {/* Sync Audio Input - sempre visível */}
+      {/* Sync Audio Input - sempre visível, mas trava após sincronizar */}
       {onSyncAudio && (
-        <div className="mb-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+        <div className={`mb-3 p-3 rounded-lg border ${isDurationLocked 
+          ? 'bg-green-500/10 border-green-500/30' 
+          : 'bg-amber-500/10 border-amber-500/30'
+        }`}>
           <div className="flex items-end gap-3">
             <div className="flex-1">
               <Label className="text-xs text-muted-foreground mb-1 block">
                 <Timer className="w-3 h-3 inline mr-1" />
-                Sincronizar com duração do áudio (MM:SS)
+                {isDurationLocked 
+                  ? '🔒 Duração sincronizada e travada' 
+                  : 'Sincronizar com duração do áudio (MM:SS)'
+                }
               </Label>
               <Input
                 placeholder="Ex: 05:30"
                 value={audioDuration}
-                onChange={(e) => handleDurationChange(e.target.value)}
-                className="h-8 text-sm bg-background"
-                onKeyDown={(e) => e.key === 'Enter' && handleApplySync()}
+                onChange={(e) => !isDurationLocked && handleDurationChange(e.target.value)}
+                className={`h-8 text-sm ${isDurationLocked 
+                  ? 'bg-green-500/10 text-foreground font-semibold cursor-not-allowed' 
+                  : 'bg-background'
+                }`}
+                onKeyDown={(e) => !isDurationLocked && e.key === 'Enter' && handleApplySync()}
+                disabled={isDurationLocked}
+                readOnly={isDurationLocked}
               />
             </div>
-            <Button
-              size="sm"
-              onClick={handleApplySync}
-              className="h-8 bg-amber-500 hover:bg-amber-600 text-black"
-              disabled={!audioDuration.trim()}
-            >
-              Confirmar
-            </Button>
+            {isDurationLocked ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setIsDurationLocked(false);
+                  toast.info("Duração destravada. Altere e confirme novamente.");
+                }}
+                className="h-8 border-green-500/50 text-green-400 hover:bg-green-500/20"
+              >
+                <LockOpen className="w-3 h-3 mr-1" />
+                Destravar
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                onClick={handleApplySync}
+                className="h-8 bg-amber-500 hover:bg-amber-600 text-black"
+                disabled={!audioDuration.trim()}
+              >
+                Confirmar
+              </Button>
+            )}
           </div>
           <p className="text-[10px] text-muted-foreground mt-2">
-            Digite a duração e o WPM será recalculado automaticamente para encaixar o roteiro no tempo do áudio.
+            {isDurationLocked 
+              ? '✅ Duração travada. A IA vai gerar imagens suficientes para cobrir esse tempo. Clique em "Destravar" se precisar alterar.'
+              : 'Digite a duração e o WPM será recalculado automaticamente para encaixar o roteiro no tempo do áudio.'
+            }
           </p>
         </div>
       )}
