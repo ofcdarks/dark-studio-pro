@@ -1,10 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Youtube, CheckCircle, Upload, BarChart3, Settings, Loader2, LogOut, ExternalLink, AlertTriangle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Youtube, CheckCircle, Upload, BarChart3, Settings, Loader2, LogOut, ExternalLink, AlertTriangle, X, FileVideo, Clock, Globe, Lock, Users, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -22,6 +29,18 @@ interface YouTubeConnection {
   channel_thumbnail: string;
   subscribers_count: number;
   connected_at: string;
+  scopes?: string[];
+}
+
+type PrivacyStatus = 'public' | 'unlisted' | 'private';
+
+interface UploadForm {
+  title: string;
+  description: string;
+  tags: string;
+  privacyStatus: PrivacyStatus;
+  categoryId: string;
+  madeForKids: boolean;
 }
 
 const YouTubeIntegration = () => {
@@ -30,6 +49,25 @@ const YouTubeIntegration = () => {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  
+  // Upload state
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [uploadForm, setUploadForm] = useState<UploadForm>({
+    title: '',
+    description: '',
+    tags: '',
+    privacyStatus: 'private',
+    categoryId: '22', // People & Blogs
+    madeForKids: false
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Settings state
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [refreshingToken, setRefreshingToken] = useState(false);
 
   // Check for OAuth callback params
   useEffect(() => {
@@ -137,11 +175,147 @@ const YouTubeIntegration = () => {
     }
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file size (max 128GB, but practical limit ~256MB for direct upload)
+      const maxSize = 256 * 1024 * 1024; // 256MB
+      if (file.size > maxSize) {
+        toast.error('Arquivo muito grande. Máximo 256MB para upload direto.');
+        return;
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('video/')) {
+        toast.error('Por favor, selecione um arquivo de vídeo.');
+        return;
+      }
+      
+      setSelectedFile(file);
+      // Set default title from filename
+      if (!uploadForm.title) {
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+        setUploadForm(prev => ({ ...prev, title: nameWithoutExt }));
+      }
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || !uploadForm.title) {
+      toast.error('Selecione um arquivo e preencha o título');
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      const fileBase64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const base64 = (reader.result as string).split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedFile);
+      });
+
+      // Simulate progress for better UX
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 5, 90));
+      }, 500);
+
+      const { data, error } = await supabase.functions.invoke('youtube-upload', {
+        body: {
+          title: uploadForm.title,
+          description: uploadForm.description,
+          tags: uploadForm.tags.split(',').map(t => t.trim()).filter(Boolean),
+          privacyStatus: uploadForm.privacyStatus,
+          categoryId: uploadForm.categoryId,
+          madeForKids: uploadForm.madeForKids,
+          fileBase64,
+          fileName: selectedFile.name,
+          mimeType: selectedFile.type
+        }
+      });
+
+      clearInterval(progressInterval);
+
+      if (error) throw error;
+
+      setUploadProgress(100);
+      toast.success('Vídeo enviado com sucesso! ' + (data.videoUrl ? 'Processando...' : ''));
+      
+      // Reset form
+      setTimeout(() => {
+        setUploadModalOpen(false);
+        setSelectedFile(null);
+        setUploadProgress(0);
+        setUploadForm({
+          title: '',
+          description: '',
+          tags: '',
+          privacyStatus: 'private',
+          categoryId: '22',
+          madeForKids: false
+        });
+      }, 1500);
+
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error('Erro ao enviar vídeo: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRefreshToken = async () => {
+    setRefreshingToken(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('youtube-refresh-token');
+      
+      if (error) throw error;
+      
+      toast.success('Token atualizado com sucesso!');
+      fetchConnection();
+    } catch (error: any) {
+      console.error('Error refreshing token:', error);
+      toast.error('Erro ao atualizar token: ' + error.message);
+    } finally {
+      setRefreshingToken(false);
+    }
+  };
+
   const formatSubscribers = (count: number) => {
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
     if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
     return count.toString();
   };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const videoCategories = [
+    { id: '1', name: 'Film & Animation' },
+    { id: '2', name: 'Autos & Vehicles' },
+    { id: '10', name: 'Music' },
+    { id: '15', name: 'Pets & Animals' },
+    { id: '17', name: 'Sports' },
+    { id: '20', name: 'Gaming' },
+    { id: '22', name: 'People & Blogs' },
+    { id: '23', name: 'Comedy' },
+    { id: '24', name: 'Entertainment' },
+    { id: '25', name: 'News & Politics' },
+    { id: '26', name: 'Howto & Style' },
+    { id: '27', name: 'Education' },
+    { id: '28', name: 'Science & Technology' },
+  ];
 
   return (
     <MainLayout>
@@ -251,20 +425,22 @@ const YouTubeIntegration = () => {
                 </Card>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="p-5 hover:border-primary/50 transition-colors cursor-pointer group">
-                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center mb-3">
+                  <Card 
+                    className="p-5 hover:border-primary/50 transition-colors cursor-pointer group"
+                    onClick={() => setUploadModalOpen(true)}
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
                       <Upload className="w-5 h-5 text-primary" />
                     </div>
                     <h3 className="font-semibold text-foreground mb-1">Upload de Vídeo</h3>
                     <p className="text-sm text-muted-foreground">Faça upload direto para seu canal</p>
-                    <span className="text-xs text-muted-foreground/60 mt-2 block">Em breve</span>
                   </Card>
                   
                   <Card 
                     className="p-5 hover:border-primary/50 transition-colors cursor-pointer group"
                     onClick={() => window.open(`https://studio.youtube.com/channel/${connection.channel_id}`, '_blank')}
                   >
-                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
                       <BarChart3 className="w-5 h-5 text-primary" />
                     </div>
                     <h3 className="font-semibold text-foreground mb-1 flex items-center gap-2">
@@ -274,13 +450,15 @@ const YouTubeIntegration = () => {
                     <p className="text-sm text-muted-foreground">Abrir YouTube Studio</p>
                   </Card>
                   
-                  <Card className="p-5 hover:border-primary/50 transition-colors cursor-pointer">
-                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center mb-3">
+                  <Card 
+                    className="p-5 hover:border-primary/50 transition-colors cursor-pointer group"
+                    onClick={() => setSettingsModalOpen(true)}
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
                       <Settings className="w-5 h-5 text-primary" />
                     </div>
                     <h3 className="font-semibold text-foreground mb-1">Configurações</h3>
                     <p className="text-sm text-muted-foreground">Gerencie a integração</p>
-                    <span className="text-xs text-muted-foreground/60 mt-2 block">Em breve</span>
                   </Card>
                 </div>
               </div>
@@ -288,6 +466,280 @@ const YouTubeIntegration = () => {
           </div>
         </div>
       </PermissionGate>
+
+      {/* Upload Modal */}
+      <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5" />
+              Upload de Vídeo
+            </DialogTitle>
+            <DialogDescription>
+              Envie um vídeo diretamente para seu canal do YouTube
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* File Selection */}
+            <div className="space-y-2">
+              <Label>Arquivo de Vídeo</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+              
+              {!selectedFile ? (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                >
+                  <FileVideo className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Clique para selecionar ou arraste um vídeo
+                  </p>
+                  <p className="text-xs text-muted-foreground/60">
+                    MP4, MOV, AVI, WMV, MKV • Máximo 256MB
+                  </p>
+                </div>
+              ) : (
+                <div className="border border-border rounded-lg p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FileVideo className="w-8 h-8 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{selectedFile.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setSelectedFile(null)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Title */}
+            <div className="space-y-2">
+              <Label htmlFor="title">Título *</Label>
+              <Input
+                id="title"
+                value={uploadForm.title}
+                onChange={(e) => setUploadForm(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Título do vídeo"
+                maxLength={100}
+              />
+              <p className="text-xs text-muted-foreground text-right">{uploadForm.title.length}/100</p>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                value={uploadForm.description}
+                onChange={(e) => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Descrição do vídeo..."
+                rows={4}
+                maxLength={5000}
+              />
+              <p className="text-xs text-muted-foreground text-right">{uploadForm.description.length}/5000</p>
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-2">
+              <Label htmlFor="tags">Tags</Label>
+              <Input
+                id="tags"
+                value={uploadForm.tags}
+                onChange={(e) => setUploadForm(prev => ({ ...prev, tags: e.target.value }))}
+                placeholder="tag1, tag2, tag3 (separadas por vírgula)"
+              />
+            </div>
+
+            {/* Privacy & Category */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Visibilidade</Label>
+                <Select 
+                  value={uploadForm.privacyStatus} 
+                  onValueChange={(value: PrivacyStatus) => setUploadForm(prev => ({ ...prev, privacyStatus: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="private">
+                      <div className="flex items-center gap-2">
+                        <Lock className="w-4 h-4" />
+                        Privado
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="unlisted">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Não listado
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="public">
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        Público
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Categoria</Label>
+                <Select 
+                  value={uploadForm.categoryId} 
+                  onValueChange={(value) => setUploadForm(prev => ({ ...prev, categoryId: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {videoCategories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Made for Kids */}
+            <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-foreground">Feito para crianças?</p>
+                <p className="text-xs text-muted-foreground">Selecione se o conteúdo é destinado a crianças</p>
+              </div>
+              <Switch
+                checked={uploadForm.madeForKids}
+                onCheckedChange={(checked) => setUploadForm(prev => ({ ...prev, madeForKids: checked }))}
+              />
+            </div>
+
+            {/* Upload Progress */}
+            {uploading && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Enviando...</span>
+                  <span className="text-foreground font-medium">{uploadProgress}%</span>
+                </div>
+                <Progress value={uploadProgress} className="h-2" />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUploadModalOpen(false)} disabled={uploading}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleUpload} 
+              disabled={!selectedFile || !uploadForm.title || uploading}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Enviar Vídeo
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Modal */}
+      <Dialog open={settingsModalOpen} onOpenChange={setSettingsModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Configurações da Integração
+            </DialogTitle>
+          </DialogHeader>
+
+          {connection && (
+            <div className="space-y-6 py-4">
+              {/* Connection Info */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 p-4 bg-secondary/50 rounded-lg">
+                  {connection.channel_thumbnail && (
+                    <img 
+                      src={connection.channel_thumbnail} 
+                      alt={connection.channel_name}
+                      className="w-12 h-12 rounded-full"
+                    />
+                  )}
+                  <div>
+                    <p className="font-medium text-foreground">{connection.channel_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Conectado em {formatDate(connection.connected_at)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Scopes */}
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Permissões ativas</Label>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs bg-secondary px-2 py-1 rounded">Leitura</span>
+                    <span className="text-xs bg-secondary px-2 py-1 rounded">Upload</span>
+                    <span className="text-xs bg-secondary px-2 py-1 rounded">Analytics</span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-3 pt-4 border-t">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={handleRefreshToken}
+                    disabled={refreshingToken}
+                  >
+                    {refreshingToken ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    Atualizar Token de Acesso
+                  </Button>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start text-destructive hover:text-destructive"
+                    onClick={() => {
+                      setSettingsModalOpen(false);
+                      handleDisconnect();
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Desconectar Canal
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
