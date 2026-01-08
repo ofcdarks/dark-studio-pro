@@ -1,13 +1,25 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useStorage } from "@/hooks/useStorage";
 import { useCredits } from "@/hooks/useCredits";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Reorder, useDragControls, motion } from "framer-motion";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { Reorder, useDragControls } from "framer-motion";
 import logo from "@/assets/logo.gif";
+
+// Prefetch routes on hover for faster navigation
+const prefetchedRoutes = new Set<string>();
+const prefetchRoute = (href: string) => {
+  if (prefetchedRoutes.has(href)) return;
+  prefetchedRoutes.add(href);
+  // Warm the browser cache
+  const link = document.createElement('link');
+  link.rel = 'prefetch';
+  link.href = href;
+  document.head.appendChild(link);
+};
 import {
   Home,
   Video,
@@ -67,7 +79,7 @@ const defaultNavItems: NavItem[] = [
   { id: "settings", icon: Settings, label: "Configurações", href: "/settings", category: "organizacao" },
 ];
 
-// Component for individual draggable nav item
+// Component for individual draggable nav item - optimized for speed
 function DraggableNavItem({ 
   item, 
   collapsed, 
@@ -92,29 +104,37 @@ function DraggableNavItem({
         boxShadow: "0 8px 20px -4px hsl(var(--primary) / 0.3)",
         zIndex: 50 
       }}
+      layout="position"
+      transition={{ duration: 0.15 }}
     >
-      <div className="group">
-        <button
-          onClick={() => onNavigate(item.href)}
-          className={cn(
-            "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-colors duration-200",
-            isActive
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
-          )}
-        >
-          {!collapsed && (
-            <div
-              onPointerDown={(e) => dragControls.start(e)}
-              className="cursor-grab active:cursor-grabbing touch-none hover:scale-110 active:scale-95 transition-transform"
-            >
-              <GripVertical className="w-4 h-4 flex-shrink-0 opacity-30 hover:opacity-70 transition-opacity" />
-            </div>
-          )}
-          <item.icon className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && <span className="text-sm font-medium text-left flex-1">{item.label}</span>}
-        </button>
-      </div>
+      <Link
+        to={item.href}
+        onMouseEnter={() => prefetchRoute(item.href)}
+        onClick={(e) => {
+          e.preventDefault();
+          onNavigate(item.href);
+        }}
+        className={cn(
+          "flex items-center gap-2 px-3 py-2.5 rounded-lg transition-colors duration-100",
+          isActive
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+        )}
+      >
+        {!collapsed && (
+          <div
+            onPointerDown={(e) => {
+              e.preventDefault();
+              dragControls.start(e);
+            }}
+            className="cursor-grab active:cursor-grabbing touch-none"
+          >
+            <GripVertical className="w-4 h-4 flex-shrink-0 opacity-30 hover:opacity-70" />
+          </div>
+        )}
+        <item.icon className="w-5 h-5 flex-shrink-0" />
+        {!collapsed && <span className="text-sm font-medium text-left flex-1">{item.label}</span>}
+      </Link>
     </Reorder.Item>
   );
 }
