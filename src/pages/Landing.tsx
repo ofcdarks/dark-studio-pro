@@ -1325,6 +1325,49 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Marquee Strip - Premium Transition */}
+      <div className="relative py-6 bg-gradient-to-r from-black via-background to-black overflow-hidden border-y border-primary/20">
+        {/* Shimmer overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-pulse" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        
+        <div className="flex whitespace-nowrap animate-[marquee_25s_linear_infinite]">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-center gap-8 px-8">
+              <span className="flex items-center gap-3 text-lg font-bold">
+                <Diamond className="w-5 h-5 text-primary" />
+                <span className="bg-gradient-to-r from-primary via-amber-400 to-primary bg-clip-text text-transparent">
+                  ESCALE SUA OPERAÇÃO COM IA AVANÇADA
+                </span>
+              </span>
+              <span className="text-primary/40">★</span>
+              <span className="flex items-center gap-3 text-lg font-bold">
+                <Rocket className="w-5 h-5 text-primary" />
+                <span className="bg-gradient-to-r from-amber-400 via-primary to-amber-400 bg-clip-text text-transparent">
+                  +15.000 VÍDEOS PRODUZIDOS NA PLATAFORMA
+                </span>
+              </span>
+              <span className="text-primary/40">★</span>
+              <span className="flex items-center gap-3 text-lg font-bold">
+                <Crown className="w-5 h-5 text-primary" />
+                <span className="bg-gradient-to-r from-primary via-amber-400 to-primary bg-clip-text text-transparent">
+                  AUTOMATIZE 100% DO SEU FLUXO DE TRABALHO
+                </span>
+              </span>
+              <span className="text-primary/40">★</span>
+              <span className="flex items-center gap-3 text-lg font-bold">
+                <Flame className="w-5 h-5 text-primary" />
+                <span className="bg-gradient-to-r from-amber-400 via-primary to-amber-400 bg-clip-text text-transparent">
+                  ACESSO EXCLUSIVO PARA MEMBROS ELITE
+                </span>
+              </span>
+              <span className="text-primary/40">★</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      
       {/* Scroll indicator - arrow style */}
       <ScrollIndicator variant="arrow" />
 
