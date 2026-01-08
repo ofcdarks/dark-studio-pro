@@ -162,23 +162,83 @@ export function FloatingPomodoro() {
     return ((totalTime - timeLeft) / totalTime) * 100;
   };
 
-  // Play notification sound
-  const playNotification = useCallback(() => {
+  // Play notification sound - Work session complete (triumphant melody)
+  const playWorkCompleteSound = useCallback(() => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
+      gainNode.connect(audioContext.destination);
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
       
-      oscillator.connect(gainNode);
+      // Triumphant ascending melody
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      const durations = [0.15, 0.15, 0.15, 0.4];
+      
+      let time = audioContext.currentTime;
+      notes.forEach((freq, i) => {
+        const osc = audioContext.createOscillator();
+        const noteGain = audioContext.createGain();
+        osc.connect(noteGain);
+        noteGain.connect(gainNode);
+        osc.frequency.setValueAtTime(freq, time);
+        osc.type = 'sine';
+        noteGain.gain.setValueAtTime(0.3, time);
+        noteGain.gain.exponentialRampToValueAtTime(0.01, time + durations[i]);
+        osc.start(time);
+        osc.stop(time + durations[i]);
+        time += durations[i] * 0.8;
+      });
+    } catch (e) {
+      console.log('Audio not available');
+    }
+  }, []);
+
+  // Play notification sound - Break complete (gentle chime)
+  const playBreakCompleteSound = useCallback(() => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const gainNode = audioContext.createGain();
       gainNode.connect(audioContext.destination);
       
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      oscillator.type = 'sine';
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      // Gentle two-tone chime
+      const notes = [659.25, 523.25]; // E5, C5
+      let time = audioContext.currentTime;
       
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
+      notes.forEach((freq) => {
+        const osc = audioContext.createOscillator();
+        const noteGain = audioContext.createGain();
+        osc.connect(noteGain);
+        noteGain.connect(gainNode);
+        osc.frequency.setValueAtTime(freq, time);
+        osc.type = 'sine';
+        noteGain.gain.setValueAtTime(0.25, time);
+        noteGain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+        osc.start(time);
+        osc.stop(time + 0.3);
+        time += 0.25;
+      });
+    } catch (e) {
+      console.log('Audio not available');
+    }
+  }, []);
+
+  // Play tick sound (subtle click every minute)
+  const playTickSound = useCallback(() => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      osc.frequency.setValueAtTime(1200, audioContext.currentTime);
+      osc.type = 'sine';
+      gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.05);
+      
+      osc.start(audioContext.currentTime);
+      osc.stop(audioContext.currentTime + 0.05);
     } catch (e) {
       console.log('Audio not available');
     }
@@ -186,9 +246,8 @@ export function FloatingPomodoro() {
 
   // Handle session completion
   const handleSessionComplete = useCallback(() => {
-    playNotification();
-    
     if (sessionType === 'work') {
+      playWorkCompleteSound();
       const newCount = completedSessions + 1;
       setCompletedSessions(newCount);
       
@@ -220,6 +279,7 @@ export function FloatingPomodoro() {
         setTimeLeft(times.break * 60);
       }
     } else {
+      playBreakCompleteSound();
       toast.info(
         <div className="flex items-center gap-2">
           <Coffee className="h-5 w-5" />
@@ -231,7 +291,14 @@ export function FloatingPomodoro() {
     }
     
     setIsRunning(false);
-  }, [sessionType, completedSessions, times, playNotification]);
+  }, [sessionType, completedSessions, times, playWorkCompleteSound, playBreakCompleteSound]);
+
+  // Play tick sound every minute
+  useEffect(() => {
+    if (isRunning && timeLeft > 0 && timeLeft % 60 === 0 && timeLeft !== times[sessionType] * 60) {
+      playTickSound();
+    }
+  }, [isRunning, timeLeft, sessionType, times, playTickSound]);
 
   // Timer countdown
   useEffect(() => {
