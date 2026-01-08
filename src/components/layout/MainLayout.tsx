@@ -4,6 +4,7 @@ import { MobileSidebar } from "./MobileSidebar";
 import { NotificationsBell } from "./NotificationsBell";
 import { StorageIndicator } from "./StorageIndicator";
 import { CreditsDisplay } from "./CreditsDisplay";
+import { FloatingPomodoro } from "./FloatingPomodoro";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -107,6 +108,9 @@ export function MainLayout({ children }: MainLayoutProps) {
           {children}
         </div>
       </main>
+
+      {/* Floating Pomodoro - visible on all pages */}
+      {user && <FloatingPomodoro />}
 
       {/* WhatsApp Required Modal */}
       {showWhatsAppModal && (
