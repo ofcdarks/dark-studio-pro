@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -561,17 +562,17 @@ export default function ViralScriptGenerator() {
   const { deduct, checkBalance } = useCreditDeduction();
   const { logActivity } = useActivityLog();
 
-  // Form state
-  const [title, setTitle] = useState("");
-  const [niche, setNiche] = useState("");
-  const [customNiche, setCustomNiche] = useState("");
-  const [duration, setDuration] = useState(10);
-  const [selectedFormula, setSelectedFormula] = useState("storytelling");
-  const [additionalContext, setAdditionalContext] = useState("");
-  const [targetAudience, setTargetAudience] = useState("");
-  const [aiModel, setAiModel] = useState("gpt-4o");
-  const [language, setLanguage] = useState("pt-BR");
-  const [channelUrl, setChannelUrl] = useState("");
+  // Form state - Persisted
+  const [title, setTitle] = usePersistedState("viral-script-title", "");
+  const [niche, setNiche] = usePersistedState("viral-script-niche", "");
+  const [customNiche, setCustomNiche] = usePersistedState("viral-script-custom-niche", "");
+  const [duration, setDuration] = usePersistedState("viral-script-duration", 10);
+  const [selectedFormula, setSelectedFormula] = usePersistedState("viral-script-formula", "storytelling");
+  const [additionalContext, setAdditionalContext] = usePersistedState("viral-script-context", "");
+  const [targetAudience, setTargetAudience] = usePersistedState("viral-script-audience", "");
+  const [aiModel, setAiModel] = usePersistedState("viral-script-model", "gpt-4o");
+  const [language, setLanguage] = usePersistedState("viral-script-language", "pt-BR");
+  const [channelUrl, setChannelUrl] = usePersistedState("viral-script-channel", "");
   const [formulaTab, setFormulaTab] = useState("all");
   
   // Channel analysis data
@@ -587,18 +588,18 @@ export default function ViralScriptGenerator() {
   const [isLoadingChannelData, setIsLoadingChannelData] = useState(false);
   const [userChannels, setUserChannels] = useState<Array<{id: string; channel_url: string; channel_name: string | null}>>([]);
 
-  // Generation state
+  // Generation state - Persisted for script continuity
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedScript, setGeneratedScript] = useState("");
+  const [generatedScript, setGeneratedScript] = usePersistedState("viral-script-generated", "");
   const [currentPart, setCurrentPart] = useState(0);
   const [totalParts, setTotalParts] = useState(0);
   const [progress, setProgress] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState("");
-  const [selectedTriggersAI, setSelectedTriggersAI] = useState<string[]>([]);
+  const [selectedTriggersAI, setSelectedTriggersAI] = usePersistedState<string[]>("viral-script-triggers", []);
 
-  // Retention analysis
-  const [retentionScore, setRetentionScore] = useState<number | null>(null);
-  const [retentionTips, setRetentionTips] = useState<string[]>([]);
+  // Retention analysis - Persisted
+  const [retentionScore, setRetentionScore] = usePersistedState<number | null>("viral-script-retention-score", null);
+  const [retentionTips, setRetentionTips] = usePersistedState<string[]>("viral-script-retention-tips", []);
 
   // History modal
   const [showHistoryModal, setShowHistoryModal] = useState(false);
