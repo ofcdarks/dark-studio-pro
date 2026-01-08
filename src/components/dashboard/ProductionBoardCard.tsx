@@ -35,11 +35,11 @@ interface BoardTask {
 }
 
 const columns = [
-  { id: 'backlog', title: 'Backlog', color: 'bg-muted/60', icon: '📋' },
-  { id: 'todo', title: 'A Fazer', color: 'bg-blue-500/15 border-l-2 border-l-blue-500', icon: '📝' },
-  { id: 'doing', title: 'Em Andamento', color: 'bg-amber-500/15 border-l-2 border-l-amber-500', icon: '🔥' },
-  { id: 'review', title: 'Revisão', color: 'bg-purple-500/15 border-l-2 border-l-purple-500', icon: '👀' },
-  { id: 'done', title: 'Concluído', color: 'bg-green-500/15 border-l-2 border-l-green-500', icon: '✅' },
+  { id: 'backlog', title: 'Backlog', color: 'bg-zinc-800/80', headerColor: 'bg-zinc-700', icon: '📋', textColor: 'text-zinc-300' },
+  { id: 'todo', title: 'A Fazer', color: 'bg-blue-900/40', headerColor: 'bg-blue-600', icon: '📝', textColor: 'text-blue-300' },
+  { id: 'doing', title: 'Em Andamento', color: 'bg-amber-900/40', headerColor: 'bg-amber-600', icon: '🔥', textColor: 'text-amber-300' },
+  { id: 'review', title: 'Revisão', color: 'bg-purple-900/40', headerColor: 'bg-purple-600', icon: '👀', textColor: 'text-purple-300' },
+  { id: 'done', title: 'Concluído', color: 'bg-green-900/40', headerColor: 'bg-green-600', icon: '✅', textColor: 'text-green-300' },
 ] as const;
 
 const taskTypes = [
@@ -275,7 +275,7 @@ export function ProductionBoardCard() {
             return (
               <div
                 key={column.id}
-                className={`rounded-xl p-3 ${column.color} min-h-[300px] transition-all duration-200 ${
+                className={`rounded-xl overflow-hidden ${column.color} min-h-[300px] transition-all duration-200 ${
                   draggedTask && draggedTask.column_id !== column.id 
                     ? 'ring-2 ring-primary/30 ring-dashed' 
                     : ''
@@ -283,15 +283,18 @@ export function ProductionBoardCard() {
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(column.id)}
               >
-                <div className="flex items-center justify-between mb-3">
+                {/* Column Header with solid color */}
+                <div className={`flex items-center justify-between px-3 py-2.5 ${column.headerColor}`}>
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{column.icon}</span>
-                    <h4 className="text-sm font-semibold text-foreground">{column.title}</h4>
+                    <h4 className="text-sm font-bold text-white">{column.title}</h4>
                   </div>
-                  <Badge variant="secondary" className="text-xs h-5 px-2 font-semibold">
+                  <Badge className="bg-white/20 text-white border-white/30 text-xs h-5 px-2 font-bold">
                     {columnTasks.length}
                   </Badge>
                 </div>
+                
+                <div className="p-3">
 
                 <ScrollArea className="h-[250px]">
                   <div className="space-y-2 pr-2">
@@ -422,6 +425,7 @@ export function ProductionBoardCard() {
                     )}
                   </div>
                 </ScrollArea>
+                </div>
               </div>
             );
           })}
