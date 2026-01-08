@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload, History, Video, FileText, Play, Rocket, Mic, RotateCcw, Clock, Lightbulb, RefreshCw } from "lucide-react";
+import { Key, Bell, User, Shield, CheckCircle, XCircle, Loader2, Eye, EyeOff, Coins, Lock, Image, AlertCircle, Camera, Upload, History, Video, FileText, Play, Rocket, Mic, RotateCcw, Clock, Lightbulb, RefreshCw, Timer } from "lucide-react";
 import { CreditHistoryCard } from "@/components/credits/CreditHistoryCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -972,24 +972,44 @@ const SettingsPage = () => {
               </div>
               
               <div className="mt-6 pt-6 border-t border-border">
-                <h4 className="text-sm font-medium text-foreground mb-3">Tutoriais</h4>
-                <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-foreground">Resetar Tutoriais</p>
-                    <p className="text-sm text-muted-foreground">Ver novamente todos os tutoriais guiados</p>
+                <h4 className="text-sm font-medium text-foreground mb-3">Ferramentas</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-foreground">Pomodoro Flutuante</p>
+                      <p className="text-sm text-muted-foreground">Reabrir o timer Pomodoro flutuante</p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="border-border text-foreground hover:bg-secondary"
+                      onClick={() => {
+                        localStorage.setItem('pomodoro-visible', 'true');
+                        toast.success('Pomodoro reaberto! Vá ao Dashboard para vê-lo.');
+                      }}
+                    >
+                      <Timer className="w-4 h-4 mr-2" />
+                      Reabrir
+                    </Button>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="border-border text-foreground hover:bg-secondary"
-                    onClick={() => {
-                      resetAllTutorials();
-                      toast.success('Tutoriais resetados! Eles aparecerão novamente ao visitar cada página.');
-                    }}
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Resetar
-                  </Button>
+                  <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-foreground">Resetar Tutoriais</p>
+                      <p className="text-sm text-muted-foreground">Ver novamente todos os tutoriais guiados</p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="border-border text-foreground hover:bg-secondary"
+                      onClick={() => {
+                        resetAllTutorials();
+                        toast.success('Tutoriais resetados! Eles aparecerão novamente ao visitar cada página.');
+                      }}
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Resetar
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Card>
