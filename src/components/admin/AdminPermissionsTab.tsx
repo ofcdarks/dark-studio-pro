@@ -40,6 +40,7 @@ interface PlanPermission {
 const FEATURES = [
   { key: "analisador_videos", label: "Analisador de Vídeos", route: "/analyzer", description: "Análise de vídeos virais" },
   { key: "gerador_cenas", label: "Gerador de Cenas", route: "/scenes", description: "Criação de prompts para cenas" },
+  { key: "gerador_roteiro_viral", label: "Gerador de Roteiro Viral", route: "/viral-script", description: "Criação de roteiros virais com IA" },
   { key: "agentes_virais", label: "Agentes Virais", route: "/agents", description: "Agentes de roteiro com IA" },
   { key: "gerador_voz", label: "Gerador de Voz", route: "/voice", description: "TTS com ElevenLabs" },
   { key: "prompts_imagens", label: "Prompts e Imagens", route: "/prompts", description: "Geração de imagens com IA" },

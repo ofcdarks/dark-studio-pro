@@ -6,6 +6,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 export type PermissionKey =
   | "analisador_videos"
   | "gerador_cenas"
+  | "gerador_roteiro_viral"
   | "agentes_virais"
   | "gerador_voz"
   | "prompts_imagens"
@@ -38,6 +39,7 @@ const PERMISSIONS_GC_TIME = 30 * 60 * 1000;
 const ALL_PERMISSIONS: Permissions = {
   analisador_videos: true,
   gerador_cenas: true,
+  gerador_roteiro_viral: true,
   agentes_virais: true,
   gerador_voz: true,
   prompts_imagens: true,

@@ -31,6 +31,7 @@ export const TOOL_REGISTRY = [
   { path: '/search-channels', name: 'Buscar Canais', icon: '🔍' },
   { path: '/explore', name: 'Explorar Nicho', icon: '🎯' },
   { path: '/analytics', name: 'Analytics do YouTube', icon: '📈' },
+  { path: '/viral-script', name: 'Gerador de Roteiro Viral', icon: '✍️' },
   { path: '/agents', name: 'Agentes Virais', icon: '🤖' },
   { path: '/library', name: 'Biblioteca Viral', icon: '📚' },
   { path: '/scenes', name: 'Prompts para Cenas', icon: '🎨' },
