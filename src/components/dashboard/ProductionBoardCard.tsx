@@ -18,8 +18,11 @@ import {
   Mic,
   ChevronRight,
   ChevronLeft,
-  Loader2
+  Loader2,
+  BarChart3,
+  Kanban
 } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -61,6 +64,7 @@ export function ProductionBoardCard() {
   const [draggedTask, setDraggedTask] = useState<BoardTask | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [visibleColumnIndex, setVisibleColumnIndex] = useState(0);
+  const [viewMode, setViewMode] = useState<'kanban' | 'report'>('kanban');
 
   // Fetch tasks from database
   const { data: tasks = [], isLoading } = useQuery({
@@ -211,6 +215,23 @@ export function ProductionBoardCard() {
   const inProgressTasks = tasks.filter(t => t.column_id === 'doing').length;
   const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
+  // Report data
+  const columnData = columns.map(col => ({
+    name: col.title,
+    value: tasks.filter(t => t.column_id === col.id).length,
+    color: col.id === 'backlog' ? '#71717a' : col.id === 'todo' ? '#3b82f6' : col.id === 'doing' ? '#f59e0b' : col.id === 'review' ? '#a855f7' : '#22c55e'
+  }));
+
+  const typeData = taskTypes.map(type => ({
+    name: type.label,
+    value: tasks.filter(t => t.task_type === type.id).length,
+    color: type.id === 'video' ? '#ef4444' : type.id === 'script' ? '#3b82f6' : type.id === 'thumbnail' ? '#22c55e' : type.id === 'audio' ? '#a855f7' : '#71717a'
+  })).filter(d => d.value > 0);
+
+  const backlogTasks = tasks.filter(t => t.column_id === 'backlog').length;
+  const todoTasks = tasks.filter(t => t.column_id === 'todo').length;
+  const reviewTasks = tasks.filter(t => t.column_id === 'review').length;
+
   return (
     <Card className="bg-card/50 backdrop-blur border-border/50 overflow-hidden">
       <CardHeader className="pb-4">
@@ -224,11 +245,34 @@ export function ProductionBoardCard() {
                 Escada de Produção
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
               </CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">Arraste tarefas entre as colunas</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {viewMode === 'kanban' ? 'Arraste tarefas entre as colunas' : 'Visão geral do seu fluxo'}
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {inProgressTasks > 0 && (
+          <div className="flex items-center gap-2">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-secondary/50 rounded-lg p-0.5">
+              <Button
+                variant={viewMode === 'kanban' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 px-2.5 text-xs gap-1.5"
+                onClick={() => setViewMode('kanban')}
+              >
+                <Kanban className="h-3.5 w-3.5" />
+                Kanban
+              </Button>
+              <Button
+                variant={viewMode === 'report' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 px-2.5 text-xs gap-1.5"
+                onClick={() => setViewMode('report')}
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                Relatório
+              </Button>
+            </div>
+            {viewMode === 'kanban' && inProgressTasks > 0 && (
               <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
                 🔥 {inProgressTasks} em andamento
               </Badge>
@@ -246,6 +290,130 @@ export function ProductionBoardCard() {
         </div>
       </CardHeader>
       <CardContent>
+        {viewMode === 'report' ? (
+          /* Report View */
+          <div className="space-y-6">
+            {/* Summary Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {columns.map(col => {
+                const count = tasks.filter(t => t.column_id === col.id).length;
+                return (
+                  <div key={col.id} className={`${col.color} rounded-xl p-3 text-center`}>
+                    <div className="text-2xl mb-1">{col.icon}</div>
+                    <div className={`text-2xl font-bold ${col.textColor}`}>{count}</div>
+                    <div className="text-xs text-muted-foreground">{col.title}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Charts Row */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Column Distribution */}
+              <div className="bg-secondary/30 rounded-xl p-4">
+                <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                  Distribuição por Etapa
+                </h4>
+                <div className="h-[180px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={columnData} layout="vertical">
+                      <XAxis type="number" hide />
+                      <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--card))', 
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                          fontSize: '12px'
+                        }}
+                      />
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                        {columnData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Type Distribution */}
+              <div className="bg-secondary/30 rounded-xl p-4">
+                <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                  <Video className="h-4 w-4 text-primary" />
+                  Distribuição por Tipo
+                </h4>
+                {typeData.length > 0 ? (
+                  <div className="h-[180px] flex items-center">
+                    <ResponsiveContainer width="50%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={typeData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={70}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {typeData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            fontSize: '12px'
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="flex-1 space-y-2">
+                      {typeData.map((type, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: type.color }} />
+                            <span className="text-muted-foreground">{type.name}</span>
+                          </div>
+                          <span className="font-semibold">{type.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-[180px] flex items-center justify-center text-muted-foreground text-sm">
+                    Nenhuma tarefa ainda
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Flow Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 border border-green-500/30 rounded-xl p-4 text-center">
+                <div className="text-3xl font-bold text-green-400">{progressPercent}%</div>
+                <div className="text-xs text-green-300/70">Taxa de Conclusão</div>
+              </div>
+              <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 rounded-xl p-4 text-center">
+                <div className="text-3xl font-bold text-amber-400">{inProgressTasks}</div>
+                <div className="text-xs text-amber-300/70">Em Progresso</div>
+              </div>
+              <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30 rounded-xl p-4 text-center">
+                <div className="text-3xl font-bold text-blue-400">{backlogTasks + todoTasks}</div>
+                <div className="text-xs text-blue-300/70">Pendentes</div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30 rounded-xl p-4 text-center">
+                <div className="text-3xl font-bold text-purple-400">{reviewTasks}</div>
+                <div className="text-xs text-purple-300/70">Em Revisão</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Kanban View */
+          <>
         {/* Mobile Navigation */}
         <div className="flex md:hidden items-center justify-between mb-3">
           <Button
@@ -432,6 +600,8 @@ export function ProductionBoardCard() {
             );
           })}
         </div>
+        </>
+        )}
       </CardContent>
     </Card>
   );
