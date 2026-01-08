@@ -33,11 +33,15 @@ import {
   Loader2,
   BarChart3,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  Bell,
+  BellOff
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 type VideoStatus = 'planned' | 'recording' | 'editing' | 'ready' | 'published';
 type VideoPriority = 'low' | 'normal' | 'high';
@@ -54,6 +58,9 @@ interface ScheduledVideo {
   video_url: string | null;
   notes: string | null;
   priority: VideoPriority;
+  reminder_enabled: boolean;
+  reminder_hours: number;
+  reminder_sent: boolean;
 }
 
 interface NicheBestTime {
@@ -121,6 +128,8 @@ export default function PublicationSchedule() {
     niche: string;
     notes: string;
     priority: VideoPriority;
+    reminder_enabled: boolean;
+    reminder_hours: number;
   }>({
     title: '',
     description: '',
@@ -130,7 +139,12 @@ export default function PublicationSchedule() {
     niche: '',
     notes: '',
     priority: 'normal',
+    reminder_enabled: true,
+    reminder_hours: 2,
   });
+
+  // Push notifications hook
+  const { permission, isSupported, requestPermission, showNotification } = usePushNotifications();
 
   // Check YouTube connection
   const { data: youtubeConnection } = useQuery({
@@ -181,6 +195,44 @@ export default function PublicationSchedule() {
     setIsLoadingChannelAnalysis(false);
     toast({ title: "Análise atualizada!", description: "Dados do seu canal foram reanalisados." });
   };
+
+  // Check for upcoming reminders periodically
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    
+    const checkReminders = async () => {
+      const now = new Date();
+      const today = format(now, 'yyyy-MM-dd');
+      
+      // Find videos scheduled for today that need local notification
+      for (const video of scheduledVideos) {
+        if (
+          video.scheduled_date === today &&
+          video.scheduled_time &&
+          video.reminder_enabled &&
+          !video.reminder_sent &&
+          permission === 'granted'
+        ) {
+          const scheduledDateTime = new Date(`${video.scheduled_date}T${video.scheduled_time}`);
+          const reminderTime = new Date(scheduledDateTime.getTime() - (video.reminder_hours || 2) * 60 * 60 * 1000);
+          
+          if (now >= reminderTime && now < scheduledDateTime) {
+            const hoursLeft = Math.round((scheduledDateTime.getTime() - now.getTime()) / (1000 * 60 * 60));
+            showNotification(`⏰ Lembrete: ${video.title}`, {
+              body: `Faltam ${hoursLeft > 0 ? hoursLeft + 'h' : 'menos de 1h'} para publicar este vídeo!`,
+              tag: `schedule-${video.id}`,
+              requireInteraction: true,
+            });
+          }
+        }
+      }
+    };
+
+    // Check on load and every 5 minutes
+    checkReminders();
+    const interval = setInterval(checkReminders, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [scheduledVideos, session?.user?.id, permission, showNotification]);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -241,6 +293,9 @@ export default function PublicationSchedule() {
       niche: formData.niche || null,
       notes: formData.notes || null,
       priority: formData.priority,
+      reminder_enabled: formData.reminder_enabled,
+      reminder_hours: formData.reminder_hours,
+      reminder_sent: false,
     };
 
     if (editingVideo) {
@@ -306,6 +361,8 @@ export default function PublicationSchedule() {
       niche: '',
       notes: '',
       priority: 'normal',
+      reminder_enabled: true,
+      reminder_hours: 2,
     });
     setEditingVideo(null);
     setIsDialogOpen(false);
@@ -322,6 +379,8 @@ export default function PublicationSchedule() {
       niche: video.niche || '',
       notes: video.notes || '',
       priority: video.priority,
+      reminder_enabled: video.reminder_enabled ?? true,
+      reminder_hours: video.reminder_hours ?? 2,
     });
     setIsDialogOpen(true);
   };
@@ -337,6 +396,8 @@ export default function PublicationSchedule() {
       niche: '',
       notes: '',
       priority: 'normal',
+      reminder_enabled: true,
+      reminder_hours: 2,
     });
     setIsDialogOpen(true);
   };
@@ -777,6 +838,13 @@ export default function PublicationSchedule() {
                                   {video.niche}
                                 </Badge>
                               )}
+
+                              {video.reminder_enabled && video.scheduled_time && (
+                                <span className="flex items-center gap-1 text-muted-foreground" title={`Lembrete ${video.reminder_hours}h antes`}>
+                                  <Bell className="h-3 w-3 text-primary" />
+                                  <span className="text-xs">{video.reminder_hours}h</span>
+                                </span>
+                              )}
                             </div>
 
                             {suggestion && video.scheduled_time && (
@@ -959,6 +1027,70 @@ export default function PublicationSchedule() {
                   placeholder="Notas, links, referências..."
                   rows={2}
                 />
+              </div>
+
+              {/* Reminder Settings */}
+              <div className="p-4 rounded-lg border bg-muted/30 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {formData.reminder_enabled ? (
+                      <Bell className="h-4 w-4 text-primary" />
+                    ) : (
+                      <BellOff className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <div>
+                      <Label htmlFor="reminder_enabled" className="cursor-pointer">
+                        Lembrete de Publicação
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Receba uma notificação antes do horário
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="reminder_enabled"
+                    checked={formData.reminder_enabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, reminder_enabled: checked })}
+                  />
+                </div>
+
+                {formData.reminder_enabled && (
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="reminder_hours" className="text-sm whitespace-nowrap">
+                      Lembrar
+                    </Label>
+                    <Select
+                      value={formData.reminder_hours.toString()}
+                      onValueChange={(value) => setFormData({ ...formData, reminder_hours: parseInt(value) })}
+                    >
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 hora</SelectItem>
+                        <SelectItem value="2">2 horas</SelectItem>
+                        <SelectItem value="3">3 horas</SelectItem>
+                        <SelectItem value="6">6 horas</SelectItem>
+                        <SelectItem value="12">12 horas</SelectItem>
+                        <SelectItem value="24">1 dia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground">antes</span>
+                  </div>
+                )}
+
+                {formData.reminder_enabled && permission !== 'granted' && isSupported && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={requestPermission}
+                    className="w-full"
+                  >
+                    <Bell className="h-4 w-4 mr-2" />
+                    Ativar Notificações do Navegador
+                  </Button>
+                )}
               </div>
               
               {/* Suggestion based on niche */}

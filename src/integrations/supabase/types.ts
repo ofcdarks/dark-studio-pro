@@ -1215,6 +1215,8 @@ export type Database = {
           niche: string | null
           notes: string | null
           priority: string | null
+          reminder_enabled: boolean | null
+          reminder_hours: number | null
           reminder_sent: boolean | null
           scheduled_date: string
           scheduled_time: string | null
@@ -1232,6 +1234,8 @@ export type Database = {
           niche?: string | null
           notes?: string | null
           priority?: string | null
+          reminder_enabled?: boolean | null
+          reminder_hours?: number | null
           reminder_sent?: boolean | null
           scheduled_date: string
           scheduled_time?: string | null
@@ -1249,6 +1253,8 @@ export type Database = {
           niche?: string | null
           notes?: string | null
           priority?: string | null
+          reminder_enabled?: boolean | null
+          reminder_hours?: number | null
           reminder_sent?: boolean | null
           scheduled_date?: string
           scheduled_time?: string | null
@@ -1258,6 +1264,36 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           video_url?: string | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1450,6 +1486,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      schedule_reminders_sent: {
+        Row: {
+          id: string
+          reminder_type: string | null
+          schedule_id: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          reminder_type?: string | null
+          schedule_id: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          reminder_type?: string | null
+          schedule_id?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_reminders_sent_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "publication_schedule"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       script_agents: {
         Row: {
