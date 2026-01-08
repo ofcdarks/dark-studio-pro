@@ -23,6 +23,7 @@ import { NicheSuggestionsCard } from "./NicheSuggestionsCard";
 import { ProductivityEvolutionCard } from "./ProductivityEvolutionCard";
 import { UserGoalsCard } from "./UserGoalsCard";
 import { PomodoroCard } from "./PomodoroCard";
+import { ProductionBoardCard } from "./ProductionBoardCard";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
@@ -160,6 +161,13 @@ export function Dashboard() {
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="mb-6">
           <motion.div variants={itemVariants}>
             <ProductivityEvolutionCard />
+          </motion.div>
+        </motion.div>
+
+        {/* Production Board - Full Width */}
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="mb-6">
+          <motion.div variants={itemVariants}>
+            <ProductionBoardCard />
           </motion.div>
         </motion.div>
 
