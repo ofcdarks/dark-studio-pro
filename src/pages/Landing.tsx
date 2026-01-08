@@ -436,18 +436,39 @@ const Landing = () => {
       </div>
 
 
-      {/* Features Strip */}
-      <section className="py-12 md:py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-8">
+      {/* Features Strip - Glass Premium */}
+      <section className="py-12 md:py-20 px-4 relative overflow-hidden">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-purple-500/5 animate-gradient-x pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto relative">
+          {/* Section badge */}
+          <div className="flex justify-center mb-8 md:mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/20 to-amber-500/20 border border-primary/30 backdrop-blur-xl">
+              <Diamond className="w-4 h-4 text-primary animate-pulse" />
+              <span className="text-xs font-bold tracking-wider text-primary uppercase">Elite Features</span>
+              <Diamond className="w-4 h-4 text-primary animate-pulse" />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
             {features.map((feature, index) => (
               <AnimatedItem key={index} index={index} staggerDelay={100}>
-                <Card className={`p-4 md:p-8 bg-card border-border hover:border-primary/50 transition-all duration-300 ${index === 0 ? 'ring-1 ring-primary/30' : ''}`}>
-                  <div className={`w-12 h-12 md:w-16 md:h-16 rounded-xl ${feature.color} flex items-center justify-center mb-3 md:mb-5`}>
-                    <feature.icon className="w-6 h-6 md:w-8 md:h-8 text-white" />
+                <Card className={`group relative p-4 md:p-8 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-primary/50 transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-primary/20 ${index === 0 ? 'ring-1 ring-primary/30' : ''}`}>
+                  {/* Animated gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  {/* Top glow line */}
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  
+                  <div className="relative">
+                    <div className={`w-12 h-12 md:w-16 md:h-16 rounded-xl ${feature.color} flex items-center justify-center mb-3 md:mb-5 shadow-lg group-hover:scale-110 group-hover:shadow-xl transition-all duration-300`}>
+                      <feature.icon className="w-6 h-6 md:w-8 md:h-8 text-white" />
+                    </div>
+                    <h3 className="font-bold text-lg md:text-2xl">{feature.title}</h3>
+                    <p className="text-sm md:text-base text-muted-foreground/80 mt-1">{feature.desc}</p>
                   </div>
-                  <h3 className="font-bold text-lg md:text-2xl">{feature.title}</h3>
-                  <p className="text-sm md:text-base text-muted-foreground mt-1">{feature.desc}</p>
                 </Card>
               </AnimatedItem>
             ))}
@@ -455,19 +476,29 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Demo Section */}
+      {/* Demo Section - Glass Premium */}
       <section id="demo" className="py-16 md:py-24 px-4 scroll-mt-20 relative overflow-hidden">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-purple-500/5 pointer-events-none" />
+        
         <ParallaxLayer depth={0.2} className="absolute top-0 left-0 w-full h-full hidden md:block">
-          <div className="absolute top-10 left-10 w-3 h-3 rounded-full bg-primary/50" />
-          <div className="absolute top-20 right-20 w-2 h-2 rounded-full bg-primary/30" />
-          <div className="absolute bottom-40 left-1/4 w-2 h-2 rounded-full bg-primary/40" />
+          <div className="absolute top-10 left-10 w-3 h-3 rounded-full bg-primary/50 animate-pulse" />
+          <div className="absolute top-20 right-20 w-2 h-2 rounded-full bg-primary/30 animate-pulse" />
+          <div className="absolute bottom-40 left-1/4 w-2 h-2 rounded-full bg-primary/40 animate-pulse" />
         </ParallaxLayer>
 
-        <AnimatedSection className="max-w-5xl mx-auto text-center space-y-8 md:space-y-10">
+        <AnimatedSection className="max-w-5xl mx-auto text-center space-y-8 md:space-y-10 relative">
           <div className="space-y-4 md:space-y-5">
-            <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-card border border-border">
-              <Rocket className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-              <span className="text-sm md:text-base font-medium text-primary">VEJA EM AÇÃO</span>
+            {/* Elite badge with counter */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-gradient-to-r from-primary/20 to-amber-500/20 border border-primary/30 backdrop-blur-xl">
+                <Rocket className="w-4 h-4 md:w-5 md:h-5 text-primary animate-bounce" />
+                <span className="text-sm md:text-base font-bold text-primary">VEJA EM AÇÃO</span>
+              </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 backdrop-blur-xl">
+                <Crown className="w-4 h-4 text-red-400" />
+                <span className="text-xs font-bold text-red-400">ACESSO VIP</span>
+              </div>
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic">
               Conheça o Poder do
@@ -481,7 +512,12 @@ const Landing = () => {
           </div>
 
           <AnimatedSection animation="scale" delay={200}>
-            <Card className="aspect-video bg-card border-primary/30 relative overflow-hidden group cursor-pointer">
+            <Card className="group relative aspect-video bg-card/40 backdrop-blur-xl border border-white/10 hover:border-primary/50 overflow-hidden shadow-2xl hover:shadow-primary/20 transition-all duration-500">
+              {/* Animated gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              {/* Top glow line */}
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+              
               {/* Futuristic demo cover */}
               <img
                 src={demoCoverFuturistic}
@@ -492,7 +528,7 @@ const Landing = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
 
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className="w-20 h-20 md:w-32 md:h-32 rounded-full bg-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-primary/50">
+                <div className="w-20 h-20 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-2xl shadow-primary/50">
                   <Play className="w-10 h-10 md:w-16 md:h-16 text-primary-foreground ml-1 md:ml-2" fill="currentColor" />
                 </div>
               </div>
@@ -510,34 +546,41 @@ const Landing = () => {
               </div>
             </Card>
 
-            {/* Bottom bar - stack on mobile */}
-            <div className="bg-card rounded-xl p-4 md:p-6 mt-4 md:mt-6 flex flex-col md:flex-row items-start md:items-center justify-between border border-border gap-4">
-              <div>
+            {/* Bottom bar - Glass Premium */}
+            <Card className="relative bg-card/40 backdrop-blur-xl rounded-xl p-4 md:p-6 mt-4 md:mt-6 flex flex-col md:flex-row items-start md:items-center justify-between border border-white/10 gap-4 overflow-hidden shadow-xl">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-purple-500/5" />
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+              
+              <div className="relative">
                 <h3 className="font-bold text-lg md:text-xl">Tour Completo das Funcionalidades</h3>
                 <p className="text-sm md:text-base text-muted-foreground">Veja como criar conteúdo viral em minutos</p>
               </div>
-              <Link to="/auth" className="w-full md:w-auto">
+              <Link to="/auth" className="w-full md:w-auto relative">
                 <Button className="gradient-button text-primary-foreground font-semibold text-base md:text-lg h-11 md:h-12 px-5 md:px-6 w-full md:w-auto">
                   <Zap className="w-4 h-4 md:w-5 md:h-5 mr-2" />
                   Começar Agora
                   <ArrowRight className="w-4 h-4 md:w-5 md:h-5 ml-2" />
                 </Button>
               </Link>
-            </div>
+            </Card>
           </AnimatedSection>
 
-          {/* Demo Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 pt-8 md:pt-10">
+          {/* Demo Stats - Glass Premium */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pt-8 md:pt-10">
             {[
-              { value: "PRO", label: "Geração de Roteiros" },
-              { value: "4x", label: "Thumbnails Premium" },
-              { value: "24/7", label: "Automação Total" },
-              { value: "Real-time", label: "Analytics Avançado" },
+              { value: "PRO", label: "Geração de Roteiros", color: "from-emerald-500/20 to-green-500/10" },
+              { value: "4x", label: "Thumbnails Premium", color: "from-orange-500/20 to-amber-500/10" },
+              { value: "24/7", label: "Automação Total", color: "from-purple-500/20 to-violet-500/10" },
+              { value: "Real-time", label: "Analytics Avançado", color: "from-blue-500/20 to-cyan-500/10" },
             ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-gradient">{stat.value}</p>
-                <p className="text-sm md:text-base text-muted-foreground">{stat.label}</p>
-              </div>
+              <Card key={i} className="group relative text-center p-6 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-primary/30 transition-all duration-300 overflow-hidden">
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <p className="text-2xl md:text-3xl lg:text-4xl font-black text-gradient">{stat.value}</p>
+                  <p className="text-sm md:text-base text-muted-foreground/80 mt-1">{stat.label}</p>
+                </div>
+              </Card>
             ))}
           </div>
         </AnimatedSection>
@@ -546,16 +589,26 @@ const Landing = () => {
       {/* Scroll indicator - arrow style */}
       <ScrollIndicator variant="arrow" />
 
-      {/* Dreams Section */}
+      {/* Dreams Section - Glass Premium */}
       <section className="py-16 md:py-24 px-4 relative overflow-hidden">
-        <ParallaxLayer depth={0.4} className="absolute -top-20 -right-20 w-64 md:w-96 h-64 md:h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none hidden md:block" />
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-primary/5 pointer-events-none" />
+        <ParallaxLayer depth={0.4} className="absolute -top-20 -right-20 w-64 md:w-96 h-64 md:h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none hidden md:block animate-pulse" />
+        <ParallaxLayer depth={0.3} className="absolute bottom-0 -left-20 w-48 md:w-72 h-48 md:h-72 bg-purple-500/10 rounded-full blur-3xl pointer-events-none hidden md:block animate-pulse" />
         
         <div className="max-w-7xl mx-auto text-center space-y-10 md:space-y-14 relative">
           <AnimatedSection className="space-y-4 md:space-y-5">
-            <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-card border border-border">
-              <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-primary rotate-45" />
-              <span className="text-sm md:text-base font-medium text-primary">REALIZE SEUS SONHOS</span>
-              <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-primary -rotate-45" />
+            {/* Premium badges */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-3 rounded-full bg-gradient-to-r from-primary/20 to-amber-500/20 border border-primary/30 backdrop-blur-xl">
+                <Diamond className="w-4 h-4 md:w-5 md:h-5 text-primary animate-pulse" />
+                <span className="text-sm md:text-base font-bold text-primary">REALIZE SEUS SONHOS</span>
+                <Diamond className="w-4 h-4 md:w-5 md:h-5 text-primary animate-pulse" />
+              </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 backdrop-blur-xl">
+                <Crown className="w-4 h-4 text-purple-400" />
+                <span className="text-xs font-bold text-purple-400">LIFESTYLE VIP</span>
+              </div>
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic">
               O Que Você Pode
@@ -581,21 +634,29 @@ const Landing = () => {
             ))}
           </div>
 
-          {/* CTA */}
+          {/* CTA - Glass Premium */}
           <AnimatedSection animation="scale" delay={400}>
-            <div className="space-y-4 md:space-y-5 pt-6 md:pt-10">
-              <h3 className="text-2xl md:text-3xl font-bold">
-                Tudo isso é <span className="text-primary">possível</span> para você
-              </h3>
-              <p className="text-base md:text-lg text-muted-foreground">Milhares de criadores já estão vivendo esse estilo de vida</p>
-              <Link to="/auth">
-                <Button size="lg" className="gradient-button text-primary-foreground font-semibold h-14 md:h-16 px-6 md:px-10 mt-4 md:mt-5 text-base md:text-lg">
-                  <Check className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" />
-                  <span className="hidden sm:inline">Faça o teste e comprove você mesmo</span>
-                  <span className="sm:hidden">Faça o teste agora</span>
-                </Button>
-              </Link>
-            </div>
+            <Card className="relative max-w-2xl mx-auto p-8 md:p-10 bg-card/40 backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl">
+              {/* Decorative elements */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-purple-500/10" />
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/40 to-transparent" />
+              
+              <div className="relative space-y-4 md:space-y-5">
+                <h3 className="text-2xl md:text-3xl font-bold">
+                  Tudo isso é <span className="text-primary">possível</span> para você
+                </h3>
+                <p className="text-base md:text-lg text-muted-foreground/80">Milhares de criadores já estão vivendo esse estilo de vida</p>
+                <Link to="/auth">
+                  <Button size="lg" className="gradient-button text-primary-foreground font-semibold h-14 md:h-16 px-6 md:px-10 mt-4 md:mt-5 text-base md:text-lg glow-primary group">
+                    <Check className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3 group-hover:scale-110 transition-transform" />
+                    <span className="hidden sm:inline">Faça o teste e comprove você mesmo</span>
+                    <span className="sm:hidden">Faça o teste agora</span>
+                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
           </AnimatedSection>
         </div>
       </section>
@@ -619,16 +680,26 @@ const Landing = () => {
       {/* Scroll indicator - dots style */}
       <ScrollIndicator variant="dots" />
 
-      {/* Tools Section */}
+      {/* Tools Section - Glass Premium */}
       <section id="funcionalidades" className="py-16 md:py-24 px-4 scroll-mt-20 relative overflow-hidden">
-        <ParallaxLayer depth={0.3} className="absolute top-40 -left-32 w-60 md:w-80 h-60 md:h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none hidden md:block" />
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-purple-500/5 pointer-events-none" />
+        <ParallaxLayer depth={0.3} className="absolute top-40 -left-32 w-60 md:w-80 h-60 md:h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none hidden md:block animate-pulse" />
+        <ParallaxLayer depth={0.4} className="absolute bottom-20 -right-20 w-48 md:w-64 h-48 md:h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none hidden md:block animate-pulse" />
         
         <div className="max-w-7xl mx-auto space-y-10 md:space-y-14 relative">
           <AnimatedSection className="text-center space-y-4 md:space-y-5">
-            <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 rounded-full bg-primary text-primary-foreground">
-              <Crown className="w-4 h-4 md:w-5 md:h-5" />
-              <span className="text-sm md:text-base font-medium">18+ FUNCIONALIDADES PREMIUM</span>
-              <Crown className="w-4 h-4 md:w-5 md:h-5" />
+            {/* Premium badges with counter */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground shadow-lg shadow-primary/30">
+                <Crown className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="text-sm md:text-base font-bold">18+ FUNCIONALIDADES PREMIUM</span>
+                <Crown className="w-4 h-4 md:w-5 md:h-5" />
+              </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 backdrop-blur-xl animate-pulse">
+                <Flame className="w-4 h-4 text-red-400" />
+                <span className="text-xs font-bold text-red-400">APENAS 23 VAGAS</span>
+              </div>
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold italic">
               Arsenal Completo para
@@ -656,18 +727,22 @@ const Landing = () => {
             ))}
           </div>
 
-          {/* Bottom Stats */}
+          {/* Bottom Stats - Glass Premium */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pt-6 md:pt-10">
             {[
-              { icon: Zap, value: "18+", label: "Ferramentas" },
-              { icon: ImagePlus, value: "∞", label: "Imagens/Mês" },
-              { icon: Clock, value: "24/7", label: "Automação" },
-              { icon: Star, value: "5min", label: "Setup Rápido" },
+              { icon: Zap, value: "18+", label: "Ferramentas", color: "from-primary/20 to-amber-500/10" },
+              { icon: ImagePlus, value: "∞", label: "Imagens/Mês", color: "from-purple-500/20 to-violet-500/10" },
+              { icon: Clock, value: "24/7", label: "Automação", color: "from-emerald-500/20 to-green-500/10" },
+              { icon: Star, value: "5min", label: "Setup Rápido", color: "from-blue-500/20 to-cyan-500/10" },
             ].map((stat, i) => (
-              <Card key={i} className="p-4 md:p-6 bg-card border-border text-center hover:border-primary/30 transition-all duration-300 group">
-                <stat.icon className="w-6 h-6 md:w-8 md:h-8 text-primary mx-auto mb-2 md:mb-3 group-hover:scale-110 transition-transform" />
-                <p className="text-2xl md:text-3xl font-bold text-gradient">{stat.value}</p>
-                <p className="text-sm md:text-base text-muted-foreground">{stat.label}</p>
+              <Card key={i} className="group relative p-4 md:p-6 bg-card/40 backdrop-blur-xl border border-white/10 text-center hover:border-primary/30 transition-all duration-300 overflow-hidden shadow-xl hover:shadow-primary/10">
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <stat.icon className="w-6 h-6 md:w-8 md:h-8 text-primary mx-auto mb-2 md:mb-3 group-hover:scale-110 transition-transform" />
+                  <p className="text-2xl md:text-3xl font-black text-gradient">{stat.value}</p>
+                  <p className="text-sm md:text-base text-muted-foreground/80">{stat.label}</p>
+                </div>
               </Card>
             ))}
           </div>
@@ -1082,13 +1157,25 @@ const Landing = () => {
       {/* Scroll indicator - line style */}
       <ScrollIndicator variant="line" />
 
-      {/* How it Works - Zigzag Timeline */}
-      <section id="como-funciona" className="py-24 px-4 scroll-mt-20">
-        <div className="max-w-5xl mx-auto space-y-14">
+      {/* How it Works - Zigzag Timeline - Glass Premium */}
+      <section id="como-funciona" className="py-24 px-4 scroll-mt-20 relative overflow-hidden">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-purple-500/5 pointer-events-none" />
+        <ParallaxLayer depth={0.3} className="absolute top-20 -left-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none hidden md:block animate-pulse" />
+        <ParallaxLayer depth={0.4} className="absolute bottom-20 -right-20 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none hidden md:block animate-pulse" />
+        
+        <div className="max-w-5xl mx-auto space-y-14 relative">
           <AnimatedSection className="text-center space-y-5">
-            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary text-primary-foreground">
-              <Zap className="w-5 h-5" />
-              <span className="text-base font-medium">COMO FUNCIONA</span>
+            {/* Premium badges */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground shadow-lg shadow-primary/30">
+                <Zap className="w-5 h-5" />
+                <span className="text-base font-bold">COMO FUNCIONA</span>
+              </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/30 backdrop-blur-xl">
+                <Check className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-bold text-emerald-400">MÉTODO VALIDADO</span>
+              </div>
             </div>
             <h2 className="text-4xl md:text-6xl font-bold italic">
               Do zero ao lucro em
@@ -1098,33 +1185,39 @@ const Landing = () => {
             </h2>
           </AnimatedSection>
 
-          {/* Timeline */}
+          {/* Timeline - Glass Premium */}
           <div className="relative">
-            {/* Vertical line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-primary/50 to-primary/20 transform -translate-x-1/2 hidden md:block" />
+            {/* Vertical line with gradient */}
+            <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-amber-500/50 to-purple-500/20 transform -translate-x-1/2 hidden md:block" />
 
             {steps.map((step, index) => (
               <AnimatedItem key={index} index={index} staggerDelay={150}>
                 <div className={`flex items-center gap-10 mb-20 ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
-                  {/* Content */}
+                  {/* Content - Glass Premium */}
                   <div className={`flex-1 ${index % 2 === 0 ? 'md:text-right md:pr-10' : 'md:text-left md:pl-10'}`}>
-                    <Card className="p-8 bg-card border-border inline-block text-left">
-                      <h3 className="font-bold text-2xl mb-3">{step.title}</h3>
-                      <p className="text-lg text-muted-foreground mb-5">{step.desc}</p>
-                      <div className="flex flex-wrap gap-3">
-                        {step.badges.map((badge, i) => (
-                          <span key={i} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border text-sm">
-                            <Check className="w-4 h-4 text-primary" />
-                            {badge}
-                          </span>
-                        ))}
+                    <Card className="group relative p-8 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-primary/30 inline-block text-left overflow-hidden shadow-xl hover:shadow-primary/10 transition-all duration-300">
+                      {/* Decorative elements */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      
+                      <div className="relative">
+                        <h3 className="font-bold text-2xl mb-3">{step.title}</h3>
+                        <p className="text-lg text-muted-foreground/80 mb-5">{step.desc}</p>
+                        <div className="flex flex-wrap gap-3">
+                          {step.badges.map((badge, i) => (
+                            <span key={i} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 text-sm hover:border-primary/30 transition-colors">
+                              <Check className="w-4 h-4 text-primary" />
+                              {badge}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </Card>
                   </div>
 
-                  {/* Step number */}
+                  {/* Step number - Enhanced */}
                   <div className="relative z-10">
-                    <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-2xl shadow-lg shadow-primary/50">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center text-primary-foreground font-black text-2xl shadow-2xl shadow-primary/50 ring-4 ring-primary/20">
                       {String(step.step).padStart(2, '0')}
                     </div>
                   </div>
@@ -1141,13 +1234,23 @@ const Landing = () => {
       {/* Scroll indicator - mouse style */}
       <ScrollIndicator variant="mouse" />
 
-      {/* Results Section */}
+      {/* Results Section - Glass Premium */}
       <section className="py-24 px-4 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto space-y-14">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-primary/5 pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto space-y-14 relative">
           <AnimatedSection className="text-center space-y-5">
-            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-border">
-              <Star className="w-5 h-5 text-primary" />
-              <span className="text-base font-medium text-primary">RESULTADOS COMPROVADOS</span>
+            {/* Premium badges */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-gradient-to-r from-primary/20 to-amber-500/20 border border-primary/30 backdrop-blur-xl">
+                <Star className="w-5 h-5 text-primary" />
+                <span className="text-base font-bold text-primary">RESULTADOS COMPROVADOS</span>
+              </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 backdrop-blur-xl animate-pulse">
+                <TrendingUp className="w-4 h-4 text-green-400" />
+                <span className="text-xs font-bold text-green-400">+847 OPERADORES</span>
+              </div>
             </div>
             <h2 className="text-4xl md:text-6xl font-bold italic">
               Operadores que estão
@@ -1155,7 +1258,7 @@ const Landing = () => {
             <h2 className="text-4xl md:text-6xl font-bold italic text-primary">
               faturando alto
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-muted-foreground/80">
               Resultados reais de pessoas que usam o Core para escalar seus canais dark
             </p>
           </AnimatedSection>
@@ -1163,42 +1266,59 @@ const Landing = () => {
           {/* Testimonials Carousel */}
           <TestimonialCarousel testimonials={testimonials} />
 
-          {/* Stats Strip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-10">
+          {/* Stats Strip - Glass Premium */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-10">
             {[
-              { value: "50K+", label: "Vídeos gerados" },
-              { value: "847+", label: "Canais gerenciados" },
-              { value: "98%", label: "Taxa de satisfação" },
-              { value: "15K+", label: "Vídeos analisados" },
+              { value: "50K+", label: "Vídeos gerados", color: "from-primary/20 to-amber-500/10" },
+              { value: "847+", label: "Canais gerenciados", color: "from-purple-500/20 to-violet-500/10" },
+              { value: "98%", label: "Taxa de satisfação", color: "from-emerald-500/20 to-green-500/10" },
+              { value: "15K+", label: "Vídeos analisados", color: "from-blue-500/20 to-cyan-500/10" },
             ].map((stat, i) => (
-              <AnimatedCounter key={i} value={stat.value} label={stat.label} />
+              <Card key={i} className={`group relative p-6 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-primary/30 transition-all duration-300 overflow-hidden shadow-xl hover:shadow-primary/10`}>
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative text-center">
+                  <p className="text-3xl md:text-4xl font-black text-gradient">{stat.value}</p>
+                  <p className="text-sm text-muted-foreground/80 mt-1">{stat.label}</p>
+                </div>
+              </Card>
             ))}
           </div>
 
-          {/* Metrics Dashboard */}
+          {/* Metrics Dashboard - Glass Premium */}
           <AnimatedSection className="pt-10">
-            <Card className="p-8 bg-card border-border">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="font-bold text-2xl">Dashboard em Tempo Real</h3>
-                  <p className="text-base text-muted-foreground">Métricas atualizadas de um operador ativo</p>
+            <Card className="relative p-8 bg-card/40 backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl">
+              {/* Decorative elements */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5" />
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+              
+              <div className="relative">
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h3 className="font-bold text-2xl">Dashboard em Tempo Real</h3>
+                    <p className="text-base text-muted-foreground/80">Métricas atualizadas de um operador ativo</p>
+                  </div>
+                  <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-green-500/20 border border-green-500/30">
+                    <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-sm font-bold text-green-400">Live</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-base text-green-500">Live</span>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {metrics.map((metric, i) => (
+                    <Card key={i} className="group relative p-5 bg-white/5 backdrop-blur-sm border border-white/10 hover:border-primary/30 text-center transition-all duration-300 overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="relative">
+                        {metric.status && (
+                          <span className="inline-block px-3 py-1 rounded-full text-xs bg-green-500/20 text-green-400 font-bold mb-3">{metric.status}</span>
+                        )}
+                        <metric.icon className="w-7 h-7 text-primary mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                        <p className="text-2xl font-black">{metric.value}</p>
+                        <p className="text-sm text-muted-foreground/80">{metric.label}</p>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                {metrics.map((metric, i) => (
-                  <Card key={i} className="p-5 bg-card border-border text-center">
-                    {metric.status && (
-                      <span className="inline-block px-3 py-1 rounded text-xs bg-green-500/20 text-green-400 mb-3">{metric.status}</span>
-                    )}
-                    <metric.icon className="w-7 h-7 text-primary mx-auto mb-3" />
-                    <p className="text-2xl font-bold">{metric.value}</p>
-                    <p className="text-sm text-muted-foreground">{metric.label}</p>
-                  </Card>
-                ))}
               </div>
             </Card>
           </AnimatedSection>
@@ -1208,15 +1328,25 @@ const Landing = () => {
       {/* Scroll indicator - arrow style */}
       <ScrollIndicator variant="arrow" />
 
-      {/* Plans Section */}
+      {/* Plans Section - Glass Premium */}
       <section id="planos" className="py-24 px-4 scroll-mt-20 relative overflow-hidden">
-        <ParallaxLayer depth={0.25} className="absolute -top-10 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-purple-500/5 pointer-events-none" />
+        <ParallaxLayer depth={0.25} className="absolute -top-10 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
+        <ParallaxLayer depth={0.3} className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
         
         <div className="max-w-7xl mx-auto space-y-14 relative">
           <AnimatedSection className="text-center space-y-5">
-            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-border">
-              <Star className="w-5 h-5 text-primary" />
-              <span className="text-base font-medium">$PRIVATE CORE - Alocação de Recursos</span>
+            {/* Premium badges */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-gradient-to-r from-primary/20 to-amber-500/20 border border-primary/30 backdrop-blur-xl">
+                <Star className="w-5 h-5 text-primary" />
+                <span className="text-base font-bold text-primary">$PRIVATE CORE - Alocação de Recursos</span>
+              </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 backdrop-blur-xl animate-pulse">
+                <Crown className="w-4 h-4 text-red-400" />
+                <span className="text-xs font-bold text-red-400">ELITE ONLY</span>
+              </div>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold">
               Defina sua
@@ -1224,126 +1354,156 @@ const Landing = () => {
             <h2 className="text-4xl md:text-5xl font-bold text-primary">
               Capacidade Operacional
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Os créditos determinam o volume, a frequência e a complexidade das execuções dentro do CORE. <Link to="/auth" className="text-primary underline">Comece com o teste gratuito!</Link>
+            <p className="text-xl text-muted-foreground/80 max-w-2xl mx-auto">
+              Os créditos determinam o volume, a frequência e a complexidade das execuções dentro do CORE. <Link to="/auth" className="text-primary underline hover:no-underline">Comece com o teste gratuito!</Link>
             </p>
           </AnimatedSection>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Free Plan */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Free Plan - Glass Premium */}
             <AnimatedItem index={0} staggerDelay={100}>
-              <Card className="p-8 bg-card border-border relative h-full">
-                <div className="mb-6">
-                  <p className="text-sm text-muted-foreground mb-2">50 créditos/mês</p>
-                  <h3 className="font-bold text-xl">Acesso Inicial</h3>
+              <Card className="group relative p-8 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-white/20 h-full overflow-hidden shadow-xl transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                
+                <div className="relative">
+                  <div className="mb-6">
+                    <p className="text-sm text-muted-foreground/80 mb-2">50 créditos/mês</p>
+                    <h3 className="font-bold text-xl">Acesso Inicial</h3>
+                  </div>
+                  <ul className="space-y-3 text-base text-muted-foreground/80 mb-8">
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-muted-foreground/60" /> Ambiente de avaliação</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-muted-foreground/60" /> Recursos limitados</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-muted-foreground/60" /> Execuções básicas limitadas</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-muted-foreground/60" /> Análise de vídeos (restrita)</li>
+                  </ul>
+                  <Link to="/auth" className="block">
+                    <Button variant="outline" className="w-full h-12 text-base border-white/20 hover:border-white/40">ATIVAR ACESSO INICIAL</Button>
+                  </Link>
                 </div>
-                <ul className="space-y-3 text-base text-muted-foreground mb-8">
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-muted-foreground" /> Ambiente de avaliação</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-muted-foreground" /> Recursos limitados</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-muted-foreground" /> Execuções básicas limitadas</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-muted-foreground" /> Análise de vídeos (restrita)</li>
-                </ul>
-                <Link to="/auth" className="block">
-                  <Button variant="outline" className="w-full h-12 text-base">ATIVAR ACESSO INICIAL</Button>
-                </Link>
               </Card>
             </AnimatedItem>
 
-            {/* Start Plan */}
+            {/* Start Plan - Glass Premium */}
             <AnimatedItem index={1} staggerDelay={100}>
-              <Card className="p-8 bg-card border-border relative h-full">
-                <div className="mb-6">
-                  <p className="text-sm text-primary mb-2">800 créditos/mês</p>
-                  <h3 className="font-bold text-xl">START CREATOR</h3>
+              <Card className="group relative p-8 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-primary/30 h-full overflow-hidden shadow-xl hover:shadow-primary/10 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+                
+                <div className="relative">
+                  <div className="mb-6">
+                    <p className="text-sm text-primary font-semibold mb-2">800 créditos/mês</p>
+                    <h3 className="font-bold text-xl">START CREATOR</h3>
+                  </div>
+                  <ul className="space-y-3 text-base text-muted-foreground/80 mb-8">
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> 30-50 execuções mensais</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> ~200 min de processamento</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Áudio: até ~30 min</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Até 5 agentes operacionais</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Armazenamento: 10 GB</li>
+                  </ul>
+                  <Link to="/auth" className="block">
+                    <Button className="gradient-button w-full text-primary-foreground h-12 text-base">ATIVAR CAPACIDADE</Button>
+                  </Link>
                 </div>
-                <ul className="space-y-3 text-base text-muted-foreground mb-8">
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> 30-50 execuções mensais</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> ~200 min de processamento</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Áudio: até ~30 min</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Até 5 agentes operacionais</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Armazenamento: 10 GB</li>
-                </ul>
-                <Link to="/auth" className="block">
-                  <Button className="gradient-button w-full text-primary-foreground h-12 text-base">ATIVAR CAPACIDADE</Button>
-                </Link>
               </Card>
             </AnimatedItem>
 
-            {/* Turbo Plan */}
+            {/* Turbo Plan - Glass Premium Featured */}
             <AnimatedItem index={2} staggerDelay={100}>
-              <Card className="p-8 bg-card border-primary relative h-full ring-2 ring-primary">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-medium">
+              <Card className="group relative p-8 bg-card/40 backdrop-blur-xl border border-primary/50 h-full overflow-hidden shadow-2xl shadow-primary/20 ring-2 ring-primary/30 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-transparent to-amber-500/10" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+                {/* Shimmer effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground text-sm font-bold shadow-lg shadow-primary/30">
                   MAIS POPULAR
                 </div>
-                <div className="mb-6">
-                  <p className="text-sm text-primary mb-2">1.600 créditos/mês</p>
-                  <h3 className="font-bold text-xl">TURBO MAKER</h3>
+                
+                <div className="relative">
+                  <div className="mb-6">
+                    <p className="text-sm text-primary font-bold mb-2">1.600 créditos/mês</p>
+                    <h3 className="font-bold text-xl">TURBO MAKER</h3>
+                  </div>
+                  <ul className="space-y-3 text-base text-muted-foreground/80 mb-8">
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> 80-130 execuções mensais</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> ~400 min de processamento</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Áudio: até ~60 min</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Até 10 agentes operacionais</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Armazenamento: 25 GB</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Geração de imagens premium</li>
+                  </ul>
+                  <Link to="/auth" className="block">
+                    <Button className="gradient-button w-full text-primary-foreground h-12 text-base glow-primary">HABILITAR EXECUÇÃO</Button>
+                  </Link>
                 </div>
-                <ul className="space-y-3 text-base text-muted-foreground mb-8">
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> 80-130 execuções mensais</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> ~400 min de processamento</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Áudio: até ~60 min</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Até 10 agentes operacionais</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Armazenamento: 25 GB</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Geração de imagens premium</li>
-                </ul>
-                <Link to="/auth" className="block">
-                  <Button className="gradient-button w-full text-primary-foreground h-12 text-base">HABILITAR EXECUÇÃO</Button>
-                </Link>
               </Card>
             </AnimatedItem>
 
-            {/* Master Plan */}
+            {/* Master Plan - Glass Premium */}
             <AnimatedItem index={3} staggerDelay={100}>
-              <Card className="p-8 bg-card border-border relative h-full">
-                <div className="absolute -top-4 right-4 px-3 py-1 rounded text-sm bg-red-500 text-white font-medium">
+              <Card className="group relative p-8 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-purple-500/30 h-full overflow-hidden shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/40 to-transparent" />
+                
+                <div className="absolute -top-4 right-4 px-3 py-1.5 rounded-full text-xs bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold shadow-lg">
                   PRO
                 </div>
-                <div className="mb-6">
-                  <p className="text-sm text-primary mb-2">3.200 créditos/mês</p>
-                  <h3 className="font-bold text-xl">MASTER PRO</h3>
+                
+                <div className="relative">
+                  <div className="mb-6">
+                    <p className="text-sm text-purple-400 font-semibold mb-2">3.200 créditos/mês</p>
+                    <h3 className="font-bold text-xl">MASTER PRO</h3>
+                  </div>
+                  <ul className="space-y-3 text-base text-muted-foreground/80 mb-8">
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-purple-400" /> 200-250 execuções mensais</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-purple-400" /> ~800 min de processamento</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-purple-400" /> Áudio: até ~120 min</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-purple-400" /> Agentes ilimitados</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-purple-400" /> Armazenamento: 50 GB</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-purple-400" /> API própria liberada</li>
+                    <li className="flex items-center gap-3"><Check className="w-5 h-5 text-purple-400" /> Priority support</li>
+                  </ul>
+                  <Link to="/auth" className="block">
+                    <Button variant="outline" className="w-full border-purple-500/50 text-purple-400 hover:bg-purple-500 hover:text-white h-12 text-base">ATIVAR INFRAESTRUTURA</Button>
+                  </Link>
                 </div>
-                <ul className="space-y-3 text-base text-muted-foreground mb-8">
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> 200-250 execuções mensais</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> ~800 min de processamento</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Áudio: até ~120 min</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Agentes ilimitados</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Armazenamento: 50 GB</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> API própria liberada</li>
-                  <li className="flex items-center gap-3"><Check className="w-5 h-5 text-primary" /> Priority support</li>
-                </ul>
-                <Link to="/auth" className="block">
-                  <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground h-12 text-base">ATIVAR INFRAESTRUTURA</Button>
-                </Link>
               </Card>
             </AnimatedItem>
           </div>
 
-          {/* Credit Packages */}
+          {/* Credit Packages - Glass Premium */}
           <AnimatedSection className="pt-14">
             <div className="text-center mb-10">
-              <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-card border border-border">
+              <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-gradient-to-r from-primary/20 to-amber-500/20 border border-primary/30 backdrop-blur-xl">
                 <Zap className="w-5 h-5 text-primary" />
-                <span className="text-base font-medium">Expansão Pontual de Capacidade</span>
+                <span className="text-base font-bold text-primary">Expansão Pontual de Capacidade</span>
               </div>
               <h3 className="text-3xl font-bold mt-5">
                 Pacotes de <span className="text-primary">Créditos Avulsos</span>
               </h3>
-              <p className="text-lg text-muted-foreground mt-2">Ao final do mês, expanda seus gastos de Alocação</p>
+              <p className="text-lg text-muted-foreground/80 mt-2">Ao final do mês, expanda seus gastos de Alocação</p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {[
-                { credits: "800", label: "Alocação básica" },
-                { credits: "1.600", label: "Expansão moderada" },
-                { credits: "2.400", label: "Escala Prolongada" },
-                { credits: "10.000", label: "Enterprise" },
-                { credits: "20.000", label: "Enterprise Plus" },
+                { credits: "800", label: "Alocação básica", color: "from-primary/10 to-amber-500/5" },
+                { credits: "1.600", label: "Expansão moderada", color: "from-emerald-500/10 to-green-500/5" },
+                { credits: "2.400", label: "Escala Prolongada", color: "from-blue-500/10 to-cyan-500/5" },
+                { credits: "10.000", label: "Enterprise", color: "from-purple-500/10 to-violet-500/5" },
+                { credits: "20.000", label: "Enterprise Plus", color: "from-red-500/10 to-rose-500/5" },
               ].map((pkg, i) => (
-                <Card key={i} className="p-6 bg-card border-border text-center hover:border-primary/50 transition-colors cursor-pointer">
-                  <p className="text-sm text-primary mb-2">{pkg.credits} CRÉDITOS</p>
-                  <p className="text-base text-muted-foreground">{pkg.label}</p>
-                  <Button variant="outline" size="sm" className="mt-4 w-full">ALOCAR CRÉDITOS</Button>
+                <Card key={i} className="group relative p-6 bg-card/40 backdrop-blur-xl border border-white/10 text-center hover:border-primary/30 transition-all duration-300 cursor-pointer overflow-hidden shadow-lg hover:shadow-primary/10">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${pkg.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  <div className="relative">
+                    <p className="text-sm text-primary font-bold mb-2">{pkg.credits} CRÉDITOS</p>
+                    <p className="text-base text-muted-foreground/80">{pkg.label}</p>
+                    <Button variant="outline" size="sm" className="mt-4 w-full border-white/20 hover:border-primary/50">ALOCAR CRÉDITOS</Button>
+                  </div>
                 </Card>
               ))}
             </div>
@@ -1351,25 +1511,31 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section id="faq" className="py-24 px-4 scroll-mt-20">
-        <div className="max-w-4xl mx-auto space-y-14">
+      {/* FAQ Section - Glass Premium */}
+      <section id="faq" className="py-24 px-4 scroll-mt-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-purple-500/5 pointer-events-none" />
+        
+        <div className="max-w-4xl mx-auto space-y-14 relative">
           <AnimatedSection className="text-center space-y-5">
+            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-gradient-to-r from-primary/20 to-amber-500/20 border border-primary/30 backdrop-blur-xl">
+              <Diamond className="w-5 h-5 text-primary" />
+              <span className="text-base font-bold text-primary">TIRE SUAS DÚVIDAS</span>
+            </div>
             <h2 className="text-4xl md:text-5xl font-bold">
               Perguntas <span className="text-primary">Frequentes</span>
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-muted-foreground/80">
               Tire suas dúvidas sobre o La Casa Dark Core
             </p>
           </AnimatedSection>
 
-          <Accordion type="single" collapsible className="space-y-5">
+          <Accordion type="single" collapsible className="space-y-4">
             {faqs.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border border-border rounded-xl px-8 bg-card">
+              <AccordionItem key={index} value={`item-${index}`} className="group border border-white/10 rounded-xl px-8 bg-card/40 backdrop-blur-xl hover:border-primary/30 transition-all duration-300 overflow-hidden">
                 <AccordionTrigger className="hover:no-underline py-6">
-                  <span className="text-left text-lg">{faq.question}</span>
+                  <span className="text-left text-lg font-semibold">{faq.question}</span>
                 </AccordionTrigger>
-                <AccordionContent className="text-lg text-muted-foreground pb-6">
+                <AccordionContent className="text-lg text-muted-foreground/80 pb-6">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
@@ -1378,48 +1544,59 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-24 px-4">
-        <div className="max-w-4xl mx-auto text-center space-y-10">
-          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary text-primary-foreground">
-            <Zap className="w-5 h-5" />
-            <span className="text-base font-medium">PERÍODO DE TESTE DISPONÍVEL</span>
-          </div>
+      {/* Final CTA - Glass Premium */}
+      <section className="py-24 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-primary/5 pointer-events-none" />
+        
+        <Card className="relative max-w-4xl mx-auto p-10 md:p-14 bg-card/40 backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-purple-500/10" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/40 to-transparent" />
           
-          <h2 className="text-4xl md:text-6xl font-bold">
-            Pronto para
-          </h2>
-          <h2 className="text-4xl md:text-6xl font-bold text-primary">
-            dominar seu nicho?
-          </h2>
-          
-          <p className="text-xl text-muted-foreground max-w-xl mx-auto">
-            Junte-se a <span className="text-primary font-semibold">milhares de criadores</span> que já estão escalando com ferramentas de nível enterprise.
-          </p>
+          <div className="relative text-center space-y-8">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground shadow-lg shadow-primary/30">
+                <Zap className="w-5 h-5" />
+                <span className="text-base font-bold">PERÍODO DE TESTE DISPONÍVEL</span>
+              </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 backdrop-blur-xl animate-pulse">
+                <Flame className="w-4 h-4 text-red-400" />
+                <span className="text-xs font-bold text-red-400">APENAS 23 VAGAS</span>
+              </div>
+            </div>
+            
+            <h2 className="text-4xl md:text-6xl font-bold">
+              Pronto para <span className="text-primary">dominar seu nicho?</span>
+            </h2>
+            
+            <p className="text-xl text-muted-foreground/80 max-w-xl mx-auto">
+              Junte-se a <span className="text-primary font-semibold">milhares de criadores</span> que já estão escalando com ferramentas de nível enterprise.
+            </p>
 
-          <Link to="/auth">
-            <Button size="lg" className="gradient-button text-primary-foreground font-semibold h-18 px-14 text-xl glow-primary">
-              <Zap className="w-6 h-6 mr-3" />
-              Começar Período de Teste
-              <ArrowRight className="w-6 h-6 ml-3" />
-            </Button>
-          </Link>
+            <Link to="/auth">
+              <Button size="lg" className="gradient-button text-primary-foreground font-bold h-16 md:h-18 px-10 md:px-14 text-xl glow-primary group">
+                <Zap className="w-6 h-6 mr-3 group-hover:scale-110 transition-transform" />
+                Começar Período de Teste
+                <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
 
-          <div className="flex items-center justify-center gap-8 text-base text-muted-foreground">
-            <span className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              Suporte 24/7
-            </span>
-            <span className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-primary" />
-              Teste grátis para começar
-            </span>
-            <span className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-purple-500" />
-              Comunidade exclusiva
-            </span>
+            <div className="flex flex-wrap items-center justify-center gap-6 text-base text-muted-foreground/80">
+              <span className="flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                Suporte 24/7
+              </span>
+              <span className="flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                <div className="w-3 h-3 rounded-full bg-primary" />
+                Teste grátis para começar
+              </span>
+              <span className="flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                <div className="w-3 h-3 rounded-full bg-purple-500" />
+                Comunidade exclusiva
+              </span>
+            </div>
           </div>
-        </div>
+        </Card>
       </section>
 
       {/* Second Marquee Strip - Before Footer */}
