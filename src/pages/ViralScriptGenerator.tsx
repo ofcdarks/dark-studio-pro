@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -26,13 +25,15 @@ import {
   AlertTriangle,
   CheckCircle2,
   Flame,
-  Eye,
   MessageSquare,
-  Lightbulb,
-  Play,
-  Pause,
-  SkipForward,
-  Volume2
+  Youtube,
+  Star,
+  Rocket,
+  BookOpen,
+  Film,
+  Mic,
+  Users,
+  Lock
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,62 +42,153 @@ import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import logoGif from "@/assets/logo.gif";
 
-// Viral formulas based on proven YouTube patterns
+// Extended viral formulas based on proven YouTube patterns
 const VIRAL_FORMULAS = [
   {
     id: "curiosity-gap",
     name: "Curiosity Gap",
-    description: "Cria lacunas de curiosidade que mantêm o espectador grudado",
+    description: "Cria lacunas de curiosidade que mantêm o espectador grudado até o final",
     icon: "🎯",
-    retention: 85
+    retention: 85,
+    category: "engagement"
   },
   {
     id: "storytelling",
     name: "Storytelling Épico",
-    description: "Narrativa envolvente com arcos dramáticos e plot twists",
+    description: "Narrativa envolvente com arcos dramáticos e plot twists inesperados",
     icon: "📖",
-    retention: 90
+    retention: 92,
+    category: "narrativa"
   },
   {
     id: "problem-solution",
     name: "Problema → Solução",
-    description: "Apresenta dor intensa e entrega transformação",
+    description: "Apresenta dor intensa e entrega transformação clara e aplicável",
     icon: "💡",
-    retention: 82
+    retention: 82,
+    category: "educacional"
   },
   {
     id: "controversy",
     name: "Polêmica Controlada",
-    description: "Opiniões fortes que geram debate e compartilhamento",
+    description: "Opiniões fortes que geram debate intenso e compartilhamento",
     icon: "🔥",
-    retention: 88
+    retention: 88,
+    category: "engagement"
   },
   {
     id: "mystery",
     name: "Mistério Revelado",
-    description: "Segredos e revelações que prendem até o final",
+    description: "Segredos e revelações que prendem até o último segundo",
     icon: "🔮",
-    retention: 92
+    retention: 94,
+    category: "narrativa"
   },
   {
     id: "challenge",
     name: "Desafio Extremo",
-    description: "Situações impossíveis com superação épica",
+    description: "Situações impossíveis com superação épica e emocional",
     icon: "⚡",
-    retention: 87
+    retention: 87,
+    category: "entertainment"
+  },
+  {
+    id: "before-after",
+    name: "Antes e Depois",
+    description: "Transformações visuais e emocionais que geram impacto",
+    icon: "✨",
+    retention: 86,
+    category: "transformacao"
+  },
+  {
+    id: "countdown",
+    name: "Countdown/Ranking",
+    description: "Listas numeradas que criam antecipação a cada item",
+    icon: "🔢",
+    retention: 83,
+    category: "entertainment"
+  },
+  {
+    id: "expose",
+    name: "Exposé/Revelação",
+    description: "Expõe verdades ocultas ou bastidores desconhecidos",
+    icon: "🕵️",
+    retention: 91,
+    category: "investigativo"
+  },
+  {
+    id: "tutorial-viral",
+    name: "Tutorial que Vende",
+    description: "Ensina algo valioso enquanto vende sua autoridade",
+    icon: "🎓",
+    retention: 80,
+    category: "educacional"
+  },
+  {
+    id: "reaction-chain",
+    name: "Reação em Cadeia",
+    description: "Uma ação leva a outra, criando efeito dominó narrativo",
+    icon: "🎲",
+    retention: 85,
+    category: "narrativa"
+  },
+  {
+    id: "underdog",
+    name: "Jornada do Herói",
+    description: "História de superação do zero ao sucesso",
+    icon: "🦸",
+    retention: 93,
+    category: "narrativa"
+  },
+  {
+    id: "fear-escape",
+    name: "Medo → Escape",
+    description: "Apresenta perigo/risco e mostra a saída segura",
+    icon: "😱",
+    retention: 89,
+    category: "engagement"
+  },
+  {
+    id: "behind-scenes",
+    name: "Bastidores Exclusivos",
+    description: "Revela o que ninguém mostra, acesso VIP",
+    icon: "🎬",
+    retention: 84,
+    category: "entertainment"
+  },
+  {
+    id: "time-pressure",
+    name: "Contra o Tempo",
+    description: "Urgência e deadline criam tensão constante",
+    icon: "⏰",
+    retention: 87,
+    category: "engagement"
+  },
+  {
+    id: "channel-based",
+    name: "Baseado no Seu Canal",
+    description: "Fórmula personalizada baseada no estilo do seu canal",
+    icon: "🎯",
+    retention: 95,
+    category: "personalizado",
+    isPremium: true
   }
 ];
 
-// Mental triggers for maximum engagement
+// Mental triggers - AI will auto-select based on niche and formula
 const MENTAL_TRIGGERS = [
-  { id: "urgency", name: "Urgência", icon: "⏰" },
-  { id: "scarcity", name: "Escassez", icon: "💎" },
-  { id: "social-proof", name: "Prova Social", icon: "👥" },
-  { id: "authority", name: "Autoridade", icon: "🏆" },
-  { id: "reciprocity", name: "Reciprocidade", icon: "🎁" },
-  { id: "fear", name: "Medo de Perder", icon: "😨" },
-  { id: "curiosity", name: "Curiosidade", icon: "🤔" },
-  { id: "anticipation", name: "Antecipação", icon: "🎬" }
+  { id: "urgency", name: "Urgência", icon: "⏰", description: "Cria senso de tempo limitado" },
+  { id: "scarcity", name: "Escassez", icon: "💎", description: "Algo raro e exclusivo" },
+  { id: "social-proof", name: "Prova Social", icon: "👥", description: "Outros já fizeram/aprovaram" },
+  { id: "authority", name: "Autoridade", icon: "🏆", description: "Expertise e credibilidade" },
+  { id: "reciprocity", name: "Reciprocidade", icon: "🎁", description: "Dar antes de pedir" },
+  { id: "fear", name: "Medo de Perder", icon: "😨", description: "FOMO e consequências" },
+  { id: "curiosity", name: "Curiosidade", icon: "🤔", description: "Gaps de conhecimento" },
+  { id: "anticipation", name: "Antecipação", icon: "🎬", description: "Expectativa do que vem" },
+  { id: "contrast", name: "Contraste", icon: "⚖️", description: "Antes vs depois" },
+  { id: "belonging", name: "Pertencimento", icon: "🤝", description: "Fazer parte do grupo" },
+  { id: "exclusivity", name: "Exclusividade", icon: "👑", description: "Acesso VIP/limitado" },
+  { id: "novelty", name: "Novidade", icon: "🆕", description: "Algo nunca visto" }
 ];
 
 // Niches with specific viral patterns
@@ -115,7 +207,12 @@ const NICHES = [
   "Gaming",
   "Negócios",
   "Desenvolvimento Pessoal",
-  "Lifestyle"
+  "Lifestyle",
+  "Documentário",
+  "Comédia",
+  "Terror/Horror",
+  "Ciência",
+  "Conspiração"
 ];
 
 const AI_MODELS = [
@@ -127,20 +224,21 @@ const AI_MODELS = [
 export default function ViralScriptGenerator() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { deduct, checkBalance, getEstimatedCost } = useCreditDeduction();
+  const { deduct, checkBalance } = useCreditDeduction();
   const { logActivity } = useActivityLog();
 
   // Form state
   const [title, setTitle] = useState("");
   const [niche, setNiche] = useState("");
   const [customNiche, setCustomNiche] = useState("");
-  const [duration, setDuration] = useState(10); // minutes
+  const [duration, setDuration] = useState(10);
   const [selectedFormula, setSelectedFormula] = useState("storytelling");
-  const [selectedTriggers, setSelectedTriggers] = useState<string[]>(["curiosity", "anticipation"]);
   const [additionalContext, setAdditionalContext] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
   const [aiModel, setAiModel] = useState("gpt-4o");
-  const [language, setLanguage] = useState("pt-BR");
+  const [language] = useState("pt-BR");
+  const [channelUrl, setChannelUrl] = useState("");
+  const [formulaTab, setFormulaTab] = useState("all");
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -149,6 +247,7 @@ export default function ViralScriptGenerator() {
   const [totalParts, setTotalParts] = useState(0);
   const [progress, setProgress] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState("");
+  const [selectedTriggersAI, setSelectedTriggersAI] = useState<string[]>([]);
 
   // Retention analysis
   const [retentionScore, setRetentionScore] = useState<number | null>(null);
@@ -161,13 +260,14 @@ export default function ViralScriptGenerator() {
   // Loading messages rotation
   const loadingMessages = [
     "🎬 Analisando fórmulas virais...",
-    "🧠 Aplicando gatilhos mentais...",
+    "🧠 Selecionando gatilhos mentais ideais...",
     "📈 Otimizando para retenção máxima...",
     "✍️ Escrevendo narrativa envolvente...",
     "🔥 Adicionando hooks poderosos...",
     "⚡ Criando momentos de tensão...",
     "🎯 Inserindo CTAs estratégicos...",
-    "💎 Polindo cada palavra..."
+    "💎 Polindo cada palavra...",
+    "🚀 Maximizando potencial viral..."
   ];
 
   useEffect(() => {
@@ -183,11 +283,12 @@ export default function ViralScriptGenerator() {
   useEffect(() => {
     const wordsPerMinute = 150;
     const totalWords = duration * wordsPerMinute;
-    const creditsPerWord = 0.02; // Base credit cost
+    const creditsPerWord = 0.02;
     const modelMultiplier = aiModel === "gpt-4o" ? 1.5 : aiModel === "claude-4-sonnet" ? 1.3 : 1.0;
-    const estimated = Math.ceil(totalWords * creditsPerWord * modelMultiplier);
+    const formulaMultiplier = selectedFormula === "channel-based" ? 1.5 : 1.0;
+    const estimated = Math.ceil(totalWords * creditsPerWord * modelMultiplier * formulaMultiplier);
     setEstimatedCredits(estimated);
-  }, [duration, aiModel]);
+  }, [duration, aiModel, selectedFormula]);
 
   // Check credits on mount
   useEffect(() => {
@@ -199,14 +300,6 @@ export default function ViralScriptGenerator() {
     };
     checkCredits();
   }, [user, estimatedCredits]);
-
-  const toggleTrigger = (triggerId: string) => {
-    setSelectedTriggers(prev => 
-      prev.includes(triggerId) 
-        ? prev.filter(t => t !== triggerId)
-        : [...prev, triggerId]
-    );
-  };
 
   const formatDuration = (minutes: number) => {
     if (minutes < 60) return `${minutes} minutos`;
@@ -243,16 +336,70 @@ export default function ViralScriptGenerator() {
     toast.success("Roteiro baixado!");
   };
 
+  const getAutoTriggers = (formulaId: string, nicheValue: string) => {
+    // AI selects optimal triggers based on formula and niche
+    const triggerMap: Record<string, string[]> = {
+      "curiosity-gap": ["curiosity", "anticipation", "fear"],
+      "storytelling": ["anticipation", "belonging", "contrast"],
+      "problem-solution": ["fear", "authority", "reciprocity"],
+      "controversy": ["curiosity", "social-proof", "novelty"],
+      "mystery": ["curiosity", "anticipation", "exclusivity"],
+      "challenge": ["anticipation", "social-proof", "fear"],
+      "before-after": ["contrast", "social-proof", "novelty"],
+      "countdown": ["anticipation", "curiosity", "scarcity"],
+      "expose": ["curiosity", "authority", "fear"],
+      "tutorial-viral": ["authority", "reciprocity", "scarcity"],
+      "reaction-chain": ["curiosity", "anticipation", "novelty"],
+      "underdog": ["belonging", "anticipation", "contrast"],
+      "fear-escape": ["fear", "urgency", "authority"],
+      "behind-scenes": ["exclusivity", "curiosity", "belonging"],
+      "time-pressure": ["urgency", "fear", "scarcity"],
+      "channel-based": ["authority", "belonging", "exclusivity"]
+    };
+
+    const nicheModifiers: Record<string, string[]> = {
+      "Dark/Mistério": ["fear", "curiosity"],
+      "True Crime": ["fear", "curiosity", "anticipation"],
+      "Motivacional": ["belonging", "contrast", "authority"],
+      "Finanças": ["fear", "scarcity", "authority"],
+      "Terror/Horror": ["fear", "anticipation", "curiosity"]
+    };
+
+    let triggers = triggerMap[formulaId] || ["curiosity", "anticipation", "fear"];
+    
+    // Add niche-specific triggers
+    const nicheExtra = nicheModifiers[nicheValue];
+    if (nicheExtra) {
+      triggers = [...new Set([...triggers, ...nicheExtra])].slice(0, 5);
+    }
+
+    return triggers;
+  };
+
   const buildViralPrompt = () => {
     const formula = VIRAL_FORMULAS.find(f => f.id === selectedFormula);
-    const triggers = selectedTriggers.map(t => MENTAL_TRIGGERS.find(m => m.id === t)?.name).filter(Boolean);
     const finalNiche = niche === "custom" ? customNiche : niche;
     const wordsTarget = duration * 150;
+    
+    // Auto-select triggers
+    const autoTriggers = getAutoTriggers(selectedFormula, finalNiche);
+    setSelectedTriggersAI(autoTriggers);
+    const triggerNames = autoTriggers.map(t => MENTAL_TRIGGERS.find(m => m.id === t)?.name).filter(Boolean);
+
+    const channelContext = selectedFormula === "channel-based" && channelUrl 
+      ? `\n## ANÁLISE DO CANAL
+Analise o padrão de sucesso do canal ${channelUrl} e adapte o roteiro para seguir:
+- Tom de voz e linguagem similar
+- Estrutura de narrativa que funciona no canal
+- Estilo de hooks e aberturas
+- Padrões de retenção específicos do nicho`
+      : '';
 
     return `Você é um ESPECIALISTA ELITE em roteiros virais para YouTube com mais de 10 anos criando conteúdo que quebra a internet. Seu trabalho é criar roteiros que:
 - Mantêm retenção ACIMA de 70%
 - Geram milhões de visualizações
 - Viralizam organicamente
+- Prendem do primeiro ao último segundo
 
 ## MISSÃO CRÍTICA
 Crie um roteiro COMPLETO e PROFISSIONAL para um vídeo de ${formatDuration(duration)} (aproximadamente ${wordsTarget} palavras).
@@ -262,64 +409,70 @@ Crie um roteiro COMPLETO e PROFISSIONAL para um vídeo de ${formatDuration(durat
 - **Nicho**: ${finalNiche}
 - **Público-alvo**: ${targetAudience || "Geral"}
 - **Fórmula Viral**: ${formula?.name} - ${formula?.description}
-- **Gatilhos Mentais**: ${triggers.join(", ")}
+- **Gatilhos Mentais Selecionados pela IA**: ${triggerNames.join(", ")}
 ${additionalContext ? `- **Contexto Adicional**: ${additionalContext}` : ''}
+${channelContext}
 
 ## ESTRUTURA OBRIGATÓRIA DE RETENÇÃO
 
 ### 🎯 HOOK INICIAL (0-30 segundos) - CRÍTICO!
-- Primeira frase EXPLOSIVA que para o scroll
-- Promessa clara do que o espectador vai ganhar
-- Elemento de curiosidade ou choque
-- NUNCA comece com "Olá pessoal" ou saudações genéricas
+- Primeira frase EXPLOSIVA que para o scroll instantaneamente
+- Promessa clara e irresistível do que o espectador vai ganhar
+- Elemento de curiosidade, choque ou polêmica controlada
+- NUNCA comece com "Olá pessoal", "E aí galera" ou saudações genéricas
+- Use números, estatísticas chocantes ou afirmações controversas
 
 ### 📈 DESENVOLVIMENTO (corpo do vídeo)
 Divida em blocos de 2-3 minutos, cada um com:
 - Mini-hook no início de cada bloco
-- Tensão crescente
-- Micro-revelações para manter engajamento
-- Transições que criam expectativa
+- Tensão crescente e escalonada
+- Micro-revelações para manter engajamento constante
+- Transições que criam expectativa e curiosidade
+- "Open loops" que só fecham depois
 
 ### 🔥 PONTOS DE RETENÇÃO (a cada 2-3 minutos)
-- Pattern interrupts visuais
-- Perguntas retóricas
-- Teasers do que vem a seguir
+- Pattern interrupts visuais e narrativos
+- Perguntas retóricas que fazem pensar
+- Teasers do que vem a seguir ("mas o pior ainda está por vir...")
 - Momentos de emoção intensa
+- Plot twists e revelações inesperadas
 
 ### 💎 CLÍMAX E RESOLUÇÃO
-- Build-up emocional máximo
-- Revelação principal épica
-- Momento de transformação/insight
+- Build-up emocional máximo antes da revelação
+- Revelação principal épica e impactante
+- Momento de transformação/insight profundo
+- Fechamento que ressoa emocionalmente
 
 ### 📢 CTA ESTRATÉGICO
-- CTA integrado naturalmente
-- Chamada para inscrição contextualizada
-- Teaser do próximo vídeo
+- CTA integrado naturalmente na narrativa
+- Chamada para inscrição contextualizada com benefício claro
+- Teaser do próximo vídeo para criar antecipação
+
+## GATILHOS MENTAIS APLICADOS AUTOMATICAMENTE
+${triggerNames.map(t => `- **${t}**: Aplique naturalmente ao longo do roteiro de forma sutil mas efetiva`).join('\n')}
 
 ## REGRAS DE OURO
-1. CADA FRASE deve ter um propósito
-2. Use linguagem conversacional e envolvente
+1. CADA FRASE deve ter um propósito estratégico
+2. Use linguagem conversacional, íntima e envolvente
 3. Crie "open loops" (ganchos que só fecham depois)
-4. Alterne entre momentos de tensão e alívio
-5. Inclua dados/números para credibilidade
-6. Use metáforas e histórias para ilustrar pontos
-7. Faça o espectador SENTIR, não apenas ouvir
-
-## GATILHOS MENTAIS A APLICAR
-${triggers.map(t => `- **${t}**: Aplique naturalmente ao longo do roteiro`).join('\n')}
+4. Alterne entre momentos de tensão extrema e alívio
+5. Inclua dados/números chocantes para credibilidade
+6. Use metáforas poderosas e histórias para ilustrar
+7. Faça o espectador SENTIR intensamente, não apenas ouvir
+8. Cada parágrafo deve terminar com um gancho para o próximo
 
 ## FORMATO DE ENTREGA
 Entregue APENAS o roteiro narrado (voice-over), sem instruções técnicas.
 Não inclua: [CENA], [CORTE], [B-ROLL] ou qualquer marcação técnica.
-O texto deve fluir naturalmente como uma narração contínua.
+O texto deve fluir naturalmente como uma narração contínua e envolvente.
 
 ## IMPORTANTE
 - O roteiro DEVE ter aproximadamente ${wordsTarget} palavras
-- Mantenha parágrafos curtos (2-3 frases)
-- Use quebras naturais para respiração
-- Cada minuto = ~150 palavras
+- Mantenha parágrafos curtos (2-3 frases máximo)
+- Use quebras naturais para respiração do narrador
+- Cada minuto = ~150 palavras faladas
 
-COMECE O ROTEIRO AGORA:`;
+COMECE O ROTEIRO AGORA COM UM HOOK EXPLOSIVO:`;
   };
 
   const generateScript = async () => {
@@ -330,6 +483,11 @@ COMECE O ROTEIRO AGORA:`;
 
     if (!niche && !customNiche) {
       toast.error("Selecione ou digite um nicho");
+      return;
+    }
+
+    if (selectedFormula === "channel-based" && !channelUrl.trim()) {
+      toast.error("Digite a URL do canal para usar esta fórmula");
       return;
     }
 
@@ -345,7 +503,6 @@ COMECE O ROTEIRO AGORA:`;
     setRetentionTips([]);
 
     try {
-      // Calculate parts needed for long scripts
       const wordsPerPart = 2000;
       const totalWords = duration * 150;
       const partsNeeded = Math.ceil(totalWords / wordsPerPart);
@@ -358,7 +515,7 @@ COMECE O ROTEIRO AGORA:`;
         setProgress(((part - 1) / partsNeeded) * 100);
 
         const partPrompt = partsNeeded > 1 
-          ? `${buildViralPrompt()}\n\n[PARTE ${part}/${partsNeeded}] ${part === 1 ? 'Comece do início do roteiro.' : `Continue de onde parou. Texto anterior terminava em: "${fullScript.slice(-200)}"`} ${part === partsNeeded ? 'Finalize o roteiro com CTA.' : 'Pare em um ponto natural, será continuado.'}`
+          ? `${buildViralPrompt()}\n\n[PARTE ${part}/${partsNeeded}] ${part === 1 ? 'Comece do início do roteiro com hook explosivo.' : `Continue de onde parou. Texto anterior terminava em: "${fullScript.slice(-200)}"`} ${part === partsNeeded ? 'Finalize o roteiro com clímax e CTA épico.' : 'Pare em um ponto de tensão para continuar.'}`
           : buildViralPrompt();
 
         const { data, error } = await supabase.functions.invoke('ai-assistant', {
@@ -378,7 +535,6 @@ COMECE O ROTEIRO AGORA:`;
 
       setProgress(100);
 
-      // Deduct credits
       await deduct({
         operationType: 'script_generation',
         customAmount: estimatedCredits,
@@ -390,21 +546,17 @@ COMECE O ROTEIRO AGORA:`;
         }
       });
 
-      // Log activity
       await logActivity({
         action: 'script_generated',
         description: `Roteiro viral: ${title} (${formatDuration(duration)})`,
         metadata: {
           duration,
           formula: selectedFormula,
-          triggers: selectedTriggers
+          triggers: selectedTriggersAI
         }
       });
 
-      // Analyze retention
       analyzeRetention(fullScript);
-
-      // Save script
       await saveScript(fullScript);
 
       toast.success("Roteiro viral gerado com sucesso!");
@@ -421,7 +573,6 @@ COMECE O ROTEIRO AGORA:`;
     const tips: string[] = [];
     let score = 75;
 
-    // Check for strong hooks
     const firstSentence = script.split('.')[0] || "";
     if (firstSentence.length > 100) {
       tips.push("Primeira frase muito longa. Hooks devem ser impactantes e curtos.");
@@ -430,7 +581,6 @@ COMECE O ROTEIRO AGORA:`;
       score += 5;
     }
 
-    // Check for questions
     const questionCount = (script.match(/\?/g) || []).length;
     if (questionCount < 5) {
       tips.push("Adicione mais perguntas retóricas para engajar o espectador.");
@@ -439,8 +589,7 @@ COMECE O ROTEIRO AGORA:`;
       score += 5;
     }
 
-    // Check for emotional words
-    const emotionalWords = ['incrível', 'chocante', 'surpreendente', 'impressionante', 'nunca', 'sempre', 'segredo', 'revelação'];
+    const emotionalWords = ['incrível', 'chocante', 'surpreendente', 'impressionante', 'nunca', 'sempre', 'segredo', 'revelação', 'explosivo', 'devastador'];
     const emotionalCount = emotionalWords.reduce((acc, word) => 
       acc + (script.toLowerCase().match(new RegExp(word, 'g')) || []).length, 0
     );
@@ -451,7 +600,6 @@ COMECE O ROTEIRO AGORA:`;
       score += 5;
     }
 
-    // Check paragraph length
     const paragraphs = script.split('\n\n').filter(p => p.trim());
     const longParagraphs = paragraphs.filter(p => p.length > 500);
     if (longParagraphs.length > 3) {
@@ -459,7 +607,6 @@ COMECE O ROTEIRO AGORA:`;
       score -= 5;
     }
 
-    // Ensure score is within bounds
     score = Math.min(100, Math.max(0, score));
     
     setRetentionScore(score);
@@ -484,6 +631,10 @@ COMECE O ROTEIRO AGORA:`;
     }
   };
 
+  const filteredFormulas = formulaTab === "all" 
+    ? VIRAL_FORMULAS 
+    : VIRAL_FORMULAS.filter(f => f.category === formulaTab);
+
   return (
     <MainLayout>
       <SEOHead 
@@ -495,46 +646,48 @@ COMECE O ROTEIRO AGORA:`;
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl">
-              <Flame className="h-6 w-6 text-white" />
+            <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg shadow-primary/20">
+              <Rocket className="h-6 w-6 text-primary-foreground" />
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
-              Gerador de Roteiros Virais
-            </h1>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">
+                Gerador de Roteiros Virais
+              </h1>
+              <p className="text-muted-foreground text-sm">
+                Roteiros de 5min a 3h com foco em retenção e viralização máxima
+              </p>
+            </div>
           </div>
-          <p className="text-muted-foreground">
-            Crie roteiros de 5 minutos a 3 horas com foco em retenção e viralização
-          </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Configuration Panel */}
-          <div className="space-y-6">
+        <div className="grid lg:grid-cols-5 gap-6">
+          {/* Configuration Panel - 3 columns */}
+          <div className="lg:col-span-3 space-y-6">
             {/* Basic Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <Card className="border-primary/20">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Target className="h-5 w-5 text-primary" />
                   Informações do Vídeo
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="title">Título ou Tema *</Label>
+                  <Label htmlFor="title" className="text-sm font-medium">Título ou Tema *</Label>
                   <Input
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Ex: A história por trás do maior golpe do século"
-                    className="mt-1"
+                    className="mt-1.5"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="niche">Nicho</Label>
+                    <Label htmlFor="niche" className="text-sm font-medium">Nicho</Label>
                     <Select value={niche} onValueChange={setNiche}>
-                      <SelectTrigger className="mt-1">
+                      <SelectTrigger className="mt-1.5">
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
@@ -555,20 +708,25 @@ COMECE O ROTEIRO AGORA:`;
                   </div>
 
                   <div>
-                    <Label htmlFor="audience">Público-alvo</Label>
+                    <Label htmlFor="audience" className="text-sm font-medium">Público-alvo</Label>
                     <Input
                       id="audience"
                       value={targetAudience}
                       onChange={(e) => setTargetAudience(e.target.value)}
-                      placeholder="Ex: 18-35 anos, interessados em..."
-                      className="mt-1"
+                      placeholder="Ex: 18-35 anos"
+                      className="mt-1.5"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label>Duração do Vídeo: {formatDuration(duration)}</Label>
-                  <div className="mt-3 px-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium">Duração do Vídeo</Label>
+                    <Badge variant="secondary" className="text-primary font-semibold">
+                      {formatDuration(duration)}
+                    </Badge>
+                  </div>
+                  <div className="px-1">
                     <Slider
                       value={[duration]}
                       onValueChange={(v) => setDuration(v[0])}
@@ -577,8 +735,9 @@ COMECE O ROTEIRO AGORA:`;
                       step={5}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <div className="flex justify-between text-xs text-muted-foreground mt-2">
                       <span>5 min</span>
+                      <span>30 min</span>
                       <span>1h</span>
                       <span>2h</span>
                       <span>3h</span>
@@ -589,89 +748,134 @@ COMECE O ROTEIRO AGORA:`;
             </Card>
 
             {/* Viral Formula */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-yellow-500" />
+            <Card className="border-primary/20">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Zap className="h-5 w-5 text-primary" />
                   Fórmula Viral
                 </CardTitle>
                 <CardDescription>
-                  Escolha a estrutura que melhor se adapta ao seu conteúdo
+                  Escolha a estrutura narrativa para máxima viralização
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3">
-                  {VIRAL_FORMULAS.map((formula) => (
+              <CardContent className="space-y-4">
+                {/* Category Tabs */}
+                <Tabs value={formulaTab} onValueChange={setFormulaTab}>
+                  <TabsList className="grid grid-cols-6 w-full">
+                    <TabsTrigger value="all" className="text-xs">Todas</TabsTrigger>
+                    <TabsTrigger value="narrativa" className="text-xs">Narrativa</TabsTrigger>
+                    <TabsTrigger value="engagement" className="text-xs">Engagement</TabsTrigger>
+                    <TabsTrigger value="educacional" className="text-xs">Educacional</TabsTrigger>
+                    <TabsTrigger value="entertainment" className="text-xs">Entretenimento</TabsTrigger>
+                    <TabsTrigger value="personalizado" className="text-xs">Seu Canal</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                <div className="grid grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-2">
+                  {filteredFormulas.map((formula) => (
                     <button
                       key={formula.id}
                       onClick={() => setSelectedFormula(formula.id)}
-                      className={`p-3 rounded-lg border-2 text-left transition-all ${
+                      className={`p-3 rounded-xl border-2 text-left transition-all relative ${
                         selectedFormula === formula.id
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:border-primary/50'
+                          ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10'
+                          : 'border-border hover:border-primary/50 hover:bg-secondary/50'
                       }`}
                     >
-                      <div className="flex items-center gap-2 mb-1">
+                      {formula.isPremium && (
+                        <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-primary to-primary/80 text-xs">
+                          <Star className="h-3 w-3 mr-1" />
+                          PRO
+                        </Badge>
+                      )}
+                      <div className="flex items-center gap-2 mb-1.5">
                         <span className="text-xl">{formula.icon}</span>
                         <span className="font-medium text-sm">{formula.name}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
                         {formula.description}
                       </p>
-                      <div className="flex items-center gap-1 mt-2">
+                      <div className="flex items-center gap-1">
                         <TrendingUp className="h-3 w-3 text-green-500" />
-                        <span className="text-xs text-green-500">{formula.retention}% retenção</span>
+                        <span className="text-xs text-green-500 font-medium">{formula.retention}% retenção</span>
                       </div>
                     </button>
                   ))}
                 </div>
+
+                {/* Channel URL for channel-based formula */}
+                {selectedFormula === "channel-based" && (
+                  <div className="mt-4 p-4 bg-primary/5 rounded-xl border border-primary/20">
+                    <Label className="text-sm font-medium flex items-center gap-2 mb-2">
+                      <Youtube className="h-4 w-4 text-red-500" />
+                      URL do Canal de Referência *
+                    </Label>
+                    <Input
+                      value={channelUrl}
+                      onChange={(e) => setChannelUrl(e.target.value)}
+                      placeholder="https://youtube.com/@seucanal"
+                      className="bg-background"
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      A IA analisará o padrão de sucesso do canal para criar um roteiro personalizado
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Mental Triggers */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-purple-500" />
+            {/* Mental Triggers - Auto Selected */}
+            <Card className="border-primary/20 bg-gradient-to-br from-card to-primary/5">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Brain className="h-5 w-5 text-primary" />
                   Gatilhos Mentais
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Seleção Automática
+                  </Badge>
                 </CardTitle>
                 <CardDescription>
-                  Selecione os gatilhos a serem aplicados no roteiro
+                  A IA seleciona automaticamente os melhores gatilhos baseado na fórmula e nicho
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {MENTAL_TRIGGERS.map((trigger) => (
-                    <button
-                      key={trigger.id}
-                      onClick={() => toggleTrigger(trigger.id)}
-                      className={`px-3 py-2 rounded-full text-sm flex items-center gap-1.5 transition-all ${
-                        selectedTriggers.includes(trigger.id)
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-secondary hover:bg-secondary/80'
-                      }`}
-                    >
-                      <span>{trigger.icon}</span>
-                      <span>{trigger.name}</span>
-                    </button>
-                  ))}
+                  {MENTAL_TRIGGERS.map((trigger) => {
+                    const finalNiche = niche === "custom" ? customNiche : niche;
+                    const autoSelected = getAutoTriggers(selectedFormula, finalNiche).includes(trigger.id);
+                    return (
+                      <div
+                        key={trigger.id}
+                        className={`px-3 py-2 rounded-full text-sm flex items-center gap-1.5 transition-all ${
+                          autoSelected
+                            ? 'bg-primary text-primary-foreground shadow-md'
+                            : 'bg-secondary/50 text-muted-foreground'
+                        }`}
+                      >
+                        <span>{trigger.icon}</span>
+                        <span>{trigger.name}</span>
+                        {autoSelected && <CheckCircle2 className="h-3 w-3 ml-1" />}
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
 
             {/* AI Model & Context */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-blue-500" />
+            <Card className="border-primary/20">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Sparkles className="h-5 w-5 text-primary" />
                   Configurações Avançadas
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label>Modelo de IA</Label>
+                  <Label className="text-sm font-medium">Modelo de IA</Label>
                   <Select value={aiModel} onValueChange={setAiModel}>
-                    <SelectTrigger className="mt-1">
+                    <SelectTrigger className="mt-1.5">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -679,7 +883,7 @@ COMECE O ROTEIRO AGORA:`;
                         <SelectItem key={model.id} value={model.id}>
                           <div className="flex items-center gap-2">
                             <span>{model.name}</span>
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="outline" className="text-xs">
                               {model.provider}
                             </Badge>
                           </div>
@@ -690,69 +894,66 @@ COMECE O ROTEIRO AGORA:`;
                 </div>
 
                 <div>
-                  <Label htmlFor="context">Contexto Adicional (opcional)</Label>
+                  <Label htmlFor="context" className="text-sm font-medium">Contexto Adicional (opcional)</Label>
                   <Textarea
                     id="context"
                     value={additionalContext}
                     onChange={(e) => setAdditionalContext(e.target.value)}
-                    placeholder="Informações extras, referências, estilo específico..."
-                    className="mt-1 min-h-[100px]"
+                    placeholder="Informações extras, referências, estilo específico, dados importantes..."
+                    className="mt-1.5 min-h-[80px] resize-none"
                   />
                 </div>
               </CardContent>
             </Card>
+          </div>
 
-            {/* Generate Button */}
-            <Card className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/20">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      ~{Math.ceil(duration * 150)} palavras
-                    </span>
+          {/* Output Panel - 2 columns */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Generate Button Card */}
+            <Card className="border-primary/50 bg-gradient-to-br from-card to-primary/10 sticky top-4">
+              <CardContent className="p-5">
+                <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
+                  <div className="flex items-center gap-2 p-2 bg-background/50 rounded-lg">
+                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">~{Math.ceil(duration * 150)} palavras</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-yellow-500" />
-                    <span className="text-sm font-medium">
-                      {estimatedCredits} créditos
-                    </span>
+                  <div className="flex items-center gap-2 p-2 bg-background/50 rounded-lg">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-primary">{estimatedCredits} créditos</span>
                   </div>
                 </div>
 
                 <Button
                   onClick={generateScript}
                   disabled={isGenerating || !hasEnoughCredits}
-                  className="w-full h-12 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-semibold"
+                  className="w-full h-14 text-lg font-bold shadow-lg shadow-primary/20"
+                  size="lg"
                 >
                   {isGenerating ? (
                     <div className="flex items-center gap-2">
-                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <RefreshCw className="h-5 w-5 animate-spin" />
                       <span>Gerando... {Math.round(progress)}%</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <Flame className="h-5 w-5" />
+                      <Rocket className="h-5 w-5" />
                       <span>Gerar Roteiro Viral</span>
                     </div>
                   )}
                 </Button>
 
                 {!hasEnoughCredits && (
-                  <p className="text-xs text-red-500 text-center mt-2">
+                  <p className="text-xs text-destructive text-center mt-3">
                     Créditos insuficientes. Recarregue para continuar.
                   </p>
                 )}
               </CardContent>
             </Card>
-          </div>
 
-          {/* Output Panel */}
-          <div className="space-y-6">
+            {/* Loading State */}
             {isGenerating && (
               <Card className="border-primary/50 bg-card">
-                <CardContent className="p-8 flex flex-col items-center justify-center min-h-[400px] relative">
-                  {/* Logo com efeito de pulso - PADRONIZADO w-24 */}
+                <CardContent className="p-8 flex flex-col items-center justify-center min-h-[350px] relative">
                   <div className="relative w-24 h-24 mb-6">
                     <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
                     <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
@@ -771,7 +972,6 @@ COMECE O ROTEIRO AGORA:`;
                     {loadingMessage}
                   </p>
 
-                  {/* Indicador de partes - PADRONIZADO */}
                   {totalParts > 1 && (
                     <div className="flex items-center gap-2 mb-4">
                       {Array.from({ length: totalParts }, (_, i) => (
@@ -791,7 +991,6 @@ COMECE O ROTEIRO AGORA:`;
                     </div>
                   )}
                   
-                  {/* Barra de progresso - PADRONIZADA */}
                   <div className="w-full max-w-xs space-y-2">
                     <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                       <div 
@@ -807,6 +1006,7 @@ COMECE O ROTEIRO AGORA:`;
               </Card>
             )}
 
+            {/* Script Output */}
             {generatedScript && !isGenerating && (
               <>
                 {/* Retention Analysis */}
@@ -856,10 +1056,32 @@ COMECE O ROTEIRO AGORA:`;
                   </Card>
                 )}
 
-                {/* Script Output */}
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="flex items-center gap-2">
+                {/* AI Selected Triggers */}
+                {selectedTriggersAI.length > 0 && (
+                  <Card className="border-primary/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Brain className="h-4 w-4 text-primary" />
+                        <span className="font-medium text-sm">Gatilhos Aplicados</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedTriggersAI.map(triggerId => {
+                          const trigger = MENTAL_TRIGGERS.find(t => t.id === triggerId);
+                          return trigger && (
+                            <Badge key={triggerId} variant="secondary" className="text-xs">
+                              {trigger.icon} {trigger.name}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Script Content */}
+                <Card className="border-primary/20">
+                  <CardHeader className="flex flex-row items-center justify-between pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
                       <MessageSquare className="h-5 w-5 text-primary" />
                       Seu Roteiro Viral
                     </CardTitle>
@@ -875,7 +1097,7 @@ COMECE O ROTEIRO AGORA:`;
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-[500px] w-full rounded-md border p-4">
+                    <ScrollArea className="h-[400px] w-full rounded-lg border bg-background/50 p-4">
                       <div className="prose prose-sm dark:prose-invert max-w-none">
                         <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
                           {generatedScript}
@@ -896,9 +1118,9 @@ COMECE O ROTEIRO AGORA:`;
                       </div>
                       <Button 
                         variant="ghost" 
-                        size="sm" 
+                        size="sm"
                         onClick={generateScript}
-                        className="text-primary"
+                        disabled={isGenerating}
                       >
                         <RefreshCw className="h-4 w-4 mr-1" />
                         Regenerar
@@ -909,18 +1131,16 @@ COMECE O ROTEIRO AGORA:`;
               </>
             )}
 
-            {!generatedScript && !isGenerating && (
-              <Card className="min-h-[400px] flex items-center justify-center">
-                <CardContent className="text-center p-8">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center mx-auto mb-4">
-                    <Flame className="h-8 w-8 text-orange-500" />
+            {/* Empty State */}
+            {!isGenerating && !generatedScript && (
+              <Card className="border-dashed border-2 border-muted-foreground/20">
+                <CardContent className="p-8 flex flex-col items-center justify-center min-h-[350px] text-center">
+                  <div className="p-4 bg-primary/10 rounded-full mb-4">
+                    <Film className="h-10 w-10 text-primary" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    Pronto para Viralizar?
-                  </h3>
-                  <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                    Configure as opções ao lado e clique em "Gerar Roteiro Viral" 
-                    para criar um roteiro otimizado para máxima retenção.
+                  <h3 className="text-lg font-semibold mb-2">Seu roteiro aparecerá aqui</h3>
+                  <p className="text-sm text-muted-foreground max-w-xs">
+                    Configure as opções ao lado e clique em "Gerar Roteiro Viral" para criar um roteiro otimizado para máxima retenção
                   </p>
                 </CardContent>
               </Card>
