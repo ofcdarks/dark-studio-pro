@@ -114,24 +114,24 @@ export function ConsistencyScoreCard() {
         ) : (
           <>
             {/* Main Score */}
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="flex items-baseline gap-2">
-                  <span className={`text-4xl font-bold ${getScoreColor()}`}>{score}</span>
-                  <span className="text-lg text-muted-foreground">/100</span>
+            <div className="flex items-start justify-between mb-4 gap-2">
+              <div className="min-w-0">
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-3xl font-bold ${getScoreColor()}`}>{score}</span>
+                  <span className="text-sm text-muted-foreground">/100</span>
                 </div>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <Award className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium text-foreground">{level}</span>
+                <div className="flex items-center gap-1 mt-1">
+                  <Award className="w-3 h-3 text-primary flex-shrink-0" />
+                  <span className="text-xs font-medium text-foreground truncate">{level}</span>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="flex items-center gap-1 text-sm">
-                  <Zap className="w-4 h-4 text-yellow-500" />
+              <div className="text-right flex-shrink-0">
+                <div className="flex items-center gap-1 text-xs">
+                  <Zap className="w-3 h-3 text-yellow-500" />
                   <span className="font-medium">{daysActive}</span>
-                  <span className="text-muted-foreground">dias ativos</span>
+                  <span className="text-muted-foreground">dias</span>
                 </div>
-                <p className="text-xs text-muted-foreground">últimos 30 dias</p>
+                <p className="text-xs text-muted-foreground">ativos</p>
               </div>
             </div>
 
