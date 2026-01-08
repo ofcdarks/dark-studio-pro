@@ -135,6 +135,25 @@ export function ProductionBoardCard() {
     enabled: !!user?.id,
   });
 
+  // Fetch completion history for weekly goal calculation
+  const { data: completionHistory = [] } = useQuery({
+    queryKey: ['task-completion-history', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+      const { data, error } = await supabase
+        .from('task_completion_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('completed_at', weekStart.toISOString())
+        .order('completed_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
   // Add task mutation
   const addTaskMutation = useMutation({
     mutationFn: async (params: { title: string; task_type: string; column_id: string }) => {
@@ -228,12 +247,24 @@ export function ProductionBoardCard() {
     setEditTitle('');
   };
 
-  const moveTask = (taskId: string, newColumn: BoardTask['column_id']) => {
+  const moveTask = async (taskId: string, newColumn: BoardTask['column_id']) => {
+    const task = tasks.find(t => t.id === taskId);
     const updates: Partial<BoardTask> & { completed_at?: string | null } = { column_id: newColumn };
     
     // Set completed_at when moving to done, clear it when moving out
     if (newColumn === 'done') {
       updates.completed_at = new Date().toISOString();
+      
+      // Register in permanent history when completing a task
+      if (task && user?.id) {
+        await supabase.from('task_completion_history').insert({
+          user_id: user.id,
+          task_title: task.title,
+          task_type: task.task_type,
+          completed_at: updates.completed_at,
+        });
+        queryClient.invalidateQueries({ queryKey: ['task-completion-history'] });
+      }
     } else {
       updates.completed_at = null;
     }
@@ -281,15 +312,8 @@ export function ProductionBoardCard() {
   const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
   
-  const tasksCompletedThisWeek = tasks.filter(t => {
-    if (t.column_id !== 'done' || !t.completed_at) return false;
-    try {
-      const completedDate = parseISO(t.completed_at);
-      return isWithinInterval(completedDate, { start: weekStart, end: weekEnd });
-    } catch {
-      return false;
-    }
-  }).length;
+  // Use completion history for accurate weekly count (persists even after task deletion)
+  const tasksCompletedThisWeek = completionHistory.length;
 
   const weeklyProgress = Math.min(100, Math.round((tasksCompletedThisWeek / weeklyGoal) * 100));
   const isGoalReached = tasksCompletedThisWeek >= weeklyGoal;
