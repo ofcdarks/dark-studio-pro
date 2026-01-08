@@ -617,24 +617,30 @@ export default function ViralScriptGenerator() {
       try {
         // Check if it's a connected YouTube channel (can fetch real data)
         const selectedChannel = userChannels.find(c => c.channel_url === channelUrl);
-        const channelId = selectedChannel?.id || channelUrl.split('/').pop();
+        const channelIdFromUrl = channelUrl.match(/\/channel\/([^/?]+)/)?.[1];
+        const channelId = channelIdFromUrl || (selectedChannel?.id?.startsWith('UC') ? selectedChannel.id : undefined);
         
         // Try to fetch real YouTube analytics first
         let realChannelVideos: Array<{title: string; views: number; nicho: string}> = [];
         let detectedNiche = '';
         
         // Check if user has YouTube connection for this channel
-        const { data: ytConnection } = await supabase
-          .from('youtube_connections')
-          .select('channel_id')
-          .eq('user_id', user.id)
-          .eq('channel_id', channelId)
-          .maybeSingle();
+        const { data: ytConnection } = channelId
+          ? await supabase
+              .from('youtube_connections')
+              .select('channel_id')
+              .eq('user_id', user.id)
+              .eq('channel_id', channelId)
+              .maybeSingle()
+          : { data: null };
         
-        if (ytConnection) {
+        if (ytConnection && channelId) {
           // Fetch real analytics from connected YouTube channel
           try {
-            const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('youtube-channel-analytics');
+            const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke(
+              'youtube-channel-analytics',
+              { body: { channelId } }
+            );
             
             if (!analyticsError && analyticsData?.topVideos) {
               const seenTitles = new Set<string>();

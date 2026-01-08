@@ -37,15 +37,32 @@ Deno.serve(async (req) => {
 
     const userId = claimsData.claims.sub;
 
-    // Get user's YouTube connection
-    const { data: connection, error: connError } = await supabase
+    let requestedChannelId: string | undefined;
+    if (req.method === 'POST') {
+      try {
+        const body = await req.json();
+        requestedChannelId = typeof body?.channelId === 'string' ? body.channelId : undefined;
+      } catch {
+        // ignore invalid/empty body
+      }
+    }
+
+    // Get user's YouTube connection (optionally for a specific channel)
+    let connectionQuery = supabase
       .from('youtube_connections')
       .select('*')
-      .eq('user_id', userId)
-      .single();
+      .eq('user_id', userId);
+
+    if (requestedChannelId) {
+      connectionQuery = connectionQuery.eq('channel_id', requestedChannelId);
+    } else {
+      connectionQuery = connectionQuery.order('updated_at', { ascending: false }).limit(1);
+    }
+
+    const { data: connection, error: connError } = await connectionQuery.maybeSingle();
 
     if (connError || !connection) {
-      return new Response(JSON.stringify({ error: 'YouTube not connected' }), {
+      return new Response(JSON.stringify({ error: 'YouTube not connected for this channel' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -133,7 +150,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch recent videos (last 20)
+    // Fetch recent uploads (last 20)
     const playlistUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=20`;
     const playlistResponse = await fetch(playlistUrl, {
       headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -144,10 +161,12 @@ Deno.serve(async (req) => {
 
     if (playlistResponse.ok) {
       const playlistData = await playlistResponse.json();
-      
+
       if (playlistData.items && playlistData.items.length > 0) {
-        const videoIds = playlistData.items.map((item: any) => item.snippet.resourceId.videoId).join(',');
-        
+        const videoIds = playlistData.items
+          .map((item: any) => item.snippet.resourceId.videoId)
+          .join(',');
+
         // Fetch video statistics
         const videosUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet,contentDetails&id=${videoIds}`;
         const videosResponse = await fetch(videosUrl, {
@@ -156,7 +175,7 @@ Deno.serve(async (req) => {
 
         if (videosResponse.ok) {
           const videosData = await videosResponse.json();
-          
+
           videoStats = videosData.items.map((video: any) => {
             const views = parseInt(video.statistics.viewCount || '0', 10);
             const likes = parseInt(video.statistics.likeCount || '0', 10);
@@ -177,6 +196,59 @@ Deno.serve(async (req) => {
           recentVideos = [...videoStats].sort((a, b) => b.views - a.views);
         }
       }
+    }
+
+    // Fetch TOP videos by views (overall channel)
+    let topVideosOverall: any[] = [];
+    try {
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=25&order=viewCount&type=video`;
+      const searchResponse = await fetch(searchUrl, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json();
+        const ids = (searchData.items || [])
+          .map((it: any) => it?.id?.videoId)
+          .filter(Boolean)
+          .slice(0, 25)
+          .join(',');
+
+        if (ids) {
+          const topUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet,contentDetails&id=${ids}`;
+          const topResp = await fetch(topUrl, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+
+          if (topResp.ok) {
+            const topData = await topResp.json();
+            topVideosOverall = (topData.items || [])
+              .map((video: any) => {
+                const views = parseInt(video.statistics.viewCount || '0', 10);
+                const likes = parseInt(video.statistics.likeCount || '0', 10);
+                const comments = parseInt(video.statistics.commentCount || '0', 10);
+                return {
+                  videoId: video.id,
+                  title: video.snippet.title,
+                  thumbnail: video.snippet.thumbnails?.medium?.url || video.snippet.thumbnails?.default?.url,
+                  publishedAt: video.snippet.publishedAt,
+                  views,
+                  likes,
+                  comments,
+                  engagementRate: views > 0 ? ((likes + comments) / views * 100).toFixed(2) : '0',
+                };
+              })
+              .sort((a: any, b: any) => b.views - a.views)
+              .slice(0, 20);
+          }
+        }
+      }
+    } catch (e) {
+      console.log('Failed to fetch overall top videos, falling back to recent videos');
+    }
+
+    if (topVideosOverall.length === 0) {
+      topVideosOverall = recentVideos.slice(0, 20);
     }
 
     // Calculate metrics
@@ -313,7 +385,7 @@ Deno.serve(async (req) => {
         videosThisMonth,
         daysSinceLastVideo,
       },
-      topVideos: recentVideos.slice(0, 5),
+      topVideos: topVideosOverall,
       tips,
       lastUpdated: new Date().toISOString(),
     };
