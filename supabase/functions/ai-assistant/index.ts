@@ -587,24 +587,32 @@ Forneça uma dica personalizada baseada nessas estatísticas.`;
       case "analyze_video_titles":
         const lang = language === "pt-BR" ? "Português Brasileiro" : language === "es" ? "Espanhol" : "Inglês";
         systemPrompt = `Você é um especialista em análise de títulos virais do YouTube.
-        Analise a URL do vídeo fornecida e:
-        1. Identifique a fórmula/estrutura EXATA do título original e por que ele funciona
+        
+        ⚠️ REGRA CRÍTICA ABSOLUTA - DADOS DO VÍDEO:
+        - Os DADOS REAIS do vídeo (título, views, canal, descrição) serão fornecidos pelo usuário
+        - Você DEVE usar EXATAMENTE o título original fornecido nos dados
+        - NUNCA invente ou imagine um título diferente do que foi fornecido
+        - Se o título fornecido for "La BATALLA TECNOLÓGICA que NADIE Vio: MAYAS vs. AZTECAS", USE EXATAMENTE ESSE TÍTULO como base
+        - NÃO crie títulos sobre outros assuntos (egípcios, hititas, etc) - mantenha o tema EXATO do vídeo original
+        
+        Sua tarefa:
+        1. Identifique a fórmula/estrutura EXATA do título original fornecido e por que ele funciona
         2. Gere 5 novos títulos que OBRIGATORIAMENTE usem a mesma fórmula viral identificada, mas MELHORADOS
-        3. Detecte o nicho, subnicho e micro-nicho do vídeo
+        3. Detecte o nicho, subnicho e micro-nicho baseado no título e descrição fornecidos
         
         Responda SEMPRE em formato JSON válido com esta estrutura exata:
         {
           "videoInfo": {
-            "title": "título original do vídeo",
+            "title": "COPIE EXATAMENTE o título original fornecido pelo usuário",
             "thumbnail": "",
-            "views": número estimado de views,
-            "daysAgo": dias desde publicação (número),
-            "comments": número estimado de comentários,
-            "estimatedRevenue": { "usd": número, "brl": número },
-            "rpm": { "usd": número, "brl": número },
-            "niche": "nicho principal",
-            "subNiche": "subnicho",
-            "microNiche": "micro-nicho específico",
+            "views": número de views fornecido (ou 0 se não fornecido),
+            "daysAgo": dias desde publicação (número, ou 0 se não fornecido),
+            "comments": número de comentários fornecido (ou 0 se não fornecido),
+            "estimatedRevenue": { "usd": número estimado baseado nas views, "brl": número em reais },
+            "rpm": { "usd": 3.5, "brl": 19.25 },
+            "niche": "nicho principal detectado do título/descrição",
+            "subNiche": "subnicho detectado",
+            "microNiche": "micro-nicho específico detectado",
             "originalTitleAnalysis": {
               "motivoSucesso": "Explicação detalhada de por que o título original funciona e gera curiosidade",
               "formula": "Fórmula identificada (ex: Promessa central + benefício + termos em CAIXA ALTA + loop mental)"
@@ -630,40 +638,33 @@ Forneça uma dica personalizada baseada nessas estatísticas.`;
         - TODOS os títulos devem ter MELHORIAS e ADIÇÕES ao original
         - Se o original é "O SEGREDO dos Incas", você NÃO pode gerar "O SEGREDO dos Incas" - deve ser DIFERENTE e MELHORADO
         
-        2. FÓRMULA ORIGINAL SEMPRE PRESENTE: Cada título DEVE usar a mesma fórmula viral identificada, mas aplicada de forma DIFERENTE e MELHORADA.
+        🚫 REGRA #2 - MANTENHA O TEMA EXATO DO VÍDEO:
+        - Se o vídeo é sobre MAIAS vs ASTECAS, gere títulos sobre MAIAS e ASTECAS
+        - NÃO mude para outros povos (egípcios, hititas, etc) a menos que sejam mencionados no vídeo original
+        - O tema central do vídeo NUNCA pode mudar
         
-        3. MELHORIAS OBRIGATÓRIAS EM TODOS OS TÍTULOS: Adicione elementos extras para potencializar:
+        3. FÓRMULA ORIGINAL SEMPRE PRESENTE: Cada título DEVE usar a mesma fórmula viral identificada, mas aplicada de forma DIFERENTE e MELHORADA mantendo o tema.
+        
+        4. MELHORIAS OBRIGATÓRIAS EM TODOS OS TÍTULOS: Adicione elementos extras para potencializar:
            - Misture com outras fórmulas virais (Mistério + Revelação, Proibido + Exclusivo)
            - Adicione gatilhos mentais: Urgência, Escassez, Prova Social, Curiosidade, Medo, Exclusividade
            - Use números específicos quando relevante (ex: "3 SEGREDOS", "A VERDADE sobre os 7")
            - Adicione palavras de poder: REVELADO, EXPOSTO, PROIBIDO, SECRETO, CHOCANTE, REAL
-           - Varie os personagens/sujeitos mantendo o nicho (Incas → Maias → Astecas)
         
-        4. NICHO INTOCÁVEL: NUNCA mude o nicho ou tema central. Se é sobre Incas, todos títulos são sobre Incas.
-           - PODE mudar: personagens específicos, situações, povos similares do mesmo nicho, detalhes
-           - NÃO PODE mudar: o assunto central, a categoria temática, o universo do conteúdo
-           
-        5. VARIAÇÃO CRIATIVA OBRIGATÓRIA:
-           - Troque civilizações/povos por outros do mesmo nicho (Incas → Maias → Astecas)
-           - Mude situações específicas mantendo a estrutura
-           - Varie os elementos dramáticos mas mantenha o tom
-           - Explore ângulos diferentes do mesmo tema
-           - CADA título deve ser ÚNICO e diferente dos outros
-        
-        6. FORMATO TÉCNICO:
+        5. FORMATO TÉCNICO:
            - Máximo 60 caracteres
            - Use CAIXA ALTA estrategicamente como no original
            - Todos os títulos em ${lang}
            - Um título deve ter isBest: true
         
-        EXEMPLO DE APLICAÇÃO:
-        Original: "O SEGREDO dos Incas que Arqueólogos Escondem"
-        Fórmula: Segredo + Sujeito + Autoridade esconde
+        EXEMPLO DE APLICAÇÃO (SE O VÍDEO FOR SOBRE MAIAS VS ASTECAS):
+        Original: "La BATALLA TECNOLÓGICA que NADIE Vio: MAYAS vs. AZTECAS"
+        Fórmula: Evento secreto + CAIXA ALTA + confronto histórico
         
-        ❌ ERRADO: "O SEGREDO dos Incas que Arqueólogos Escondem" (CÓPIA - PROIBIDO!)
-        ✅ CERTO: "A TÉCNICA Maia que Cientistas NÃO Conseguem Explicar" (Fórmula + Mistério técnico)
-        ✅ CERTO: "O RITUAL Asteca PROIBIDO que a História Escondeu de Você" (Fórmula + Proibido + Personalização)
-        ✅ CERTO: "3 SEGREDOS Egípcios que Museus se Recusam a Expor" (Fórmula + Número + Exclusividade)`;
+        ❌ ERRADO: "O SEGREDO MILITAR: EGÍPCIOS vs HITITAS" (MUDOU O TEMA - PROIBIDO!)
+        ✅ CERTO: "A ARMA SECRETA Maia que DERROTOU os Astecas" (Mantém o tema + melhora)
+        ✅ CERTO: "O CONFLITO OCULTO: MAYAS vs AZTECAS que Ninguém Conhece" (Mantém povos + melhora)
+        ✅ CERTO: "3 SEGREDOS da Guerra MAIA-ASTECA que Historiadores Escondem" (Mantém tema + adiciona número)`;
         userPrompt = prompt || `Analise este vídeo: ${JSON.stringify(videoData)}`;
         break;
 
