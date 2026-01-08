@@ -11,7 +11,7 @@ interface SEORoute {
 }
 
 const BASE_URL = 'https://canaisdarks.com.br';
-const today = new Date().toISOString().split('T')[0];
+const today = '2026-01-08';
 
 // Public routes configuration - keep in sync with src/lib/seoRoutes.ts
 const publicRoutes: SEORoute[] = [

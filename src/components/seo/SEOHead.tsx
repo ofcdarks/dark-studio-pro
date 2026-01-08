@@ -12,7 +12,7 @@ interface SEOHeadProps {
 }
 
 const BASE_URL = "https://canaisdarks.com.br";
-const DEFAULT_IMAGE = "https://canaisdarks.com.br/images/og-image.jpg";
+const DEFAULT_IMAGE = "https://canaisdarks.com.br/images/og-image.png";
 const SITE_NAME = "La Casa Dark CORE";
 
 export const SEOHead = ({
