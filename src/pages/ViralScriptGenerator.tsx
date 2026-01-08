@@ -441,6 +441,90 @@ const AI_MODELS = [
   { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "Google", premium: true }
 ];
 
+const LANGUAGES = [
+  { id: "pt-BR", name: "Português (Brasil)", flag: "🇧🇷" },
+  { id: "pt-PT", name: "Português (Portugal)", flag: "🇵🇹" },
+  { id: "es", name: "Español", flag: "🇪🇸" },
+  { id: "en", name: "English", flag: "🇺🇸" },
+  { id: "fr", name: "Français", flag: "🇫🇷" },
+  { id: "de", name: "Deutsch", flag: "🇩🇪" },
+  { id: "it", name: "Italiano", flag: "🇮🇹" },
+];
+
+// Auto-detect target audience from title
+const detectTargetAudience = (titleText: string, nicheText: string): string => {
+  const text = `${titleText} ${nicheText}`.toLowerCase();
+  
+  // Age-based detection
+  let ageRange = "";
+  let interests: string[] = [];
+  
+  // Gaming / Tech / Young audience
+  if (/gamer|gaming|jogo|game|minecraft|fortnite|valorant|lol|cs|fps|rpg|streamer/.test(text)) {
+    ageRange = "14-28 anos";
+    interests.push("gamers");
+  }
+  
+  // Horror / Dark content
+  if (/terror|horror|dark|mistério|crime|serial killer|assassino|sobrenatural|paranormal|fantasma/.test(text)) {
+    ageRange = ageRange || "18-45 anos";
+    interests.push("entusiastas de mistério e terror");
+  }
+  
+  // History / Education
+  if (/história|history|guerra|war|império|ancient|civilização|rei|rainha|faraó|roma|egito|grécia/.test(text)) {
+    ageRange = ageRange || "20-55 anos";
+    interests.push("interessados em história e documentários");
+  }
+  
+  // Finance / Business
+  if (/dinheiro|money|rico|milionário|investir|invest|negócio|business|renda|patrimônio|cripto|bitcoin/.test(text)) {
+    ageRange = ageRange || "22-45 anos";
+    interests.push("buscando independência financeira");
+  }
+  
+  // Self-improvement
+  if (/motivação|sucesso|hábito|produtiv|mentalidade|mindset|crescimento|desenvolvimento/.test(text)) {
+    ageRange = ageRange || "18-40 anos";
+    interests.push("focados em desenvolvimento pessoal");
+  }
+  
+  // Conspiracy / Alternative
+  if (/conspiração|illuminati|sociedade secreta|governo|elite|nova ordem|verdade oculta/.test(text)) {
+    ageRange = ageRange || "20-50 anos";
+    interests.push("questionadores e curiosos");
+  }
+  
+  // Science / Space
+  if (/ciência|science|espaço|nasa|universo|planeta|estrela|alien|ovni|ufo|tecnologia/.test(text)) {
+    ageRange = ageRange || "16-45 anos";
+    interests.push("entusiastas de ciência e tecnologia");
+  }
+  
+  // True crime
+  if (/caso real|true crime|investigação|desaparecimento|assassinato|policial|fbi|detetive/.test(text)) {
+    ageRange = ageRange || "20-50 anos";
+    interests.push("fãs de true crime");
+  }
+  
+  // Lifestyle / Beauty
+  if (/beleza|moda|fashion|lifestyle|rotina|dia a dia|make|maquiagem/.test(text)) {
+    ageRange = ageRange || "16-35 anos";
+    interests.push("interessados em lifestyle e tendências");
+  }
+  
+  // Default
+  if (!ageRange) {
+    ageRange = "18-45 anos";
+  }
+  
+  if (interests.length === 0) {
+    interests.push("público geral interessado no tema");
+  }
+  
+  return `${ageRange}, ${interests.join(", ")}`;
+};
+
 export default function ViralScriptGenerator() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -456,7 +540,7 @@ export default function ViralScriptGenerator() {
   const [additionalContext, setAdditionalContext] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
   const [aiModel, setAiModel] = useState("gpt-4o");
-  const [language] = useState("pt-BR");
+  const [language, setLanguage] = useState("pt-BR");
   const [channelUrl, setChannelUrl] = useState("");
   const [formulaTab, setFormulaTab] = useState("all");
   
@@ -603,6 +687,15 @@ export default function ViralScriptGenerator() {
     
     fetchUserChannels();
   }, [user]);
+
+  // Auto-detect target audience when title changes
+  useEffect(() => {
+    if (title.trim().length >= 10) {
+      const finalNiche = niche === "custom" ? customNiche : niche;
+      const detectedAudience = detectTargetAudience(title, finalNiche);
+      setTargetAudience(detectedAudience);
+    }
+  }, [title, niche, customNiche]);
 
   // Fetch channel analysis data when channel URL changes
   useEffect(() => {
@@ -1279,39 +1372,66 @@ COMECE O ROTEIRO AGORA COM UM HOOK EXPLOSIVO:`;
                   </div>
 
                   <div>
-                    <Label htmlFor="audience" className="text-sm font-medium">Público-alvo</Label>
+                    <Label htmlFor="audience" className="text-sm font-medium flex items-center gap-2">
+                      Público-alvo
+                      {title.trim().length >= 10 && (
+                        <Badge variant="outline" className="text-xs text-green-500 border-green-500/30">
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          Auto
+                        </Badge>
+                      )}
+                    </Label>
                     <Input
                       id="audience"
                       value={targetAudience}
                       onChange={(e) => setTargetAudience(e.target.value)}
-                      placeholder="Ex: 18-35 anos"
+                      placeholder="Digite o título para detecção automática..."
                       className="mt-1.5"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm font-medium">Duração do Vídeo</Label>
-                    <Badge variant="secondary" className="text-primary font-semibold">
-                      {formatDuration(duration)}
-                    </Badge>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Idioma do Roteiro</Label>
+                    <Select value={language} onValueChange={setLanguage}>
+                      <SelectTrigger className="mt-1.5">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LANGUAGES.map((lang) => (
+                          <SelectItem key={lang.id} value={lang.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{lang.flag}</span>
+                              <span>{lang.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="px-1">
-                    <Slider
-                      value={[duration]}
-                      onValueChange={(v) => setDuration(v[0])}
-                      min={5}
-                      max={180}
-                      step={5}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                      <span>5 min</span>
-                      <span>30 min</span>
-                      <span>1h</span>
-                      <span>2h</span>
-                      <span>3h</span>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm font-medium">Duração do Vídeo</Label>
+                      <Badge variant="secondary" className="text-primary font-semibold">
+                        {formatDuration(duration)}
+                      </Badge>
+                    </div>
+                    <div className="px-1">
+                      <Slider
+                        value={[duration]}
+                        onValueChange={(v) => setDuration(v[0])}
+                        min={5}
+                        max={180}
+                        step={5}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                        <span>5 min</span>
+                        <span>1h</span>
+                        <span>3h</span>
+                      </div>
                     </div>
                   </div>
                 </div>
