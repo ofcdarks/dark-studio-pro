@@ -44,6 +44,7 @@ import {
   RotateCcw,
   Coins,
   Calendar,
+  Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -67,6 +68,7 @@ const defaultNavItems: NavItem[] = [
   { id: "schedule", icon: Calendar, label: "Agenda de Publicação", href: "/schedule", category: "planejamento" },
   { id: "analyzer", icon: Video, label: "Analisador de Vídeos", href: "/analyzer", category: "analise" },
   { id: "history", icon: History, label: "Histórico de Análises", href: "/history", category: "analise" },
+  { id: "viral-script", icon: Flame, label: "Roteiro Viral", href: "/viral-script", category: "criacao" },
   { id: "agents", icon: Bot, label: "Agentes Virais", href: "/agents", category: "criacao" },
   { id: "scenes", icon: Film, label: "Gerador de Cenas", href: "/scenes", category: "criacao" },
   { id: "prompts", icon: Image, label: "Prompts e Imagens", href: "/prompts", category: "criacao" },
