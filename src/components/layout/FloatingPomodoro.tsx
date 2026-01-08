@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Timer, Play, Pause, RotateCcw, Coffee, Zap, X, Minimize2, Maximize2 } from 'lucide-react';
+import { Timer, Play, Pause, RotateCcw, Coffee, Zap, X, Minimize2 } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 type SessionType = 'work' | 'break' | 'longBreak';
 
@@ -15,13 +17,94 @@ const DEFAULT_TIMES = {
 };
 
 export function FloatingPomodoro() {
-  const [times] = useState(DEFAULT_TIMES);
+  const { user } = useAuth();
+  const [times, setTimes] = useState(DEFAULT_TIMES);
   const [timeLeft, setTimeLeft] = useState(times.work * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [sessionType, setSessionType] = useState<SessionType>('work');
   const [completedSessions, setCompletedSessions] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load state from database
+  useEffect(() => {
+    if (!user) return;
+
+    const loadState = async () => {
+      const { data, error } = await supabase
+        .from('pomodoro_state')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading pomodoro state:', error);
+        setIsLoaded(true);
+        return;
+      }
+
+      if (data) {
+        setTimeLeft(data.time_left);
+        setSessionType(data.session_type as SessionType);
+        setCompletedSessions(data.completed_sessions);
+        setTimes({
+          work: data.work_duration,
+          break: data.break_duration,
+          longBreak: data.long_break_duration,
+        });
+        // Don't restore isRunning - user should manually start
+      }
+      setIsLoaded(true);
+    };
+
+    loadState();
+  }, [user]);
+
+  // Save state to database with debounce
+  const saveState = useCallback(async () => {
+    if (!user || !isLoaded) return;
+
+    const stateData = {
+      user_id: user.id,
+      time_left: timeLeft,
+      session_type: sessionType,
+      completed_sessions: completedSessions,
+      is_running: isRunning,
+      work_duration: times.work,
+      break_duration: times.break,
+      long_break_duration: times.longBreak,
+      last_updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('pomodoro_state')
+      .upsert(stateData, { onConflict: 'user_id' });
+
+    if (error) {
+      console.error('Error saving pomodoro state:', error);
+    }
+  }, [user, timeLeft, sessionType, completedSessions, isRunning, times, isLoaded]);
+
+  // Debounced save
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      saveState();
+    }, 1000);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [timeLeft, sessionType, completedSessions, isRunning, times, saveState, isLoaded]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {

@@ -1016,6 +1016,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pomodoro_state: {
+        Row: {
+          break_duration: number
+          completed_sessions: number
+          created_at: string
+          id: string
+          is_running: boolean
+          last_updated_at: string
+          long_break_duration: number
+          session_type: string
+          time_left: number
+          user_id: string
+          work_duration: number
+        }
+        Insert: {
+          break_duration?: number
+          completed_sessions?: number
+          created_at?: string
+          id?: string
+          is_running?: boolean
+          last_updated_at?: string
+          long_break_duration?: number
+          session_type?: string
+          time_left?: number
+          user_id: string
+          work_duration?: number
+        }
+        Update: {
+          break_duration?: number
+          completed_sessions?: number
+          created_at?: string
+          id?: string
+          is_running?: boolean
+          last_updated_at?: string
+          long_break_duration?: number
+          session_type?: string
+          time_left?: number
+          user_id?: string
+          work_duration?: number
+        }
+        Relationships: []
+      }
       product_clicks: {
         Row: {
           article_id: string | null
