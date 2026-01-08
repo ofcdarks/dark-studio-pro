@@ -1,7 +1,7 @@
 import { useBackgroundImageGeneration } from "@/hooks/useBackgroundImageGeneration";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { X, Image, Loader2, Sparkles, Wand2 } from "lucide-react";
+import { X, Image, Loader2, Rocket, Wand2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export const BackgroundGenerationIndicator = () => {
@@ -40,7 +40,7 @@ export const BackgroundGenerationIndicator = () => {
         <div className="flex items-center gap-2">
           <div className="relative">
             {rewriteProgress.isRewriting ? (
-              <Sparkles className="h-5 w-5 text-amber-500 animate-pulse" />
+              <Rocket className="h-5 w-5 text-amber-500 animate-pulse" />
             ) : (
               <>
                 <Image className="h-5 w-5 text-primary" />

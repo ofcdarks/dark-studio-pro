@@ -32,7 +32,7 @@ import {
   TrendingUp,
   Loader2,
   BarChart3,
-  Sparkles,
+  Rocket,
   RefreshCw,
   Bell,
   BellOff
@@ -546,7 +546,7 @@ export default function PublicationSchedule() {
                         {postingAnalysis.insights.length > 0 && (
                           <div className="space-y-2">
                             <h4 className="font-medium flex items-center gap-2 text-sm">
-                              <Sparkles className="h-4 w-4 text-yellow-500" />
+                              <Rocket className="h-4 w-4 text-yellow-500" />
                               Insights Personalizados
                             </h4>
                             <div className="space-y-2">
