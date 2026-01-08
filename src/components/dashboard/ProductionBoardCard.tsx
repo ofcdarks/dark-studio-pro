@@ -283,18 +283,18 @@ export function ProductionBoardCard() {
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(column.id)}
               >
-                {/* Column Header with solid color */}
-                <div className={`flex items-center justify-between px-3 py-2.5 ${column.headerColor}`}>
+                {/* Column Header */}
+                <div className="flex items-center justify-between px-3 py-2.5">
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{column.icon}</span>
-                    <h4 className="text-sm font-bold text-white">{column.title}</h4>
+                    <h4 className={`text-sm font-bold ${column.textColor}`}>{column.title}</h4>
                   </div>
-                  <Badge className="bg-white/20 text-white border-white/30 text-xs h-5 px-2 font-bold">
+                  <Badge className={`${column.color} ${column.textColor} border-current/30 text-xs h-5 px-2 font-bold`}>
                     {columnTasks.length}
                   </Badge>
                 </div>
                 
-                <div className="p-3">
+                <div className="p-2">
 
                 <ScrollArea className="h-[250px]">
                   <div className="space-y-2 pr-2">
