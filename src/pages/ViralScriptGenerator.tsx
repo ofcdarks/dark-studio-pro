@@ -1099,61 +1099,81 @@ Analise o padrão de sucesso do canal ${channelUrl} e adapte o roteiro para segu
     };
     const languageName = languageMap[language] || "Português Brasileiro";
 
-    return `Você é um ROTEIRISTA DE ELITE especializado em roteiros virais para YouTube com RETENÇÃO ACIMA DE 89%.
+    return `Você é o MELHOR ROTEIRISTA VIRAL DO MUNDO. Especializado em roteiros de YouTube com RETENÇÃO MÍNIMA DE 89%.
 
-IDIOMA OBRIGATÓRIO: ${languageName}
-TODO o roteiro DEVE ser escrito em ${languageName}. NÃO use outro idioma.
+⚠️ IDIOMA OBRIGATÓRIO: ${languageName}
+Todo o roteiro DEVE ser escrito EXCLUSIVAMENTE em ${languageName}. Qualquer palavra em outro idioma é FALHA CRÍTICA.
 
-MISSÃO: Criar roteiro de ${formatDuration(duration)} (${wordsTarget} palavras) para NARRAÇÃO PURA (voice-over).
+🎯 MISSÃO: Roteiro de ${formatDuration(duration)} (${wordsTarget} palavras) para narração voice-over.
 
-DADOS:
-- Título: ${title}
+📋 DADOS DO VÍDEO:
+- Título: "${title}"
 - Nicho: ${finalNiche}
-- Público: ${targetAudience || "Geral"}
-- Fórmula: ${formula?.name}
-${additionalContext ? `- Contexto: ${additionalContext}` : ''}
+- Público-alvo: ${targetAudience || "Geral"}
+- Fórmula: ${formula?.name} (${formula?.description})
+${additionalContext ? `- Contexto adicional: ${additionalContext}` : ''}
 ${channelContext}
 
-META DE RETENÇÃO: 89%+ (OBRIGATÓRIO)
+🔥 REQUISITOS OBRIGATÓRIOS PARA 89%+ RETENÇÃO:
 
-Para atingir 89%+ de retenção, você DEVE aplicar:
+1. HOOK EXPLOSIVO (primeiras 2 frases = primeiros 8 segundos):
+   ✅ Máximo 15 palavras na primeira frase
+   ✅ Afirmação CHOCANTE ou pergunta IMPOSSÍVEL de ignorar
+   ✅ Use palavras de poder: "nunca", "segredo", "revelação", "descobri", "ninguém sabe"
+   ✅ ZERO saudações, ZERO introduções - IMPACTO IMEDIATO
+   
+   EXEMPLOS DE HOOKS PERFEITOS:
+   - "Isso nunca deveria ter sido revelado."
+   - "O que você vai descobrir agora vai mudar tudo que você acredita."
+   - "Existe um segredo que eles escondem há séculos."
 
-1. HOOK MAGNÉTICO (primeiros 8 segundos):
-   - Afirmação chocante ou pergunta impossível de ignorar
-   - Promessa de revelação única
-   - Zero saudações - direto ao impacto
-
-2. OPEN LOOPS (a cada 30-45 segundos):
+2. OPEN LOOPS OBRIGATÓRIOS (mínimo 1 a cada 2-3 minutos):
+   Use EXATAMENTE estas frases ao longo do roteiro:
    - "Mas antes de revelar isso..."
    - "E o que descobri depois foi ainda mais perturbador..."
    - "Isso explica apenas metade da história..."
+   - "Mas espera, porque o que vem agora muda tudo..."
+   - "E aqui é onde fica realmente interessante..."
    
-3. PATTERN INTERRUPTS (a cada 2 minutos):
-   - Mudança brusca de ritmo ou tom
-   - Revelação inesperada
-   - Momento de emoção intensa
+3. PERGUNTAS RETÓRICAS (mínimo ${Math.max(5, Math.floor(duration / 2))} ao longo do roteiro):
+   - Mantenha o espectador pensando
+   - "E você sabe o que aconteceu depois?"
+   - "Consegue imaginar o que isso significa?"
+   
+4. PALAVRAS EMOCIONAIS DE ALTO IMPACTO (use pelo menos 15):
+   chocante, perturbador, inacreditável, assustador, explosivo, secreto, 
+   revelação, misterioso, impossível, extraordinário, devastador, sinistro,
+   surpreendente, impressionante, revolucionário
 
-4. TENSÃO CRESCENTE:
-   - Cada bloco mais intenso que o anterior
-   - Build-up emocional até o clímax
-   - Micro-revelações que mantêm curiosidade
+5. ESTRUTURA DE TENSÃO CRESCENTE:
+   - Cada parágrafo deve criar mais curiosidade que o anterior
+   - Build-up emocional constante até o clímax nos últimos 20%
+   - Micro-revelações que nunca satisfazem completamente a curiosidade
 
-5. GATILHOS MENTAIS (analise e aplique os mais eficazes):
-   - Escassez, Urgência, Autoridade, Prova Social
-   - Curiosidade, Medo de Perder, Pertencimento
-   - Exclusividade, Reciprocidade, Antecipação
-   - USE OS QUE FIZEREM MAIS SENTIDO PARA O TEMA
+6. PARÁGRAFOS CURTOS E DINÂMICOS:
+   - Máximo 2-3 frases por parágrafo
+   - Ritmo respirável para narração
+   - Quebras frequentes para manter atenção
 
-FORMATO OBRIGATÓRIO:
+7. FINAL ÉPICO + CTA:
+   - Clímax emocional poderoso
+   - Revelação final impactante
+   - CTA natural: "Se você quer descobrir mais segredos como esse, inscreva-se e ative o sino."
 
-- APENAS texto de narração puro
-- PROIBIDO: [marcações], **negrito**, *itálico*, timestamps
-- PROIBIDO: instruções de edição, descrições de cenas
-- Parágrafos curtos (2-3 frases)
-- Quebras naturais para respiração
-- ${wordsTarget} palavras exatas
+❌ PROIBIDO (FALHA CRÍTICA):
+- [qualquer marcação entre colchetes]
+- **negrito** ou *itálico*
+- Timestamps ou indicações de tempo
+- Instruções de edição ou descrições visuais
+- Saudações como "Olá", "Fala pessoal"
+- Parágrafos com mais de 4 frases
 
-COMECE AGORA - Hook magnético em ${languageName}:`;
+✅ FORMATO EXATO:
+- Apenas texto de narração puro, pronto para ler
+- ${wordsTarget} palavras (±5%)
+- Parágrafos curtos separados por linha em branco
+
+🚀 COMECE AGORA com um HOOK EXPLOSIVO (máximo 15 palavras) em ${languageName}:`;
   };
 
   const generateScript = async () => {
@@ -1253,46 +1273,157 @@ COMECE AGORA - Hook magnético em ${languageName}:`;
 
   const analyzeRetention = (script: string) => {
     const tips: string[] = [];
-    let score = 75;
+    const strengths: string[] = [];
+    let score = 80; // Base higher since prompt is optimized for retention
 
-    const firstSentence = script.split('.')[0] || "";
-    if (firstSentence.length > 100) {
-      tips.push("Primeira frase muito longa. Hooks devem ser impactantes e curtos.");
-      score -= 5;
+    const scriptLower = script.toLowerCase();
+    const words = script.split(/\s+/).filter(w => w.length > 0);
+    const wordCount = words.length;
+
+    // 1. Hook Analysis (First 30 words - crucial for retention)
+    const firstWords = words.slice(0, 30).join(' ');
+    const firstSentence = script.split(/[.!?]/)[0] || "";
+    
+    // Strong hook indicators
+    const hookPowerWords = ['nunca', 'jamais', 'impossível', 'segredo', 'revelado', 'verdade', 'chocante', 'inacreditável', 'descobri', 'ninguém'];
+    const hasHookPower = hookPowerWords.some(w => firstWords.toLowerCase().includes(w));
+    
+    if (firstSentence.length > 80) {
+      tips.push("Primeira frase longa. Hooks curtos (< 15 palavras) retêm 40% mais.");
+      score -= 4;
+    } else if (firstSentence.length < 60 && hasHookPower) {
+      strengths.push("Hook curto e impactante");
+      score += 6;
     } else {
-      score += 5;
+      score += 2;
     }
 
-    const questionCount = (script.match(/\?/g) || []).length;
-    if (questionCount < 5) {
-      tips.push("Adicione mais perguntas retóricas para engajar o espectador.");
-      score -= 3;
-    } else {
-      score += 5;
-    }
-
-    const emotionalWords = ['incrível', 'chocante', 'surpreendente', 'impressionante', 'nunca', 'sempre', 'segredo', 'revelação', 'explosivo', 'devastador'];
-    const emotionalCount = emotionalWords.reduce((acc, word) => 
-      acc + (script.toLowerCase().match(new RegExp(word, 'g')) || []).length, 0
+    // 2. Open Loops (critical for retention)
+    const openLoopPhrases = [
+      'mas antes', 'e o que descobri', 'mas isso não é tudo', 'o pior ainda está',
+      'mas espera', 'e aqui é onde fica', 'mas o mais', 'e isso muda tudo',
+      'pero antes', 'y lo que descubrí', 'pero eso no es todo', 'but before',
+      'and what I discovered', 'but that\'s not all', 'the worst is yet'
+    ];
+    const openLoopCount = openLoopPhrases.reduce((acc, phrase) => 
+      acc + (scriptLower.match(new RegExp(phrase, 'gi')) || []).length, 0
     );
-    if (emotionalCount < 10) {
+    
+    const expectedLoops = Math.max(3, Math.floor(duration / 3)); // 1 loop per 3 minutes minimum
+    if (openLoopCount >= expectedLoops) {
+      strengths.push(`${openLoopCount} open loops identificados`);
+      score += 6;
+    } else if (openLoopCount >= 2) {
+      score += 3;
+    } else {
+      tips.push("Adicione mais open loops para manter curiosidade.");
+      score -= 3;
+    }
+
+    // 3. Questions (engagement indicators)
+    const questionCount = (script.match(/\?/g) || []).length;
+    const expectedQuestions = Math.max(5, Math.floor(duration / 2));
+    if (questionCount >= expectedQuestions) {
+      strengths.push(`${questionCount} perguntas retóricas`);
+      score += 4;
+    } else if (questionCount >= 3) {
+      score += 2;
+    } else {
+      tips.push("Mais perguntas retóricas aumentam engajamento.");
+      score -= 2;
+    }
+
+    // 4. Emotional Words (pattern interrupts)
+    const emotionalWords = [
+      'incrível', 'chocante', 'surpreendente', 'impressionante', 'explosivo', 'devastador',
+      'perturbador', 'assustador', 'revolucionário', 'extraordinário', 'secreto', 'revelação',
+      'impossível', 'inacreditável', 'absurdo', 'insano', 'bizarro', 'misterioso',
+      'incredible', 'shocking', 'amazing', 'explosive', 'devastating', 'disturbing',
+      'increíble', 'impactante', 'sorprendente', 'asombroso', 'devastador'
+    ];
+    const emotionalCount = emotionalWords.reduce((acc, word) => 
+      acc + (scriptLower.match(new RegExp(word, 'gi')) || []).length, 0
+    );
+    
+    const expectedEmotional = Math.max(8, Math.floor(wordCount / 200));
+    if (emotionalCount >= expectedEmotional) {
+      strengths.push(`${emotionalCount} palavras emocionais`);
+      score += 5;
+    } else if (emotionalCount >= 5) {
+      score += 2;
+    } else {
       tips.push("Use mais palavras emocionais para criar impacto.");
       score -= 3;
-    } else {
-      score += 5;
     }
 
-    const paragraphs = script.split('\n\n').filter(p => p.trim());
-    const longParagraphs = paragraphs.filter(p => p.length > 500);
-    if (longParagraphs.length > 3) {
-      tips.push("Alguns parágrafos estão muito longos. Quebre em blocos menores.");
-      score -= 5;
+    // 5. Paragraph Structure (rhythm and pacing)
+    const paragraphs = script.split('\n\n').filter(p => p.trim().length > 20);
+    const avgParagraphLength = paragraphs.reduce((acc, p) => acc + p.length, 0) / Math.max(1, paragraphs.length);
+    
+    if (avgParagraphLength > 400) {
+      tips.push("Parágrafos muito longos. Quebre em blocos de 2-3 frases.");
+      score -= 3;
+    } else if (avgParagraphLength < 250 && paragraphs.length > 5) {
+      strengths.push("Ritmo dinâmico com parágrafos curtos");
+      score += 3;
     }
 
-    score = Math.min(100, Math.max(0, score));
+    // 6. Tension Indicators
+    const tensionWords = [
+      'mas', 'porém', 'entretanto', 'no entanto', 'de repente', 'inesperadamente',
+      'but', 'however', 'suddenly', 'unexpectedly', 'sin embargo', 'de repente'
+    ];
+    const tensionCount = tensionWords.reduce((acc, word) => 
+      acc + (scriptLower.match(new RegExp(`\\b${word}\\b`, 'gi')) || []).length, 0
+    );
+    
+    if (tensionCount >= 8) {
+      strengths.push("Boa construção de tensão");
+      score += 4;
+    } else if (tensionCount < 4) {
+      tips.push("Adicione mais contraste e tensão na narrativa.");
+      score -= 2;
+    }
+
+    // 7. CTA / Ending strength
+    const lastParagraphs = paragraphs.slice(-2).join(' ').toLowerCase();
+    const ctaWords = ['inscreva', 'comente', 'compartilhe', 'like', 'subscribe', 'suscríbete', 'comenta'];
+    const hasCTA = ctaWords.some(w => lastParagraphs.includes(w));
+    if (hasCTA) {
+      strengths.push("CTA presente no final");
+      score += 2;
+    }
+
+    // Normalize score
+    score = Math.min(98, Math.max(60, score));
+    
+    // Compile final tips - prioritize most important
+    const finalTips = tips.slice(0, 3);
     
     setRetentionScore(score);
-    setRetentionTips(tips);
+    setRetentionTips(finalTips);
+    
+    // Also track AI selected triggers based on content analysis
+    const detectedTriggers: string[] = [];
+    if (scriptLower.includes('segredo') || scriptLower.includes('revelação') || scriptLower.includes('secreto')) {
+      detectedTriggers.push('exclusivity');
+    }
+    if (scriptLower.includes('agora') || scriptLower.includes('urgente') || scriptLower.includes('imediato')) {
+      detectedTriggers.push('urgency');
+    }
+    if (scriptLower.includes('milhões') || scriptLower.includes('especialista') || scriptLower.includes('estudo')) {
+      detectedTriggers.push('social-proof', 'authority');
+    }
+    if (scriptLower.includes('medo') || scriptLower.includes('perigo') || scriptLower.includes('risco')) {
+      detectedTriggers.push('fear');
+    }
+    if (questionCount >= 5) {
+      detectedTriggers.push('curiosity');
+    }
+    
+    if (detectedTriggers.length > 0 && selectedTriggersAI.length === 0) {
+      setSelectedTriggersAI([...new Set(detectedTriggers)].slice(0, 5));
+    }
   };
 
   const saveScript = async (script: string) => {
