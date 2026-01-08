@@ -191,29 +191,249 @@ const MENTAL_TRIGGERS = [
   { id: "novelty", name: "Novidade", icon: "🆕", description: "Algo nunca visto" }
 ];
 
-// Niches with specific viral patterns
-const NICHES = [
-  "Dark/Mistério",
-  "True Crime",
-  "Histórias Reais",
-  "Motivacional",
-  "Finanças",
-  "Tecnologia",
-  "Saúde/Fitness",
-  "Relacionamentos",
-  "Curiosidades",
-  "Educacional",
-  "Entretenimento",
-  "Gaming",
-  "Negócios",
-  "Desenvolvimento Pessoal",
-  "Lifestyle",
-  "Documentário",
-  "Comédia",
-  "Terror/Horror",
-  "Ciência",
-  "Conspiração"
-];
+// Structured niches with subniches and microniches
+const NICHE_STRUCTURE: Record<string, { subniches: Record<string, string[]>; keywords: string[] }> = {
+  "Dark/Mistério": {
+    subniches: {
+      "Casos Não Resolvidos": ["Desaparecimentos", "Mortes Misteriosas", "Cold Cases", "Investigações Abertas"],
+      "Histórias Sobrenaturais": ["Paranormal", "Fantasmas", "Assombrações", "Fenômenos Inexplicáveis"],
+      "Conspirações": ["Teorias Alternativas", "Sociedades Secretas", "Governo Oculto", "Deep State"],
+      "Lugares Sombrios": ["Locais Abandonados", "Prisões", "Manicômios", "Cemitérios"]
+    },
+    keywords: ["mistério", "dark", "assombr", "paranormal", "desaparec", "morte", "assassin", "crime", "oculto", "secreto", "fantasma", "terror", "horror", "macabro", "sinistro", "inexplicável"]
+  },
+  "True Crime": {
+    subniches: {
+      "Serial Killers": ["Psicopatas Famosos", "Assassinos em Série", "Perfil Criminal", "Mente Criminosa"],
+      "Casos Famosos": ["Crimes de Celebridades", "Casos Midiáticos", "Julgamentos Históricos"],
+      "Crimes Reais Brasileiros": ["Casos BR", "Investigação Policial BR", "Tribunais BR"],
+      "Golpes e Fraudes": ["Estelionatários", "Pirâmides Financeiras", "Golpistas Famosos"]
+    },
+    keywords: ["crime", "assassin", "serial killer", "golpe", "fraude", "prisão", "julgamento", "investigação", "policial", "vítima", "criminoso", "tribunal", "sentença", "matar", "morte"]
+  },
+  "Civilizações Antigas": {
+    subniches: {
+      "Egito Antigo": ["Faraós", "Pirâmides", "Múmias", "Hieróglifos"],
+      "Mesopotâmia": ["Sumérios", "Babilônia", "Assírios", "Acádios"],
+      "Impérios Perdidos": ["Maias", "Astecas", "Incas", "Atlântida"],
+      "Roma e Grécia": ["Império Romano", "Grécia Antiga", "Mitologia", "Gladiadores"]
+    },
+    keywords: ["egito", "faraó", "pirâmide", "roma", "grécia", "antigo", "civilização", "império", "maia", "asteca", "inca", "suméri", "babilôn", "mesopotâm", "múmia", "arqueolog"]
+  },
+  "Histórias Reais": {
+    subniches: {
+      "Biografias": ["Celebridades", "Líderes Históricos", "Empresários", "Artistas"],
+      "Superação": ["Sobreviventes", "Transformações", "De Zero ao Sucesso"],
+      "Tragédias": ["Acidentes", "Desastres", "Perdas"],
+      "Relacionamentos": ["Casamentos Famosos", "Divórcios", "Traições"]
+    },
+    keywords: ["história real", "verdade", "biografia", "vida de", "quem foi", "superação", "tragédia", "sobreviv", "acidente", "desastre", "família", "casament"]
+  },
+  "Bíblico/Religioso": {
+    subniches: {
+      "Estudos Bíblicos": ["Livros da Bíblia", "Personagens Bíblicos", "Profecias"],
+      "Mistérios da Bíblia": ["Arqueologia Bíblica", "Lugares Santos", "Relíquias"],
+      "Espiritualidade": ["Anjos", "Milagres", "Fé", "Oração"],
+      "Apocalipse": ["Fim dos Tempos", "Revelações", "Sinais"]
+    },
+    keywords: ["bíblia", "deus", "jesus", "santo", "profecia", "apocalipse", "anjo", "demônio", "milagre", "oração", "igreja", "cristão", "evangél", "fé", "espírito"]
+  },
+  "Psicologia": {
+    subniches: {
+      "Comportamento Humano": ["Linguagem Corporal", "Manipulação", "Persuasão"],
+      "Transtornos Mentais": ["Narcisismo", "Psicopatia", "Ansiedade", "Depressão"],
+      "Relacionamentos": ["Amor", "Toxicidade", "Apego", "Separação"],
+      "Desenvolvimento Pessoal": ["Autoconhecimento", "Inteligência Emocional", "Mentalidade"]
+    },
+    keywords: ["psicolog", "mente", "cérebro", "comportamento", "narcis", "psicopat", "manipula", "emocional", "ansiedade", "depressão", "trauma", "terapia", "mental"]
+  },
+  "Finanças": {
+    subniches: {
+      "Investimentos": ["Ações", "Criptomoedas", "Fundos Imobiliários", "Renda Fixa"],
+      "Renda Extra": ["Negócios Online", "Freelance", "Infoprodutos"],
+      "Educação Financeira": ["Organização", "Dívidas", "Poupar Dinheiro"],
+      "Histórias de Riqueza": ["Bilionários", "Empresas Famosas", "Falências"]
+    },
+    keywords: ["dinheiro", "investir", "finan", "rico", "pobre", "milhão", "bilhão", "cripto", "bitcoin", "ação", "bolsa", "renda", "lucro", "prejuízo", "empresa"]
+  },
+  "Tecnologia": {
+    subniches: {
+      "IA e Futuro": ["Inteligência Artificial", "Robôs", "Singularidade"],
+      "Big Tech": ["Apple", "Google", "Meta", "Microsoft", "Tesla"],
+      "Gadgets": ["Smartphones", "Computadores", "Wearables"],
+      "Internet": ["Redes Sociais", "Hackers", "Dark Web"]
+    },
+    keywords: ["tecnologia", "ia", "inteligência artificial", "robot", "app", "smartphone", "google", "apple", "tesla", "elon", "hacker", "internet", "computador", "software"]
+  },
+  "Saúde": {
+    subniches: {
+      "Doenças": ["Câncer", "Doenças Raras", "Epidemias", "Diagnósticos"],
+      "Nutrição": ["Dietas", "Alimentação", "Suplementos"],
+      "Fitness": ["Musculação", "Emagrecimento", "Exercícios"],
+      "Medicina": ["Tratamentos", "Cirurgias", "Descobertas Médicas"]
+    },
+    keywords: ["saúde", "doença", "câncer", "médico", "hospital", "dieta", "emagrec", "treino", "academia", "músculo", "alimentação", "nutrição", "vitamina"]
+  },
+  "Curiosidades": {
+    subniches: {
+      "Fatos Surpreendentes": ["Recordes", "Números", "Estatísticas Chocantes"],
+      "Países e Culturas": ["Tradições", "Costumes", "Lugares Exóticos"],
+      "Ciência Divertida": ["Experimentos", "Descobertas", "Física"],
+      "Natureza": ["Animais", "Fenômenos Naturais", "Planeta Terra"]
+    },
+    keywords: ["curioso", "incrível", "surpreend", "recorde", "mundo", "país", "animal", "natureza", "fenômeno", "descoberta", "fato", "sabia que"]
+  },
+  "Documentário": {
+    subniches: {
+      "Histórico": ["Guerras", "Revoluções", "Eventos Históricos"],
+      "Natureza/Wildlife": ["Animais Selvagens", "Oceanos", "Florestas"],
+      "Social": ["Pobreza", "Desigualdade", "Questões Sociais"],
+      "Científico": ["Espaço", "Física", "Biologia"]
+    },
+    keywords: ["documentário", "história", "guerra", "revolução", "natureza", "wildlife", "selvagem", "social", "científico", "universo", "espaço"]
+  },
+  "Entretenimento": {
+    subniches: {
+      "Celebridades": ["Fofocas", "Bastidores", "Polêmicas"],
+      "Filmes/Séries": ["Análises", "Teorias", "Easter Eggs"],
+      "Música": ["Artistas", "Indústria Musical", "Histórias"],
+      "Reality/TV": ["BBB", "Programas", "Bastidores"]
+    },
+    keywords: ["celebridade", "famoso", "filme", "série", "netflix", "música", "artista", "cantor", "ator", "bbb", "tv", "reality", "polêmica", "fofoca"]
+  },
+  "Motivacional": {
+    subniches: {
+      "Sucesso": ["Mentalidade Vencedora", "Hábitos de Sucesso", "Produtividade"],
+      "Superação": ["Histórias Inspiradoras", "Resiliência", "Transformação"],
+      "Mindset": ["Pensamento Positivo", "Lei da Atração", "Visualização"],
+      "Carreira": ["Liderança", "Empreendedorismo", "Crescimento Profissional"]
+    },
+    keywords: ["motivação", "sucesso", "vencer", "superar", "mentalidade", "mindset", "inspiração", "hábito", "produtividade", "líder", "empreendedor", "sonho", "objetivo"]
+  },
+  "Terror/Horror": {
+    subniches: {
+      "Creepypasta": ["Histórias de Terror", "Lendas Urbanas", "SCP"],
+      "Filmes de Terror": ["Análises", "Bastidores", "Franquias"],
+      "Casos Reais": ["Assassinos", "Lugares Assombrados", "Eventos Macabros"],
+      "Sobrenatural": ["Demônios", "Exorcismos", "Possessões"]
+    },
+    keywords: ["terror", "horror", "medo", "assustador", "creepy", "lenda urbana", "demônio", "exorcismo", "possessão", "assombra", "fantasma", "pesadelo"]
+  },
+  "Gaming": {
+    subniches: {
+      "Análises": ["Reviews", "Dicas", "Walkthroughs"],
+      "Histórias de Jogos": ["Lore", "Teorias", "Easter Eggs"],
+      "Indústria": ["Empresas", "Desenvolvedores", "Polêmicas"],
+      "Competitivo": ["eSports", "Campeonatos", "Pro Players"]
+    },
+    keywords: ["jogo", "game", "gamer", "playstation", "xbox", "nintendo", "pc", "streamer", "esport", "gameplay", "review"]
+  }
+};
+
+// Flatten niches for dropdown
+const NICHES = Object.keys(NICHE_STRUCTURE);
+
+// Function to detect niche/subniche/microniche from titles
+const detectDetailedNiche = (titles: string[], existingNiche?: string): { niche: string; subniche: string; microniche: string } => {
+  const allText = titles.join(' ').toLowerCase();
+  
+  let bestNiche = '';
+  let bestScore = 0;
+  let bestSubniche = '';
+  let bestMicroniche = '';
+  
+  // Score each niche based on keyword matches
+  for (const [nicheName, nicheData] of Object.entries(NICHE_STRUCTURE)) {
+    let score = 0;
+    
+    // Count keyword matches
+    for (const keyword of nicheData.keywords) {
+      const regex = new RegExp(keyword.toLowerCase(), 'gi');
+      const matches = (allText.match(regex) || []).length;
+      score += matches * 2; // Weight keyword matches
+    }
+    
+    // Check subniches for more specific matches
+    for (const [subnicheName, microniches] of Object.entries(nicheData.subniches)) {
+      const subnicheKeywords = subnicheName.toLowerCase().split(/\s+/);
+      for (const keyword of subnicheKeywords) {
+        if (keyword.length > 3 && allText.includes(keyword)) {
+          score += 5; // Higher weight for subniche matches
+          if (!bestSubniche || score > bestScore) {
+            bestSubniche = subnicheName;
+          }
+        }
+      }
+      
+      // Check microniches
+      for (const microniche of microniches) {
+        const microKeywords = microniche.toLowerCase().split(/\s+/);
+        for (const keyword of microKeywords) {
+          if (keyword.length > 3 && allText.includes(keyword)) {
+            score += 10; // Highest weight for microniche matches
+            if (!bestMicroniche || score > bestScore) {
+              bestMicroniche = microniche;
+            }
+          }
+        }
+      }
+    }
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestNiche = nicheName;
+    }
+  }
+  
+  // Use existing niche if detection fails
+  if (!bestNiche && existingNiche) {
+    bestNiche = existingNiche;
+  }
+  
+  // Find matching subniche/microniche if we have a niche but not sub/micro
+  if (bestNiche && (!bestSubniche || !bestMicroniche)) {
+    const nicheData = NICHE_STRUCTURE[bestNiche];
+    if (nicheData) {
+      // Find best subniche
+      let subScore = 0;
+      for (const [subnicheName, microniches] of Object.entries(nicheData.subniches)) {
+        let currentScore = 0;
+        const subnicheKeywords = subnicheName.toLowerCase().split(/\s+/);
+        for (const keyword of subnicheKeywords) {
+          if (keyword.length > 3 && allText.includes(keyword)) {
+            currentScore += 5;
+          }
+        }
+        if (currentScore > subScore) {
+          subScore = currentScore;
+          if (!bestSubniche) bestSubniche = subnicheName;
+          
+          // Find best microniche within this subniche
+          for (const microniche of microniches) {
+            if (allText.includes(microniche.toLowerCase().split(' ')[0])) {
+              bestMicroniche = microniche;
+              break;
+            }
+          }
+        }
+      }
+      
+      // If still no subniche, pick the first one
+      if (!bestSubniche) {
+        const subniches = Object.keys(nicheData.subniches);
+        bestSubniche = subniches[0] || '';
+        const microniches = nicheData.subniches[bestSubniche] || [];
+        bestMicroniche = microniches[0] || '';
+      }
+    }
+  }
+  
+  return {
+    niche: bestNiche || 'Não detectado',
+    subniche: bestSubniche || 'Geral',
+    microniche: bestMicroniche || 'Não especificado'
+  };
+};
 
 const AI_MODELS = [
   { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", premium: true },
@@ -246,6 +466,8 @@ export default function ViralScriptGenerator() {
     patterns: string[];
     avgViews: number;
     channelNiche: string;
+    channelSubniche: string;
+    channelMicroniche: string;
     nicheViralVideos?: Array<{title: string; views: number}>;
   } | null>(null);
   const [isLoadingChannelData, setIsLoadingChannelData] = useState(false);
@@ -560,21 +782,25 @@ export default function ViralScriptGenerator() {
             patterns.push(`${nicheViralVideos.length} vídeos virais do nicho analisados`);
           }
           
-          const channelNiche = detectedNiche || 'Não detectado';
+          // Use detailed niche detection with titles
+          const allTitles = realChannelVideos.map(v => v.title);
+          const detailedNiche = detectDetailedNiche(allTitles, detectedNiche);
           
           setChannelAnalysisData({
             topVideos: realChannelVideos,
             patterns,
             avgViews,
-            channelNiche,
-            nicheViralVideos // Add niche viral videos
+            channelNiche: detailedNiche.niche,
+            channelSubniche: detailedNiche.subniche,
+            channelMicroniche: detailedNiche.microniche,
+            nicheViralVideos
           });
           
           // Auto-set niche based on channel analysis
-          if (channelNiche && channelNiche !== 'Não detectado' && !niche) {
+          if (detailedNiche.niche && detailedNiche.niche !== 'Não detectado' && !niche) {
             const matchingNiche = NICHES.find(n => 
-              n.toLowerCase().includes(channelNiche.toLowerCase()) ||
-              channelNiche.toLowerCase().includes(n.toLowerCase())
+              n.toLowerCase().includes(detailedNiche.niche.toLowerCase()) ||
+              detailedNiche.niche.toLowerCase().includes(n.toLowerCase())
             );
             if (matchingNiche) {
               setNiche(matchingNiche);
@@ -697,7 +923,11 @@ export default function ViralScriptGenerator() {
 ${topTitles}
 
 ### Média de Views dos Seus Top Vídeos: ${channelAnalysisData.avgViews.toLocaleString()}
-### Nicho Detectado: ${channelAnalysisData.channelNiche}
+
+### 🎯 CLASSIFICAÇÃO DETALHADA DO CANAL:
+- **Nicho Principal**: ${channelAnalysisData.channelNiche}
+- **Sub-Nicho**: ${channelAnalysisData.channelSubniche}
+- **Micro-Nicho**: ${channelAnalysisData.channelMicroniche}
 
 ### Padrões de Sucesso do SEU CANAL Identificados pela IA:
 ${channelAnalysisData.patterns.map(p => `- ${p}`).join('\n')}
@@ -706,12 +936,12 @@ ${channelAnalysisData.patterns.map(p => `- ${p}`).join('\n')}
 ${nicheViralTitles}
 
 ### INSTRUÇÕES DE OTIMIZAÇÃO BASEADA NO SEU CANAL + NICHO:
-1. **Replicar SEUS Padrões de Sucesso**: Analise os títulos e estruturas que funcionam NO SEU CANAL
-2. **Superar a Concorrência**: Use insights dos vídeos virais do nicho para criar algo ainda melhor
-3. **Manter Identidade**: O roteiro deve soar como continuação natural do SEU conteúdo
-4. **Meta de Views**: Otimizar para superar ${channelAnalysisData.avgViews.toLocaleString()} views (sua média atual)
-5. **Explorar Tendências**: Aproveite o que está viralizando no nicho "${channelAnalysisData.channelNiche}"
-6. **Diferenciação**: Combine o que funciona no seu canal com as tendências do nicho`;
+1. **Focar no Micro-Nicho "${channelAnalysisData.channelMicroniche}"**: Este é seu diferencial específico
+2. **Dominar o Sub-Nicho "${channelAnalysisData.channelSubniche}"**: Explore todas as variações deste tema
+3. **Expandir no Nicho "${channelAnalysisData.channelNiche}"**: Use referências do nicho maior para atrair novos públicos
+4. **Replicar SEUS Padrões de Sucesso**: Mantenha a identidade do seu canal
+5. **Meta de Views**: Otimizar para superar ${channelAnalysisData.avgViews.toLocaleString()} views (sua média atual)
+6. **Diferenciação**: Combine seu micro-nicho único com tendências do momento`;
     } else if (selectedFormula === "channel-based" && channelUrl) {
       channelContext = `
 ## ANÁLISE DO CANAL
@@ -1201,11 +1431,25 @@ COMECE O ROTEIRO AGORA COM UM HOOK EXPLOSIVO:`;
                           </div>
                         </div>
                         
-                        <div className="mb-3">
-                          <p className="text-xs text-muted-foreground mb-1">Nicho Detectado</p>
-                          <Badge variant="secondary" className="bg-primary/20">
-                            {channelAnalysisData.channelNiche}
-                          </Badge>
+                        <div className="mb-3 space-y-2">
+                          <p className="text-xs text-muted-foreground mb-1">🎯 Classificação do Canal</p>
+                          <div className="flex flex-wrap gap-1">
+                            <Badge variant="secondary" className="bg-primary/20 text-xs">
+                              {channelAnalysisData.channelNiche}
+                            </Badge>
+                            {channelAnalysisData.channelSubniche && channelAnalysisData.channelSubniche !== 'Geral' && (
+                              <Badge variant="outline" className="text-xs border-primary/30">
+                                {channelAnalysisData.channelSubniche}
+                              </Badge>
+                            )}
+                          </div>
+                          {channelAnalysisData.channelMicroniche && channelAnalysisData.channelMicroniche !== 'Não especificado' && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Target className="w-3 h-3 text-orange-500" />
+                              <span>Micro-Nicho: </span>
+                              <span className="text-orange-500 font-medium">{channelAnalysisData.channelMicroniche}</span>
+                            </div>
+                          )}
                         </div>
                         
                         <div>
