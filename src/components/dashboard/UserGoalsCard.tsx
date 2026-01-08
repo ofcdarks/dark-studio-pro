@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -6,12 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Target, Plus, Trash2, CheckCircle2, Trophy, Loader2, Sparkles, TrendingUp } from 'lucide-react';
+import { Target, Plus, Trash2, CheckCircle2, Trophy, Loader2, Sparkles, TrendingUp, PartyPopper } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import confetti from 'canvas-confetti';
 
 interface UserGoal {
   id: string;
@@ -48,6 +49,49 @@ export function UserGoalsCard() {
   const [saving, setSaving] = useState(false);
   const [suggestedGoals, setSuggestedGoals] = useState<SuggestedGoal[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const celebratedGoals = useRef<Set<string>>(new Set());
+
+  // Celebration effect when goal is completed
+  const triggerCelebration = (goalType: string, periodType: string) => {
+    // Confetti effect
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#F97316', '#FBBF24', '#22C55E', '#3B82F6', '#A855F7'],
+    });
+
+    // Second burst for more impact
+    setTimeout(() => {
+      confetti({
+        particleCount: 100,
+        spread: 100,
+        origin: { y: 0.5, x: 0.3 },
+      });
+      confetti({
+        particleCount: 100,
+        spread: 100,
+        origin: { y: 0.5, x: 0.7 },
+      });
+    }, 250);
+
+    // Special toast
+    toast.success(
+      <div className="flex items-center gap-3">
+        <PartyPopper className="h-6 w-6 text-primary" />
+        <div>
+          <p className="font-bold">🎉 Meta Atingida!</p>
+          <p className="text-sm text-muted-foreground">
+            Parabéns! Você completou sua meta {periodType === 'weekly' ? 'semanal' : 'mensal'} de vídeos!
+          </p>
+        </div>
+      </div>,
+      {
+        duration: 5000,
+        className: 'border-primary/50 bg-gradient-to-r from-primary/10 to-transparent',
+      }
+    );
+  };
   
   // Form state
   const [goalType, setGoalType] = useState('videos');
@@ -69,7 +113,7 @@ export function UserGoalsCard() {
 
       if (error) throw error;
 
-      // Update current values
+      // Update current values and check for completions
       const updatedGoals = await Promise.all(
         (data || []).map(async (goal) => {
           const currentValue = await calculateCurrentValue(
@@ -77,7 +121,24 @@ export function UserGoalsCard() {
             goal.start_date,
             goal.end_date
           );
-          return { ...goal, current_value: currentValue };
+          
+          // Check if goal was just completed (not celebrated yet)
+          const isCompleted = currentValue >= goal.target_value;
+          const wasCompletedBefore = goal.is_completed;
+          const goalKey = `${goal.id}-${goal.start_date}`;
+          
+          if (isCompleted && !wasCompletedBefore && !celebratedGoals.current.has(goalKey)) {
+            celebratedGoals.current.add(goalKey);
+            triggerCelebration(goal.goal_type, goal.period_type);
+            
+            // Mark goal as completed in database
+            await (supabase
+              .from('user_goals' as any)
+              .update({ is_completed: true, completed_at: new Date().toISOString() })
+              .eq('id', goal.id) as any);
+          }
+          
+          return { ...goal, current_value: currentValue, is_completed: isCompleted };
         })
       );
 
@@ -484,12 +545,26 @@ export function UserGoalsCard() {
               const isCompleted = goal.current_value >= goal.target_value;
 
               return (
-                <div key={goal.id} className="space-y-2">
+                <div 
+                  key={goal.id} 
+                  className={`space-y-2 p-3 rounded-lg transition-all ${
+                    isCompleted 
+                      ? 'bg-green-500/10 border border-green-500/30 ring-1 ring-green-500/20' 
+                      : 'bg-muted/20'
+                  }`}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span>{typeInfo.icon}</span>
+                      <span className="text-lg">{isCompleted ? '🏆' : typeInfo.icon}</span>
                       <div>
-                        <p className="text-sm font-medium">{typeInfo.label}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{typeInfo.label}</p>
+                          {isCompleted && (
+                            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-green-500/20 text-green-500 animate-pulse">
+                              Completa!
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {goal.period_type === 'weekly' ? 'Semanal' : 'Mensal'}
                         </p>
@@ -497,9 +572,9 @@ export function UserGoalsCard() {
                     </div>
                     <div className="flex items-center gap-2">
                       {isCompleted && (
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
                       )}
-                      <span className="text-sm font-medium">
+                      <span className={`text-sm font-bold ${isCompleted ? 'text-green-500' : ''}`}>
                         {goal.current_value}/{goal.target_value}
                       </span>
                       <Button
