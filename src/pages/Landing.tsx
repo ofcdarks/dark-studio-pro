@@ -30,8 +30,11 @@ import {
   Flame,
   Diamond,
   Eye,
-  Sparkles,
-  Shield
+  Shield,
+  Cpu,
+  Globe,
+  Target,
+  Gauge
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AnimatedSection, AnimatedItem } from "@/components/landing/AnimatedSection";
@@ -671,47 +674,65 @@ const Landing = () => {
       </section>
 
       {/* AI Models Transparency Section */}
-      <section className="py-16 md:py-24 px-4 relative overflow-hidden bg-gradient-to-b from-background via-card/30 to-background">
-        <ParallaxLayer depth={0.2} className="absolute top-20 left-0 w-60 md:w-96 h-60 md:h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-        <ParallaxLayer depth={0.4} className="absolute bottom-20 right-0 w-60 md:w-80 h-60 md:h-80 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+      <section className="py-20 md:py-32 px-4 relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-card/20 to-background" />
+        <ParallaxLayer depth={0.2} className="absolute top-20 left-0 w-80 md:w-[500px] h-80 md:h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+        <ParallaxLayer depth={0.4} className="absolute bottom-20 right-0 w-60 md:w-[400px] h-60 md:h-[400px] bg-purple-500/5 rounded-full blur-[80px] pointer-events-none" />
         
-        <div className="max-w-6xl mx-auto relative">
-          <AnimatedSection className="text-center space-y-4 md:space-y-6 mb-12 md:mb-16">
-            <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 rounded-full bg-gradient-to-r from-primary/20 to-purple-500/20 border border-primary/30">
-              <Eye className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-              <span className="text-sm md:text-base font-medium text-primary">100% TRANSPARÊNCIA</span>
-              <Shield className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+        <div className="max-w-7xl mx-auto relative">
+          {/* Header */}
+          <AnimatedSection className="text-center space-y-6 md:space-y-8 mb-16 md:mb-20">
+            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/20 via-purple-500/20 to-primary/20 border border-primary/30 backdrop-blur-sm">
+              <Eye className="w-5 h-5 text-primary animate-pulse" />
+              <span className="text-sm md:text-base font-bold tracking-wider text-primary uppercase">Transparência Total</span>
+              <Shield className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold">
-              Você escolhe a
-              <span className="block text-primary">Inteligência Artificial</span>
+            
+            <h2 className="text-4xl md:text-5xl lg:text-7xl font-black">
+              <span className="text-foreground">Você no</span>
+              <span className="block mt-2 bg-gradient-to-r from-primary via-amber-400 to-primary bg-clip-text text-transparent">
+                Controle Absoluto
+              </span>
             </h2>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
-              Nada de sistema travado ou oculto. Aqui você tem <span className="text-primary font-semibold">controle total</span> sobre 
-              qual modelo de IA usar em cada ferramenta. Transparência do início ao fim.
+            
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto px-4 leading-relaxed">
+              Nada de <span className="text-destructive font-semibold line-through">caixa preta</span> ou 
+              <span className="text-destructive font-semibold line-through"> sistema oculto</span>. 
+              Aqui você <span className="text-primary font-bold">escolhe exatamente</span> qual motor usar em cada ferramenta.
             </p>
           </AnimatedSection>
 
-          {/* AI Models Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
+          {/* AI Models Grid - Premium Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-16">
             {/* GPT-4.1 */}
             <AnimatedItem index={0} staggerDelay={100}>
-              <Card className="p-6 bg-card/80 border-border hover:border-green-500/50 transition-all duration-300 group relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-emerald-400 opacity-50 group-hover:opacity-100 transition-opacity" />
-                <div className="space-y-4">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Sparkles className="w-7 h-7 text-green-400" />
+              <Card className="group relative p-8 bg-gradient-to-br from-card via-card to-green-950/20 border-2 border-green-500/20 hover:border-green-500/60 transition-all duration-500 overflow-hidden h-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-green-500 via-emerald-400 to-green-500" />
+                
+                <div className="relative space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                      <Cpu className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30">
+                      <span className="text-xs font-bold text-green-400">PREMIUM</span>
+                    </div>
                   </div>
+                  
                   <div>
-                    <h3 className="font-bold text-lg text-foreground">GPT-4.1</h3>
-                    <p className="text-sm text-green-400 font-medium">OpenAI</p>
+                    <h3 className="font-black text-xl text-foreground">GPT-4.1</h3>
+                    <p className="text-sm text-green-400 font-semibold">OpenAI</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Modelo mais avançado da OpenAI. Excelente para roteiros criativos e análises complexas.
+                  
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    O mais avançado da OpenAI. Roteiros criativos e análises com precisão cirúrgica.
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Roteiros</span>
-                    <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Análises</span>
+                  
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/25 font-medium">Roteiros</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/25 font-medium">Análises</span>
                   </div>
                 </div>
               </Card>
@@ -719,22 +740,32 @@ const Landing = () => {
 
             {/* Claude 4 Sonnet */}
             <AnimatedItem index={1} staggerDelay={100}>
-              <Card className="p-6 bg-card/80 border-border hover:border-orange-500/50 transition-all duration-300 group relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-amber-400 opacity-50 group-hover:opacity-100 transition-opacity" />
-                <div className="space-y-4">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Sparkles className="w-7 h-7 text-orange-400" />
+              <Card className="group relative p-8 bg-gradient-to-br from-card via-card to-orange-950/20 border-2 border-orange-500/20 hover:border-orange-500/60 transition-all duration-500 overflow-hidden h-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500" />
+                
+                <div className="relative space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                      <Target className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/30">
+                      <span className="text-xs font-bold text-orange-400">CRIATIVO</span>
+                    </div>
                   </div>
+                  
                   <div>
-                    <h3 className="font-bold text-lg text-foreground">Claude 4 Sonnet</h3>
-                    <p className="text-sm text-orange-400 font-medium">Anthropic</p>
+                    <h3 className="font-black text-xl text-foreground">Claude 4 Sonnet</h3>
+                    <p className="text-sm text-orange-400 font-semibold">Anthropic</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Raciocínio avançado e respostas equilibradas. Ideal para conteúdo de alta qualidade.
+                  
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Raciocínio avançado e respostas equilibradas. Conteúdo de altíssima qualidade.
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-xs px-2 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">Títulos</span>
-                    <span className="text-xs px-2 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">Criativo</span>
+                  
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/25 font-medium">Títulos</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/25 font-medium">Criativo</span>
                   </div>
                 </div>
               </Card>
@@ -742,22 +773,32 @@ const Landing = () => {
 
             {/* Gemini 2.5 Pro */}
             <AnimatedItem index={2} staggerDelay={100}>
-              <Card className="p-6 bg-card/80 border-border hover:border-blue-500/50 transition-all duration-300 group relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-400 opacity-50 group-hover:opacity-100 transition-opacity" />
-                <div className="space-y-4">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Sparkles className="w-7 h-7 text-blue-400" />
+              <Card className="group relative p-8 bg-gradient-to-br from-card via-card to-blue-950/20 border-2 border-blue-500/20 hover:border-blue-500/60 transition-all duration-500 overflow-hidden h-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500" />
+                
+                <div className="relative space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                      <Globe className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30">
+                      <span className="text-xs font-bold text-blue-400">MULTIMODAL</span>
+                    </div>
                   </div>
+                  
                   <div>
-                    <h3 className="font-bold text-lg text-foreground">Gemini 2.5 Pro</h3>
-                    <p className="text-sm text-blue-400 font-medium">Google</p>
+                    <h3 className="font-black text-xl text-foreground">Gemini 2.5 Pro</h3>
+                    <p className="text-sm text-blue-400 font-semibold">Google</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Multimodal com contexto gigante. Perfeito para análises visuais e textuais.
+                  
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Multimodal com contexto massivo. Análises visuais e textuais integradas.
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Multimodal</span>
-                    <span className="text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Contexto</span>
+                  
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/25 font-medium">Imagens</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/25 font-medium">Contexto</span>
                   </div>
                 </div>
               </Card>
@@ -765,76 +806,103 @@ const Landing = () => {
 
             {/* DeepSeek */}
             <AnimatedItem index={3} staggerDelay={100}>
-              <Card className="p-6 bg-card/80 border-border hover:border-purple-500/50 transition-all duration-300 group relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-violet-400 opacity-50 group-hover:opacity-100 transition-opacity" />
-                <div className="space-y-4">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-violet-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Sparkles className="w-7 h-7 text-purple-400" />
+              <Card className="group relative p-8 bg-gradient-to-br from-card via-card to-purple-950/20 border-2 border-purple-500/20 hover:border-purple-500/60 transition-all duration-500 overflow-hidden h-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-500 via-violet-400 to-purple-500" />
+                
+                <div className="relative space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                      <Gauge className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30">
+                      <span className="text-xs font-bold text-purple-400">EFICIENTE</span>
+                    </div>
                   </div>
+                  
                   <div>
-                    <h3 className="font-bold text-lg text-foreground">DeepSeek V3</h3>
-                    <p className="text-sm text-purple-400 font-medium">DeepSeek AI</p>
+                    <h3 className="font-black text-xl text-foreground">DeepSeek V3</h3>
+                    <p className="text-sm text-purple-400 font-semibold">DeepSeek AI</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    IA chinesa de alta performance. Raciocínio profundo e excelente custo-benefício.
+                  
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Alta performance com custo otimizado. Raciocínio profundo e rápido.
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">Raciocínio</span>
-                    <span className="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">Econômico</span>
+                  
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/25 font-medium">Raciocínio</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/25 font-medium">Veloz</span>
                   </div>
                 </div>
               </Card>
             </AnimatedItem>
           </div>
 
-          {/* Transparency Features */}
-          <AnimatedSection className="mt-10">
-            <Card className="p-6 md:p-10 bg-gradient-to-br from-card/90 to-card/50 border-primary/20 relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-purple-500 to-primary" />
+          {/* Transparency Features - Enhanced */}
+          <AnimatedSection>
+            <Card className="relative p-8 md:p-14 bg-gradient-to-br from-card/95 via-card/80 to-primary/5 border-2 border-primary/30 overflow-hidden">
+              {/* Decorative Elements */}
+              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-primary via-purple-500 via-50% to-primary" />
+              <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
+              <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl" />
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10">
-                <div className="text-center space-y-3">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                    <Eye className="w-8 h-8 text-primary" />
+              <div className="relative">
+                <div className="text-center mb-12">
+                  <h3 className="text-2xl md:text-3xl font-black mb-3">Por que somos diferentes?</h3>
+                  <p className="text-muted-foreground text-lg">Enquanto outros escondem, nós mostramos tudo</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+                  <div className="text-center space-y-4 group">
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:border-primary/60 transition-all duration-300">
+                      <Eye className="w-10 h-10 text-primary" />
+                    </div>
+                    <h4 className="font-bold text-xl">Zero Segredos</h4>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Você vê exatamente qual motor está gerando cada conteúdo. Nada é escondido.
+                    </p>
                   </div>
-                  <h3 className="font-bold text-lg">Sem Caixa Preta</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Você vê exatamente qual modelo está gerando cada conteúdo. Zero segredos.
-                  </p>
+
+                  <div className="text-center space-y-4 group">
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 border border-purple-500/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:border-purple-500/60 transition-all duration-300">
+                      <Key className="w-10 h-10 text-purple-400" />
+                    </div>
+                    <h4 className="font-bold text-xl">Suas Próprias Chaves</h4>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Quer usar suas próprias API keys? Você pode. O sistema suporta nativamente.
+                    </p>
+                  </div>
+
+                  <div className="text-center space-y-4 group">
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:border-green-500/60 transition-all duration-300">
+                      <Shield className="w-10 h-10 text-green-400" />
+                    </div>
+                    <h4 className="font-bold text-xl">Você Manda</h4>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Escolha o motor ideal para cada tarefa. O poder está nas suas mãos.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="text-center space-y-3">
-                  <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center mx-auto">
-                    <Key className="w-8 h-8 text-purple-400" />
+                <div className="mt-12 pt-10 border-t border-border/50">
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
+                    <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20">
+                      <Layers className="w-8 h-8 text-primary" />
+                      <div>
+                        <p className="font-bold text-lg">Modo Multimodal</p>
+                        <p className="text-sm text-muted-foreground">Compare 4 motores simultaneamente</p>
+                      </div>
+                    </div>
+                    
+                    <Link to="/auth">
+                      <Button size="lg" className="gradient-button text-primary-foreground font-bold h-14 md:h-16 px-8 md:px-12 text-lg glow-primary">
+                        <Rocket className="w-6 h-6 mr-3" />
+                        Testar Agora Mesmo
+                        <ArrowRight className="w-6 h-6 ml-3" />
+                      </Button>
+                    </Link>
                   </div>
-                  <h3 className="font-bold text-lg">Use Suas Próprias Keys</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Prefere usar suas próprias API keys? Sem problema, você tem essa opção.
-                  </p>
                 </div>
-
-                <div className="text-center space-y-3">
-                  <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
-                    <Shield className="w-8 h-8 text-green-400" />
-                  </div>
-                  <h3 className="font-bold text-lg">Controle Total</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Escolha o modelo ideal para cada tarefa. Você está sempre no comando.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-8 pt-8 border-t border-border/50 text-center">
-                <p className="text-muted-foreground mb-4">
-                  <span className="text-primary font-semibold">Modo Multimodal:</span> Compare resultados de 4 IAs diferentes simultaneamente
-                </p>
-                <Link to="/auth">
-                  <Button size="lg" className="gradient-button text-primary-foreground font-semibold h-12 md:h-14 px-6 md:px-10">
-                    <Rocket className="w-5 h-5 mr-2" />
-                    Experimentar Agora
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
               </div>
             </Card>
           </AnimatedSection>
