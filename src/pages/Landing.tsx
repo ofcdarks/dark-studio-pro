@@ -875,8 +875,8 @@ const Landing = () => {
                   </div>
 
                   <div className="text-center space-y-4 group">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border border-cyan-500/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:border-cyan-500/60 transition-all duration-300">
-                      <Bot className="w-10 h-10 text-cyan-400" />
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:border-amber-500/60 transition-all duration-300">
+                      <Bot className="w-10 h-10 text-amber-400" />
                     </div>
                     <h4 className="font-bold text-xl">Agentes Personalizados</h4>
                     <p className="text-muted-foreground leading-relaxed text-sm">
