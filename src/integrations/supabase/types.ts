@@ -924,6 +924,33 @@ export type Database = {
         }
         Relationships: []
       }
+      niche_best_times: {
+        Row: {
+          best_days: string[] | null
+          best_hours: string[] | null
+          created_at: string | null
+          id: string
+          niche: string
+          reasoning: string | null
+        }
+        Insert: {
+          best_days?: string[] | null
+          best_hours?: string[] | null
+          created_at?: string | null
+          id?: string
+          niche: string
+          reasoning?: string | null
+        }
+        Update: {
+          best_days?: string[] | null
+          best_hours?: string[] | null
+          created_at?: string | null
+          id?: string
+          niche?: string
+          reasoning?: string | null
+        }
+        Relationships: []
+      }
       pinned_videos: {
         Row: {
           channel_id: string | null
@@ -1177,6 +1204,60 @@ export type Database = {
           storage_used?: number | null
           updated_at?: string | null
           whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      publication_schedule: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          niche: string | null
+          notes: string | null
+          priority: string | null
+          reminder_sent: boolean | null
+          scheduled_date: string
+          scheduled_time: string | null
+          status: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          niche?: string | null
+          notes?: string | null
+          priority?: string | null
+          reminder_sent?: boolean | null
+          scheduled_date: string
+          scheduled_time?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          niche?: string | null
+          notes?: string | null
+          priority?: string | null
+          reminder_sent?: boolean | null
+          scheduled_date?: string
+          scheduled_time?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          video_url?: string | null
         }
         Relationships: []
       }

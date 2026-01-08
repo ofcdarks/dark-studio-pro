@@ -43,6 +43,7 @@ import {
   GripVertical,
   RotateCcw,
   Coins,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -63,6 +64,7 @@ const defaultNavItems: NavItem[] = [
   { id: "channel-analyzer", icon: BarChart3, label: "Análise de Canais", href: "/channel-analyzer", category: "pesquisa" },
   { id: "library", icon: Library, label: "Biblioteca Virais", href: "/library", category: "planejamento" },
   { id: "channels", icon: Eye, label: "Canais Monitorados", href: "/channels", category: "planejamento" },
+  { id: "schedule", icon: Calendar, label: "Agenda de Publicação", href: "/schedule", category: "planejamento" },
   { id: "analyzer", icon: Video, label: "Analisador de Vídeos", href: "/analyzer", category: "analise" },
   { id: "history", icon: History, label: "Histórico de Análises", href: "/history", category: "analise" },
   { id: "agents", icon: Bot, label: "Agentes Virais", href: "/agents", category: "criacao" },
