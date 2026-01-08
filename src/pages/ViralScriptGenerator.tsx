@@ -1082,84 +1082,65 @@ Analise o padrão de sucesso do canal ${channelUrl} e adapte o roteiro para segu
 - Padrões de retenção específicos do nicho`;
     }
 
-    return `Você é um ESPECIALISTA ELITE em roteiros virais para YouTube com mais de 10 anos criando conteúdo que quebra a internet. Seu trabalho é criar roteiros que:
-- Mantêm retenção ACIMA de 70%
-- Geram milhões de visualizações
-- Viralizam organicamente
-- Prendem do primeiro ao último segundo
+    // Map language code to language name
+    const languageMap: Record<string, string> = {
+      "pt-BR": "Português Brasileiro",
+      "es": "Español",
+      "en": "English",
+      "fr": "Français",
+      "de": "Deutsch",
+      "it": "Italiano"
+    };
+    const languageName = languageMap[language] || "Português Brasileiro";
 
-## MISSÃO CRÍTICA
-Crie um roteiro COMPLETO e PROFISSIONAL para um vídeo de ${formatDuration(duration)} (aproximadamente ${wordsTarget} palavras).
+    return `Você é um ROTEIRISTA ELITE especializado em criar roteiros virais para YouTube.
 
-## DADOS DO VÍDEO
-- **Título/Tema**: ${title}
-- **Nicho**: ${finalNiche}
-- **Público-alvo**: ${targetAudience || "Geral"}
-- **Fórmula Viral**: ${formula?.name} - ${formula?.description}
-- **Gatilhos Mentais Selecionados pela IA**: ${triggerNames.join(", ")}
-${additionalContext ? `- **Contexto Adicional**: ${additionalContext}` : ''}
+IDIOMA OBRIGATÓRIO: ${languageName}
+TODO o roteiro DEVE ser escrito em ${languageName}. NÃO use outro idioma.
+
+MISSÃO: Criar um roteiro de ${formatDuration(duration)} (${wordsTarget} palavras) para NARRAÇÃO/VOICE-OVER.
+
+DADOS DO VÍDEO:
+- Título: ${title}
+- Nicho: ${finalNiche}
+- Público: ${targetAudience || "Geral"}
+- Fórmula: ${formula?.name}
+- Gatilhos: ${triggerNames.join(", ")}
+${additionalContext ? `- Contexto: ${additionalContext}` : ''}
 ${channelContext}
 
-## ESTRUTURA OBRIGATÓRIA DE RETENÇÃO
+REGRAS ABSOLUTAS DE FORMATO:
 
-### 🎯 HOOK INICIAL (0-30 segundos) - CRÍTICO!
-- Primeira frase EXPLOSIVA que para o scroll instantaneamente
-- Promessa clara e irresistível do que o espectador vai ganhar
-- Elemento de curiosidade, choque ou polêmica controlada
-- NUNCA comece com "Olá pessoal", "E aí galera" ou saudações genéricas
-- Use números, estatísticas chocantes ou afirmações controversas
+1. PROIBIDO usar marcações técnicas como:
+   - [CENA], [CORTE], [B-ROLL], [HOOK], [INTRODUÇÃO]
+   - **negrito**, *itálico*, ou formatação markdown
+   - Timestamps, timecodes ou indicadores de tempo
+   - Qualquer texto entre colchetes ou parênteses técnicos
 
-### 📈 DESENVOLVIMENTO (corpo do vídeo)
-Divida em blocos de 2-3 minutos, cada um com:
-- Mini-hook no início de cada bloco
-- Tensão crescente e escalonada
-- Micro-revelações para manter engajamento constante
-- Transições que criam expectativa e curiosidade
-- "Open loops" que só fecham depois
+2. O roteiro é APENAS TEXTO DE NARRAÇÃO puro
+   - Escreva como se fosse lido em voz alta
+   - Sem instruções para editor
+   - Sem descrições de cenas
+   - Apenas as palavras que serão FALADAS
 
-### 🔥 PONTOS DE RETENÇÃO (a cada 2-3 minutos)
-- Pattern interrupts visuais e narrativos
-- Perguntas retóricas que fazem pensar
-- Teasers do que vem a seguir ("mas o pior ainda está por vir...")
-- Momentos de emoção intensa
-- Plot twists e revelações inesperadas
+3. ESTRUTURA (sem marcações):
+   - Comece DIRETO com uma frase impactante (sem saudações)
+   - Parágrafos curtos de 2-3 frases
+   - Quebras naturais para respiração
+   - Fluxo contínuo de narrativa
 
-### 💎 CLÍMAX E RESOLUÇÃO
-- Build-up emocional máximo antes da revelação
-- Revelação principal épica e impactante
-- Momento de transformação/insight profundo
-- Fechamento que ressoa emocionalmente
+4. RETENÇÃO:
+   - Use perguntas retóricas
+   - Crie tensão e curiosidade
+   - Faça revelações progressivas
+   - Conecte emocionalmente
 
-### 📢 CTA ESTRATÉGICO
-- CTA integrado naturalmente na narrativa
-- Chamada para inscrição contextualizada com benefício claro
-- Teaser do próximo vídeo para criar antecipação
+5. TAMANHO: Exatamente ${wordsTarget} palavras (${duration} minutos x 150 palavras/min)
 
-## GATILHOS MENTAIS APLICADOS AUTOMATICAMENTE
-${triggerNames.map(t => `- **${t}**: Aplique naturalmente ao longo do roteiro de forma sutil mas efetiva`).join('\n')}
+GATILHOS MENTAIS PARA APLICAR:
+${triggerNames.map(t => `- ${t}`).join('\n')}
 
-## REGRAS DE OURO
-1. CADA FRASE deve ter um propósito estratégico
-2. Use linguagem conversacional, íntima e envolvente
-3. Crie "open loops" (ganchos que só fecham depois)
-4. Alterne entre momentos de tensão extrema e alívio
-5. Inclua dados/números chocantes para credibilidade
-6. Use metáforas poderosas e histórias para ilustrar
-7. Faça o espectador SENTIR intensamente, não apenas ouvir
-8. Cada parágrafo deve terminar com um gancho para o próximo
-
-## FORMATO DE ENTREGA
-Entregue APENAS o roteiro narrado (voice-over), sem instruções técnicas.
-Não inclua: [CENA], [CORTE], [B-ROLL] ou qualquer marcação técnica.
-O texto deve fluir naturalmente como uma narração contínua e envolvente.
-
-## IMPORTANTE
-- O roteiro DEVE ter aproximadamente ${wordsTarget} palavras
-- Mantenha parágrafos curtos (2-3 frases máximo)
-- Use quebras naturais para respiração do narrador
-- Cada minuto = ~150 palavras faladas
-
-COMECE O ROTEIRO AGORA COM UM HOOK EXPLOSIVO:`;
+COMECE AGORA - Primeira frase explosiva em ${languageName}:`;
   };
 
   const generateScript = async () => {
