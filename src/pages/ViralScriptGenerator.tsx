@@ -402,9 +402,17 @@ export default function ViralScriptGenerator() {
           .maybeSingle();
         
         if (analyzedVideos && analyzedVideos.length > 0) {
-          // Analyze top performing videos
+          // Analyze top performing videos - sort by views and deduplicate by title
+          const seenTitles = new Set<string>();
           const topVideos = analyzedVideos
-            .filter(v => v.original_views)
+            .filter(v => v.original_views && v.original_title)
+            .sort((a, b) => (b.original_views || 0) - (a.original_views || 0))
+            .filter(v => {
+              const normalizedTitle = (v.original_title || '').toLowerCase().trim();
+              if (seenTitles.has(normalizedTitle)) return false;
+              seenTitles.add(normalizedTitle);
+              return true;
+            })
             .slice(0, 20)
             .map(v => ({
               title: v.original_title || '',
