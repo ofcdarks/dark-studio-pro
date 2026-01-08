@@ -1381,16 +1381,34 @@ Forneça uma dica personalizada baseada nessas estatísticas.`;
       });
     } else {
       // OpenAI-compatible format (OpenAI, Laozhang AI, and Lovable AI Gateway)
+      const longOutput = type === "viral-script" || type === "generate_script_with_formula" || type === "agent_chat";
+      const maxOut = longOutput ? 8192 : 2048;
+
+      const payload: Record<string, unknown> = {
+        model: selectedModel,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      };
+
+      // Token limit differences
+      if (apiProvider === 'lovable') {
+        if (selectedModel.startsWith('openai/')) {
+          // GPT-5 family uses max_completion_tokens
+          (payload as any).max_completion_tokens = maxOut;
+        } else {
+          (payload as any).max_tokens = maxOut;
+        }
+      } else {
+        // OpenAI and Laozhang are OpenAI-compatible and accept max_tokens
+        (payload as any).max_tokens = maxOut;
+      }
+
       response = await fetch(apiUrl, {
         method: "POST",
         headers: requestHeaders,
-        body: JSON.stringify({
-          model: selectedModel,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-        }),
+        body: JSON.stringify(payload),
       });
     }
 

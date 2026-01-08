@@ -1037,9 +1037,9 @@ export default function ViralScriptGenerator() {
   const buildViralPrompt = () => {
     const formula = VIRAL_FORMULAS.find(f => f.id === selectedFormula);
     const finalNiche = niche === "custom" ? customNiche : niche;
-    const wordsTarget = duration * 180; // 180 WPM standard narration speed
+    const wordsTarget = duration * 150; // 150 WPM standard narration speed
     const minWords = Math.floor(wordsTarget * 0.95); // Minimum 95% of target
-    
+
     // Auto-select triggers
     const autoTriggers = getAutoTriggers(selectedFormula, finalNiche);
     setSelectedTriggersAI(autoTriggers);
@@ -1114,7 +1114,7 @@ Todo o roteiro DEVE ser escrito EXCLUSIVAMENTE em ${languageName}. Qualquer pala
 - MÍNIMO ABSOLUTO: ${minWords} palavras (NÃO pode ser menos!)
 - META IDEAL: ${wordsTarget} palavras
 - Se o roteiro tiver MENOS de ${minWords} palavras, é FALHA CRÍTICA e será rejeitado.
-- Cada minuto de narração = 180 palavras
+- Cada minuto de narração = 150 palavras
 - Para ${duration} minutos = ${wordsTarget} palavras OBRIGATÓRIAS
 
 📋 DADOS DO VÍDEO:
@@ -1283,25 +1283,42 @@ Os astecas eram..."
     setRetentionTips([]);
 
     try {
+      const countWords = (text: string) => text.split(/\s+/).filter(w => w.trim()).length;
+
       const wordsPerPart = 1800; // Increased for better coverage
-      const totalWords = duration * 180; // 180 WPM standard narration
+      const totalWords = duration * 150; // 150 WPM standard narration (matches UI estimate)
       const minWords = Math.floor(totalWords * 0.95); // Minimum 95% required
       const maxWords = Math.ceil(totalWords * 1.1); // Max 10% overshoot allowed
-      const partsNeeded = Math.ceil(totalWords / wordsPerPart);
-      setTotalParts(partsNeeded);
+
+      const estimatedParts = Math.max(1, Math.ceil(totalWords / wordsPerPart));
+      setTotalParts(estimatedParts);
 
       let fullScript = "";
+      let part = 1;
+      const maxPartsSafety = Math.ceil(maxWords / wordsPerPart) + 3;
 
-      for (let part = 1; part <= partsNeeded; part++) {
+      while (part <= maxPartsSafety) {
+        const currentWordCount = countWords(fullScript);
+        if (currentWordCount >= totalWords) break;
+
+        // Expand total parts if needed (when the model under-delivers)
+        if (part > estimatedParts) {
+          setTotalParts((prev) => Math.max(prev, part));
+        }
+
         setCurrentPart(part);
-        setProgress(((part - 1) / partsNeeded) * 100);
+        setProgress(Math.min(99, Math.round((currentWordCount / totalWords) * 100)));
 
-        // Calculate words for this part
-        const currentWordCount = fullScript.split(/\s+/).filter(w => w.trim()).length;
-        const remainingWords = maxWords - currentWordCount;
-        const wordsForThisPart = part === partsNeeded 
-          ? Math.max(500, Math.min(remainingWords, wordsPerPart))
-          : Math.min(wordsPerPart, Math.ceil(remainingWords / (partsNeeded - part + 1)));
+        const remainingToTarget = totalWords - currentWordCount;
+        const remainingToMax = maxWords - currentWordCount;
+        if (remainingToMax <= 0) break;
+
+        const wordsForThisPart = Math.max(
+          400,
+          Math.min(wordsPerPart, Math.min(remainingToTarget, remainingToMax))
+        );
+
+        const shouldFinalize = currentWordCount + wordsForThisPart >= totalWords;
 
         // Build strict word count instruction - ENFORCE MINIMUM
         const wordLimitInstruction = `\n\n⚠️⚠️⚠️ CONTAGEM DE PALAVRAS CRÍTICA ⚠️⚠️⚠️
@@ -1309,12 +1326,10 @@ Os astecas eram..."
 - Meta para esta parte: ${wordsForThisPart} palavras
 - Total do roteiro: ${totalWords} palavras para ${duration} minutos
 - Já escritas: ${currentWordCount} palavras
-- Faltam: ${totalWords - currentWordCount} palavras
+- Faltam: ${Math.max(0, totalWords - currentWordCount)} palavras
 SE VOCÊ ENTREGAR MENOS PALAVRAS QUE O MÍNIMO, O ROTEIRO SERÁ REJEITADO!`;
 
-        const partPrompt = partsNeeded > 1 
-          ? `${buildViralPrompt()}${wordLimitInstruction}\n\n[PARTE ${part}/${partsNeeded}] ${part === 1 ? 'Comece do início do roteiro com hook explosivo.' : `Continue de onde parou. Texto anterior terminava em: "${fullScript.slice(-200)}"`} ${part === partsNeeded ? 'Finalize o roteiro com clímax e CTA épico. ENCERRE O ROTEIRO AQUI.' : 'Pare em um ponto de tensão para continuar.'}`
-          : `${buildViralPrompt()}${wordLimitInstruction}`;
+        const partPrompt = `${buildViralPrompt()}${wordLimitInstruction}\n\n[PARTE ${part}/${Math.max(estimatedParts, part)}] ${part === 1 ? 'Comece do início do roteiro com hook explosivo.' : `Continue de onde parou. Texto anterior terminava em: "${fullScript.slice(-200)}"`} ${shouldFinalize ? 'Finalize o roteiro com clímax e CTA épico. ENCERRE O ROTEIRO AQUI.' : 'Pare em um ponto de tensão para continuar.'}`;
 
         const { data, error } = await supabase.functions.invoke('ai-assistant', {
           body: {
@@ -1326,10 +1341,16 @@ SE VOCÊ ENTREGAR MENOS PALAVRAS QUE O MÍNIMO, O ROTEIRO SERÁ REJEITADO!`;
 
         if (error) throw error;
 
-        // API returns 'result' field, not 'content'
         const partContent = data?.result || data?.content || data?.message || "";
         fullScript += (part > 1 ? "\n\n" : "") + partContent;
         setGeneratedScript(fullScript);
+
+        part += 1;
+      }
+
+      const finalWordCount = countWords(fullScript);
+      if (finalWordCount < minWords) {
+        throw new Error(`Roteiro ficou curto (${finalWordCount} palavras). Tente novamente.`);
       }
 
       setProgress(100);
