@@ -20,9 +20,13 @@ import {
   ChevronLeft,
   Loader2,
   BarChart3,
-  Kanban
+  Kanban,
+  Target,
+  Trophy,
+  Flame
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -65,6 +69,12 @@ export function ProductionBoardCard() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [visibleColumnIndex, setVisibleColumnIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'kanban' | 'report'>('kanban');
+  const [weeklyGoal, setWeeklyGoal] = useState<number>(() => {
+    const saved = localStorage.getItem('kanban-weekly-goal');
+    return saved ? parseInt(saved, 10) : 5;
+  });
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [tempGoal, setTempGoal] = useState(weeklyGoal);
 
   // Fetch tasks from database
   const { data: tasks = [], isLoading } = useQuery({
@@ -215,6 +225,33 @@ export function ProductionBoardCard() {
   const inProgressTasks = tasks.filter(t => t.column_id === 'doing').length;
   const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
+  // Weekly goal calculations
+  const now = new Date();
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+  
+  const tasksCompletedThisWeek = tasks.filter(t => {
+    if (t.column_id !== 'done') return false;
+    try {
+      const taskDate = parseISO(t.created_at);
+      return isWithinInterval(taskDate, { start: weekStart, end: weekEnd });
+    } catch {
+      return false;
+    }
+  }).length;
+
+  const weeklyProgress = Math.min(100, Math.round((tasksCompletedThisWeek / weeklyGoal) * 100));
+  const isGoalReached = tasksCompletedThisWeek >= weeklyGoal;
+
+  const saveWeeklyGoal = () => {
+    if (tempGoal >= 1 && tempGoal <= 50) {
+      setWeeklyGoal(tempGoal);
+      localStorage.setItem('kanban-weekly-goal', tempGoal.toString());
+      setIsEditingGoal(false);
+      toast.success('Meta semanal atualizada!');
+    }
+  };
+
   // Report data
   const columnData = columns.map(col => ({
     name: col.title,
@@ -290,6 +327,79 @@ export function ProductionBoardCard() {
         </div>
       </CardHeader>
       <CardContent>
+        {/* Weekly Goal Indicator - Always visible */}
+        <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Meta Semanal</span>
+              {isGoalReached && (
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs gap-1">
+                  <Trophy className="h-3 w-3" />
+                  Atingida!
+                </Badge>
+              )}
+            </div>
+            {isEditingGoal ? (
+              <div className="flex items-center gap-1">
+                <Input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={tempGoal}
+                  onChange={(e) => setTempGoal(parseInt(e.target.value) || 1)}
+                  className="w-16 h-7 text-xs text-center"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveWeeklyGoal();
+                    if (e.key === 'Escape') setIsEditingGoal(false);
+                  }}
+                />
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={saveWeeklyGoal}>
+                  <Check className="h-3.5 w-3.5 text-green-500" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setIsEditingGoal(false)}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1.5 hover:bg-primary/10"
+                onClick={() => {
+                  setTempGoal(weeklyGoal);
+                  setIsEditingGoal(true);
+                }}
+              >
+                <Edit3 className="h-3 w-3" />
+                {weeklyGoal} tarefas
+              </Button>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-500 ${
+                  isGoalReached 
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-400' 
+                    : 'bg-gradient-to-r from-primary to-amber-500'
+                }`}
+                style={{ width: `${weeklyProgress}%` }}
+              />
+            </div>
+            <div className="flex items-center gap-1.5 min-w-[80px] justify-end">
+              {isGoalReached ? (
+                <Flame className="h-4 w-4 text-green-400 animate-pulse" />
+              ) : tasksCompletedThisWeek > 0 ? (
+                <Flame className="h-4 w-4 text-amber-400" />
+              ) : null}
+              <span className={`text-sm font-bold ${isGoalReached ? 'text-green-400' : 'text-foreground'}`}>
+                {tasksCompletedThisWeek}/{weeklyGoal}
+              </span>
+            </div>
+          </div>
+        </div>
+
         {viewMode === 'report' ? (
           /* Report View */
           <div className="space-y-6">
