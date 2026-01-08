@@ -106,18 +106,18 @@ export function CreditsROICard() {
         ) : (
           <>
             {/* Summary Stats */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="text-center p-2 rounded-lg bg-muted/30">
-                <p className="text-2xl font-bold text-primary">{totalSpent.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">Créditos gastos</p>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="text-center p-2 rounded-lg bg-muted/30 min-w-0">
+                <p className="text-lg font-bold text-primary truncate">{totalSpent.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Créditos gastos</p>
               </div>
-              <div className="text-center p-2 rounded-lg bg-muted/30">
-                <p className="text-2xl font-bold text-foreground">{totalContent}</p>
-                <p className="text-xs text-muted-foreground">Conteúdos</p>
+              <div className="text-center p-2 rounded-lg bg-muted/30 min-w-0">
+                <p className="text-lg font-bold text-foreground">{totalContent}</p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Conteúdos</p>
               </div>
-              <div className="text-center p-2 rounded-lg bg-muted/30">
-                <p className="text-2xl font-bold text-green-500">{costPerContent}</p>
-                <p className="text-xs text-muted-foreground">Custo médio</p>
+              <div className="text-center p-2 rounded-lg bg-muted/30 min-w-0">
+                <p className="text-lg font-bold text-green-500">{costPerContent}</p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Custo médio</p>
               </div>
             </div>
 
