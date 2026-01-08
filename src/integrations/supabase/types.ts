@@ -1135,6 +1135,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           id: string
+          schedule_id: string | null
           task_order: number
           task_type: string
           title: string
@@ -1146,6 +1147,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          schedule_id?: string | null
           task_order?: number
           task_type?: string
           title: string
@@ -1157,13 +1159,22 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          schedule_id?: string | null
           task_order?: number
           task_type?: string
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "production_board_tasks_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "publication_schedule"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
