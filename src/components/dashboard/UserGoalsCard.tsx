@@ -407,8 +407,8 @@ export function UserGoalsCard() {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="pb-3">
+    <Card className="h-full flex flex-col overflow-hidden">
+      <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Target className="h-5 w-5 text-primary" />
@@ -488,7 +488,7 @@ export function UserGoalsCard() {
           </Dialog>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 flex-1 overflow-auto">
         {/* Suggested Goals for Videos */}
         {suggestedGoals.length > 0 && !goals.some(g => g.goal_type === 'videos') && (
           <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
@@ -547,49 +547,39 @@ export function UserGoalsCard() {
               return (
                 <div 
                   key={goal.id} 
-                  className={`space-y-2 p-3 rounded-lg transition-all ${
+                  className={`space-y-2 p-2 rounded-lg transition-all ${
                     isCompleted 
-                      ? 'bg-green-500/10 border border-green-500/30 ring-1 ring-green-500/20' 
+                      ? 'bg-green-500/10 border border-green-500/30' 
                       : 'bg-muted/20'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{isCompleted ? '🏆' : typeInfo.icon}</span>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium">{typeInfo.label}</p>
-                          {isCompleted && (
-                            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-green-500/20 text-green-500 animate-pulse">
-                              Completa!
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="text-base flex-shrink-0">{isCompleted ? '🏆' : typeInfo.icon}</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">{typeInfo.label}</p>
+                        <p className="text-[10px] text-muted-foreground">
                           {goal.period_type === 'weekly' ? 'Semanal' : 'Mensal'}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {isCompleted && (
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      )}
-                      <span className={`text-sm font-bold ${isCompleted ? 'text-green-500' : ''}`}>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <span className={`text-xs font-bold ${isCompleted ? 'text-green-500' : ''}`}>
                         {goal.current_value}/{goal.target_value}
                       </span>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7"
+                        className="h-6 w-6"
                         onClick={() => handleDeleteGoal(goal.id)}
                       >
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                        <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
                       </Button>
                     </div>
                   </div>
                   <Progress
                     value={progress}
-                    className={`h-2 ${isCompleted ? '[&>div]:bg-green-500' : ''}`}
+                    className={`h-1.5 ${isCompleted ? '[&>div]:bg-green-500' : ''}`}
                   />
                 </div>
               );
