@@ -246,6 +246,7 @@ export default function ViralScriptGenerator() {
     patterns: string[];
     avgViews: number;
     channelNiche: string;
+    nicheViralVideos?: Array<{title: string; views: number}>;
   } | null>(null);
   const [isLoadingChannelData, setIsLoadingChannelData] = useState(false);
   const [userChannels, setUserChannels] = useState<Array<{id: string; channel_url: string; channel_name: string | null}>>([]);
@@ -384,7 +385,49 @@ export default function ViralScriptGenerator() {
       setIsLoadingChannelData(true);
       
       try {
-        // Fetch analyzed videos from this channel
+        // Check if it's a connected YouTube channel (can fetch real data)
+        const selectedChannel = userChannels.find(c => c.channel_url === channelUrl);
+        const channelId = selectedChannel?.id || channelUrl.split('/').pop();
+        
+        // Try to fetch real YouTube analytics first
+        let realChannelVideos: Array<{title: string; views: number; nicho: string}> = [];
+        let detectedNiche = '';
+        
+        // Check if user has YouTube connection for this channel
+        const { data: ytConnection } = await supabase
+          .from('youtube_connections')
+          .select('channel_id')
+          .eq('user_id', user.id)
+          .eq('channel_id', channelId)
+          .maybeSingle();
+        
+        if (ytConnection) {
+          // Fetch real analytics from connected YouTube channel
+          try {
+            const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('youtube-channel-analytics');
+            
+            if (!analyticsError && analyticsData?.topVideos) {
+              const seenTitles = new Set<string>();
+              realChannelVideos = analyticsData.topVideos
+                .filter((v: any) => {
+                  const normalizedTitle = (v.title || '').toLowerCase().trim();
+                  if (seenTitles.has(normalizedTitle)) return false;
+                  seenTitles.add(normalizedTitle);
+                  return true;
+                })
+                .slice(0, 20)
+                .map((v: any) => ({
+                  title: v.title || '',
+                  views: v.views || 0,
+                  nicho: ''
+                }));
+            }
+          } catch (e) {
+            console.log('YouTube analytics not available, using analyzed videos');
+          }
+        }
+        
+        // Fetch analyzed videos to get niche and supplement data
         const { data: analyzedVideos } = await supabase
           .from('analyzed_videos')
           .select('original_title, original_views, detected_niche, detected_subniche, analysis_data_json')
@@ -392,6 +435,18 @@ export default function ViralScriptGenerator() {
           .not('original_views', 'is', null)
           .order('original_views', { ascending: false })
           .limit(100);
+        
+        // Detect main niche from analyzed videos
+        if (analyzedVideos && analyzedVideos.length > 0) {
+          const nicheCount: Record<string, number> = {};
+          analyzedVideos.forEach(v => {
+            if (v.detected_niche) {
+              nicheCount[v.detected_niche] = (nicheCount[v.detected_niche] || 0) + 1;
+            }
+          });
+          detectedNiche = Object.entries(nicheCount)
+            .sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+        }
         
         // Fetch cached data from saved analytics channels
         const { data: savedChannel } = await supabase
@@ -401,10 +456,31 @@ export default function ViralScriptGenerator() {
           .ilike('channel_url', `%${channelUrl.replace('https://', '').replace('http://', '')}%`)
           .maybeSingle();
         
-        if (analyzedVideos && analyzedVideos.length > 0) {
-          // Analyze top performing videos - sort by views and deduplicate by title
+        // Use cached analytics data if available
+        if (savedChannel?.cached_data && typeof savedChannel.cached_data === 'object') {
+          const cachedData = savedChannel.cached_data as any;
+          if (cachedData.topVideos && realChannelVideos.length === 0) {
+            const seenTitles = new Set<string>();
+            realChannelVideos = cachedData.topVideos
+              .filter((v: any) => {
+                const normalizedTitle = (v.title || '').toLowerCase().trim();
+                if (seenTitles.has(normalizedTitle)) return false;
+                seenTitles.add(normalizedTitle);
+                return true;
+              })
+              .slice(0, 20)
+              .map((v: any) => ({
+                title: v.title || '',
+                views: typeof v.views === 'number' ? v.views : parseInt(v.views) || 0,
+                nicho: ''
+              }));
+          }
+        }
+        
+        // Fallback to analyzed videos if no real data available
+        if (realChannelVideos.length === 0 && analyzedVideos && analyzedVideos.length > 0) {
           const seenTitles = new Set<string>();
-          const topVideos = analyzedVideos
+          realChannelVideos = analyzedVideos
             .filter(v => v.original_views && v.original_title)
             .sort((a, b) => (b.original_views || 0) - (a.original_views || 0))
             .filter(v => {
@@ -419,14 +495,45 @@ export default function ViralScriptGenerator() {
               views: v.original_views || 0,
               nicho: v.detected_niche || ''
             }));
+        }
+        
+        // Fetch viral videos from the SAME NICHE (not user's own videos)
+        let nicheViralVideos: Array<{title: string; views: number}> = [];
+        if (detectedNiche) {
+          const { data: nicheVideos } = await supabase
+            .from('analyzed_videos')
+            .select('original_title, original_views')
+            .eq('detected_niche', detectedNiche)
+            .neq('user_id', user.id) // Other users' videos in same niche
+            .not('original_views', 'is', null)
+            .order('original_views', { ascending: false })
+            .limit(50);
           
-          const avgViews = topVideos.length > 0 
-            ? Math.round(topVideos.reduce((sum, v) => sum + v.views, 0) / topVideos.length)
-            : 0;
+          if (nicheVideos && nicheVideos.length > 0) {
+            const seenTitles = new Set<string>();
+            nicheViralVideos = nicheVideos
+              .filter(v => {
+                const normalizedTitle = (v.original_title || '').toLowerCase().trim();
+                if (seenTitles.has(normalizedTitle)) return false;
+                seenTitles.add(normalizedTitle);
+                return true;
+              })
+              .slice(0, 10)
+              .map(v => ({
+                title: v.original_title || '',
+                views: v.original_views || 0
+              }));
+          }
+        }
+        
+        if (realChannelVideos.length > 0) {
+          const avgViews = Math.round(
+            realChannelVideos.reduce((sum, v) => sum + v.views, 0) / realChannelVideos.length
+          );
           
           // Extract patterns from top videos
           const patterns: string[] = [];
-          const titles = topVideos.map(v => v.title.toLowerCase());
+          const titles = realChannelVideos.map(v => v.title.toLowerCase());
           
           // Detect common patterns
           const hasNumbers = titles.filter(t => /\d/.test(t)).length > titles.length * 0.5;
@@ -436,38 +543,31 @@ export default function ViralScriptGenerator() {
           if (hasQuestions) patterns.push("Perguntas nos títulos geram curiosidade");
           
           const hasEmotionalWords = titles.filter(t => 
-            /(incrível|chocante|surpreendente|nunca|segredo|verdade|revelação)/i.test(t)
+            /(incrível|chocante|surpreendente|nunca|segredo|verdade|revelação|amazing|shocking|secret)/i.test(t)
           ).length > titles.length * 0.3;
           if (hasEmotionalWords) patterns.push("Palavras emocionais impulsionam engajamento");
           
           const hasListFormat = titles.filter(t => /^\d+|top \d+/i.test(t)).length > titles.length * 0.2;
           if (hasListFormat) patterns.push("Formato de lista (Top X) performa bem");
           
-          // Detect main niche
-          const nicheCount: Record<string, number> = {};
-          topVideos.forEach(v => {
-            if (v.nicho) {
-              nicheCount[v.nicho] = (nicheCount[v.nicho] || 0) + 1;
-            }
-          });
-          const channelNiche = Object.entries(nicheCount)
-            .sort((a, b) => b[1] - a[1])[0]?.[0] || 'Não detectado';
-          
           // Add patterns from saved notes
           if (savedChannel?.notes) {
             patterns.push(`Notas do canal: ${savedChannel.notes.slice(0, 200)}`);
           }
           
-          // Add cached data patterns if available
-          if (savedChannel?.cached_data) {
-            patterns.push("Dados de analytics disponíveis para otimização avançada");
+          // Add niche viral insights
+          if (nicheViralVideos.length > 0) {
+            patterns.push(`${nicheViralVideos.length} vídeos virais do nicho analisados`);
           }
           
+          const channelNiche = detectedNiche || 'Não detectado';
+          
           setChannelAnalysisData({
-            topVideos,
+            topVideos: realChannelVideos,
             patterns,
             avgViews,
-            channelNiche
+            channelNiche,
+            nicheViralVideos // Add niche viral videos
           });
           
           // Auto-set niche based on channel analysis
@@ -492,7 +592,7 @@ export default function ViralScriptGenerator() {
     };
     
     fetchChannelAnalysisData();
-  }, [channelUrl, selectedFormula, user]);
+  }, [channelUrl, selectedFormula, user, userChannels]);
 
   const formatDuration = (minutes: number) => {
     if (minutes < 60) return `${minutes} minutos`;
@@ -586,30 +686,32 @@ export default function ViralScriptGenerator() {
         `${i + 1}. "${v.title}" - ${v.views.toLocaleString()} views`
       ).join('\n');
       
+      const nicheViralTitles = channelAnalysisData.nicheViralVideos?.slice(0, 5).map((v, i) => 
+        `${i + 1}. "${v.title}" - ${v.views.toLocaleString()} views`
+      ).join('\n') || 'Nenhum vídeo viral do nicho encontrado';
+      
       channelContext = `
-## 📊 ANÁLISE REAL DO CANAL (DADOS DOS ÚLTIMOS 100 VÍDEOS)
+## 📊 ANÁLISE REAL DO SEU CANAL (DADOS DOS ÚLTIMOS 100 VÍDEOS)
 
-### Top 10 Vídeos Mais Virais do Canal:
+### Top 10 Vídeos Mais Virais do SEU CANAL:
 ${topTitles}
 
-### Média de Views dos Top Vídeos: ${channelAnalysisData.avgViews.toLocaleString()}
+### Média de Views dos Seus Top Vídeos: ${channelAnalysisData.avgViews.toLocaleString()}
 ### Nicho Detectado: ${channelAnalysisData.channelNiche}
 
-### Padrões de Sucesso Identificados pela IA:
+### Padrões de Sucesso do SEU CANAL Identificados pela IA:
 ${channelAnalysisData.patterns.map(p => `- ${p}`).join('\n')}
 
-### INSTRUÇÕES DE OTIMIZAÇÃO BASEADA NO CANAL:
-1. **Replicar Estrutura de Títulos**: Analise os padrões dos títulos acima e aplique no roteiro
-2. **Manter Tom de Voz**: O roteiro deve soar como continuação natural do conteúdo do canal
-3. **Seguir Fórmulas que Funcionam**: Use estruturas narrativas similares aos vídeos de sucesso
-4. **Superar Média de Views**: Este roteiro deve ser otimizado para superar ${channelAnalysisData.avgViews.toLocaleString()} views
-5. **Explorar o Nicho "${channelAnalysisData.channelNiche}"**: Aproveite as tendências atuais deste nicho
+## 🔥 VÍDEOS VIRAIS DO MESMO NICHO (CONCORRÊNCIA)
+${nicheViralTitles}
 
-### TENDÊNCIAS ATUAIS DO NICHO "${channelAnalysisData.channelNiche}":
-- Identifique temas em alta neste nicho
-- Aplique hooks que funcionam especificamente para esta audiência
-- Use linguagem e referências familiares ao público
-- Crie conexão emocional baseada nos interesses do nicho`;
+### INSTRUÇÕES DE OTIMIZAÇÃO BASEADA NO SEU CANAL + NICHO:
+1. **Replicar SEUS Padrões de Sucesso**: Analise os títulos e estruturas que funcionam NO SEU CANAL
+2. **Superar a Concorrência**: Use insights dos vídeos virais do nicho para criar algo ainda melhor
+3. **Manter Identidade**: O roteiro deve soar como continuação natural do SEU conteúdo
+4. **Meta de Views**: Otimizar para superar ${channelAnalysisData.avgViews.toLocaleString()} views (sua média atual)
+5. **Explorar Tendências**: Aproveite o que está viralizando no nicho "${channelAnalysisData.channelNiche}"
+6. **Diferenciação**: Combine o que funciona no seu canal com as tendências do nicho`;
     } else if (selectedFormula === "channel-based" && channelUrl) {
       channelContext = `
 ## ANÁLISE DO CANAL
@@ -1120,11 +1222,34 @@ COMECE O ROTEIRO AGORA COM UM HOOK EXPLOSIVO:`;
                         
                         {channelAnalysisData.topVideos.length > 0 && (
                           <div className="mt-3 pt-3 border-t border-border/50">
-                            <p className="text-xs text-muted-foreground mb-2">Top 3 Vídeos Mais Virais</p>
+                            <p className="text-xs text-muted-foreground mb-2">
+                              <Youtube className="w-3 h-3 inline mr-1" />
+                              Top 3 Vídeos do Seu Canal
+                            </p>
                             <div className="space-y-1">
                               {channelAnalysisData.topVideos.slice(0, 3).map((video, i) => (
                                 <div key={i} className="flex items-center gap-2 text-xs">
                                   <span className="font-bold text-primary">#{i + 1}</span>
+                                  <span className="truncate flex-1">{video.title}</span>
+                                  <span className="text-green-500 shrink-0">
+                                    {video.views.toLocaleString()} views
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {channelAnalysisData.nicheViralVideos && channelAnalysisData.nicheViralVideos.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-border/50">
+                            <p className="text-xs text-muted-foreground mb-2">
+                              <Flame className="w-3 h-3 inline mr-1 text-orange-500" />
+                              Virais do Mesmo Nicho (Concorrência)
+                            </p>
+                            <div className="space-y-1">
+                              {channelAnalysisData.nicheViralVideos.slice(0, 3).map((video, i) => (
+                                <div key={i} className="flex items-center gap-2 text-xs">
+                                  <span className="font-bold text-orange-500">#{i + 1}</span>
                                   <span className="truncate flex-1">{video.title}</span>
                                   <span className="text-green-500 shrink-0">
                                     {video.views.toLocaleString()} views
