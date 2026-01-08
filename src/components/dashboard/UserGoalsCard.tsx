@@ -32,11 +32,7 @@ interface SuggestedGoal {
 }
 
 const GOAL_TYPES = [
-  { value: 'videos', label: 'Vídeos Produzidos', icon: '🎬' },
-  { value: 'scripts', label: 'Roteiros Gerados', icon: '📝' },
-  { value: 'images', label: 'Imagens Geradas', icon: '🖼️' },
-  { value: 'titles', label: 'Títulos Gerados', icon: '✍️' },
-  { value: 'audios', label: 'Áudios Gerados', icon: '🎙️' },
+  { value: 'videos', label: 'Vídeos Finalizados', icon: '🎬' },
 ];
 
 const PERIOD_TYPES = [
@@ -93,6 +89,7 @@ export function UserGoalsCard() {
     }
   };
 
+  // Um vídeo finalizado = download de imagens em lote (batch_generation_history)
   const calculateCurrentValue = async (
     goalType: string,
     startDate: string,
@@ -100,40 +97,24 @@ export function UserGoalsCard() {
   ): Promise<number> => {
     if (!user?.id) return 0;
 
-    let tableName = '';
-    switch (goalType) {
-      case 'videos':
-        tableName = 'analyzed_videos';
-        break;
-      case 'scripts':
-        tableName = 'generated_scripts';
-        break;
-      case 'images':
-        tableName = 'generated_images';
-        break;
-      case 'titles':
-        tableName = 'generated_titles';
-        break;
-      case 'audios':
-        tableName = 'generated_audios';
-        break;
-      default:
+    if (goalType === 'videos') {
+      // Conta vídeos finalizados baseado em downloads de imagens (batch_generation_history)
+      const { count, error } = await supabase
+        .from('batch_generation_history')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', startDate)
+        .lte('created_at', endDate + 'T23:59:59');
+
+      if (error) {
+        console.error('Error calculating current value:', error);
         return 0;
+      }
+
+      return count || 0;
     }
 
-    const { count, error } = await (supabase
-      .from(tableName as 'analyzed_videos')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('created_at', startDate)
-      .lte('created_at', endDate + 'T23:59:59') as any);
-
-    if (error) {
-      console.error('Error calculating current value:', error);
-      return 0;
-    }
-
-    return count || 0;
+    return 0;
   };
 
   const handleCreateGoal = async () => {
@@ -218,14 +199,14 @@ export function UserGoalsCard() {
       const suggestions: SuggestedGoal[] = [];
       const today = new Date();
       
-      // Calculate weekly average (last 4 weeks)
+      // Calculate weekly average based on batch_generation_history (finished videos = image downloads)
       const weeklyData: number[] = [];
       for (let i = 1; i <= 4; i++) {
         const weekStart = startOfWeek(subWeeks(today, i), { weekStartsOn: 1 });
         const weekEnd = endOfWeek(subWeeks(today, i), { weekStartsOn: 1 });
         
         const { count } = await supabase
-          .from('analyzed_videos')
+          .from('batch_generation_history')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id)
           .gte('created_at', format(weekStart, 'yyyy-MM-dd'))
@@ -244,14 +225,14 @@ export function UserGoalsCard() {
         improvement_percentage: 20,
       });
       
-      // Calculate monthly average (last 3 months)
+      // Calculate monthly average based on batch_generation_history
       const monthlyData: number[] = [];
       for (let i = 1; i <= 3; i++) {
         const monthStart = startOfMonth(subMonths(today, i));
         const monthEnd = endOfMonth(subMonths(today, i));
         
         const { count } = await supabase
-          .from('analyzed_videos')
+          .from('batch_generation_history')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id)
           .gte('created_at', format(monthStart, 'yyyy-MM-dd'))
