@@ -20,6 +20,7 @@ import { SmartAlertsCard } from "./SmartAlertsCard";
 import { ConsistencyScoreCard } from "./ConsistencyScoreCard";
 import { CreditsROICard } from "./CreditsROICard";
 import { NicheSuggestionsCard } from "./NicheSuggestionsCard";
+import { ProductivityEvolutionCard } from "./ProductivityEvolutionCard";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
@@ -150,6 +151,13 @@ export function Dashboard() {
           </motion.div>
           <motion.div variants={itemVariants}>
             <StatsCard icon={TrendingUp} label="Vídeos Virais" value={stats.viralVideos} subLabel="100K+ views" />
+          </motion.div>
+        </motion.div>
+
+        {/* Evolution Chart - Full Width */}
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="mb-6">
+          <motion.div variants={itemVariants}>
+            <ProductivityEvolutionCard />
           </motion.div>
         </motion.div>
 
