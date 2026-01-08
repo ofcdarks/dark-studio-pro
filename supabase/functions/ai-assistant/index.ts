@@ -296,6 +296,7 @@ serve(async (req) => {
     const { 
       type, 
       prompt, 
+      messages, // For viral-script and other direct message types
       videoData, 
       channelUrl, 
       niche, 
@@ -1278,6 +1279,16 @@ Forneça uma dica personalizada baseada nessas estatísticas.`;
         
         Responda APENAS com o JSON válido.`;
         userPrompt = `Analise estas ${thumbnailsData.length} thumbnails de referência e crie 3 prompts adaptados ao título "${userVideoTitle}"`;
+        break;
+
+      case "viral-script":
+        // For viral-script, the full prompt is already in messages from frontend
+        // We just need to pass it through with a minimal system prompt
+        systemPrompt = "Você é um roteirista ELITE especializado em criar roteiros COMPLETOS e PROFISSIONAIS para vídeos virais do YouTube. SIGA EXATAMENTE as instruções do usuário e gere o roteiro completo conforme solicitado. NÃO faça perguntas, NÃO peça mais informações, GERE O ROTEIRO AGORA.";
+        // Extract prompt from messages if provided
+        if (messages && messages.length > 0) {
+          userPrompt = messages[0]?.content || prompt || "";
+        }
         break;
 
       default:
