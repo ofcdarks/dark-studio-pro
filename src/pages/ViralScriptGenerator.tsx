@@ -1093,54 +1093,61 @@ Analise o padrão de sucesso do canal ${channelUrl} e adapte o roteiro para segu
     };
     const languageName = languageMap[language] || "Português Brasileiro";
 
-    return `Você é um ROTEIRISTA ELITE especializado em criar roteiros virais para YouTube.
+    return `Você é um ROTEIRISTA DE ELITE especializado em roteiros virais para YouTube com RETENÇÃO ACIMA DE 89%.
 
 IDIOMA OBRIGATÓRIO: ${languageName}
 TODO o roteiro DEVE ser escrito em ${languageName}. NÃO use outro idioma.
 
-MISSÃO: Criar um roteiro de ${formatDuration(duration)} (${wordsTarget} palavras) para NARRAÇÃO/VOICE-OVER.
+MISSÃO: Criar roteiro de ${formatDuration(duration)} (${wordsTarget} palavras) para NARRAÇÃO PURA (voice-over).
 
-DADOS DO VÍDEO:
+DADOS:
 - Título: ${title}
 - Nicho: ${finalNiche}
 - Público: ${targetAudience || "Geral"}
 - Fórmula: ${formula?.name}
-- Gatilhos: ${triggerNames.join(", ")}
 ${additionalContext ? `- Contexto: ${additionalContext}` : ''}
 ${channelContext}
 
-REGRAS ABSOLUTAS DE FORMATO:
+META DE RETENÇÃO: 89%+ (OBRIGATÓRIO)
 
-1. PROIBIDO usar marcações técnicas como:
-   - [CENA], [CORTE], [B-ROLL], [HOOK], [INTRODUÇÃO]
-   - **negrito**, *itálico*, ou formatação markdown
-   - Timestamps, timecodes ou indicadores de tempo
-   - Qualquer texto entre colchetes ou parênteses técnicos
+Para atingir 89%+ de retenção, você DEVE aplicar:
 
-2. O roteiro é APENAS TEXTO DE NARRAÇÃO puro
-   - Escreva como se fosse lido em voz alta
-   - Sem instruções para editor
-   - Sem descrições de cenas
-   - Apenas as palavras que serão FALADAS
+1. HOOK MAGNÉTICO (primeiros 8 segundos):
+   - Afirmação chocante ou pergunta impossível de ignorar
+   - Promessa de revelação única
+   - Zero saudações - direto ao impacto
 
-3. ESTRUTURA (sem marcações):
-   - Comece DIRETO com uma frase impactante (sem saudações)
-   - Parágrafos curtos de 2-3 frases
-   - Quebras naturais para respiração
-   - Fluxo contínuo de narrativa
+2. OPEN LOOPS (a cada 30-45 segundos):
+   - "Mas antes de revelar isso..."
+   - "E o que descobri depois foi ainda mais perturbador..."
+   - "Isso explica apenas metade da história..."
+   
+3. PATTERN INTERRUPTS (a cada 2 minutos):
+   - Mudança brusca de ritmo ou tom
+   - Revelação inesperada
+   - Momento de emoção intensa
 
-4. RETENÇÃO:
-   - Use perguntas retóricas
-   - Crie tensão e curiosidade
-   - Faça revelações progressivas
-   - Conecte emocionalmente
+4. TENSÃO CRESCENTE:
+   - Cada bloco mais intenso que o anterior
+   - Build-up emocional até o clímax
+   - Micro-revelações que mantêm curiosidade
 
-5. TAMANHO: Exatamente ${wordsTarget} palavras (${duration} minutos x 150 palavras/min)
+5. GATILHOS MENTAIS (analise e aplique os mais eficazes):
+   - Escassez, Urgência, Autoridade, Prova Social
+   - Curiosidade, Medo de Perder, Pertencimento
+   - Exclusividade, Reciprocidade, Antecipação
+   - USE OS QUE FIZEREM MAIS SENTIDO PARA O TEMA
 
-GATILHOS MENTAIS PARA APLICAR:
-${triggerNames.map(t => `- ${t}`).join('\n')}
+FORMATO OBRIGATÓRIO:
 
-COMECE AGORA - Primeira frase explosiva em ${languageName}:`;
+- APENAS texto de narração puro
+- PROIBIDO: [marcações], **negrito**, *itálico*, timestamps
+- PROIBIDO: instruções de edição, descrições de cenas
+- Parágrafos curtos (2-3 frases)
+- Quebras naturais para respiração
+- ${wordsTarget} palavras exatas
+
+COMECE AGORA - Hook magnético em ${languageName}:`;
   };
 
   const generateScript = async () => {
