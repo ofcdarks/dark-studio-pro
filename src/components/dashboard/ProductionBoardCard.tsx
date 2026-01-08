@@ -35,11 +35,11 @@ interface BoardTask {
 }
 
 const columns = [
-  { id: 'backlog', title: 'Backlog', color: 'bg-muted' },
-  { id: 'todo', title: 'A Fazer', color: 'bg-blue-500/20' },
-  { id: 'doing', title: 'Em Andamento', color: 'bg-amber-500/20' },
-  { id: 'review', title: 'Revisão', color: 'bg-purple-500/20' },
-  { id: 'done', title: 'Concluído', color: 'bg-green-500/20' },
+  { id: 'backlog', title: 'Backlog', color: 'bg-muted/60', icon: '📋' },
+  { id: 'todo', title: 'A Fazer', color: 'bg-blue-500/15 border-l-2 border-l-blue-500', icon: '📝' },
+  { id: 'doing', title: 'Em Andamento', color: 'bg-amber-500/15 border-l-2 border-l-amber-500', icon: '🔥' },
+  { id: 'review', title: 'Revisão', color: 'bg-purple-500/15 border-l-2 border-l-purple-500', icon: '👀' },
+  { id: 'done', title: 'Concluído', color: 'bg-green-500/15 border-l-2 border-l-green-500', icon: '✅' },
 ] as const;
 
 const taskTypes = [
@@ -208,19 +208,41 @@ export function ProductionBoardCard() {
 
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.column_id === 'done').length;
+  const inProgressTasks = tasks.filter(t => t.column_id === 'doing').length;
+  const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <Card className="bg-card/50 backdrop-blur border-border/50">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <LayoutGrid className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Escada de Produção</CardTitle>
-            {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+    <Card className="bg-card/50 backdrop-blur border-border/50 overflow-hidden">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <LayoutGrid className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                Escada de Produção
+                {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">Arraste tarefas entre as colunas</p>
+            </div>
           </div>
-          <Badge variant="outline" className="text-xs">
-            {completedTasks}/{totalTasks} concluídas
-          </Badge>
+          <div className="flex items-center gap-3">
+            {inProgressTasks > 0 && (
+              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
+                🔥 {inProgressTasks} em andamento
+              </Badge>
+            )}
+            <div className="flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-1.5">
+              <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-primary to-green-500 transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <span className="text-xs font-medium text-foreground">{completedTasks}/{totalTasks}</span>
+            </div>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -245,145 +267,164 @@ export function ProductionBoardCard() {
           </Button>
         </div>
 
-        <div className={`grid gap-3 ${isExpanded ? 'md:grid-cols-5' : 'md:grid-cols-5'}`}>
-          {columns.map((column) => (
-            <div
-              key={column.id}
-              className={`rounded-lg p-2 ${column.color} min-h-[280px]`}
-              onDragOver={handleDragOver}
-              onDrop={() => handleDrop(column.id)}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-semibold text-foreground/80">{column.title}</h4>
-                <Badge variant="secondary" className="text-xs h-5 px-1.5">
-                  {getTasksByColumn(column.id).length}
-                </Badge>
-              </div>
+        <div className="grid gap-3 md:grid-cols-5">
+          {columns.map((column) => {
+            const columnTasks = getTasksByColumn(column.id);
+            const isEmpty = columnTasks.length === 0;
+            
+            return (
+              <div
+                key={column.id}
+                className={`rounded-xl p-3 ${column.color} min-h-[300px] transition-all duration-200 ${
+                  draggedTask && draggedTask.column_id !== column.id 
+                    ? 'ring-2 ring-primary/30 ring-dashed' 
+                    : ''
+                }`}
+                onDragOver={handleDragOver}
+                onDrop={() => handleDrop(column.id)}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{column.icon}</span>
+                    <h4 className="text-sm font-semibold text-foreground">{column.title}</h4>
+                  </div>
+                  <Badge variant="secondary" className="text-xs h-5 px-2 font-semibold">
+                    {columnTasks.length}
+                  </Badge>
+                </div>
 
-              <ScrollArea className="h-[240px]">
-                <div className="space-y-2 pr-2">
-                  {getTasksByColumn(column.id).map((task) => (
-                    <div
-                      key={task.id}
-                      draggable
-                      onDragStart={() => handleDragStart(task)}
-                      className={`bg-background/80 rounded-md p-2 cursor-grab active:cursor-grabbing border border-border/30 hover:border-primary/30 transition-colors group ${
-                        draggedTask?.id === task.id ? 'opacity-50' : ''
-                      }`}
-                    >
-                      {editingTask === task.id ? (
-                        <div className="flex items-center gap-1">
-                          <Input
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                            className="h-6 text-xs"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') updateTaskTitle(task.id);
-                              if (e.key === 'Escape') setEditingTask(null);
-                            }}
-                          />
-                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => updateTaskTitle(task.id)}>
-                            <Check className="h-3 w-3" />
+                <ScrollArea className="h-[250px]">
+                  <div className="space-y-2 pr-2">
+                    {isEmpty && !addingToColumn && (
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <div className="text-2xl mb-2 opacity-50">{column.icon}</div>
+                        <p className="text-xs text-muted-foreground">Nenhuma tarefa</p>
+                      </div>
+                    )}
+                    
+                    {columnTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={() => handleDragStart(task)}
+                        className={`bg-background/90 rounded-lg p-2.5 cursor-grab active:cursor-grabbing border border-border/40 hover:border-primary/40 hover:shadow-md transition-all group ${
+                          draggedTask?.id === task.id ? 'opacity-50 scale-95' : ''
+                        }`}
+                      >
+                        {editingTask === task.id ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              className="h-7 text-xs"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') updateTaskTitle(task.id);
+                                if (e.key === 'Escape') setEditingTask(null);
+                              }}
+                            />
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateTaskTitle(task.id)}>
+                              <Check className="h-3.5 w-3.5 text-green-500" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingTask(null)}>
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-2">
+                            <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 mt-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                {getTaskIcon(task.task_type)}
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                                  {taskTypes.find(t => t.id === task.task_type)?.label}
+                                </span>
+                              </div>
+                              <p className="text-sm font-medium text-foreground line-clamp-2">{task.title}</p>
+                            </div>
+                            <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6 hover:bg-primary/10"
+                                onClick={() => {
+                                  setEditingTask(task.id);
+                                  setEditTitle(task.title);
+                                }}
+                              >
+                                <Edit3 className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6 hover:bg-destructive/10 text-destructive"
+                                onClick={() => deleteTask(task.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {addingToColumn === column.id ? (
+                      <div className="bg-background/90 rounded-lg p-3 border-2 border-primary/30 space-y-2.5">
+                        <Input
+                          value={newTaskTitle}
+                          onChange={(e) => setNewTaskTitle(e.target.value)}
+                          placeholder="O que você vai produzir?"
+                          className="h-8 text-sm"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') addTask(column.id);
+                            if (e.key === 'Escape') setAddingToColumn(null);
+                          }}
+                        />
+                        <div className="flex flex-wrap gap-1">
+                          {taskTypes.map((type) => (
+                            <Button
+                              key={type.id}
+                              size="sm"
+                              variant={newTaskType === type.id ? 'default' : 'outline'}
+                              className={`h-7 text-xs px-2.5 ${newTaskType === type.id ? '' : 'hover:bg-secondary'}`}
+                              onClick={() => setNewTaskType(type.id as BoardTask['task_type'])}
+                            >
+                              <type.icon className={`h-3 w-3 mr-1 ${newTaskType === type.id ? '' : type.color}`} />
+                              {type.label}
+                            </Button>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            className="h-7 text-xs flex-1" 
+                            onClick={() => addTask(column.id)}
+                            disabled={addTaskMutation.isPending}
+                          >
+                            {addTaskMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : '+ Adicionar'}
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingTask(null)}>
+                          <Button size="sm" variant="ghost" className="h-7 text-xs px-3" onClick={() => setAddingToColumn(null)}>
                             <X className="h-3 w-3" />
                           </Button>
                         </div>
-                      ) : (
-                        <div className="flex items-start gap-2">
-                          <GripVertical className="h-3 w-3 text-muted-foreground mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1 mb-1">
-                              {getTaskIcon(task.task_type)}
-                              <span className="text-xs text-muted-foreground">
-                                {taskTypes.find(t => t.id === task.task_type)?.label}
-                              </span>
-                            </div>
-                            <p className="text-xs font-medium truncate">{task.title}</p>
-                          </div>
-                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-5 w-5"
-                              onClick={() => {
-                                setEditingTask(task.id);
-                                setEditTitle(task.title);
-                              }}
-                            >
-                              <Edit3 className="h-2.5 w-2.5" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-5 w-5 text-destructive"
-                              onClick={() => deleteTask(task.id)}
-                            >
-                              <Trash2 className="h-2.5 w-2.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {addingToColumn === column.id ? (
-                    <div className="bg-background/80 rounded-md p-2 border border-primary/30 space-y-2">
-                      <Input
-                        value={newTaskTitle}
-                        onChange={(e) => setNewTaskTitle(e.target.value)}
-                        placeholder="Título da tarefa..."
-                        className="h-7 text-xs"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') addTask(column.id);
-                          if (e.key === 'Escape') setAddingToColumn(null);
-                        }}
-                      />
-                      <div className="flex flex-wrap gap-1">
-                        {taskTypes.map((type) => (
-                          <Button
-                            key={type.id}
-                            size="sm"
-                            variant={newTaskType === type.id ? 'default' : 'outline'}
-                            className="h-6 text-xs px-2"
-                            onClick={() => setNewTaskType(type.id as BoardTask['task_type'])}
-                          >
-                            <type.icon className="h-3 w-3 mr-1" />
-                            {type.label}
-                          </Button>
-                        ))}
                       </div>
-                      <div className="flex gap-1">
-                        <Button 
-                          size="sm" 
-                          className="h-6 text-xs flex-1" 
-                          onClick={() => addTask(column.id)}
-                          disabled={addTaskMutation.isPending}
-                        >
-                          {addTaskMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Adicionar'}
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setAddingToColumn(null)}>
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full h-7 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => setAddingToColumn(column.id)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Adicionar
-                    </Button>
-                  )}
-                </div>
-              </ScrollArea>
-            </div>
-          ))}
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-background/50 border border-dashed border-border/50 hover:border-primary/30"
+                        onClick={() => setAddingToColumn(column.id)}
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1.5" />
+                        Nova tarefa
+                      </Button>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
