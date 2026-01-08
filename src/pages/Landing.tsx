@@ -416,23 +416,13 @@ const Landing = () => {
 
       </section>
 
-      {/* Scroll indicator - mouse style */}
-      <ScrollIndicator variant="mouse" />
-
-      {/* Marquee Strip - "A revolução chegou" with shimmer effect */}
-      <div className="relative overflow-hidden py-3 md:py-4 bg-gradient-to-r from-primary via-amber-500 to-primary">
-        {/* Shimmer overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-        <div className="flex animate-marquee whitespace-nowrap relative z-10">
-          {[...Array(10)].map((_, i) => (
-            <span key={i} className="mx-8 md:mx-16 text-sm md:text-lg font-bold uppercase tracking-widest text-primary-foreground flex items-center gap-3 md:gap-4 drop-shadow-lg">
-              <Diamond className="w-4 h-4 md:w-5 md:h-5" />
-              A REVOLUÇÃO CHEGOU
-              <span className="text-primary-foreground/80">•</span>
-              NÃO HÁ ESPAÇO PARA AMADORES
-            </span>
-          ))}
+      {/* Seamless Section Divider */}
+      <div className="relative h-32 md:h-40 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/5 to-background" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div className="w-px h-20 bg-gradient-to-b from-transparent via-primary/40 to-transparent" />
         </div>
+        <Diamond className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-primary/60 animate-pulse" />
       </div>
 
 
@@ -586,8 +576,15 @@ const Landing = () => {
         </AnimatedSection>
       </section>
 
-      {/* Scroll indicator - arrow style */}
-      <ScrollIndicator variant="arrow" />
+      {/* Seamless Section Divider */}
+      <div className="relative h-24 md:h-32 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-purple-500/3 to-background" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-4">
+          <div className="w-16 md:w-24 h-px bg-gradient-to-r from-transparent to-primary/30" />
+          <Diamond className="w-3 h-3 text-primary/40 animate-pulse" />
+          <div className="w-16 md:w-24 h-px bg-gradient-to-l from-transparent to-primary/30" />
+        </div>
+      </div>
 
       {/* Dreams Section - Glass Premium */}
       <section className="py-16 md:py-24 px-4 relative overflow-hidden">
@@ -661,24 +658,15 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Middle Marquee Strip */}
-      <div className="relative overflow-hidden py-3 md:py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500">
-        {/* Shimmer overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-        <div className="flex animate-marquee-fast whitespace-nowrap relative z-10">
-          {[...Array(10)].map((_, i) => (
-            <span key={i} className="mx-8 md:mx-16 text-sm md:text-lg font-bold uppercase tracking-widest text-primary-foreground flex items-center gap-3 md:gap-4 drop-shadow-lg">
-              <Crown className="w-4 h-4 md:w-5 md:h-5" />
-              FERRAMENTAS PROFISSIONAIS
-              <span className="text-primary-foreground/80">•</span>
-              RESULTADOS REAIS
-            </span>
-          ))}
+      {/* Seamless Section Divider */}
+      <div className="relative h-24 md:h-32 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-emerald-500/3 to-background" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-primary/20" />
+          <div className="w-2 h-2 rounded-full bg-primary/40 animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-primary/20" />
         </div>
       </div>
-
-      {/* Scroll indicator - dots style */}
-      <ScrollIndicator variant="dots" />
 
       {/* Tools Section - Glass Premium */}
       <section id="funcionalidades" className="py-16 md:py-24 px-4 scroll-mt-20 relative overflow-hidden">
@@ -1154,8 +1142,13 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Scroll indicator - line style */}
-      <ScrollIndicator variant="line" />
+      {/* Seamless Section Divider */}
+      <div className="relative h-20 md:h-28 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/3 to-background" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div className="w-32 md:w-48 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        </div>
+      </div>
 
       {/* How it Works - Zigzag Timeline - Glass Premium */}
       <section id="como-funciona" className="py-24 px-4 scroll-mt-20 relative overflow-hidden">
@@ -1231,8 +1224,10 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Scroll indicator - mouse style */}
-      <ScrollIndicator variant="mouse" />
+      {/* Seamless Section Divider */}
+      <div className="relative h-20 md:h-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-purple-500/3 to-background" />
+      </div>
 
       {/* Results Section - Glass Premium */}
       <section className="py-24 px-4 relative overflow-hidden">
@@ -1325,8 +1320,15 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Scroll indicator - arrow style */}
-      <ScrollIndicator variant="arrow" />
+      {/* Seamless Section Divider */}
+      <div className="relative h-20 md:h-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/3 to-background" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-4">
+          <div className="w-12 h-px bg-gradient-to-r from-transparent to-primary/20" />
+          <Crown className="w-3 h-3 text-primary/30" />
+          <div className="w-12 h-px bg-gradient-to-l from-transparent to-primary/20" />
+        </div>
+      </div>
 
       {/* Plans Section - Glass Premium */}
       <section id="planos" className="py-24 px-4 scroll-mt-20 relative overflow-hidden">
