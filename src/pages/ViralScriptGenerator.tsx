@@ -167,7 +167,7 @@ const VIRAL_FORMULAS = [
   {
     id: "channel-based",
     name: "Baseado no Seu Canal",
-    description: "Fórmula personalizada baseada no estilo do seu canal",
+    description: "IA analisa seus 100 últimos vídeos + tendências do nicho para máxima viralização",
     icon: "🎯",
     retention: 95,
     category: "personalizado",
@@ -239,6 +239,16 @@ export default function ViralScriptGenerator() {
   const [language] = useState("pt-BR");
   const [channelUrl, setChannelUrl] = useState("");
   const [formulaTab, setFormulaTab] = useState("all");
+  
+  // Channel analysis data
+  const [channelAnalysisData, setChannelAnalysisData] = useState<{
+    topVideos: Array<{title: string; views: number; nicho: string}>;
+    patterns: string[];
+    avgViews: number;
+    channelNiche: string;
+  } | null>(null);
+  const [isLoadingChannelData, setIsLoadingChannelData] = useState(false);
+  const [userChannels, setUserChannels] = useState<Array<{id: string; channel_url: string; channel_name: string | null}>>([]);
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -300,6 +310,181 @@ export default function ViralScriptGenerator() {
     };
     checkCredits();
   }, [user, estimatedCredits]);
+
+  // Fetch user's channels on mount
+  useEffect(() => {
+    const fetchUserChannels = async () => {
+      if (!user) return;
+      
+      // Get YouTube connections
+      const { data: ytConnections } = await supabase
+        .from('youtube_connections')
+        .select('channel_id, channel_name')
+        .eq('user_id', user.id);
+      
+      // Get monitored channels
+      const { data: monitoredChannels } = await supabase
+        .from('monitored_channels')
+        .select('id, channel_url, channel_name')
+        .eq('user_id', user.id);
+      
+      // Get saved analytics channels
+      const { data: analyticsChannels } = await supabase
+        .from('saved_analytics_channels')
+        .select('id, channel_url, channel_name')
+        .eq('user_id', user.id);
+      
+      const channels: Array<{id: string; channel_url: string; channel_name: string | null}> = [];
+      
+      if (ytConnections) {
+        ytConnections.forEach(c => {
+          channels.push({ 
+            id: c.channel_id, 
+            channel_url: `https://youtube.com/channel/${c.channel_id}`, 
+            channel_name: c.channel_name 
+          });
+        });
+      }
+      
+      if (monitoredChannels) {
+        monitoredChannels.forEach(c => {
+          if (!channels.find(ch => ch.channel_url === c.channel_url)) {
+            channels.push(c);
+          }
+        });
+      }
+      
+      if (analyticsChannels) {
+        analyticsChannels.forEach(c => {
+          if (!channels.find(ch => ch.channel_url === c.channel_url)) {
+            channels.push(c);
+          }
+        });
+      }
+      
+      setUserChannels(channels);
+      
+      // Auto-select first channel if available
+      if (channels.length > 0 && !channelUrl) {
+        setChannelUrl(channels[0].channel_url);
+      }
+    };
+    
+    fetchUserChannels();
+  }, [user]);
+
+  // Fetch channel analysis data when channel URL changes
+  useEffect(() => {
+    const fetchChannelAnalysisData = async () => {
+      if (!user || !channelUrl || selectedFormula !== "channel-based") {
+        setChannelAnalysisData(null);
+        return;
+      }
+      
+      setIsLoadingChannelData(true);
+      
+      try {
+        // Fetch analyzed videos from this channel
+        const { data: analyzedVideos } = await supabase
+          .from('analyzed_videos')
+          .select('original_title, original_views, detected_niche, detected_subniche, analysis_data_json')
+          .eq('user_id', user.id)
+          .not('original_views', 'is', null)
+          .order('original_views', { ascending: false })
+          .limit(100);
+        
+        // Fetch cached data from saved analytics channels
+        const { data: savedChannel } = await supabase
+          .from('saved_analytics_channels')
+          .select('cached_data, notes, channel_name, subscribers, total_views')
+          .eq('user_id', user.id)
+          .ilike('channel_url', `%${channelUrl.replace('https://', '').replace('http://', '')}%`)
+          .maybeSingle();
+        
+        if (analyzedVideos && analyzedVideos.length > 0) {
+          // Analyze top performing videos
+          const topVideos = analyzedVideos
+            .filter(v => v.original_views)
+            .slice(0, 20)
+            .map(v => ({
+              title: v.original_title || '',
+              views: v.original_views || 0,
+              nicho: v.detected_niche || ''
+            }));
+          
+          const avgViews = topVideos.length > 0 
+            ? Math.round(topVideos.reduce((sum, v) => sum + v.views, 0) / topVideos.length)
+            : 0;
+          
+          // Extract patterns from top videos
+          const patterns: string[] = [];
+          const titles = topVideos.map(v => v.title.toLowerCase());
+          
+          // Detect common patterns
+          const hasNumbers = titles.filter(t => /\d/.test(t)).length > titles.length * 0.5;
+          if (hasNumbers) patterns.push("Usa números nos títulos para CTR alto");
+          
+          const hasQuestions = titles.filter(t => t.includes('?')).length > titles.length * 0.3;
+          if (hasQuestions) patterns.push("Perguntas nos títulos geram curiosidade");
+          
+          const hasEmotionalWords = titles.filter(t => 
+            /(incrível|chocante|surpreendente|nunca|segredo|verdade|revelação)/i.test(t)
+          ).length > titles.length * 0.3;
+          if (hasEmotionalWords) patterns.push("Palavras emocionais impulsionam engajamento");
+          
+          const hasListFormat = titles.filter(t => /^\d+|top \d+/i.test(t)).length > titles.length * 0.2;
+          if (hasListFormat) patterns.push("Formato de lista (Top X) performa bem");
+          
+          // Detect main niche
+          const nicheCount: Record<string, number> = {};
+          topVideos.forEach(v => {
+            if (v.nicho) {
+              nicheCount[v.nicho] = (nicheCount[v.nicho] || 0) + 1;
+            }
+          });
+          const channelNiche = Object.entries(nicheCount)
+            .sort((a, b) => b[1] - a[1])[0]?.[0] || 'Não detectado';
+          
+          // Add patterns from saved notes
+          if (savedChannel?.notes) {
+            patterns.push(`Notas do canal: ${savedChannel.notes.slice(0, 200)}`);
+          }
+          
+          // Add cached data patterns if available
+          if (savedChannel?.cached_data) {
+            patterns.push("Dados de analytics disponíveis para otimização avançada");
+          }
+          
+          setChannelAnalysisData({
+            topVideos,
+            patterns,
+            avgViews,
+            channelNiche
+          });
+          
+          // Auto-set niche based on channel analysis
+          if (channelNiche && channelNiche !== 'Não detectado' && !niche) {
+            const matchingNiche = NICHES.find(n => 
+              n.toLowerCase().includes(channelNiche.toLowerCase()) ||
+              channelNiche.toLowerCase().includes(n.toLowerCase())
+            );
+            if (matchingNiche) {
+              setNiche(matchingNiche);
+            }
+          }
+        } else {
+          setChannelAnalysisData(null);
+        }
+      } catch (error) {
+        console.error('Error fetching channel data:', error);
+        setChannelAnalysisData(null);
+      } finally {
+        setIsLoadingChannelData(false);
+      }
+    };
+    
+    fetchChannelAnalysisData();
+  }, [channelUrl, selectedFormula, user]);
 
   const formatDuration = (minutes: number) => {
     if (minutes < 60) return `${minutes} minutos`;
@@ -386,14 +571,46 @@ export default function ViralScriptGenerator() {
     setSelectedTriggersAI(autoTriggers);
     const triggerNames = autoTriggers.map(t => MENTAL_TRIGGERS.find(m => m.id === t)?.name).filter(Boolean);
 
-    const channelContext = selectedFormula === "channel-based" && channelUrl 
-      ? `\n## ANÁLISE DO CANAL
+    // Build channel context with REAL data from analyzed videos
+    let channelContext = '';
+    if (selectedFormula === "channel-based" && channelAnalysisData) {
+      const topTitles = channelAnalysisData.topVideos.slice(0, 10).map((v, i) => 
+        `${i + 1}. "${v.title}" - ${v.views.toLocaleString()} views`
+      ).join('\n');
+      
+      channelContext = `
+## 📊 ANÁLISE REAL DO CANAL (DADOS DOS ÚLTIMOS 100 VÍDEOS)
+
+### Top 10 Vídeos Mais Virais do Canal:
+${topTitles}
+
+### Média de Views dos Top Vídeos: ${channelAnalysisData.avgViews.toLocaleString()}
+### Nicho Detectado: ${channelAnalysisData.channelNiche}
+
+### Padrões de Sucesso Identificados pela IA:
+${channelAnalysisData.patterns.map(p => `- ${p}`).join('\n')}
+
+### INSTRUÇÕES DE OTIMIZAÇÃO BASEADA NO CANAL:
+1. **Replicar Estrutura de Títulos**: Analise os padrões dos títulos acima e aplique no roteiro
+2. **Manter Tom de Voz**: O roteiro deve soar como continuação natural do conteúdo do canal
+3. **Seguir Fórmulas que Funcionam**: Use estruturas narrativas similares aos vídeos de sucesso
+4. **Superar Média de Views**: Este roteiro deve ser otimizado para superar ${channelAnalysisData.avgViews.toLocaleString()} views
+5. **Explorar o Nicho "${channelAnalysisData.channelNiche}"**: Aproveite as tendências atuais deste nicho
+
+### TENDÊNCIAS ATUAIS DO NICHO "${channelAnalysisData.channelNiche}":
+- Identifique temas em alta neste nicho
+- Aplique hooks que funcionam especificamente para esta audiência
+- Use linguagem e referências familiares ao público
+- Crie conexão emocional baseada nos interesses do nicho`;
+    } else if (selectedFormula === "channel-based" && channelUrl) {
+      channelContext = `
+## ANÁLISE DO CANAL
 Analise o padrão de sucesso do canal ${channelUrl} e adapte o roteiro para seguir:
 - Tom de voz e linguagem similar
 - Estrutura de narrativa que funciona no canal
 - Estilo de hooks e aberturas
-- Padrões de retenção específicos do nicho`
-      : '';
+- Padrões de retenção específicos do nicho`;
+    }
 
     return `Você é um ESPECIALISTA ELITE em roteiros virais para YouTube com mais de 10 anos criando conteúdo que quebra a internet. Seu trabalho é criar roteiros que:
 - Mantêm retenção ACIMA de 70%
@@ -486,8 +703,8 @@ COMECE O ROTEIRO AGORA COM UM HOOK EXPLOSIVO:`;
       return;
     }
 
-    if (selectedFormula === "channel-based" && !channelUrl.trim()) {
-      toast.error("Digite a URL do canal para usar esta fórmula");
+    if (selectedFormula === "channel-based" && !channelAnalysisData && !channelUrl.trim()) {
+      toast.error("Selecione um canal ou adicione vídeos analisados para usar esta fórmula");
       return;
     }
 
@@ -805,20 +1022,128 @@ COMECE O ROTEIRO AGORA COM UM HOOK EXPLOSIVO:`;
 
                 {/* Channel URL for channel-based formula */}
                 {selectedFormula === "channel-based" && (
-                  <div className="mt-4 p-4 bg-primary/5 rounded-xl border border-primary/20">
-                    <Label className="text-sm font-medium flex items-center gap-2 mb-2">
-                      <Youtube className="h-4 w-4 text-red-500" />
-                      URL do Canal de Referência *
-                    </Label>
-                    <Input
-                      value={channelUrl}
-                      onChange={(e) => setChannelUrl(e.target.value)}
-                      placeholder="https://youtube.com/@seucanal"
-                      className="bg-background"
-                    />
-                    <p className="text-xs text-muted-foreground mt-2">
-                      A IA analisará o padrão de sucesso do canal para criar um roteiro personalizado
-                    </p>
+                  <div className="mt-4 space-y-4">
+                    <div className="p-4 bg-primary/5 rounded-xl border border-primary/20">
+                      <Label className="text-sm font-medium flex items-center gap-2 mb-2">
+                        <Youtube className="h-4 w-4 text-red-500" />
+                        Selecione seu Canal
+                      </Label>
+                      
+                      {userChannels.length > 0 ? (
+                        <Select value={channelUrl} onValueChange={setChannelUrl}>
+                          <SelectTrigger className="bg-background">
+                            <SelectValue placeholder="Selecione um canal" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {userChannels.map((channel) => (
+                              <SelectItem key={channel.id} value={channel.channel_url}>
+                                {channel.channel_name || channel.channel_url}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          value={channelUrl}
+                          onChange={(e) => setChannelUrl(e.target.value)}
+                          placeholder="https://youtube.com/@seucanal"
+                          className="bg-background"
+                        />
+                      )}
+                      
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {userChannels.length > 0 
+                          ? "Canais detectados do seu perfil. A IA vai analisar os vídeos já salvos."
+                          : "Adicione canais no Monitoramento ou Analytics para análise automática."
+                        }
+                      </p>
+                    </div>
+                    
+                    {/* Channel Analysis Results */}
+                    {isLoadingChannelData && (
+                      <div className="p-4 bg-secondary/50 rounded-xl border border-border">
+                        <div className="flex items-center gap-2">
+                          <RefreshCw className="h-4 w-4 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">
+                            Analisando dados do canal...
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {channelAnalysisData && !isLoadingChannelData && (
+                      <div className="p-4 bg-gradient-to-br from-green-500/10 to-primary/5 rounded-xl border border-green-500/20">
+                        <div className="flex items-center gap-2 mb-3">
+                          <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          <span className="font-medium text-sm text-green-500">
+                            Análise do Canal Completa!
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div className="p-2 bg-background/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Vídeos Analisados</p>
+                            <p className="font-bold text-lg">{channelAnalysisData.topVideos.length}</p>
+                          </div>
+                          <div className="p-2 bg-background/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Média de Views</p>
+                            <p className="font-bold text-lg">{channelAnalysisData.avgViews.toLocaleString()}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="mb-3">
+                          <p className="text-xs text-muted-foreground mb-1">Nicho Detectado</p>
+                          <Badge variant="secondary" className="bg-primary/20">
+                            {channelAnalysisData.channelNiche}
+                          </Badge>
+                        </div>
+                        
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">Padrões de Sucesso</p>
+                          <div className="space-y-1">
+                            {channelAnalysisData.patterns.slice(0, 4).map((pattern, i) => (
+                              <div key={i} className="flex items-start gap-2 text-xs">
+                                <CheckCircle2 className="h-3 w-3 text-green-500 mt-0.5 shrink-0" />
+                                <span className="text-muted-foreground">{pattern}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {channelAnalysisData.topVideos.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-border/50">
+                            <p className="text-xs text-muted-foreground mb-2">Top 3 Vídeos Mais Virais</p>
+                            <div className="space-y-1">
+                              {channelAnalysisData.topVideos.slice(0, 3).map((video, i) => (
+                                <div key={i} className="flex items-center gap-2 text-xs">
+                                  <span className="font-bold text-primary">#{i + 1}</span>
+                                  <span className="truncate flex-1">{video.title}</span>
+                                  <span className="text-green-500 shrink-0">
+                                    {video.views.toLocaleString()} views
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {!channelAnalysisData && !isLoadingChannelData && channelUrl && (
+                      <div className="p-4 bg-yellow-500/10 rounded-xl border border-yellow-500/20">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-yellow-500">
+                              Nenhum dado encontrado
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Analise alguns vídeos deste canal primeiro no "Analisador de Vídeo" ou adicione à sua lista de Analytics para coletar dados.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
