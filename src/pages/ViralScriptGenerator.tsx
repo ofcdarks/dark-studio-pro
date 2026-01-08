@@ -1587,15 +1587,20 @@ Reescreva o roteiro COMPLETO corrigindo os problemas, mantendo toda a narrativa 
 
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
-          messages: [{ role: 'user', content: fixPrompt }],
+          prompt: fixPrompt,
           model: aiModel,
-          type: 'script-fix'
+          type: 'agent_chat',
+          agentData: {
+            name: 'Corretor de Retenção',
+            niche: 'Retenção de vídeos YouTube',
+            formula: 'Corrigir problemas de retenção mantendo 100% da narrativa'
+          }
         }
       });
 
       if (error) throw error;
 
-      const fixedScript = data?.result || data?.content || "";
+      const fixedScript = data?.result || data?.content || data?.response || "";
       
       if (fixedScript && fixedScript.length > 500) {
         setGeneratedScript(fixedScript);
