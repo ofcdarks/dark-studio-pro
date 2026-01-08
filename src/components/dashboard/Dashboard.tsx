@@ -181,20 +181,20 @@ export function Dashboard() {
           </motion.div>
         </motion.div>
 
-        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
-          <motion.div variants={itemVariants}>
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <motion.div variants={itemVariants} className="h-full">
             <UserGoalsCard />
           </motion.div>
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="h-full">
             <PomodoroCard />
           </motion.div>
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="h-full">
             <SmartAlertsCard />
           </motion.div>
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="h-full">
             <ConsistencyScoreCard />
           </motion.div>
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="h-full">
             <CreditsROICard />
           </motion.div>
         </motion.div>

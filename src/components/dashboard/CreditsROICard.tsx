@@ -91,7 +91,7 @@ export function CreditsROICard() {
   const costPerContent = totalContent > 0 ? Math.round(totalSpent / totalContent) : 0;
 
   return (
-    <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
+    <Card className="h-full flex flex-col border-border/50 bg-gradient-to-br from-card to-card/80">
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Coins className="w-4 h-4 text-primary" />
