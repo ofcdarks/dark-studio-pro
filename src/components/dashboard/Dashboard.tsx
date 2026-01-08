@@ -22,6 +22,7 @@ import { CreditsROICard } from "./CreditsROICard";
 import { NicheSuggestionsCard } from "./NicheSuggestionsCard";
 import { ProductivityEvolutionCard } from "./ProductivityEvolutionCard";
 import { UserGoalsCard } from "./UserGoalsCard";
+import { PomodoroCard } from "./PomodoroCard";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
@@ -172,9 +173,12 @@ export function Dashboard() {
           </motion.div>
         </motion.div>
 
-        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
           <motion.div variants={itemVariants}>
             <UserGoalsCard />
+          </motion.div>
+          <motion.div variants={itemVariants}>
+            <PomodoroCard />
           </motion.div>
           <motion.div variants={itemVariants}>
             <SmartAlertsCard />
