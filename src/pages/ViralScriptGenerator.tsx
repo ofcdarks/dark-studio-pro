@@ -1837,11 +1837,32 @@ COMECE AGORA - Hook magnético em ${languageName}:`;
             {/* Loading State */}
             {isGenerating && (
               <Card className="border-primary/50 bg-card">
-                <CardContent className="p-8 flex flex-col items-center justify-center min-h-[350px] relative">
-                  <div className="relative w-24 h-24 mb-6">
+                <CardContent className="p-8 flex flex-col items-center justify-center min-h-[400px] relative">
+                  {/* Info Header */}
+                  <div className="w-full max-w-md mb-8">
+                    <div className="flex items-center justify-center gap-4 p-4 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <BookOpen className="h-4 w-4" />
+                        <span className="font-medium">~{Math.ceil(duration * 150).toLocaleString()} palavras</span>
+                      </div>
+                      <div className="h-4 w-px bg-border" />
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span className="font-medium">{formatDuration(duration)}</span>
+                      </div>
+                      <div className="h-4 w-px bg-border" />
+                      <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                        <Rocket className="h-4 w-4" />
+                        <span>{estimatedCredits} créditos</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Logo Animation */}
+                  <div className="relative w-28 h-28 mb-6">
                     <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
                     <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
-                    <div className="relative w-24 h-24 rounded-full border-2 border-primary/50 overflow-hidden">
+                    <div className="relative w-28 h-28 rounded-full border-2 border-primary/50 overflow-hidden shadow-xl shadow-primary/20">
                       <img 
                         src={logoGif} 
                         alt="Loading" 
@@ -1850,40 +1871,62 @@ COMECE AGORA - Hook magnético em ${languageName}:`;
                     </div>
                   </div>
                   
-                  <h3 className="text-lg font-bold text-foreground mb-1">Gerando Roteiro</h3>
+                  {/* Status Title */}
+                  <h3 className="text-xl font-bold text-foreground mb-2">
+                    {totalParts > 1 
+                      ? `Gerando Parte ${currentPart} de ${totalParts}`
+                      : "Gerando Roteiro Viral"
+                    }
+                  </h3>
                   
-                  <p className="text-sm text-muted-foreground mb-4 text-center">
+                  {/* Loading Message */}
+                  <p className="text-base text-primary mb-6 text-center font-medium flex items-center gap-2">
+                    <span className="text-lg">💎</span>
                     {loadingMessage}
                   </p>
 
+                  {/* Parts Indicator */}
                   {totalParts > 1 && (
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-3 mb-6">
                       {Array.from({ length: totalParts }, (_, i) => (
                         <div
                           key={i}
-                          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300 ${
-                            i < currentPart
-                              ? "bg-primary text-primary-foreground"
-                              : i === currentPart - 1
-                              ? "bg-primary/80 text-primary-foreground animate-pulse"
-                              : "bg-muted-foreground/20 text-muted-foreground"
+                          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                            i + 1 < currentPart
+                              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                              : i + 1 === currentPart
+                              ? "bg-primary/80 text-primary-foreground animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-background"
+                              : "bg-muted text-muted-foreground"
                           }`}
                         >
-                          {i + 1}
+                          {i + 1 < currentPart ? (
+                            <CheckCircle2 className="h-5 w-5" />
+                          ) : (
+                            i + 1
+                          )}
                         </div>
                       ))}
                     </div>
                   )}
                   
-                  <div className="w-full max-w-xs space-y-2">
-                    <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                  {/* Progress Bar */}
+                  <div className="w-full max-w-sm space-y-3">
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500"
                         style={{ width: `${progress}%` }}
                       />
                     </div>
-                    <p className="text-xs text-center text-muted-foreground">
-                      {Math.round(progress)}%
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Progresso</span>
+                      <span className="font-bold text-primary">{Math.round(progress)}%</span>
+                    </div>
+                  </div>
+
+                  {/* Helpful Tips */}
+                  <div className="mt-6 p-4 rounded-lg bg-secondary/50 border border-border/50 max-w-sm">
+                    <p className="text-xs text-muted-foreground text-center">
+                      <span className="font-medium text-foreground">💡 Dica:</span> Você pode sair desta página. O roteiro será salvo automaticamente na <span className="text-primary font-medium">Biblioteca Viral</span>.
                     </p>
                   </div>
                 </CardContent>
