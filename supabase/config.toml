@@ -101,3 +101,30 @@ verify_jwt = false
 
 [functions.track-blog-view]
 verify_jwt = false
+
+[functions.track-product-click]
+verify_jwt = false
+
+[functions.generate-sitemap]
+verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = false
+
+[functions.ensure-user-profile]
+verify_jwt = false
+
+[functions.send-newsletter-welcome]
+verify_jwt = false
+
+[functions.generate-video-laozhang]
+verify_jwt = false
+
+[functions.generate-video-montage]
+verify_jwt = false
+
+[functions.youtube-upload]
+verify_jwt = false
+
+[functions.youtube-refresh-token]
+verify_jwt = false
