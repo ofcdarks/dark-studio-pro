@@ -1034,7 +1034,8 @@ export default function ViralScriptGenerator() {
   const buildViralPrompt = () => {
     const formula = VIRAL_FORMULAS.find(f => f.id === selectedFormula);
     const finalNiche = niche === "custom" ? customNiche : niche;
-    const wordsTarget = duration * 150;
+    const wordsTarget = duration * 180; // 180 WPM standard narration speed
+    const minWords = Math.floor(wordsTarget * 0.95); // Minimum 95% of target
     
     // Auto-select triggers
     const autoTriggers = getAutoTriggers(selectedFormula, finalNiche);
@@ -1104,7 +1105,14 @@ Analise o padrão de sucesso do canal ${channelUrl} e adapte o roteiro para segu
 ⚠️ IDIOMA OBRIGATÓRIO: ${languageName}
 Todo o roteiro DEVE ser escrito EXCLUSIVAMENTE em ${languageName}. Qualquer palavra em outro idioma é FALHA CRÍTICA.
 
-🎯 MISSÃO: Roteiro de ${formatDuration(duration)} (${wordsTarget} palavras) para narração voice-over.
+🎯 MISSÃO CRÍTICA: Roteiro de EXATAMENTE ${formatDuration(duration)} para narração voice-over.
+
+⚠️⚠️⚠️ CONTAGEM DE PALAVRAS OBRIGATÓRIA ⚠️⚠️⚠️
+- MÍNIMO ABSOLUTO: ${minWords} palavras (NÃO pode ser menos!)
+- META IDEAL: ${wordsTarget} palavras
+- Se o roteiro tiver MENOS de ${minWords} palavras, é FALHA CRÍTICA e será rejeitado.
+- Cada minuto de narração = 180 palavras
+- Para ${duration} minutos = ${wordsTarget} palavras OBRIGATÓRIAS
 
 📋 DADOS DO VÍDEO:
 - Título: "${title}"
@@ -1216,8 +1224,11 @@ Fórmula: "Se histórias como essa fazem você questionar a história oficial, e
 
 ✅ FORMATO EXATO:
 - Apenas texto de narração puro
-- ${wordsTarget} palavras (±5%)
+- MÍNIMO ${minWords} palavras (OBRIGATÓRIO - roteiro menor será REJEITADO)
+- META: ${wordsTarget} palavras para ${duration} minutos
 - Parágrafos curtos separados por linha em branco
+
+⚠️ ALERTA FINAL: CONTE AS PALAVRAS! Se você entregar menos de ${minWords} palavras, o roteiro será rejeitado automaticamente. Escreva conteúdo DENSO e COMPLETO.
 
 🚀 COMECE AGORA seguindo a ESTRUTURA VIRAL OBRIGATÓRIA em ${languageName}:`;
   };
@@ -1250,9 +1261,10 @@ Fórmula: "Se histórias como essa fazem você questionar a história oficial, e
     setRetentionTips([]);
 
     try {
-      const wordsPerPart = 1500; // Reduced to prevent overshoot
-      const totalWords = duration * 150; // 150 WPM standard
-      const maxWords = Math.ceil(totalWords * 1.1); // Max 10% overshoot allowed (±3 min max)
+      const wordsPerPart = 1800; // Increased for better coverage
+      const totalWords = duration * 180; // 180 WPM standard narration
+      const minWords = Math.floor(totalWords * 0.95); // Minimum 95% required
+      const maxWords = Math.ceil(totalWords * 1.1); // Max 10% overshoot allowed
       const partsNeeded = Math.ceil(totalWords / wordsPerPart);
       setTotalParts(partsNeeded);
 
@@ -1269,8 +1281,14 @@ Fórmula: "Se histórias como essa fazem você questionar a história oficial, e
           ? Math.max(500, Math.min(remainingWords, wordsPerPart))
           : Math.min(wordsPerPart, Math.ceil(remainingWords / (partsNeeded - part + 1)));
 
-        // Build strict word count instruction
-        const wordLimitInstruction = `\n\n⚠️ LIMITE RÍGIDO DE PALAVRAS: Escreva EXATAMENTE ${wordsForThisPart} palavras nesta parte. NÃO ULTRAPASSE este limite sob hipótese alguma. Conte as palavras. Meta total do roteiro: ${totalWords} palavras (${duration} minutos). Já escritas: ${currentWordCount} palavras.`;
+        // Build strict word count instruction - ENFORCE MINIMUM
+        const wordLimitInstruction = `\n\n⚠️⚠️⚠️ CONTAGEM DE PALAVRAS CRÍTICA ⚠️⚠️⚠️
+- Esta parte DEVE ter NO MÍNIMO ${Math.floor(wordsForThisPart * 0.95)} palavras
+- Meta para esta parte: ${wordsForThisPart} palavras
+- Total do roteiro: ${totalWords} palavras para ${duration} minutos
+- Já escritas: ${currentWordCount} palavras
+- Faltam: ${totalWords - currentWordCount} palavras
+SE VOCÊ ENTREGAR MENOS PALAVRAS QUE O MÍNIMO, O ROTEIRO SERÁ REJEITADO!`;
 
         const partPrompt = partsNeeded > 1 
           ? `${buildViralPrompt()}${wordLimitInstruction}\n\n[PARTE ${part}/${partsNeeded}] ${part === 1 ? 'Comece do início do roteiro com hook explosivo.' : `Continue de onde parou. Texto anterior terminava em: "${fullScript.slice(-200)}"`} ${part === partsNeeded ? 'Finalize o roteiro com clímax e CTA épico. ENCERRE O ROTEIRO AQUI.' : 'Pare em um ponto de tensão para continuar.'}`
@@ -1987,7 +2005,7 @@ Fórmula: "Se histórias como essa fazem você questionar a história oficial, e
                 <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
                   <div className="flex items-center gap-2 p-2 bg-background/50 rounded-lg">
                     <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">~{Math.ceil(duration * 150)} palavras</span>
+                    <span className="text-muted-foreground">~{Math.ceil(duration * 180)} palavras</span>
                   </div>
                   <div className="flex items-center gap-2 p-2 bg-background/50 rounded-lg">
                     <Rocket className="h-4 w-4 text-primary" />
@@ -2031,7 +2049,7 @@ Fórmula: "Se histórias como essa fazem você questionar a história oficial, e
                     <div className="flex items-center justify-center gap-4 p-4 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <BookOpen className="h-4 w-4" />
-                        <span className="font-medium">~{Math.ceil(duration * 150).toLocaleString()} palavras</span>
+                        <span className="font-medium">~{Math.ceil(duration * 180).toLocaleString()} palavras</span>
                       </div>
                       <div className="h-4 w-px bg-border" />
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
