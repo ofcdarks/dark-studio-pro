@@ -416,13 +416,10 @@ const Landing = () => {
 
       </section>
 
-      {/* Seamless Section Divider */}
+      {/* Seamless Section Divider with ScrollIndicator */}
       <div className="relative h-32 md:h-40 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/5 to-background" />
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="w-px h-20 bg-gradient-to-b from-transparent via-primary/40 to-transparent" />
-        </div>
-        <Diamond className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-primary/60 animate-pulse" />
+        <ScrollIndicator variant="mouse" />
       </div>
 
 
@@ -576,14 +573,10 @@ const Landing = () => {
         </AnimatedSection>
       </section>
 
-      {/* Seamless Section Divider */}
+      {/* Seamless Section Divider with ScrollIndicator */}
       <div className="relative h-24 md:h-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-purple-500/3 to-background" />
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-4">
-          <div className="w-16 md:w-24 h-px bg-gradient-to-r from-transparent to-primary/30" />
-          <Diamond className="w-3 h-3 text-primary/40 animate-pulse" />
-          <div className="w-16 md:w-24 h-px bg-gradient-to-l from-transparent to-primary/30" />
-        </div>
+        <ScrollIndicator variant="arrow" />
       </div>
 
       {/* Dreams Section - Glass Premium */}
@@ -658,14 +651,10 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Seamless Section Divider */}
+      {/* Seamless Section Divider with ScrollIndicator */}
       <div className="relative h-24 md:h-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-emerald-500/3 to-background" />
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-primary/20" />
-          <div className="w-2 h-2 rounded-full bg-primary/40 animate-pulse" />
-          <div className="w-2 h-2 rounded-full bg-primary/20" />
-        </div>
+        <ScrollIndicator variant="dots" />
       </div>
 
       {/* Tools Section - Glass Premium */}
@@ -1142,12 +1131,10 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Seamless Section Divider */}
-      <div className="relative h-20 md:h-28 overflow-hidden">
+      {/* Seamless Section Divider with ScrollIndicator */}
+      <div className="relative h-24 md:h-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/3 to-background" />
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="w-32 md:w-48 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-        </div>
+        <ScrollIndicator variant="line" />
       </div>
 
       {/* How it Works - Zigzag Timeline - Glass Premium */}
@@ -1224,9 +1211,10 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Seamless Section Divider */}
-      <div className="relative h-20 md:h-24 overflow-hidden">
+      {/* Seamless Section Divider with ScrollIndicator */}
+      <div className="relative h-24 md:h-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-purple-500/3 to-background" />
+        <ScrollIndicator variant="mouse" />
       </div>
 
       {/* Results Section - Glass Premium */}
@@ -1320,14 +1308,10 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Seamless Section Divider */}
-      <div className="relative h-20 md:h-24 overflow-hidden">
+      {/* Seamless Section Divider with ScrollIndicator */}
+      <div className="relative h-24 md:h-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/3 to-background" />
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-4">
-          <div className="w-12 h-px bg-gradient-to-r from-transparent to-primary/20" />
-          <Crown className="w-3 h-3 text-primary/30" />
-          <div className="w-12 h-px bg-gradient-to-l from-transparent to-primary/20" />
-        </div>
+        <ScrollIndicator variant="arrow" />
       </div>
 
       {/* Plans Section - Glass Premium */}
