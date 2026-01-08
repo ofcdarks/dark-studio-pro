@@ -60,6 +60,7 @@ const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 const Maintenance = lazy(() => import("./pages/Maintenance"));
 const Blog = lazy(() => import("./pages/Blog"));
 const DynamicArticle = lazy(() => import("./pages/blog/DynamicArticle"));
+const PublicationSchedule = lazy(() => import("./pages/PublicationSchedule"));
 
 // Preload core tools after initial render
 if (typeof window !== 'undefined') {
@@ -145,6 +146,7 @@ const AppRoutes = () => {
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
             
             <Route path="/scenes" element={<ProtectedRoute><SceneGenerator /></ProtectedRoute>} />
+            <Route path="/schedule" element={<ProtectedRoute><PublicationSchedule /></ProtectedRoute>} />
             <Route path="/plans" element={<ProtectedRoute><PlansCredits /></ProtectedRoute>} />
             <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
             <Route path="/terms" element={<TermsOfService />} />
