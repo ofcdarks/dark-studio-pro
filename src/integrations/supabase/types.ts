@@ -1060,6 +1060,39 @@ export type Database = {
           },
         ]
       }
+      production_board_tasks: {
+        Row: {
+          column_id: string
+          created_at: string
+          id: string
+          task_order: number
+          task_type: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          column_id?: string
+          created_at?: string
+          id?: string
+          task_order?: number
+          task_type?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          column_id?: string
+          created_at?: string
+          id?: string
+          task_order?: number
+          task_type?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

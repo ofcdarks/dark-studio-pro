@@ -17,19 +17,21 @@ import {
   Image,
   Mic,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface BoardTask {
   id: string;
   title: string;
-  type: 'video' | 'script' | 'thumbnail' | 'audio' | 'other';
-  column: 'backlog' | 'todo' | 'doing' | 'review' | 'done';
-  order: number;
-  createdAt: string;
+  task_type: 'video' | 'script' | 'thumbnail' | 'audio' | 'other';
+  column_id: 'backlog' | 'todo' | 'doing' | 'review' | 'done';
+  task_order: number;
+  created_at: string;
 }
 
 const columns = [
@@ -50,9 +52,9 @@ const taskTypes = [
 
 export function ProductionBoardCard() {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState<BoardTask[]>([]);
+  const queryClient = useQueryClient();
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskType, setNewTaskType] = useState<BoardTask['type']>('video');
+  const [newTaskType, setNewTaskType] = useState<BoardTask['task_type']>('video');
   const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -60,63 +62,122 @@ export function ProductionBoardCard() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [visibleColumnIndex, setVisibleColumnIndex] = useState(0);
 
-  // Load tasks from localStorage (can be upgraded to Supabase later)
-  useEffect(() => {
-    if (user?.id) {
-      const saved = localStorage.getItem(`production-board-${user.id}`);
-      if (saved) {
-        setTasks(JSON.parse(saved));
-      }
-    }
-  }, [user?.id]);
+  // Fetch tasks from database
+  const { data: tasks = [], isLoading } = useQuery({
+    queryKey: ['production-board-tasks', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('production_board_tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('task_order', { ascending: true });
+      
+      if (error) throw error;
+      return data as BoardTask[];
+    },
+    enabled: !!user?.id,
+  });
 
-  // Save tasks to localStorage
-  useEffect(() => {
-    if (user?.id && tasks.length > 0) {
-      localStorage.setItem(`production-board-${user.id}`, JSON.stringify(tasks));
-    }
-  }, [tasks, user?.id]);
+  // Add task mutation
+  const addTaskMutation = useMutation({
+    mutationFn: async (params: { title: string; task_type: string; column_id: string }) => {
+      if (!user?.id) throw new Error('User not authenticated');
+      
+      const maxOrder = tasks.filter(t => t.column_id === params.column_id).length;
+      
+      const { data, error } = await supabase
+        .from('production_board_tasks')
+        .insert({
+          user_id: user.id,
+          title: params.title,
+          task_type: params.task_type,
+          column_id: params.column_id,
+          task_order: maxOrder,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production-board-tasks'] });
+      toast.success('Tarefa adicionada!');
+      setNewTaskTitle('');
+      setAddingToColumn(null);
+    },
+    onError: () => {
+      toast.error('Erro ao adicionar tarefa');
+    },
+  });
+
+  // Update task mutation
+  const updateTaskMutation = useMutation({
+    mutationFn: async (params: { id: string; updates: Partial<BoardTask> }) => {
+      const { error } = await supabase
+        .from('production_board_tasks')
+        .update(params.updates)
+        .eq('id', params.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production-board-tasks'] });
+    },
+  });
+
+  // Delete task mutation
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      const { error } = await supabase
+        .from('production_board_tasks')
+        .delete()
+        .eq('id', taskId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production-board-tasks'] });
+      toast.success('Tarefa removida');
+    },
+    onError: () => {
+      toast.error('Erro ao remover tarefa');
+    },
+  });
 
   const addTask = (columnId: string) => {
     if (!newTaskTitle.trim()) {
       toast.error('Digite um título para a tarefa');
       return;
     }
-
-    const newTask: BoardTask = {
-      id: crypto.randomUUID(),
+    addTaskMutation.mutate({
       title: newTaskTitle.trim(),
-      type: newTaskType,
-      column: columnId as BoardTask['column'],
-      order: tasks.filter(t => t.column === columnId).length,
-      createdAt: new Date().toISOString(),
-    };
-
-    setTasks(prev => [...prev, newTask]);
-    setNewTaskTitle('');
-    setAddingToColumn(null);
-    toast.success('Tarefa adicionada!');
+      task_type: newTaskType,
+      column_id: columnId,
+    });
   };
 
   const deleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
-    toast.success('Tarefa removida');
+    deleteTaskMutation.mutate(taskId);
   };
 
   const updateTaskTitle = (taskId: string) => {
     if (!editTitle.trim()) return;
-    
-    setTasks(prev => prev.map(t => 
-      t.id === taskId ? { ...t, title: editTitle.trim() } : t
-    ));
+    updateTaskMutation.mutate({
+      id: taskId,
+      updates: { title: editTitle.trim() },
+    });
     setEditingTask(null);
     setEditTitle('');
   };
 
-  const moveTask = (taskId: string, newColumn: BoardTask['column']) => {
-    setTasks(prev => prev.map(t => 
-      t.id === taskId ? { ...t, column: newColumn } : t
-    ));
+  const moveTask = (taskId: string, newColumn: BoardTask['column_id']) => {
+    updateTaskMutation.mutate({
+      id: taskId,
+      updates: { column_id: newColumn },
+    });
+    toast.success(`Movido para ${columns.find(c => c.id === newColumn)?.title}`);
   };
 
   const handleDragStart = (task: BoardTask) => {
@@ -128,18 +189,17 @@ export function ProductionBoardCard() {
   };
 
   const handleDrop = (columnId: string) => {
-    if (draggedTask && draggedTask.column !== columnId) {
-      moveTask(draggedTask.id, columnId as BoardTask['column']);
-      toast.success(`Movido para ${columns.find(c => c.id === columnId)?.title}`);
+    if (draggedTask && draggedTask.column_id !== columnId) {
+      moveTask(draggedTask.id, columnId as BoardTask['column_id']);
     }
     setDraggedTask(null);
   };
 
   const getTasksByColumn = (columnId: string) => {
-    return tasks.filter(t => t.column === columnId).sort((a, b) => a.order - b.order);
+    return tasks.filter(t => t.column_id === columnId).sort((a, b) => a.task_order - b.task_order);
   };
 
-  const getTaskIcon = (type: BoardTask['type']) => {
+  const getTaskIcon = (type: BoardTask['task_type']) => {
     const taskType = taskTypes.find(t => t.id === type);
     if (!taskType) return null;
     const Icon = taskType.icon;
@@ -147,10 +207,7 @@ export function ProductionBoardCard() {
   };
 
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(t => t.column === 'done').length;
-
-  // Mobile column navigation
-  const visibleColumns = isExpanded ? columns : [columns[visibleColumnIndex]];
+  const completedTasks = tasks.filter(t => t.column_id === 'done').length;
 
   return (
     <Card className="bg-card/50 backdrop-blur border-border/50">
@@ -159,6 +216,7 @@ export function ProductionBoardCard() {
           <div className="flex items-center gap-2">
             <LayoutGrid className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Escada de Produção</CardTitle>
+            {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
@@ -249,9 +307,9 @@ export function ProductionBoardCard() {
                           <GripVertical className="h-3 w-3 text-muted-foreground mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1 mb-1">
-                              {getTaskIcon(task.type)}
+                              {getTaskIcon(task.task_type)}
                               <span className="text-xs text-muted-foreground">
-                                {taskTypes.find(t => t.id === task.type)?.label}
+                                {taskTypes.find(t => t.id === task.task_type)?.label}
                               </span>
                             </div>
                             <p className="text-xs font-medium truncate">{task.title}</p>
@@ -302,7 +360,7 @@ export function ProductionBoardCard() {
                             size="sm"
                             variant={newTaskType === type.id ? 'default' : 'outline'}
                             className="h-6 text-xs px-2"
-                            onClick={() => setNewTaskType(type.id as BoardTask['type'])}
+                            onClick={() => setNewTaskType(type.id as BoardTask['task_type'])}
                           >
                             <type.icon className="h-3 w-3 mr-1" />
                             {type.label}
@@ -310,8 +368,13 @@ export function ProductionBoardCard() {
                         ))}
                       </div>
                       <div className="flex gap-1">
-                        <Button size="sm" className="h-6 text-xs flex-1" onClick={() => addTask(column.id)}>
-                          Adicionar
+                        <Button 
+                          size="sm" 
+                          className="h-6 text-xs flex-1" 
+                          onClick={() => addTask(column.id)}
+                          disabled={addTaskMutation.isPending}
+                        >
+                          {addTaskMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Adicionar'}
                         </Button>
                         <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setAddingToColumn(null)}>
                           Cancelar
