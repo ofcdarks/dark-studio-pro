@@ -439,6 +439,7 @@ const detectDetailedNiche = (titles: string[], existingNiche?: string): { niche:
 
 const AI_MODELS = [
   { id: "gpt-4.1", name: "GPT-4.1", provider: "OpenAI", premium: true },
+  { id: "claude-sonnet-4-20250514", name: "Claude 4 Sonnet", provider: "Anthropic", premium: true },
   { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "Google", premium: true },
   { id: "deepseek-chat", name: "DeepSeek Chat", provider: "DeepSeek", premium: true }
 ];

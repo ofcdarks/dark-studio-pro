@@ -156,6 +156,7 @@ interface SceneHistory {
 
 const AI_MODELS = [
   { value: "gpt-4.1", label: "GPT-4.1" },
+  { value: "claude-sonnet-4-20250514", label: "Claude 4 Sonnet" },
   { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
   { value: "deepseek-chat", label: "DeepSeek Chat" },
 ];
