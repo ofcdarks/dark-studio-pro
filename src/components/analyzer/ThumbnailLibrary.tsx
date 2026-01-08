@@ -771,11 +771,12 @@ export function ThumbnailLibrary({
                   <SelectTrigger className="w-48 bg-secondary border-border h-9">
                     <SelectValue placeholder="Escolher modelo..." />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
-                    <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
-                    <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
-                  </SelectContent>
+                        <SelectContent>
+                          <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
+                          <SelectItem value="claude-sonnet-4-20250514">Claude 4 Sonnet</SelectItem>
+                          <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                          <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
+                        </SelectContent>
                 </Select>
               </div>
               <Button
@@ -972,11 +973,12 @@ export function ThumbnailLibrary({
                 <SelectTrigger className="bg-secondary border-border">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
-                  <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
-                  <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
-                </SelectContent>
+                        <SelectContent>
+                          <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
+                          <SelectItem value="claude-sonnet-4-20250514">Claude 4 Sonnet</SelectItem>
+                          <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                          <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
+                        </SelectContent>
               </Select>
             </div>
             <div>

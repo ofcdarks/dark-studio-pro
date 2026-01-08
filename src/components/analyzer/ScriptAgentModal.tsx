@@ -298,6 +298,7 @@ ${ctaFinal ? "[CTA]\n\"Se você gostou deste conteúdo, deixe seu like e se insc
                     <span className="text-xs text-muted-foreground">Recomendado</span>
                   </div>
                 </SelectItem>
+                <SelectItem value="claude-sonnet-4-20250514">Claude 4 Sonnet</SelectItem>
                 <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
                 <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
               </SelectContent>

@@ -359,7 +359,7 @@ serve(async (req) => {
         userApiKeyToUse = adminApiKeys.laozhang;
         apiProvider = 'laozhang';
         
-        // Laozhang supports only 4 models as per docs: gpt-4.1, gemini-2.5-pro, deepseek-chat
+        // Laozhang supports only 4 models as per docs: gpt-4.1, claude-sonnet-4-20250514, gemini-2.5-pro, deepseek-chat
         const laozhangModelMap: Record<string, string> = {
           // GPT Models -> gpt-4.1 (GPT-4.1 Fast)
           "gpt-4o": "gpt-4.1",
@@ -371,12 +371,15 @@ serve(async (req) => {
           "gpt-4-turbo": "gpt-4.1",
           "gpt-4.1": "gpt-4.1",
 
-          // Claude Models -> deepseek-chat (best alternative for reasoning)
-          "claude-4-sonnet": "deepseek-chat",
-          "claude": "deepseek-chat",
-          "claude-3-5-sonnet": "deepseek-chat",
-          "claude-3-opus": "deepseek-chat",
-          "claude-sonnet": "deepseek-chat",
+          // Claude Models -> claude-sonnet-4-20250514
+          "claude-4-sonnet": "claude-sonnet-4-20250514",
+          "claude": "claude-sonnet-4-20250514",
+          "claude-3-5-sonnet": "claude-sonnet-4-20250514",
+          "claude-3-opus": "claude-sonnet-4-20250514",
+          "claude-sonnet": "claude-sonnet-4-20250514",
+          "claude-sonnet-4-20250514": "claude-sonnet-4-20250514",
+
+          // DeepSeek
           "deepseek-chat": "deepseek-chat",
 
           // Gemini Models -> gemini-2.5-pro

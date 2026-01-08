@@ -613,6 +613,7 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
                         <span className="text-xs text-primary font-medium">Recomendado</span>
                       </span>
                     </SelectItem>
+                    <SelectItem value="claude-sonnet-4-20250514">Claude 4 Sonnet</SelectItem>
                     <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
                     <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
                   </SelectContent>
