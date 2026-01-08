@@ -66,8 +66,8 @@ export function Dashboard() {
 
   return (
     <div className="flex-1 overflow-auto relative">
-      {/* Premium Background Layer */}
-      <div className="fixed inset-0 pointer-events-none">
+      {/* Premium Background Layer - z-0 to stay behind sidebar */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         {/* Radial gradient base */}
         <div 
           className="absolute inset-0"
