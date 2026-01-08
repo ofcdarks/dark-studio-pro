@@ -267,7 +267,7 @@ export function ProductionBoardCard() {
           </Button>
         </div>
 
-        <div className="grid gap-2 md:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-5">
           {columns.map((column) => {
             const columnTasks = getTasksByColumn(column.id);
             const isEmpty = columnTasks.length === 0;
@@ -275,7 +275,7 @@ export function ProductionBoardCard() {
             return (
               <div
                 key={column.id}
-                className={`rounded-lg overflow-hidden ${column.color} transition-all duration-200 ${
+                className={`rounded-xl overflow-hidden ${column.color} min-h-[300px] transition-all duration-200 ${
                   draggedTask && draggedTask.column_id !== column.id 
                     ? 'ring-2 ring-primary/30 ring-dashed' 
                     : ''
@@ -284,23 +284,24 @@ export function ProductionBoardCard() {
                 onDrop={() => handleDrop(column.id)}
               >
                 {/* Column Header with solid color */}
-                <div className={`flex items-center justify-between px-2.5 py-1.5 ${column.headerColor}`}>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs">{column.icon}</span>
-                    <h4 className="text-xs font-bold text-white">{column.title}</h4>
+                <div className={`flex items-center justify-between px-3 py-2.5 ${column.headerColor}`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{column.icon}</span>
+                    <h4 className="text-sm font-bold text-white">{column.title}</h4>
                   </div>
-                  <Badge className="bg-white/20 text-white border-white/30 text-[10px] h-4 px-1.5 font-bold">
+                  <Badge className="bg-white/20 text-white border-white/30 text-xs h-5 px-2 font-bold">
                     {columnTasks.length}
                   </Badge>
                 </div>
                 
-                <div className="p-2">
+                <div className="p-3">
 
-                <div className="space-y-1.5 max-h-[200px] overflow-y-auto scrollbar-thin">
+                <ScrollArea className="h-[250px]">
                   <div className="space-y-2 pr-2">
                     {isEmpty && !addingToColumn && (
-                      <div className="flex items-center justify-center py-4 text-center">
-                        <p className="text-[10px] text-muted-foreground opacity-60">Vazio</p>
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <div className="text-2xl mb-2 opacity-50">{column.icon}</div>
+                        <p className="text-xs text-muted-foreground">Nenhuma tarefa</p>
                       </div>
                     )}
                     
@@ -309,7 +310,7 @@ export function ProductionBoardCard() {
                         key={task.id}
                         draggable
                         onDragStart={() => handleDragStart(task)}
-                        className={`bg-background/90 rounded-md px-2 py-1.5 cursor-grab active:cursor-grabbing border border-border/40 hover:border-primary/40 transition-all group ${
+                        className={`bg-background/90 rounded-lg p-2.5 cursor-grab active:cursor-grabbing border border-border/40 hover:border-primary/40 hover:shadow-md transition-all group ${
                           draggedTask?.id === task.id ? 'opacity-50 scale-95' : ''
                         }`}
                       >
@@ -318,43 +319,51 @@ export function ProductionBoardCard() {
                             <Input
                               value={editTitle}
                               onChange={(e) => setEditTitle(e.target.value)}
-                              className="h-6 text-xs"
+                              className="h-7 text-xs"
                               autoFocus
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') updateTaskTitle(task.id);
                                 if (e.key === 'Escape') setEditingTask(null);
                               }}
                             />
-                            <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => updateTaskTitle(task.id)}>
-                              <Check className="h-3 w-3 text-green-500" />
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateTaskTitle(task.id)}>
+                              <Check className="h-3.5 w-3.5 text-green-500" />
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setEditingTask(null)}>
-                              <X className="h-3 w-3" />
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingTask(null)}>
+                              <X className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1.5">
-                            {getTaskIcon(task.task_type)}
-                            <p className="text-xs font-medium text-foreground flex-1 truncate">{task.title}</p>
-                            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-start gap-2">
+                            <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 mt-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                {getTaskIcon(task.task_type)}
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                                  {taskTypes.find(t => t.id === task.task_type)?.label}
+                                </span>
+                              </div>
+                              <p className="text-sm font-medium text-foreground line-clamp-2">{task.title}</p>
+                            </div>
+                            <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="h-5 w-5 hover:bg-primary/10"
+                                className="h-6 w-6 hover:bg-primary/10"
                                 onClick={() => {
                                   setEditingTask(task.id);
                                   setEditTitle(task.title);
                                 }}
                               >
-                                <Edit3 className="h-2.5 w-2.5" />
+                                <Edit3 className="h-3 w-3" />
                               </Button>
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="h-5 w-5 hover:bg-destructive/10 text-destructive"
+                                className="h-6 w-6 hover:bg-destructive/10 text-destructive"
                                 onClick={() => deleteTask(task.id)}
                               >
-                                <Trash2 className="h-2.5 w-2.5" />
+                                <Trash2 className="h-3 w-3" />
                               </Button>
                             </div>
                           </div>
@@ -415,8 +424,8 @@ export function ProductionBoardCard() {
                       </Button>
                     )}
                   </div>
+                </ScrollArea>
                 </div>
-              </div>
               </div>
             );
           })}
