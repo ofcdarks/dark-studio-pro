@@ -1379,7 +1379,9 @@ Forneça uma dica personalizada baseada nessas estatísticas.`;
     } else {
       // OpenAI-compatible format (OpenAI, Laozhang AI, and Lovable AI Gateway)
       const longOutput = type === "viral-script" || type === "generate_script_with_formula" || type === "agent_chat";
-      const maxOut = longOutput ? 8192 : 2048;
+      // Increase max_tokens for analyze_video_titles to avoid truncated JSON
+      const isAnalyzeTitles = type === "analyze_video_titles";
+      const maxOut = longOutput ? 8192 : (isAnalyzeTitles ? 4096 : 2048);
 
       const payload: Record<string, unknown> = {
         model: selectedModel,
