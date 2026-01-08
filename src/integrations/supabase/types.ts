@@ -1547,6 +1547,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_goals: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_value: number
+          end_date: string
+          goal_type: string
+          id: string
+          is_completed: boolean | null
+          period_type: string
+          start_date: string
+          target_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number
+          end_date: string
+          goal_type: string
+          id?: string
+          is_completed?: boolean | null
+          period_type: string
+          start_date: string
+          target_value?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number
+          end_date?: string
+          goal_type?: string
+          id?: string
+          is_completed?: boolean | null
+          period_type?: string
+          start_date?: string
+          target_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string
