@@ -13,8 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Sparkles, 
-  Clock, 
+  Clock,
   Target, 
   Zap, 
   Brain, 
@@ -1405,7 +1404,7 @@ COMECE O ROTEIRO AGORA COM UM HOOK EXPLOSIVO:`;
                       Público-alvo
                       {title.trim().length >= 10 && (
                         <Badge variant="outline" className="text-xs text-green-500 border-green-500/30">
-                          <Sparkles className="h-3 w-3 mr-1" />
+                          <Rocket className="h-3 w-3 mr-1" />
                           Auto
                         </Badge>
                       )}
@@ -1696,7 +1695,7 @@ COMECE O ROTEIRO AGORA COM UM HOOK EXPLOSIVO:`;
                   <Brain className="h-5 w-5 text-primary" />
                   Gatilhos Mentais
                   <Badge variant="secondary" className="ml-auto text-xs">
-                    <Sparkles className="h-3 w-3 mr-1" />
+                    <Rocket className="h-3 w-3 mr-1" />
                     Seleção Automática
                   </Badge>
                 </CardTitle>
@@ -1732,7 +1731,7 @@ COMECE O ROTEIRO AGORA COM UM HOOK EXPLOSIVO:`;
             <Card className="border-primary/20">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Sparkles className="h-5 w-5 text-primary" />
+                  <Rocket className="h-5 w-5 text-primary" />
                   Configurações Avançadas
                 </CardTitle>
               </CardHeader>
@@ -1783,7 +1782,7 @@ COMECE O ROTEIRO AGORA COM UM HOOK EXPLOSIVO:`;
                     <span className="text-muted-foreground">~{Math.ceil(duration * 150)} palavras</span>
                   </div>
                   <div className="flex items-center gap-2 p-2 bg-background/50 rounded-lg">
-                    <Sparkles className="h-4 w-4 text-primary" />
+                    <Rocket className="h-4 w-4 text-primary" />
                     <span className="font-semibold text-primary">{estimatedCredits} créditos</span>
                   </div>
                 </div>

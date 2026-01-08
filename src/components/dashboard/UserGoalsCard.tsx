@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Target, Plus, Trash2, CheckCircle2, Trophy, Loader2, Sparkles, TrendingUp, PartyPopper } from 'lucide-react';
+import { Target, Plus, Trash2, CheckCircle2, Trophy, Loader2, Rocket, TrendingUp, PartyPopper } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -493,7 +493,7 @@ export function UserGoalsCard() {
         {suggestedGoals.length > 0 && !goals.some(g => g.goal_type === 'videos') && (
           <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
             <div className="flex items-center gap-2 text-primary">
-              <Sparkles className="h-4 w-4" />
+              <Rocket className="h-4 w-4" />
               <span className="text-sm font-medium">Metas Sugeridas de Vídeos</span>
             </div>
             <p className="text-xs text-muted-foreground">

@@ -31,7 +31,7 @@ import {
 import {
   FileText,
   Plus,
-  Sparkles,
+  Rocket,
   Loader2,
   Eye,
   Edit,
@@ -889,7 +889,7 @@ export const AdminBlogTab = () => {
             Atualizar
           </Button>
           <Button onClick={() => setGenerateModalOpen(true)}>
-            <Sparkles className="w-4 h-4 mr-2" />
+            <Rocket className="w-4 h-4 mr-2" />
             Gerar Artigo
           </Button>
         </div>
@@ -1229,7 +1229,7 @@ export const AdminBlogTab = () => {
               Clique em "Gerar Artigo" para criar seu primeiro artigo com IA
             </p>
             <Button onClick={() => setGenerateModalOpen(true)}>
-              <Sparkles className="w-4 h-4 mr-2" />
+              <Rocket className="w-4 h-4 mr-2" />
               Gerar Primeiro Artigo
             </Button>
           </div>
@@ -1382,7 +1382,7 @@ export const AdminBlogTab = () => {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
+              <Rocket className="w-5 h-5 text-primary" />
               Gerar Artigo com IA
             </DialogTitle>
           </DialogHeader>
@@ -1565,7 +1565,7 @@ export const AdminBlogTab = () => {
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 mr-2" />
+                  <Rocket className="w-4 h-4 mr-2" />
                   Gerar
                 </>
               )}
