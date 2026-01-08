@@ -310,7 +310,9 @@ export function ProductionBoardCard() {
                         key={task.id}
                         draggable
                         onDragStart={() => handleDragStart(task)}
-                        className={`bg-background/90 rounded-lg p-2.5 cursor-grab active:cursor-grabbing border border-border/40 hover:border-primary/40 hover:shadow-md transition-all group ${
+                        className={`bg-background/90 rounded-lg p-2.5 cursor-grab active:cursor-grabbing border border-border/40 
+                          hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 hover:scale-[1.02]
+                          transition-all duration-200 ease-out group ${
                           draggedTask?.id === task.id ? 'opacity-50 scale-95' : ''
                         }`}
                       >
