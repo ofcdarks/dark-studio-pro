@@ -34,7 +34,8 @@ import {
   Cpu,
   Globe,
   Target,
-  Gauge
+  Gauge,
+  Bot
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AnimatedSection, AnimatedItem } from "@/components/landing/AnimatedSection";
@@ -852,13 +853,13 @@ const Landing = () => {
                   <p className="text-muted-foreground text-lg">Enquanto outros escondem, nós mostramos tudo</p>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                   <div className="text-center space-y-4 group">
                     <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:border-primary/60 transition-all duration-300">
                       <Eye className="w-10 h-10 text-primary" />
                     </div>
                     <h4 className="font-bold text-xl">Zero Segredos</h4>
-                    <p className="text-muted-foreground leading-relaxed">
+                    <p className="text-muted-foreground leading-relaxed text-sm">
                       Você vê exatamente qual motor está gerando cada conteúdo. Nada é escondido.
                     </p>
                   </div>
@@ -868,8 +869,18 @@ const Landing = () => {
                       <Key className="w-10 h-10 text-purple-400" />
                     </div>
                     <h4 className="font-bold text-xl">Suas Próprias Chaves</h4>
-                    <p className="text-muted-foreground leading-relaxed">
+                    <p className="text-muted-foreground leading-relaxed text-sm">
                       Quer usar suas próprias API keys? Você pode. O sistema suporta nativamente.
+                    </p>
+                  </div>
+
+                  <div className="text-center space-y-4 group">
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border border-cyan-500/30 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:border-cyan-500/60 transition-all duration-300">
+                      <Bot className="w-10 h-10 text-cyan-400" />
+                    </div>
+                    <h4 className="font-bold text-xl">Agentes Personalizados</h4>
+                    <p className="text-muted-foreground leading-relaxed text-sm">
+                      Crie seus próprios agentes com o modelo de IA que preferir. Totalmente customizável.
                     </p>
                   </div>
 
@@ -878,7 +889,7 @@ const Landing = () => {
                       <Shield className="w-10 h-10 text-green-400" />
                     </div>
                     <h4 className="font-bold text-xl">Você Manda</h4>
-                    <p className="text-muted-foreground leading-relaxed">
+                    <p className="text-muted-foreground leading-relaxed text-sm">
                       Escolha o motor ideal para cada tarefa. O poder está nas suas mãos.
                     </p>
                   </div>
