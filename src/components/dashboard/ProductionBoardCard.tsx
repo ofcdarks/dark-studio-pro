@@ -40,6 +40,7 @@ interface BoardTask {
   task_order: number;
   created_at: string;
   completed_at: string | null;
+  schedule_id: string | null;
 }
 
 const columns = [
@@ -264,6 +265,24 @@ export function ProductionBoardCard() {
           completed_at: updates.completed_at,
         });
         queryClient.invalidateQueries({ queryKey: ['task-completion-history'] });
+
+        // Check if all tasks for this schedule are done
+        if (task.schedule_id) {
+          const scheduleTasks = tasks.filter(t => t.schedule_id === task.schedule_id);
+          const otherTasksDone = scheduleTasks
+            .filter(t => t.id !== taskId)
+            .every(t => t.column_id === 'done');
+          
+          // If this is the last task, update schedule status to 'ready'
+          if (otherTasksDone) {
+            await supabase
+              .from('publication_schedule')
+              .update({ status: 'ready' })
+              .eq('id', task.schedule_id);
+            
+            toast.success('🎉 Todas as tarefas concluídas! Vídeo marcado como Pronto na Agenda.');
+          }
+        }
       }
     } else {
       updates.completed_at = null;

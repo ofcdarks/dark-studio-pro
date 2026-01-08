@@ -273,6 +273,35 @@ export default function PublicationSchedule() {
     }
   };
 
+  // Create production tasks in Kanban for a scheduled video
+  const createKanbanTasks = async (scheduleId: string, videoTitle: string) => {
+    if (!session?.user?.id) return;
+
+    const taskTemplates = [
+      { title: `📝 Roteiro - ${videoTitle}`, task_type: 'script' },
+      { title: `🎬 Gravação - ${videoTitle}`, task_type: 'video' },
+      { title: `✂️ Edição - ${videoTitle}`, task_type: 'video' },
+      { title: `🖼️ Thumbnail - ${videoTitle}`, task_type: 'thumbnail' },
+    ];
+
+    const tasksToInsert = taskTemplates.map((t, index) => ({
+      user_id: session.user.id,
+      title: t.title,
+      task_type: t.task_type,
+      column_id: 'backlog',
+      task_order: index,
+      schedule_id: scheduleId,
+    }));
+
+    const { error } = await supabase
+      .from('production_board_tasks')
+      .insert(tasksToInsert);
+
+    if (error) {
+      console.error('Error creating Kanban tasks:', error);
+    }
+  };
+
   const handleSaveVideo = async () => {
     if (!session?.user?.id || !formData.title || !formData.scheduled_date) {
       toast({
@@ -310,14 +339,22 @@ export default function PublicationSchedule() {
         toast({ title: "Vídeo atualizado!" });
       }
     } else {
-      const { error } = await supabase
+      // Insert new video and create Kanban tasks
+      const { data: newVideo, error } = await supabase
         .from('publication_schedule')
-        .insert(videoData);
+        .insert(videoData)
+        .select('id')
+        .single();
 
       if (error) {
         toast({ title: "Erro ao salvar", variant: "destructive" });
       } else {
-        toast({ title: "Vídeo agendado!" });
+        // Create Kanban tasks for this video
+        await createKanbanTasks(newVideo.id, formData.title);
+        toast({ 
+          title: "Vídeo agendado!", 
+          description: "Tarefas criadas no Quadro de Produção 📋" 
+        });
       }
     }
 
