@@ -451,7 +451,7 @@ const LANGUAGES = [
   { id: "it", name: "Italiano", flag: "🇮🇹" },
 ];
 
-// Auto-detect target audience from title
+// Auto-detect target audience from title and niche
 const detectTargetAudience = (titleText: string, nicheText: string): string => {
   const text = `${titleText} ${nicheText}`.toLowerCase();
   
@@ -459,67 +459,96 @@ const detectTargetAudience = (titleText: string, nicheText: string): string => {
   let ageRange = "";
   let interests: string[] = [];
   
+  // Ancient Civilizations / Archaeology - PRIORITY for this niche
+  if (/civiliza|maia|asteca|inca|egito|egíp|piramide|pirâmide|templo|ruína|arqueolog|chichen|itzá|faraó|mumia|múmia|antiga|ancient|roma|grécia|grecia|imperio|império|babilon|sumér|olmeca|tolteca|teotihuacan|machu picchu|stonehenge|deuses|gods|mitolog/.test(text)) {
+    ageRange = "25-55 anos";
+    interests.push("interessados em história antiga e arqueologia");
+    if (/maia|asteca|inca|chichen|olmeca|teotihuacan/.test(text)) {
+      interests.push("entusiastas de civilizações pré-colombianas");
+    }
+    if (/mistér|segredo|oculto|descobert/.test(text)) {
+      interests.push("curiosos por mistérios históricos");
+    }
+  }
+  
   // Gaming / Tech / Young audience
-  if (/gamer|gaming|jogo|game|minecraft|fortnite|valorant|lol|cs|fps|rpg|streamer/.test(text)) {
+  else if (/gamer|gaming|jogo|game|minecraft|fortnite|valorant|lol|cs|fps|rpg|streamer/.test(text)) {
     ageRange = "14-28 anos";
-    interests.push("gamers");
+    interests.push("gamers e entusiastas de jogos");
   }
   
   // Horror / Dark content
-  if (/terror|horror|dark|mistério|crime|serial killer|assassino|sobrenatural|paranormal|fantasma/.test(text)) {
-    ageRange = ageRange || "18-45 anos";
+  else if (/terror|horror|dark|mistério|crime|serial killer|assassino|sobrenatural|paranormal|fantasma|assombr/.test(text)) {
+    ageRange = "18-45 anos";
     interests.push("entusiastas de mistério e terror");
   }
   
-  // History / Education
-  if (/história|history|guerra|war|império|ancient|civilização|rei|rainha|faraó|roma|egito|grécia/.test(text)) {
-    ageRange = ageRange || "20-55 anos";
-    interests.push("interessados em história e documentários");
+  // History / War / Documentary
+  else if (/história|history|guerra|war|batalha|battle|mundial|world war|nazist|hitler|2ª guerra|1ª guerra/.test(text)) {
+    ageRange = "20-55 anos";
+    interests.push("interessados em história e documentários de guerra");
   }
   
   // Finance / Business
-  if (/dinheiro|money|rico|milionário|investir|invest|negócio|business|renda|patrimônio|cripto|bitcoin/.test(text)) {
-    ageRange = ageRange || "22-45 anos";
+  else if (/dinheiro|money|rico|milionário|investir|invest|negócio|business|renda|patrimônio|cripto|bitcoin|financ|bolsa|ações/.test(text)) {
+    ageRange = "22-45 anos";
     interests.push("buscando independência financeira");
   }
   
   // Self-improvement
-  if (/motivação|sucesso|hábito|produtiv|mentalidade|mindset|crescimento|desenvolvimento/.test(text)) {
-    ageRange = ageRange || "18-40 anos";
+  else if (/motivação|sucesso|hábito|produtiv|mentalidade|mindset|crescimento|desenvolvimento|auto-ajuda|superação/.test(text)) {
+    ageRange = "18-40 anos";
     interests.push("focados em desenvolvimento pessoal");
   }
   
   // Conspiracy / Alternative
-  if (/conspiração|illuminati|sociedade secreta|governo|elite|nova ordem|verdade oculta/.test(text)) {
-    ageRange = ageRange || "20-50 anos";
-    interests.push("questionadores e curiosos");
+  else if (/conspiração|illuminati|sociedade secreta|governo|elite|nova ordem|verdade oculta|reptilian|area 51/.test(text)) {
+    ageRange = "20-50 anos";
+    interests.push("questionadores e teóricos alternativos");
   }
   
   // Science / Space
-  if (/ciência|science|espaço|nasa|universo|planeta|estrela|alien|ovni|ufo|tecnologia/.test(text)) {
-    ageRange = ageRange || "16-45 anos";
-    interests.push("entusiastas de ciência e tecnologia");
+  else if (/ciência|science|espaço|nasa|universo|planeta|estrela|alien|ovni|ufo|tecnologia|cosmos|galáxia/.test(text)) {
+    ageRange = "16-45 anos";
+    interests.push("entusiastas de ciência e astronomia");
   }
   
   // True crime
-  if (/caso real|true crime|investigação|desaparecimento|assassinato|policial|fbi|detetive/.test(text)) {
-    ageRange = ageRange || "20-50 anos";
-    interests.push("fãs de true crime");
+  else if (/caso real|true crime|investigação|desaparecimento|assassinato|policial|fbi|detetive|serial|crime real/.test(text)) {
+    ageRange = "20-50 anos";
+    interests.push("fãs de true crime e casos reais");
+  }
+  
+  // Nature / Animals
+  else if (/natureza|animal|wildlife|selva|oceano|predador|shark|tubarão|leão|lion|safari|floresta/.test(text)) {
+    ageRange = "16-50 anos";
+    interests.push("amantes da natureza e vida selvagem");
   }
   
   // Lifestyle / Beauty
-  if (/beleza|moda|fashion|lifestyle|rotina|dia a dia|make|maquiagem/.test(text)) {
-    ageRange = ageRange || "16-35 anos";
+  else if (/beleza|moda|fashion|lifestyle|rotina|dia a dia|make|maquiagem/.test(text)) {
+    ageRange = "16-35 anos";
     interests.push("interessados em lifestyle e tendências");
   }
   
-  // Default
+  // Religion / Spirituality
+  else if (/religião|bíblia|biblia|jesus|deus|espiritual|fé|igreja|profecia|apocalipse|anjos/.test(text)) {
+    ageRange = "25-60 anos";
+    interests.push("interessados em espiritualidade e religião");
+  }
+  
+  // Default with niche-based interest
   if (!ageRange) {
     ageRange = "18-45 anos";
   }
   
   if (interests.length === 0) {
-    interests.push("público geral interessado no tema");
+    // Try to extract interest from niche name
+    if (nicheText) {
+      interests.push(`interessados em ${nicheText.toLowerCase()}`);
+    } else {
+      interests.push("público geral interessado no tema");
+    }
   }
   
   return `${ageRange}, ${interests.join(", ")}`;
