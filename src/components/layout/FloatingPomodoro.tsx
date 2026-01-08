@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Timer, Play, Pause, RotateCcw, Coffee, Zap, X, Minimize2 } from 'lucide-react';
+import { Timer, Play, Pause, RotateCcw, Coffee, Zap, X, Minimize2, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,6 +16,9 @@ const DEFAULT_TIMES = {
   longBreak: 15,
 };
 
+const STORAGE_KEY = 'pomodoro_position';
+const VISIBILITY_KEY = 'pomodoro_visible';
+
 export function FloatingPomodoro() {
   const { user } = useAuth();
   const [times, setTimes] = useState(DEFAULT_TIMES);
@@ -24,9 +27,38 @@ export function FloatingPomodoro() {
   const [sessionType, setSessionType] = useState<SessionType>('work');
   const [completedSessions, setCompletedSessions] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(() => {
+    const saved = localStorage.getItem(VISIBILITY_KEY);
+    return saved !== 'false';
+  });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [position, setPosition] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return { x: 0, y: 0 };
+      }
+    }
+    return { x: 0, y: 0 };
+  });
+  
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const dragControls = useDragControls();
+  const constraintsRef = useRef<HTMLDivElement>(null);
+
+  // Save position to localStorage
+  const handleDragEnd = (_: any, info: any) => {
+    const newPosition = { x: position.x + info.offset.x, y: position.y + info.offset.y };
+    setPosition(newPosition);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newPosition));
+  };
+
+  // Save visibility preference
+  useEffect(() => {
+    localStorage.setItem(VISIBILITY_KEY, String(isVisible));
+  }, [isVisible]);
 
   // Load state from database
   useEffect(() => {
@@ -54,7 +86,6 @@ export function FloatingPomodoro() {
           break: data.break_duration,
           longBreak: data.long_break_duration,
         });
-        // Don't restore isRunning - user should manually start
       }
       setIsLoaded(true);
     };
@@ -225,6 +256,17 @@ export function FloatingPomodoro() {
     );
   };
 
+  const handleClose = () => {
+    setIsVisible(false);
+    toast.info(
+      <div className="flex items-center gap-2">
+        <Timer className="h-4 w-4" />
+        <span>Pomodoro fechado. Acesse via Configurações para reabrir.</span>
+      </div>,
+      { duration: 3000 }
+    );
+  };
+
   const getSessionColor = () => {
     switch (sessionType) {
       case 'work': return 'text-primary';
@@ -250,162 +292,183 @@ export function FloatingPomodoro() {
   };
 
   if (!isVisible) {
-    return (
-      <motion.button
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
-        onClick={() => setIsVisible(true)}
-      >
-        <Timer className="h-5 w-5" />
-      </motion.button>
-    );
+    return null;
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.8, y: 20 }}
-        className={cn(
-          "fixed bottom-6 right-6 z-50 rounded-xl border shadow-2xl backdrop-blur-xl transition-all duration-300",
-          "bg-card/95",
-          getBorderColor(),
-          isExpanded ? "w-64" : "w-auto"
-        )}
-      >
-        {/* Compact View */}
-        {!isExpanded && (
-          <div 
-            className="flex items-center gap-2 p-2 cursor-pointer"
-            onClick={() => setIsExpanded(true)}
-          >
-            <div className={cn(
-              "h-10 w-10 rounded-lg flex items-center justify-center",
-              sessionType === 'work' ? 'bg-primary/20' : sessionType === 'break' ? 'bg-green-500/20' : 'bg-blue-500/20'
-            )}>
-              <Timer className={cn("h-5 w-5", getSessionColor())} />
+    <>
+      {/* Invisible constraints container */}
+      <div ref={constraintsRef} className="fixed inset-4 pointer-events-none z-40" />
+      
+      <AnimatePresence>
+        <motion.div
+          drag
+          dragControls={dragControls}
+          dragMomentum={false}
+          dragElastic={0.1}
+          dragConstraints={constraintsRef}
+          onDragEnd={handleDragEnd}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1, x: position.x, y: position.y }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          className={cn(
+            "fixed bottom-6 right-6 z-50 rounded-xl border shadow-2xl backdrop-blur-xl transition-colors duration-300 cursor-grab active:cursor-grabbing",
+            "bg-card/95",
+            getBorderColor(),
+            isExpanded ? "w-64" : "w-auto"
+          )}
+          style={{ touchAction: 'none' }}
+        >
+          {/* Compact View */}
+          {!isExpanded && (
+            <div className="flex items-center gap-2 p-2">
+              <div 
+                className="flex items-center gap-2 cursor-pointer flex-1"
+                onClick={() => setIsExpanded(true)}
+              >
+                <div className={cn(
+                  "h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0",
+                  sessionType === 'work' ? 'bg-primary/20' : sessionType === 'break' ? 'bg-green-500/20' : 'bg-blue-500/20'
+                )}>
+                  <Timer className={cn("h-5 w-5", getSessionColor())} />
+                </div>
+                <div className="pr-1">
+                  <p className={cn("text-lg font-bold font-mono leading-tight", getSessionColor())}>
+                    {formatTime(timeLeft)}
+                  </p>
+                  <div className="h-1 w-14 bg-muted/30 rounded-full overflow-hidden">
+                    <div 
+                      className={cn("h-full transition-all", getProgressColor())}
+                      style={{ width: `${getProgress()}%` }}
+                    />
+                  </div>
+                </div>
+                {isRunning && (
+                  <span className="relative flex h-2 w-2 flex-shrink-0">
+                    <span className={cn(
+                      "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                      sessionType === 'work' ? 'bg-primary' : sessionType === 'break' ? 'bg-green-500' : 'bg-blue-500'
+                    )}></span>
+                    <span className={cn(
+                      "relative inline-flex rounded-full h-2 w-2",
+                      getProgressColor()
+                    )}></span>
+                  </span>
+                )}
+              </div>
+              <GripVertical className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
             </div>
-            <div className="pr-2">
-              <p className={cn("text-lg font-bold font-mono", getSessionColor())}>
-                {formatTime(timeLeft)}
-              </p>
-              <div className="h-1 w-16 bg-muted/30 rounded-full overflow-hidden">
+          )}
+
+          {/* Expanded View */}
+          {isExpanded && (
+            <div className="p-4 space-y-3">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab" />
+                  <Timer className={cn("h-4 w-4", getSessionColor())} />
+                  <span className="text-sm font-medium">Pomodoro</span>
+                  <span className="text-xs text-muted-foreground">
+                    {completedSessions} 🍅
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6"
+                    onClick={() => setIsExpanded(false)}
+                  >
+                    <Minimize2 className="h-3 w-3" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 hover:bg-destructive/20 hover:text-destructive"
+                    onClick={handleClose}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Session Tabs */}
+              <div className="flex gap-1 p-1 bg-muted/30 rounded-lg">
+                {(['work', 'break', 'longBreak'] as SessionType[]).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => {
+                      setIsRunning(false);
+                      setSessionType(type);
+                      setTimeLeft(times[type] * 60);
+                    }}
+                    className={cn(
+                      "flex-1 py-1 px-2 text-xs font-medium rounded transition-colors",
+                      sessionType === type
+                        ? type === 'work' 
+                          ? 'bg-primary text-primary-foreground' 
+                          : type === 'break'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-blue-500 text-white'
+                        : 'hover:bg-muted/50 text-muted-foreground'
+                    )}
+                  >
+                    {type === 'work' ? 'Foco' : type === 'break' ? 'Pausa' : 'Longa'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Timer */}
+              <div className="text-center py-2">
+                <p className={cn("text-3xl font-bold font-mono", getSessionColor())}>
+                  {formatTime(timeLeft)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {sessionType === 'work' 
+                    ? 'Tempo de foco' 
+                    : sessionType === 'break' 
+                      ? 'Pausa curta' 
+                      : 'Pausa longa'}
+                </p>
+              </div>
+
+              {/* Progress */}
+              <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
                 <div 
-                  className={cn("h-full transition-all", getProgressColor())}
+                  className={cn("h-full transition-all duration-1000", getProgressColor())}
                   style={{ width: `${getProgress()}%` }}
                 />
               </div>
-            </div>
-            {isRunning && (
-              <span className="relative flex h-2 w-2">
-                <span className={cn(
-                  "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
-                  sessionType === 'work' ? 'bg-primary' : sessionType === 'break' ? 'bg-green-500' : 'bg-blue-500'
-                )}></span>
-                <span className={cn(
-                  "relative inline-flex rounded-full h-2 w-2",
-                  getProgressColor()
-                )}></span>
-              </span>
-            )}
-          </div>
-        )}
 
-        {/* Expanded View */}
-        {isExpanded && (
-          <div className="p-4 space-y-3">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Timer className={cn("h-4 w-4", getSessionColor())} />
-                <span className="text-sm font-medium">Pomodoro</span>
-                <span className="text-xs text-muted-foreground">
-                  {completedSessions} 🍅
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6"
-                  onClick={() => setIsExpanded(false)}
-                >
-                  <Minimize2 className="h-3 w-3" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6"
-                  onClick={() => setIsVisible(false)}
-                >
-                  <X className="h-3 w-3" />
+              {/* Controls */}
+              <div className="flex items-center justify-center gap-2">
+                {!isRunning ? (
+                  <Button onClick={handleStart} size="sm" className="gap-1.5 h-8">
+                    <Play className="h-3 w-3" />
+                    Iniciar
+                  </Button>
+                ) : (
+                  <Button onClick={handlePause} size="sm" variant="secondary" className="gap-1.5 h-8">
+                    <Pause className="h-3 w-3" />
+                    Pausar
+                  </Button>
+                )}
+                <Button onClick={handleReset} size="sm" variant="outline" className="gap-1.5 h-8">
+                  <RotateCcw className="h-3 w-3" />
+                  Resetar
                 </Button>
               </div>
             </div>
-
-            {/* Session Tabs */}
-            <div className="flex gap-1 p-1 bg-muted/30 rounded-lg">
-              {(['work', 'break', 'longBreak'] as SessionType[]).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => {
-                    setIsRunning(false);
-                    setSessionType(type);
-                    setTimeLeft(times[type] * 60);
-                  }}
-                  className={cn(
-                    "flex-1 py-1 px-2 text-xs font-medium rounded transition-colors",
-                    sessionType === type
-                      ? type === 'work' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : type === 'break'
-                          ? 'bg-green-500 text-white'
-                          : 'bg-blue-500 text-white'
-                      : 'hover:bg-muted/50 text-muted-foreground'
-                  )}
-                >
-                  {type === 'work' ? 'Foco' : type === 'break' ? 'Pausa' : 'Longa'}
-                </button>
-              ))}
-            </div>
-
-            {/* Timer */}
-            <div className="text-center py-2">
-              <p className={cn("text-3xl font-bold font-mono", getSessionColor())}>
-                {formatTime(timeLeft)}
-              </p>
-            </div>
-
-            {/* Progress */}
-            <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
-              <div 
-                className={cn("h-full transition-all duration-1000", getProgressColor())}
-                style={{ width: `${getProgress()}%` }}
-              />
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center justify-center gap-2">
-              {!isRunning ? (
-                <Button onClick={handleStart} size="sm" className="gap-1.5 h-8">
-                  <Play className="h-3 w-3" />
-                  Iniciar
-                </Button>
-              ) : (
-                <Button onClick={handlePause} size="sm" variant="secondary" className="gap-1.5 h-8">
-                  <Pause className="h-3 w-3" />
-                  Pausar
-                </Button>
-              )}
-              <Button onClick={handleReset} size="sm" variant="outline" className="gap-1.5 h-8">
-                <RotateCcw className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </motion.div>
-    </AnimatePresence>
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </>
   );
+}
+
+// Export function to reopen pomodoro from settings
+export function reopenPomodoro() {
+  localStorage.setItem(VISIBILITY_KEY, 'true');
+  window.dispatchEvent(new Event('pomodoro-visibility-changed'));
 }
