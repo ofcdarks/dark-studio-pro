@@ -100,11 +100,11 @@ export function ProductivityEvolutionCard() {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="h-64 flex items-center justify-center">
+          <div className="h-40 flex items-center justify-center">
             <div className="animate-pulse text-muted-foreground text-sm">Carregando gráfico...</div>
           </div>
         ) : (
-          <div className="h-64">
+          <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
