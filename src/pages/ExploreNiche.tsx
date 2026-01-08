@@ -119,7 +119,7 @@ const ExploreNiche = () => {
   // Etapa 1 states
   const [mainNiche, setMainNiche] = usePersistedState("explore_mainNiche", "");
   const [competitorSubniche, setCompetitorSubniche] = usePersistedState("explore_competitorSubniche", "");
-  const [subnicheModel, setSubnicheModel] = usePersistedState("explore_subnicheModel", "gpt-4o");
+  const [subnicheModel, setSubnicheModel] = usePersistedState("explore_subnicheModel", "gpt-4.1");
   const [subnicheResults, setSubnicheResults] = usePersistedState<SubnicheResult[]>("explore_subnicheResults", []);
   const [loadingSubniches, setLoadingSubniches] = useState(false);
   const [expandedSubniche, setExpandedSubniche] = useState<number | null>(null);
@@ -129,7 +129,7 @@ const ExploreNiche = () => {
 
   // Etapa 2 states
   const [channelUrl, setChannelUrl] = usePersistedState("explore_channelUrl", "");
-  const [channelModel, setChannelModel] = usePersistedState("explore_channelModel", "gpt-4o");
+  const [channelModel, setChannelModel] = usePersistedState("explore_channelModel", "gpt-4.1");
   const [strategicPlan, setStrategicPlan] = usePersistedState<StrategicPlan | null>("explore_strategicPlan", null);
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [planProcessingStep, setPlanProcessingStep] = useState<string>("");
@@ -785,9 +785,9 @@ const ExploreNiche = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="gpt-4o">GPT-4o (2025)</SelectItem>
-                      <SelectItem value="claude-4-sonnet">Claude 4 Sonnet</SelectItem>
-                      <SelectItem value="gemini-pro">Gemini 2.5 Pro</SelectItem>
+                      <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
+                      <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                      <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1408,9 +1408,9 @@ const ExploreNiche = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="gpt-4o">GPT-4o (2025)</SelectItem>
-                      <SelectItem value="claude-4-sonnet">Claude 4 Sonnet</SelectItem>
-                      <SelectItem value="gemini-pro">Gemini 2.5 Pro</SelectItem>
+                      <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
+                      <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                      <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

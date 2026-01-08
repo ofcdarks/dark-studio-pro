@@ -66,7 +66,7 @@ export const GenerateScriptModal = ({
   const [videoTitle, setVideoTitle] = useState("");
   const [duration, setDuration] = useState("5");
   const [language, setLanguage] = useState("pt-BR");
-  const [aiModel, setAiModel] = useState("gemini-flash");
+  const [aiModel, setAiModel] = useState("gemini-2.5-pro");
   const [additionalContext, setAdditionalContext] = useState("");
   
   // CTA options
@@ -606,16 +606,15 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
-                    <SelectItem value="gemini-flash">
+                    <SelectItem value="gpt-4.1">
                       <span className="flex items-center gap-2">
-                        Gemini 2.5 Flash
+                        GPT-4.1
                         <Star className="w-3.5 h-3.5 text-primary fill-primary" />
                         <span className="text-xs text-primary font-medium">Recomendado</span>
                       </span>
                     </SelectItem>
-                    <SelectItem value="gemini-pro">Gemini 2.5 Pro (2025)</SelectItem>
-                    <SelectItem value="claude-sonnet">Claude 4 Sonnet</SelectItem>
-                    <SelectItem value="gpt-5">GPT-5 (2025)</SelectItem>
+                    <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                    <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

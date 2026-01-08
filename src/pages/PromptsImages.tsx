@@ -155,9 +155,9 @@ interface SceneHistory {
 }
 
 const AI_MODELS = [
-  { value: "gpt-4o", label: "GPT-4o" },
-  { value: "claude-sonnet-4-20250514", label: "Claude 4 Sonnet" },
-  { value: "gemini-2.5-pro-preview-06-05", label: "Gemini 2.5 Pro" },
+  { value: "gpt-4.1", label: "GPT-4.1" },
+  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+  { value: "deepseek-chat", label: "DeepSeek Chat" },
 ];
 
 // Opções de velocidade de narração (WPM)
@@ -222,7 +222,7 @@ const PromptsImages = () => {
   // Persisted states (sem imagens - muito grandes para localStorage)
   const [script, setScript] = usePersistedState("prompts_script", "");
   const [style, setStyle] = usePersistedState("prompts_style", "cinematografico");
-  const [model, setModel] = usePersistedState("prompts_model", "claude-sonnet-4-20250514");
+  const [model, setModel] = usePersistedState("prompts_model", "gpt-4.1");
   const [wordsPerScene, setWordsPerScene] = usePersistedState("prompts_wordsPerScene", "25");
   
   // Cenas - persistimos apenas os prompts, não as imagens (base64 muito grande)

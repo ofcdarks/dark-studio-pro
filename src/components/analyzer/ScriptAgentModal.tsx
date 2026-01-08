@@ -56,7 +56,7 @@ export const ScriptAgentModal = ({
   const [ctaInicio, setCtaInicio] = useState(false);
   const [ctaMeio, setCtaMeio] = useState(false);
   const [ctaFinal, setCtaFinal] = useState(true);
-  const [aiModel, setAiModel] = useState("claude-sonnet");
+  const [aiModel, setAiModel] = useState("gpt-4.1");
   const [additionalTopic, setAdditionalTopic] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generatedScript, setGeneratedScript] = useState<string | null>(null);
@@ -291,15 +291,15 @@ ${ctaFinal ? "[CTA]\n\"Se você gostou deste conteúdo, deixe seu like e se insc
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="z-[200] bg-popover" position="popper" sideOffset={4}>
-                <SelectItem value="claude-sonnet">
+                <SelectItem value="gpt-4.1">
                   <div className="flex items-center gap-2">
-                    Claude 4 Sonnet
+                    GPT-4.1
                     <Star className="w-3 h-3 text-primary" />
                     <span className="text-xs text-muted-foreground">Recomendado</span>
                   </div>
                 </SelectItem>
-                <SelectItem value="gemini-pro">Gemini 2.5 Pro</SelectItem>
-                <SelectItem value="gpt-5">GPT-5</SelectItem>
+                <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
               </SelectContent>
             </Select>
           </div>
