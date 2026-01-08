@@ -1215,22 +1215,41 @@ Fórmula: "Se histórias como essa fazem você questionar a história oficial, e
 
 4. PARÁGRAFOS CURTOS: Máximo 2-3 frases por parágrafo
 
-❌ PROIBIDO (FALHA CRÍTICA):
-- [qualquer marcação entre colchetes]
-- **negrito** ou *itálico*
-- Timestamps ou indicações de tempo
-- Instruções de edição ou descrições visuais
-- Saudações como "Olá", "Fala pessoal"
+❌❌❌ PROIBIDO - VIOLAÇÃO = REJEIÇÃO IMEDIATA ❌❌❌
+NÃO INCLUA NENHUM DESTES NO ROTEIRO:
+- [HOOK], [ATO 1], [CLÍMAX] ou QUALQUER texto entre colchetes [ ]
+- **negrito**, *itálico* ou qualquer formatação markdown
+- Timestamps (0:00, 1:30, etc.) ou indicações de tempo
+- "HOOK:", "ATO 1:", "INTRODUÇÃO:" ou qualquer rótulo/cabeçalho
+- Instruções de edição, cortes ou descrições visuais
+- "(pausa)", "(música)", "(efeito)" ou qualquer indicação técnica
+- Saudações como "Olá", "Fala pessoal", "E aí galera"
+- Despedidas como "Se gostou, deixe o like", "Até o próximo vídeo"
+- Emojis de qualquer tipo
+- Números de seção ou bullets
+- Qualquer coisa que NÃO seja narração pura
 
-✅ FORMATO EXATO:
-- Apenas texto de narração puro
-- MÍNIMO ${minWords} palavras (OBRIGATÓRIO - roteiro menor será REJEITADO)
+✅ FORMATO EXATO DO OUTPUT:
+O roteiro deve ser 100% TEXTO NARRATIVO PURO, como se fosse lido em voz alta.
+Apenas parágrafos de narração separados por linha em branco.
+NADA de estrutura, rótulos, marcações ou formatação.
+
+EXEMPLO CORRETO:
+"Durante anos, acreditamos que os astecas eram apenas guerreiros sanguinários. Mas uma descoberta recente mudou tudo.
+
+O que você está prestes a ouvir nunca deveria ter sido revelado. A pergunta é simples: como um império tão avançado colapsou em apenas dois anos?"
+
+EXEMPLO ERRADO (NÃO FAÇA ISSO):
+"[HOOK]
+Durante anos, acreditamos...
+
+**ATO 1 - A GRANDEZA**
+Os astecas eram..."
+
+- MÍNIMO ${minWords} palavras de narração pura
 - META: ${wordsTarget} palavras para ${duration} minutos
-- Parágrafos curtos separados por linha em branco
 
-⚠️ ALERTA FINAL: CONTE AS PALAVRAS! Se você entregar menos de ${minWords} palavras, o roteiro será rejeitado automaticamente. Escreva conteúdo DENSO e COMPLETO.
-
-🚀 COMECE AGORA seguindo a ESTRUTURA VIRAL OBRIGATÓRIA em ${languageName}:`;
+🚀 ESCREVA AGORA o roteiro completo em ${languageName}, começando diretamente com a primeira frase impactante:`;
   };
 
   const generateScript = async () => {
