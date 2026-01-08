@@ -1105,6 +1105,7 @@ export type Database = {
       production_board_tasks: {
         Row: {
           column_id: string
+          completed_at: string | null
           created_at: string
           id: string
           task_order: number
@@ -1115,6 +1116,7 @@ export type Database = {
         }
         Insert: {
           column_id?: string
+          completed_at?: string | null
           created_at?: string
           id?: string
           task_order?: number
@@ -1125,6 +1127,7 @@ export type Database = {
         }
         Update: {
           column_id?: string
+          completed_at?: string | null
           created_at?: string
           id?: string
           task_order?: number
@@ -1664,6 +1667,30 @@ export type Database = {
           target_value?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_kanban_settings: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          weekly_goal: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          weekly_goal?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weekly_goal?: number
         }
         Relationships: []
       }

@@ -39,6 +39,7 @@ interface BoardTask {
   column_id: 'backlog' | 'todo' | 'doing' | 'review' | 'done';
   task_order: number;
   created_at: string;
+  completed_at: string | null;
 }
 
 const columns = [
@@ -69,12 +70,53 @@ export function ProductionBoardCard() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [visibleColumnIndex, setVisibleColumnIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'kanban' | 'report'>('kanban');
-  const [weeklyGoal, setWeeklyGoal] = useState<number>(() => {
-    const saved = localStorage.getItem('kanban-weekly-goal');
-    return saved ? parseInt(saved, 10) : 5;
-  });
   const [isEditingGoal, setIsEditingGoal] = useState(false);
-  const [tempGoal, setTempGoal] = useState(weeklyGoal);
+  const [tempGoal, setTempGoal] = useState(5);
+
+  // Fetch kanban settings from database
+  const { data: kanbanSettings } = useQuery({
+    queryKey: ['kanban-settings', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('user_kanban_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const weeklyGoal = kanbanSettings?.weekly_goal ?? 5;
+
+  // Save kanban settings mutation
+  const saveSettingsMutation = useMutation({
+    mutationFn: async (newGoal: number) => {
+      if (!user?.id) throw new Error('User not authenticated');
+      
+      const { error } = await supabase
+        .from('user_kanban_settings')
+        .upsert({
+          user_id: user.id,
+          weekly_goal: newGoal,
+        }, {
+          onConflict: 'user_id',
+        });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kanban-settings'] });
+      toast.success('Meta semanal atualizada!');
+      setIsEditingGoal(false);
+    },
+    onError: () => {
+      toast.error('Erro ao salvar meta');
+    },
+  });
 
   // Fetch tasks from database
   const { data: tasks = [], isLoading } = useQuery({
@@ -187,9 +229,18 @@ export function ProductionBoardCard() {
   };
 
   const moveTask = (taskId: string, newColumn: BoardTask['column_id']) => {
+    const updates: Partial<BoardTask> & { completed_at?: string | null } = { column_id: newColumn };
+    
+    // Set completed_at when moving to done, clear it when moving out
+    if (newColumn === 'done') {
+      updates.completed_at = new Date().toISOString();
+    } else {
+      updates.completed_at = null;
+    }
+    
     updateTaskMutation.mutate({
       id: taskId,
-      updates: { column_id: newColumn },
+      updates,
     });
     toast.success(`Movido para ${columns.find(c => c.id === newColumn)?.title}`);
   };
@@ -231,10 +282,10 @@ export function ProductionBoardCard() {
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
   
   const tasksCompletedThisWeek = tasks.filter(t => {
-    if (t.column_id !== 'done') return false;
+    if (t.column_id !== 'done' || !t.completed_at) return false;
     try {
-      const taskDate = parseISO(t.created_at);
-      return isWithinInterval(taskDate, { start: weekStart, end: weekEnd });
+      const completedDate = parseISO(t.completed_at);
+      return isWithinInterval(completedDate, { start: weekStart, end: weekEnd });
     } catch {
       return false;
     }
@@ -245,10 +296,7 @@ export function ProductionBoardCard() {
 
   const saveWeeklyGoal = () => {
     if (tempGoal >= 1 && tempGoal <= 50) {
-      setWeeklyGoal(tempGoal);
-      localStorage.setItem('kanban-weekly-goal', tempGoal.toString());
-      setIsEditingGoal(false);
-      toast.success('Meta semanal atualizada!');
+      saveSettingsMutation.mutate(tempGoal);
     }
   };
 
