@@ -750,37 +750,59 @@ COMECE O ROTEIRO AGORA:`;
           {/* Output Panel */}
           <div className="space-y-6">
             {isGenerating && (
-              <Card className="border-primary/50 bg-gradient-to-br from-background to-primary/5">
-                <CardContent className="p-8 flex flex-col items-center justify-center min-h-[400px]">
-                  <div className="relative mb-6">
-                    <div className="absolute inset-0 blur-2xl bg-primary/30 rounded-full animate-pulse" />
-                    <img 
-                      src={logoGif} 
-                      alt="Loading" 
-                      className="relative h-24 w-24 rounded-full animate-pulse"
-                    />
+              <Card className="border-primary/50 bg-card">
+                <CardContent className="p-8 flex flex-col items-center justify-center min-h-[400px] relative">
+                  {/* Logo com efeito de pulso - PADRONIZADO w-24 */}
+                  <div className="relative w-24 h-24 mb-6">
+                    <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+                    <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
+                    <div className="relative w-24 h-24 rounded-full border-2 border-primary/50 overflow-hidden">
+                      <img 
+                        src={logoGif} 
+                        alt="Loading" 
+                        className="w-full h-full object-cover scale-110"
+                      />
+                    </div>
                   </div>
                   
-                  <h3 className="text-xl font-bold mb-2">Criando Roteiro Viral</h3>
-                  <p className="text-muted-foreground text-center mb-4">
+                  <h3 className="text-lg font-bold text-foreground mb-1">Gerando Roteiro</h3>
+                  
+                  <p className="text-sm text-muted-foreground mb-4 text-center">
                     {loadingMessage}
                   </p>
 
+                  {/* Indicador de partes - PADRONIZADO */}
                   {totalParts > 1 && (
-                    <div className="text-sm text-muted-foreground mb-4">
-                      Parte {currentPart} de {totalParts}
+                    <div className="flex items-center gap-2 mb-4">
+                      {Array.from({ length: totalParts }, (_, i) => (
+                        <div
+                          key={i}
+                          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300 ${
+                            i < currentPart
+                              ? "bg-primary text-primary-foreground"
+                              : i === currentPart - 1
+                              ? "bg-primary/80 text-primary-foreground animate-pulse"
+                              : "bg-muted-foreground/20 text-muted-foreground"
+                          }`}
+                        >
+                          {i + 1}
+                        </div>
+                      ))}
                     </div>
                   )}
-
-                  <div className="w-full max-w-xs bg-secondary rounded-full h-2 overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500"
-                      style={{ width: `${progress}%` }}
-                    />
+                  
+                  {/* Barra de progresso - PADRONIZADA */}
+                  <div className="w-full max-w-xs space-y-2">
+                    <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-center text-muted-foreground">
+                      {Math.round(progress)}%
+                    </p>
                   </div>
-                  <span className="text-xs text-muted-foreground mt-2">
-                    {Math.round(progress)}% concluído
-                  </span>
                 </CardContent>
               </Card>
             )}
