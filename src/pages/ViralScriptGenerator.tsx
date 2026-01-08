@@ -603,6 +603,9 @@ export default function ViralScriptGenerator() {
 
   // History modal
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  
+  // Fixing state
+  const [isFixing, setIsFixing] = useState(false);
 
   // Credits
   const [hasEnoughCredits, setHasEnoughCredits] = useState(true);
@@ -1542,6 +1545,75 @@ SE VOCÊ ENTREGAR MENOS PALAVRAS QUE O MÍNIMO, O ROTEIRO SERÁ REJEITADO!`;
     ? VIRAL_FORMULAS 
     : VIRAL_FORMULAS.filter(f => f.category === formulaTab);
 
+  // Fix retention issues without changing narrative
+  const fixRetentionIssues = async () => {
+    if (!generatedScript || retentionTips.length === 0) return;
+    
+    setIsFixing(true);
+    
+    try {
+      const languageMap: Record<string, string> = {
+        "pt-BR": "Português Brasileiro",
+        "es": "Español",
+        "en": "English",
+        "fr": "Français",
+        "de": "Deutsch",
+        "it": "Italiano"
+      };
+      const languageName = languageMap[language] || "Português Brasileiro";
+      
+      const fixPrompt = `Você é um especialista em retenção de vídeos no YouTube.
+
+TAREFA: Corrija os problemas listados abaixo no roteiro SEM alterar a narrativa, história, contexto ou informações. Apenas melhore a estrutura para aumentar a retenção.
+
+PROBLEMAS A CORRIGIR:
+${retentionTips.map((tip, i) => `${i + 1}. ${tip}`).join('\n')}
+
+REGRAS ABSOLUTAS:
+1. MANTENHA 100% do conteúdo, história e informações
+2. NÃO adicione informações novas
+3. NÃO remova informações importantes
+4. Apenas REESTRUTURE para melhorar retenção
+5. Se o problema for "hook longo", encurte a primeira frase mantendo o impacto
+6. Se o problema for "open loops", adicione frases como "Mas antes de revelar isso..." ou "E o que vem depois muda tudo..."
+7. Se o problema for "tensão", adicione mais "mas", "porém", "no entanto" nas transições
+8. Mantenha o mesmo idioma: ${languageName}
+9. NÃO inclua [marcações], **formatação**, timestamps ou rótulos
+
+ROTEIRO ORIGINAL:
+${generatedScript}
+
+Reescreva o roteiro COMPLETO corrigindo os problemas, mantendo toda a narrativa e história:`;
+
+      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          messages: [{ role: 'user', content: fixPrompt }],
+          model: aiModel,
+          type: 'script-fix'
+        }
+      });
+
+      if (error) throw error;
+
+      const fixedScript = data?.result || data?.content || "";
+      
+      if (fixedScript && fixedScript.length > 500) {
+        setGeneratedScript(fixedScript);
+        analyzeRetention(fixedScript);
+        await saveScript(fixedScript);
+        toast.success("Roteiro corrigido com sucesso!");
+      } else {
+        throw new Error("Resposta inválida da IA");
+      }
+      
+    } catch (error) {
+      console.error('Error fixing script:', error);
+      toast.error("Erro ao corrigir roteiro. Tente novamente.");
+    } finally {
+      setIsFixing(false);
+    }
+  };
+
   // Load script from history
   const handleLoadScript = (script: { title: string; content: string; duration: number; language: string; model_used: string | null }) => {
     setTitle(script.title);
@@ -2188,13 +2260,35 @@ SE VOCÊ ENTREGAR MENOS PALAVRAS QUE O MÍNIMO, O ROTEIRO SERÁ REJEITADO!`;
                       </div>
 
                       {retentionTips.length > 0 && (
-                        <div className="space-y-2">
-                          {retentionTips.map((tip, i) => (
-                            <div key={i} className="flex items-start gap-2 text-sm">
-                              <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
-                              <span className="text-muted-foreground">{tip}</span>
-                            </div>
-                          ))}
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            {retentionTips.map((tip, i) => (
+                              <div key={i} className="flex items-start gap-2 text-sm">
+                                <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
+                                <span className="text-muted-foreground">{tip}</span>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <Button
+                            onClick={fixRetentionIssues}
+                            disabled={isFixing}
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-primary/50 hover:bg-primary/10"
+                          >
+                            {isFixing ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                Corrigindo...
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="h-4 w-4 mr-2" />
+                                Corrigir Automaticamente
+                              </>
+                            )}
+                          </Button>
                         </div>
                       )}
 
