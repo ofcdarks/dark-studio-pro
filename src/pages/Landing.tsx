@@ -763,23 +763,23 @@ const Landing = () => {
               </Card>
             </AnimatedItem>
 
-            {/* Gemini 2.5 Flash */}
+            {/* DeepSeek */}
             <AnimatedItem index={3} staggerDelay={100}>
               <Card className="p-6 bg-card/80 border-border hover:border-purple-500/50 transition-all duration-300 group relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-violet-400 opacity-50 group-hover:opacity-100 transition-opacity" />
                 <div className="space-y-4">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-violet-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Zap className="w-7 h-7 text-purple-400" />
+                    <Sparkles className="w-7 h-7 text-purple-400" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg text-foreground">Gemini 2.5 Flash</h3>
-                    <p className="text-sm text-purple-400 font-medium">Google</p>
+                    <h3 className="font-bold text-lg text-foreground">DeepSeek V3</h3>
+                    <p className="text-sm text-purple-400 font-medium">DeepSeek AI</p>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Ultra-rápido e eficiente. Melhor custo-benefício para operações em escala.
+                    IA chinesa de alta performance. Raciocínio profundo e excelente custo-benefício.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">Rápido</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">Raciocínio</span>
                     <span className="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">Econômico</span>
                   </div>
                 </div>
