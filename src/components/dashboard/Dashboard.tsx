@@ -166,10 +166,10 @@ export function Dashboard() {
 
         {/* Insights Row */}
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="h-full">
             <ProductivityHeatmapCard />
           </motion.div>
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="h-full">
             <MonthlyComparisonCard />
           </motion.div>
         </motion.div>

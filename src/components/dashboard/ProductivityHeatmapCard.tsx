@@ -103,7 +103,7 @@ export function ProductivityHeatmapCard() {
   ];
 
   return (
-    <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
+    <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
