@@ -14,6 +14,12 @@ import { NextStepsCard } from "./NextStepsCard";
 import { DailyQuoteCard } from "./DailyQuoteCard";
 import { RecentVideosCard } from "./RecentVideosCard";
 import { OperationalLogsCard } from "./OperationalLogsCard";
+import { ProductivityHeatmapCard } from "./ProductivityHeatmapCard";
+import { MonthlyComparisonCard } from "./MonthlyComparisonCard";
+import { SmartAlertsCard } from "./SmartAlertsCard";
+import { ConsistencyScoreCard } from "./ConsistencyScoreCard";
+import { CreditsROICard } from "./CreditsROICard";
+import { NicheSuggestionsCard } from "./NicheSuggestionsCard";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
@@ -147,6 +153,28 @@ export function Dashboard() {
           </motion.div>
         </motion.div>
 
+        {/* Insights Row */}
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <motion.div variants={itemVariants}>
+            <ProductivityHeatmapCard />
+          </motion.div>
+          <motion.div variants={itemVariants}>
+            <MonthlyComparisonCard />
+          </motion.div>
+        </motion.div>
+
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <motion.div variants={itemVariants}>
+            <SmartAlertsCard />
+          </motion.div>
+          <motion.div variants={itemVariants}>
+            <ConsistencyScoreCard />
+          </motion.div>
+          <motion.div variants={itemVariants}>
+            <CreditsROICard />
+          </motion.div>
+        </motion.div>
+
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <motion.div variants={itemVariants}>
@@ -167,6 +195,7 @@ export function Dashboard() {
             </motion.div>
           </div>
           <div className="space-y-6" data-tutorial="sidebar-nav">
+            <motion.div variants={itemVariants}><NicheSuggestionsCard /></motion.div>
             <motion.div variants={itemVariants}><OperationalLogsCard logs={activityLogs} /></motion.div>
           </div>
         </motion.div>

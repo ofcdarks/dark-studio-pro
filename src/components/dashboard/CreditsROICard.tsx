@@ -1,0 +1,156 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Coins, TrendingUp, FileText, Image, Mic, Type } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { startOfMonth, endOfMonth } from "date-fns";
+
+interface ToolUsage {
+  label: string;
+  icon: React.ReactNode;
+  count: number;
+  credits: number;
+  avgCost: number;
+}
+
+export function CreditsROICard() {
+  const { user } = useAuth();
+  const [totalSpent, setTotalSpent] = useState(0);
+  const [totalContent, setTotalContent] = useState(0);
+  const [toolsUsage, setToolsUsage] = useState<ToolUsage[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchROI = async () => {
+      const now = new Date();
+      const monthStart = startOfMonth(now);
+      const monthEnd = endOfMonth(now);
+
+      // Fetch credit usage this month
+      const { data: creditUsage } = await supabase
+        .from("credit_usage")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("created_at", monthStart.toISOString())
+        .lte("created_at", monthEnd.toISOString());
+
+      // Aggregate by operation type
+      const usageByType: Record<string, { count: number; credits: number }> = {};
+      let total = 0;
+
+      creditUsage?.forEach(usage => {
+        const type = usage.operation_type;
+        if (!usageByType[type]) {
+          usageByType[type] = { count: 0, credits: 0 };
+        }
+        usageByType[type].count++;
+        usageByType[type].credits += usage.credits_used;
+        total += usage.credits_used;
+      });
+
+      setTotalSpent(total);
+
+      // Map to display format
+      const typeLabels: Record<string, { label: string; icon: React.ReactNode }> = {
+        "script_generation": { label: "Roteiros", icon: <FileText className="w-4 h-4" /> },
+        "image_generation": { label: "Imagens", icon: <Image className="w-4 h-4" /> },
+        "audio_generation": { label: "Áudios", icon: <Mic className="w-4 h-4" /> },
+        "title_generation": { label: "Títulos", icon: <Type className="w-4 h-4" /> },
+        "video_analysis": { label: "Análises", icon: <TrendingUp className="w-4 h-4" /> },
+        "scene_generation": { label: "Cenas", icon: <Image className="w-4 h-4" /> },
+        "thumbnail_generation": { label: "Thumbnails", icon: <Image className="w-4 h-4" /> },
+      };
+
+      const tools: ToolUsage[] = Object.entries(usageByType)
+        .map(([type, data]) => ({
+          label: typeLabels[type]?.label || type,
+          icon: typeLabels[type]?.icon || <Coins className="w-4 h-4" />,
+          count: data.count,
+          credits: data.credits,
+          avgCost: data.count > 0 ? Math.round(data.credits / data.count) : 0,
+        }))
+        .sort((a, b) => b.credits - a.credits)
+        .slice(0, 5);
+
+      setToolsUsage(tools);
+      setTotalContent(tools.reduce((sum, t) => sum + t.count, 0));
+      setLoading(false);
+    };
+
+    fetchROI();
+  }, [user?.id]);
+
+  const costPerContent = totalContent > 0 ? Math.round(totalSpent / totalContent) : 0;
+
+  return (
+    <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Coins className="w-4 h-4 text-primary" />
+          ROI de Créditos (Mês)
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="h-32 flex items-center justify-center">
+            <div className="animate-pulse text-muted-foreground text-sm">Carregando...</div>
+          </div>
+        ) : (
+          <>
+            {/* Summary Stats */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="text-center p-2 rounded-lg bg-muted/30">
+                <p className="text-2xl font-bold text-primary">{totalSpent.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Créditos gastos</p>
+              </div>
+              <div className="text-center p-2 rounded-lg bg-muted/30">
+                <p className="text-2xl font-bold text-foreground">{totalContent}</p>
+                <p className="text-xs text-muted-foreground">Conteúdos</p>
+              </div>
+              <div className="text-center p-2 rounded-lg bg-muted/30">
+                <p className="text-2xl font-bold text-green-500">{costPerContent}</p>
+                <p className="text-xs text-muted-foreground">Custo médio</p>
+              </div>
+            </div>
+
+            {/* Tools Breakdown */}
+            {toolsUsage.length > 0 ? (
+              <TooltipProvider>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Uso por Ferramenta</p>
+                  {toolsUsage.map((tool) => (
+                    <Tooltip key={tool.label}>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors cursor-default">
+                          <div className="flex items-center gap-2">
+                            <div className="text-primary">{tool.icon}</div>
+                            <span className="text-sm text-foreground">{tool.label}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground">{tool.count}x</span>
+                            <span className="text-sm font-medium text-primary">{tool.credits} cr</span>
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p>Custo médio: {tool.avgCost} créditos por {tool.label.toLowerCase().slice(0, -1)}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+              </TooltipProvider>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                <Coins className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Nenhum uso de créditos este mês</p>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
