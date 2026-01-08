@@ -37,6 +37,7 @@ const ViralAgents = lazyWithPreload(() => import("./pages/ViralAgents"));
 const SceneGenerator = lazyWithPreload(() => import("./pages/SceneGenerator"));
 const PromptsImages = lazyWithPreload(() => import("./pages/PromptsImages"));
 const ChannelAnalyzer = lazyWithPreload(() => import("./pages/ChannelAnalyzer"));
+const ViralScriptGenerator = lazyWithPreload(() => import("./pages/ViralScriptGenerator"));
 
 // Secondary tools - lazy loaded
 const Folders = lazy(() => import("./pages/Folders"));
@@ -71,6 +72,7 @@ if (typeof window !== 'undefined') {
     (SceneGenerator as any).preload?.();
     (PromptsImages as any).preload?.();
     (ChannelAnalyzer as any).preload?.();
+    (ViralScriptGenerator as any).preload?.();
   }) || setTimeout(() => {
     (VideoAnalyzer as any).preload?.();
     (ExploreNiche as any).preload?.();
@@ -78,6 +80,7 @@ if (typeof window !== 'undefined') {
     (SceneGenerator as any).preload?.();
     (PromptsImages as any).preload?.();
     (ChannelAnalyzer as any).preload?.();
+    (ViralScriptGenerator as any).preload?.();
   }, 2000);
 }
 
@@ -134,6 +137,7 @@ const AppRoutes = () => {
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
             <Route path="/library" element={<ProtectedRoute><ViralLibrary /></ProtectedRoute>} />
             <Route path="/agents" element={<ProtectedRoute><ViralAgents /></ProtectedRoute>} />
+            <Route path="/viral-script" element={<ProtectedRoute><ViralScriptGenerator /></ProtectedRoute>} />
             <Route path="/prompts" element={<ProtectedRoute><PromptsImages /></ProtectedRoute>} />
             <Route path="/voice" element={<ProtectedRoute><VoiceGenerator /></ProtectedRoute>} />
             
