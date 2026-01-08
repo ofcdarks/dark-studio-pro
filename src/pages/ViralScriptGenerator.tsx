@@ -438,9 +438,9 @@ const detectDetailedNiche = (titles: string[], existingNiche?: string): { niche:
 };
 
 const AI_MODELS = [
-  { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", premium: true },
-  { id: "claude-4-sonnet", name: "Claude 4 Sonnet", provider: "Anthropic", premium: true },
-  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "Google", premium: true }
+  { id: "gpt-4.1", name: "GPT-4.1", provider: "OpenAI", premium: true },
+  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "Google", premium: true },
+  { id: "deepseek-chat", name: "DeepSeek Chat", provider: "DeepSeek", premium: true }
 ];
 
 const LANGUAGES = [
@@ -570,7 +570,7 @@ export default function ViralScriptGenerator() {
   const [selectedFormula, setSelectedFormula] = usePersistedState("viral-script-formula", "storytelling");
   const [additionalContext, setAdditionalContext] = usePersistedState("viral-script-context", "");
   const [targetAudience, setTargetAudience] = usePersistedState("viral-script-audience", "");
-  const [aiModel, setAiModel] = usePersistedState("viral-script-model", "gpt-4o");
+  const [aiModel, setAiModel] = usePersistedState("viral-script-model", "gpt-4.1");
   const [language, setLanguage] = usePersistedState("viral-script-language", "pt-BR");
   const [channelUrl, setChannelUrl] = usePersistedState("viral-script-channel", "");
   const [formulaTab, setFormulaTab] = useState("all");

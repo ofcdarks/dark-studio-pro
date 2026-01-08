@@ -101,7 +101,7 @@ const VideoAnalyzer = () => {
   
   // Persisted states - survive navigation
   const [videoUrl, setVideoUrl] = usePersistedState("analyzer_videoUrl", "");
-  const [aiModel, setAiModel] = usePersistedState("analyzer_aiModel", "gemini-pro");
+  const [aiModel, setAiModel] = usePersistedState("analyzer_aiModel", "gemini-2.5-pro");
   const [language, setLanguage] = usePersistedState("analyzer_language", "pt-BR");
   const [saveFolder, setSaveFolder] = usePersistedState("analyzer_saveFolder", "general");
   const [videoInfo, setVideoInfo] = usePersistedState<VideoInfo | null>("analyzer_videoInfo", null);
@@ -142,9 +142,9 @@ const VideoAnalyzer = () => {
 
   const modelLabels: Record<string, string> = {
     multimodal: "Comparar (Multimodal)",
-    "gpt-4o": "GPT-4o (2025)",
-    "claude-4-sonnet": "Claude 4 Sonnet",
-    "gemini-pro": "Gemini 2.5 Pro (2025)",
+    "gpt-4.1": "GPT-4.1",
+    "gemini-2.5-pro": "Gemini 2.5 Pro",
+    "deepseek-chat": "DeepSeek Chat",
   };
 
   // O backend decide o provedor (Laozhang/OpenAI/Gemini/Platform) e o modelo final.
@@ -317,11 +317,11 @@ const VideoAnalyzer = () => {
       let modelsToUse: { id: string; label: string }[] = [];
       
       if (aiModel === "multimodal") {
-        // Use all 3 models for multimodal
+        // Use all 3 Laozhang models for multimodal
         modelsToUse = [
-          { id: "gpt-4o", label: "GPT-4o (2025)" },
-          { id: "claude-4-sonnet", label: "Claude 4 Sonnet" },
-          { id: "gemini-pro", label: "Gemini 2.5 Pro (2025)" },
+          { id: "gpt-4.1", label: "GPT-4.1" },
+          { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+          { id: "deepseek-chat", label: "DeepSeek Chat" },
         ];
       } else {
         // Use single selected model
@@ -841,9 +841,9 @@ const VideoAnalyzer = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="multimodal">Comparar (Multimodal)</SelectItem>
-                      <SelectItem value="gpt-4o">GPT-4o (2025)</SelectItem>
-                      <SelectItem value="claude-4-sonnet">Claude 4 Sonnet</SelectItem>
-                      <SelectItem value="gemini-pro">Gemini 2.5 Pro (2025)</SelectItem>
+                      <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
+                      <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                      <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-sm text-muted-foreground mt-2">

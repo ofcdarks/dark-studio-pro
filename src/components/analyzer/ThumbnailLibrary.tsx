@@ -90,7 +90,7 @@ export function ThumbnailLibrary({
   const [niche, setNiche] = usePersistedState("thumbnail_niche", currentNiche || "");
   const [subNiche, setSubNiche] = usePersistedState("thumbnail_subNiche", currentSubNiche || "");
   const [videoTitle, setVideoTitle] = usePersistedState("thumbnail_videoTitle", currentTitle || "");
-  const [genModel, setGenModel] = usePersistedState("thumbnail_genModel", "gpt-4o");
+  const [genModel, setGenModel] = usePersistedState("thumbnail_genModel", "gpt-4.1");
   const [genLanguage, setGenLanguage] = usePersistedState("thumbnail_genLanguage", "pt-BR");
   const [artStyle, setArtStyle] = usePersistedState("thumbnail_artStyle", "foto-realista");
   const [includeHeadline, setIncludeHeadline] = usePersistedState("thumbnail_includeHeadline", true);
@@ -100,7 +100,7 @@ export function ThumbnailLibrary({
   
   // Analysis states
   const [analyzing, setAnalyzing] = useState(false);
-  const [analysisModel, setAnalysisModel] = useState("gpt-4o");
+  const [analysisModel, setAnalysisModel] = useState("gpt-4.1");
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisMessage, setAnalysisMessage] = useState("");
   
@@ -772,9 +772,9 @@ export function ThumbnailLibrary({
                     <SelectValue placeholder="Escolher modelo..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gpt-4o">GPT-4o (2025)</SelectItem>
-                    <SelectItem value="claude-4-sonnet">Claude 4 Sonnet</SelectItem>
-                    <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro (2025)</SelectItem>
+                    <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
+                    <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                    <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -973,9 +973,9 @@ export function ThumbnailLibrary({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gpt-4o">GPT-4o (2025)</SelectItem>
-                  <SelectItem value="gemini">Gemini 2.5 Flash</SelectItem>
-                  <SelectItem value="gemini-pro">Gemini 2.5 Pro</SelectItem>
+                  <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
+                  <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                  <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
                 </SelectContent>
               </Select>
             </div>
