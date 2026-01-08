@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Flame, Calendar, Trophy } from "lucide-react";
+import { Flame, Calendar, Trophy, Zap, Target, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { format, subDays, startOfWeek, eachDayOfInterval } from "date-fns";
+import { format, subDays, eachDayOfInterval, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface DayActivity {
@@ -13,11 +13,17 @@ interface DayActivity {
   level: 0 | 1 | 2 | 3 | 4;
 }
 
+const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
 export function ProductivityHeatmapCard() {
   const { user } = useAuth();
   const [heatmapData, setHeatmapData] = useState<DayActivity[]>([]);
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+  const [totalActivities, setTotalActivities] = useState(0);
+  const [avgPerDay, setAvgPerDay] = useState(0);
+  const [mostActiveDay, setMostActiveDay] = useState("");
+  const [activeDays, setActiveDays] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,10 +42,29 @@ export function ProductivityHeatmapCard() {
 
       // Count activities per day
       const activityByDay: Record<string, number> = {};
+      const activityByDayOfWeek: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+      
       logs?.forEach(log => {
-        const day = format(new Date(log.created_at!), "yyyy-MM-dd");
+        const date = new Date(log.created_at!);
+        const day = format(date, "yyyy-MM-dd");
         activityByDay[day] = (activityByDay[day] || 0) + 1;
+        activityByDayOfWeek[getDay(date)] = (activityByDayOfWeek[getDay(date)] || 0) + 1;
       });
+
+      // Calculate stats
+      const total = logs?.length || 0;
+      const daysWithActivity = Object.keys(activityByDay).length;
+      const avg = daysWithActivity > 0 ? Math.round(total / daysWithActivity * 10) / 10 : 0;
+      
+      // Find most active day of week
+      const maxDayActivity = Math.max(...Object.values(activityByDayOfWeek));
+      const mostActiveDayIndex = Object.entries(activityByDayOfWeek).find(([_, v]) => v === maxDayActivity)?.[0];
+      const mostActiveDayName = mostActiveDayIndex !== undefined ? dayNames[parseInt(mostActiveDayIndex)] : "-";
+
+      setTotalActivities(total);
+      setAvgPerDay(avg);
+      setMostActiveDay(mostActiveDayName);
+      setActiveDays(daysWithActivity);
 
       // Generate all days in range
       const days = eachDayOfInterval({ start: startDate, end: endDate });
@@ -104,7 +129,7 @@ export function ProductivityHeatmapCard() {
 
   return (
     <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 h-full">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Calendar className="w-4 h-4 text-primary" />
@@ -124,40 +149,75 @@ export function ProductivityHeatmapCard() {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
         {loading ? (
           <div className="h-24 flex items-center justify-center">
             <div className="animate-pulse text-muted-foreground text-sm">Carregando...</div>
           </div>
         ) : (
-          <TooltipProvider>
-            <div className="flex gap-1 overflow-x-auto pb-2">
-              {weeks.map((week, weekIndex) => (
-                <div key={weekIndex} className="flex flex-col gap-1">
-                  {week.map((day, dayIndex) => (
-                    <Tooltip key={day.date}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={`w-3 h-3 rounded-sm ${levelColors[day.level]} transition-all hover:scale-125 cursor-default`}
-                        />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="text-xs">
-                        <p className="font-medium">{format(new Date(day.date), "dd MMM yyyy", { locale: ptBR })}</p>
-                        <p className="text-muted-foreground">{day.count} atividades</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
+          <>
+            {/* Stats Row */}
+            <div className="grid grid-cols-4 gap-2">
+              <div className="p-2 rounded-lg bg-muted/30 border border-border/30 text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Zap className="w-3 h-3 text-primary" />
                 </div>
-              ))}
+                <p className="text-lg font-bold text-foreground">{totalActivities}</p>
+                <p className="text-[10px] text-muted-foreground">Total Ações</p>
+              </div>
+              <div className="p-2 rounded-lg bg-muted/30 border border-border/30 text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Target className="w-3 h-3 text-green-500" />
+                </div>
+                <p className="text-lg font-bold text-foreground">{activeDays}</p>
+                <p className="text-[10px] text-muted-foreground">Dias Ativos</p>
+              </div>
+              <div className="p-2 rounded-lg bg-muted/30 border border-border/30 text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Clock className="w-3 h-3 text-blue-500" />
+                </div>
+                <p className="text-lg font-bold text-foreground">{avgPerDay}</p>
+                <p className="text-[10px] text-muted-foreground">Média/Dia</p>
+              </div>
+              <div className="p-2 rounded-lg bg-muted/30 border border-border/30 text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Calendar className="w-3 h-3 text-purple-500" />
+                </div>
+                <p className="text-lg font-bold text-foreground">{mostActiveDay}</p>
+                <p className="text-[10px] text-muted-foreground">Melhor Dia</p>
+              </div>
             </div>
-            <div className="flex items-center justify-end gap-1.5 mt-2 text-xs text-muted-foreground">
-              <span>Menos</span>
-              {levelColors.map((color, i) => (
-                <div key={i} className={`w-3 h-3 rounded-sm ${color}`} />
-              ))}
-              <span>Mais</span>
-            </div>
-          </TooltipProvider>
+
+            {/* Heatmap */}
+            <TooltipProvider>
+              <div className="flex gap-1 overflow-x-auto pb-1">
+                {weeks.map((week, weekIndex) => (
+                  <div key={weekIndex} className="flex flex-col gap-1">
+                    {week.map((day) => (
+                      <Tooltip key={day.date}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={`w-3 h-3 rounded-sm ${levelColors[day.level]} transition-all hover:scale-125 cursor-default`}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs">
+                          <p className="font-medium">{format(new Date(day.date), "dd MMM yyyy", { locale: ptBR })}</p>
+                          <p className="text-muted-foreground">{day.count} atividades</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-end gap-1.5 text-xs text-muted-foreground">
+                <span>Menos</span>
+                {levelColors.map((color, i) => (
+                  <div key={i} className={`w-3 h-3 rounded-sm ${color}`} />
+                ))}
+                <span>Mais</span>
+              </div>
+            </TooltipProvider>
+          </>
         )}
       </CardContent>
     </Card>
