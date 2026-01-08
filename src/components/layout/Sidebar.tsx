@@ -332,30 +332,6 @@ export function Sidebar() {
           onOpenChange={setHistoryModalOpen} 
         />
 
-        {/* Storage Section - Compact */}
-        {!collapsed ? (
-          <div className="p-2 rounded-lg bg-secondary/50 border border-border space-y-1">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <HardDrive className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Armazenamento</span>
-              </div>
-              <span className="text-sm font-bold text-primary">
-                {storageUsed.toFixed(2)} GB
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Progress value={Math.min(usagePercent, 100)} className="h-1 flex-1" />
-              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                de {storageLimit.toFixed(1)} GB
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div className="flex justify-center">
-            <HardDrive className="w-5 h-5 text-muted-foreground" />
-          </div>
-        )}
 
         {/* Plan */}
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
