@@ -1114,51 +1114,98 @@ Todo o roteiro DEVE ser escrito EXCLUSIVAMENTE em ${languageName}. Qualquer pala
 ${additionalContext ? `- Contexto adicional: ${additionalContext}` : ''}
 ${channelContext}
 
-🔥 REQUISITOS OBRIGATÓRIOS PARA 89%+ RETENÇÃO:
+═══════════════════════════════════════════════════════════════
+📜 ESTRUTURA VIRAL OBRIGATÓRIA (SIGA EXATAMENTE ESTA ORDEM):
+═══════════════════════════════════════════════════════════════
 
-1. HOOK EXPLOSIVO (primeiras 2 frases = primeiros 8 segundos):
-   ✅ Máximo 15 palavras na primeira frase
-   ✅ Afirmação CHOCANTE ou pergunta IMPOSSÍVEL de ignorar
-   ✅ Use palavras de poder: "nunca", "segredo", "revelação", "descobri", "ninguém sabe"
-   ✅ ZERO saudações, ZERO introduções - IMPACTO IMEDIATO
-   
-   EXEMPLOS DE HOOKS PERFEITOS:
-   - "Isso nunca deveria ter sido revelado."
-   - "O que você vai descobrir agora vai mudar tudo que você acredita."
-   - "Existe um segredo que eles escondem há séculos."
+🔥 HOOK ABSOLUTO (0–20s) - PRIMEIRAS ~50 PALAVRAS
+Objetivo: Tornar impossível sair do vídeo.
+Fórmula EXATA a seguir:
+"Durante anos, acreditamos que [VERSÃO OFICIAL].
+Mas uma descoberta recente revelou algo que muda tudo.
+E o que você está prestes a ouvir nunca deveria ter sido revelado."
 
-2. OPEN LOOPS OBRIGATÓRIOS (mínimo 1 a cada 2-3 minutos):
-   Use EXATAMENTE estas frases ao longo do roteiro:
+Regras:
+- Comece no momento mais chocante
+- Nada de contexto ainda
+- Deixe uma pergunta sem resposta
+
+❓ PERGUNTA CENTRAL (20–30s) - ~25 PALAVRAS
+Objetivo: Criar o eixo do vídeo.
+Fórmula: "A pergunta é simples: [PERGUNTA QUE DESMONTA A NARRATIVA OFICIAL]?"
+Ex.: "Por que um império tão avançado colapsou de forma tão estranha?"
+
+🧠 PROMESSA AO ESPECTADOR (30–40s) - ~30 PALAVRAS
+Objetivo: Garantir retenção.
+Fórmula: "Ao final deste vídeo, você vai entender [REVELAÇÃO FINAL], e nunca mais verá [TEMA] da mesma forma."
+
+🏛️ ATO 1 – A GRANDEZA (~15% do roteiro)
+Objetivo: Criar admiração.
+Conteúdo obrigatório: Origem, Crescimento, Engenharia/poder/organização, Sensação de invencibilidade
+Frases-chave: "Nada indicava que algo poderia dar errado." / "Era uma civilização à frente do seu tempo."
+
+⚙️ ATO 1.1 – COMO FUNCIONAVA (~10% do roteiro)
+Objetivo: Autoridade e credibilidade.
+Inclua: Sistema social, Economia, Ciência/técnica, Estratégia política
+Micro-cliffhanger: "Mas essa mesma estrutura escondia uma falha fatal."
+
+⚠️ ATO 2 – A CONTRADIÇÃO (~15% do roteiro)
+Objetivo: Criar desconforto.
+Inclua: Violência, Terror, Sacrifícios, Controle psicológico, Contradições morais
+Fórmula: "Quanto mais avançados se tornavam, mais brutal era o preço."
+
+🧨 ATO 2.1 – O ERRO INVISÍVEL (~10% do roteiro)
+Objetivo: Preparar a queda.
+Inclua: Decisão errada, Dogma, Profecia, Sistema que sai do controle
+Frase-chave: "Eles acreditavam estar salvando o mundo… mas estavam acelerando o próprio fim."
+
+⏳ ATO 3 – O COLAPSO (~15% do roteiro)
+Objetivo: Clímax emocional.
+Inclua: Invasão/crise/epidemia/traição, Colapso rápido e irreversível, Perda total de controle
+Frases curtas. Impactantes: "Não houve tempo. Não houve reação. O império caiu."
+
+🧠 ATO 3.1 – A VERDADE REAL (~10% do roteiro)
+Objetivo: Revelação 10/10.
+Aqui você: Desmonta a versão oficial, Mostra a causa real, Explica a ironia histórica
+Fórmula: "No fim, não foi [VERSÃO POPULAR]. Foi [VERDADE MAIS PROFUNDA]."
+
+🧬 CONSEQUÊNCIAS OCULTAS (~8% do roteiro)
+Objetivo: Profundidade.
+Inclua: Conhecimento perdido, Impacto no presente, O que o mundo deixou de aprender
+Frase-chave: "A maior perda não foi humana. Foi intelectual."
+
+🌍 CONEXÃO COM O PRESENTE (~5% do roteiro)
+Objetivo: Tornar atual.
+Fórmula: "O mais assustador é perceber que estamos repetindo o mesmo padrão."
+Relacione com: sociedade atual, política, tecnologia, meio ambiente
+
+❗ PERGUNTA FINAL EXISTENCIAL (~2% do roteiro)
+Objetivo: Deixar marca.
+Fórmula: "Se eles cometeram esse erro… por que achamos que somos diferentes?"
+
+📢 CTA FINAL (ÚNICO) - ÚLTIMAS ~30 PALAVRAS
+Objetivo: Converter sem quebrar o clima.
+Fórmula: "Se histórias como essa fazem você questionar a história oficial, este canal é para você."
+
+═══════════════════════════════════════════════════════════════
+📏 REGRAS TÉCNICAS ABSOLUTAS:
+═══════════════════════════════════════════════════════════════
+
+1. OPEN LOOPS OBRIGATÓRIOS (mínimo 1 a cada 2-3 minutos):
    - "Mas antes de revelar isso..."
    - "E o que descobri depois foi ainda mais perturbador..."
    - "Isso explica apenas metade da história..."
    - "Mas espera, porque o que vem agora muda tudo..."
-   - "E aqui é onde fica realmente interessante..."
-   
-3. PERGUNTAS RETÓRICAS (mínimo ${Math.max(5, Math.floor(duration / 2))} ao longo do roteiro):
-   - Mantenha o espectador pensando
+
+2. PERGUNTAS RETÓRICAS (mínimo ${Math.max(5, Math.floor(duration / 2))}):
    - "E você sabe o que aconteceu depois?"
    - "Consegue imaginar o que isso significa?"
-   
-4. PALAVRAS EMOCIONAIS DE ALTO IMPACTO (use pelo menos 15):
+
+3. PALAVRAS DE ALTO IMPACTO (use pelo menos 15):
    chocante, perturbador, inacreditável, assustador, explosivo, secreto, 
-   revelação, misterioso, impossível, extraordinário, devastador, sinistro,
-   surpreendente, impressionante, revolucionário
+   revelação, misterioso, impossível, extraordinário, devastador, sinistro
 
-5. ESTRUTURA DE TENSÃO CRESCENTE:
-   - Cada parágrafo deve criar mais curiosidade que o anterior
-   - Build-up emocional constante até o clímax nos últimos 20%
-   - Micro-revelações que nunca satisfazem completamente a curiosidade
-
-6. PARÁGRAFOS CURTOS E DINÂMICOS:
-   - Máximo 2-3 frases por parágrafo
-   - Ritmo respirável para narração
-   - Quebras frequentes para manter atenção
-
-7. FINAL ÉPICO + CTA:
-   - Clímax emocional poderoso
-   - Revelação final impactante
-   - CTA natural: "Se você quer descobrir mais segredos como esse, inscreva-se e ative o sino."
+4. PARÁGRAFOS CURTOS: Máximo 2-3 frases por parágrafo
 
 ❌ PROIBIDO (FALHA CRÍTICA):
 - [qualquer marcação entre colchetes]
@@ -1166,14 +1213,13 @@ ${channelContext}
 - Timestamps ou indicações de tempo
 - Instruções de edição ou descrições visuais
 - Saudações como "Olá", "Fala pessoal"
-- Parágrafos com mais de 4 frases
 
 ✅ FORMATO EXATO:
-- Apenas texto de narração puro, pronto para ler
+- Apenas texto de narração puro
 - ${wordsTarget} palavras (±5%)
 - Parágrafos curtos separados por linha em branco
 
-🚀 COMECE AGORA com um HOOK EXPLOSIVO (máximo 15 palavras) em ${languageName}:`;
+🚀 COMECE AGORA seguindo a ESTRUTURA VIRAL OBRIGATÓRIA em ${languageName}:`;
   };
 
   const generateScript = async () => {
