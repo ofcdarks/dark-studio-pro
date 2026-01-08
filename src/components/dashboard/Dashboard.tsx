@@ -65,15 +65,37 @@ export function Dashboard() {
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-background relative">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+    <div className="flex-1 overflow-auto relative">
+      {/* Premium Background Layer */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Radial gradient base */}
         <div 
-          className="absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.03) 0%, transparent 60%)' }}
+          className="absolute inset-0"
+          style={{ 
+            background: 'radial-gradient(ellipse 80% 50% at 50% 0%, hsl(var(--primary) / 0.08) 0%, transparent 50%), radial-gradient(circle at center, #111 0%, #0b0b0b 40%, #050505 100%)' 
+          }}
+        />
+        {/* Golden glow - top right */}
+        <div 
+          className="absolute top-0 right-1/4 w-[600px] h-[600px] rounded-full blur-[120px]"
+          style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.12) 0%, transparent 60%)' }}
+        />
+        {/* Secondary glow - bottom left */}
+        <div 
+          className="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full blur-[100px]"
+          style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.06) 0%, transparent 60%)' }}
+        />
+        {/* Noise/grain overlay */}
+        <div 
+          className="absolute inset-0 opacity-[0.015]"
+          style={{ 
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'repeat'
+          }}
         />
       </div>
 
-      <div className="p-6 lg:p-8 max-w-7xl mx-auto relative z-10">
+      <div className="p-6 lg:p-8 max-w-[1400px] mx-auto relative z-10">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-10">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
