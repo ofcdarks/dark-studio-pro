@@ -649,11 +649,19 @@ Forneça uma dica personalizada baseada nessas estatísticas.`;
            - Use números específicos quando relevante (ex: "3 SEGREDOS", "A VERDADE sobre os 7")
            - Adicione palavras de poder: REVELADO, EXPOSTO, PROIBIDO, SECRETO, CHOCANTE, REAL
         
-        5. FORMATO TÉCNICO:
-           - Máximo 60 caracteres
+        5. FORMATO TÉCNICO (OBRIGATÓRIO!):
+           - MÁXIMO 100 caracteres por título (NUNCA ultrapassar!)
+           - MÍNIMO de palavras: igual ou MAIOR que o título original
+           - Conte as palavras do título original e gere títulos com a MESMA quantidade ou MAIS
            - Use CAIXA ALTA estrategicamente como no original
            - Todos os títulos em ${lang}
            - Um título deve ter isBest: true
+        
+        ⚠️ REGRA CRÍTICA DE PALAVRAS:
+           - Se o título original tem 8 palavras, gere títulos com 8 palavras ou mais
+           - Se o título original tem 5 palavras, gere títulos com 5 palavras ou mais
+           - NUNCA gere títulos com menos palavras que o original
+           - Mas NUNCA ultrapasse 100 caracteres no total
         
         ✅ CHECKLIST ANTES DE RESPONDER:
         - [ ] O videoInfo.title é idêntico ao título fornecido?
