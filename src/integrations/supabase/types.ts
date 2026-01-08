@@ -1475,6 +1475,33 @@ export type Database = {
         }
         Relationships: []
       }
+      task_completion_history: {
+        Row: {
+          completed_at: string
+          created_at: string
+          id: string
+          task_title: string
+          task_type: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          id?: string
+          task_title: string
+          task_type?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          id?: string
+          task_title?: string
+          task_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       title_tags: {
         Row: {
           created_at: string
