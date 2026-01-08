@@ -3,7 +3,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { 
   Calendar, 
@@ -27,9 +27,17 @@ import {
   Scissors,
   CheckCircle,
   Upload,
-  AlertCircle
+  AlertCircle,
+  Youtube,
+  TrendingUp,
+  Loader2,
+  BarChart3,
+  Sparkles,
+  RefreshCw
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { Progress } from "@/components/ui/progress";
 
 type VideoStatus = 'planned' | 'recording' | 'editing' | 'ready' | 'published';
 type VideoPriority = 'low' | 'normal' | 'high';
@@ -53,6 +61,17 @@ interface NicheBestTime {
   best_days: string[];
   best_hours: string[];
   reasoning: string | null;
+}
+
+interface PostingTimeAnalysis {
+  bestDays: { day: string; avgViews: number; videoCount: number }[];
+  bestHours: { hour: string; avgViews: number; videoCount: number }[];
+  bestDayHourCombos: { day: string; hour: string; avgViews: number }[];
+  insights: string[];
+  country?: string;
+  niche?: string;
+  channelName?: string;
+  totalVideosAnalyzed: number;
 }
 
 const statusConfig = {
@@ -90,6 +109,7 @@ export default function PublicationSchedule() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<ScheduledVideo | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingChannelAnalysis, setIsLoadingChannelAnalysis] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState<{
@@ -111,6 +131,56 @@ export default function PublicationSchedule() {
     notes: '',
     priority: 'normal',
   });
+
+  // Check YouTube connection
+  const { data: youtubeConnection } = useQuery({
+    queryKey: ['youtube-connection', session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return null;
+      const { data, error } = await supabase
+        .from('youtube_connections')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!session?.user?.id,
+  });
+
+  // Fetch personalized posting time analysis from YouTube channel
+  const { data: postingAnalysis, refetch: refetchAnalysis, isFetching: isFetchingAnalysis } = useQuery({
+    queryKey: ['posting-time-analysis', session?.user?.id],
+    queryFn: async (): Promise<PostingTimeAnalysis | null> => {
+      if (!session?.user?.id) return null;
+      
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session?.access_token) return null;
+
+      const response = await supabase.functions.invoke('analyze-posting-times', {
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+      });
+
+      if (response.error || response.data?.error) {
+        console.log('No YouTube analysis available:', response.data?.error || response.error);
+        return null;
+      }
+
+      return response.data as PostingTimeAnalysis;
+    },
+    enabled: !!session?.user?.id && !!youtubeConnection,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    retry: false,
+  });
+
+  const handleRefreshAnalysis = async () => {
+    setIsLoadingChannelAnalysis(true);
+    await refetchAnalysis();
+    setIsLoadingChannelAnalysis(false);
+    toast({ title: "Análise atualizada!", description: "Dados do seu canal foram reanalisados." });
+  };
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -321,39 +391,218 @@ export default function PublicationSchedule() {
           </div>
         </div>
 
-        {/* Suggestions Panel */}
+        {/* Personalized Channel Analysis Panel */}
         <AnimatePresence>
           {showSuggestions && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mb-6"
+              className="mb-6 space-y-4"
             >
-              <Card className="border-primary/20 bg-primary/5">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Lightbulb className="h-5 w-5 text-primary" />
-                    Melhores Horários por Nicho
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {nicheBestTimes.map((niche) => (
-                      <div key={niche.niche} className="p-3 rounded-lg bg-background/50 border">
-                        <h4 className="font-semibold capitalize mb-2">{niche.niche}</h4>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <p><strong>Dias:</strong> {niche.best_days.map(d => dayNames[d] || d).join(', ')}</p>
-                          <p><strong>Horários:</strong> {niche.best_hours.join(', ')}</p>
-                          {niche.reasoning && (
-                            <p className="text-xs italic mt-2">{niche.reasoning}</p>
+              {/* YouTube Channel Based Suggestions */}
+              {youtubeConnection ? (
+                <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Youtube className="h-5 w-5 text-red-500" />
+                        Análise do Seu Canal
+                        {postingAnalysis && (
+                          <Badge variant="secondary" className="ml-2 text-xs">
+                            {postingAnalysis.totalVideosAnalyzed} vídeos analisados
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRefreshAnalysis}
+                        disabled={isFetchingAnalysis || isLoadingChannelAnalysis}
+                      >
+                        {isFetchingAnalysis || isLoadingChannelAnalysis ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    {postingAnalysis?.channelName && (
+                      <p className="text-sm text-muted-foreground">
+                        Baseado nos dados reais do canal <strong>{postingAnalysis.channelName}</strong>
+                        {postingAnalysis.country && ` (${postingAnalysis.country})`}
+                      </p>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    {isFetchingAnalysis && !postingAnalysis ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="text-center">
+                          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary mb-2" />
+                          <p className="text-sm text-muted-foreground">Analisando histórico do canal...</p>
+                        </div>
+                      </div>
+                    ) : postingAnalysis ? (
+                      <div className="space-y-6">
+                        {/* Insights */}
+                        {postingAnalysis.insights.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="font-medium flex items-center gap-2 text-sm">
+                              <Sparkles className="h-4 w-4 text-yellow-500" />
+                              Insights Personalizados
+                            </h4>
+                            <div className="space-y-2">
+                              {postingAnalysis.insights.map((insight, index) => (
+                                <div key={index} className="p-3 rounded-lg bg-background/50 border text-sm">
+                                  {insight}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {/* Best Days */}
+                          <div className="p-4 rounded-lg bg-background/50 border">
+                            <h4 className="font-medium flex items-center gap-2 mb-3 text-sm">
+                              <Calendar className="h-4 w-4 text-primary" />
+                              Melhores Dias
+                            </h4>
+                            <div className="space-y-2">
+                              {postingAnalysis.bestDays.slice(0, 3).map((day, index) => {
+                                const maxViews = postingAnalysis.bestDays[0]?.avgViews || 1;
+                                const percentage = (day.avgViews / maxViews) * 100;
+                                return (
+                                  <div key={day.day} className="space-y-1">
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span className="flex items-center gap-2">
+                                        {index === 0 && <TrendingUp className="h-3 w-3 text-green-500" />}
+                                        {dayNames[day.day] || day.day}
+                                      </span>
+                                      <span className="text-muted-foreground">
+                                        {day.avgViews.toLocaleString('pt-BR')} views
+                                      </span>
+                                    </div>
+                                    <Progress value={percentage} className="h-2" />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Best Hours */}
+                          <div className="p-4 rounded-lg bg-background/50 border">
+                            <h4 className="font-medium flex items-center gap-2 mb-3 text-sm">
+                              <Clock className="h-4 w-4 text-primary" />
+                              Melhores Horários
+                            </h4>
+                            <div className="space-y-2">
+                              {postingAnalysis.bestHours.slice(0, 4).map((hour, index) => {
+                                const maxViews = postingAnalysis.bestHours[0]?.avgViews || 1;
+                                const percentage = (hour.avgViews / maxViews) * 100;
+                                return (
+                                  <div key={hour.hour} className="space-y-1">
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span className="flex items-center gap-2">
+                                        {index === 0 && <TrendingUp className="h-3 w-3 text-green-500" />}
+                                        {hour.hour}
+                                      </span>
+                                      <span className="text-muted-foreground">
+                                        {hour.avgViews.toLocaleString('pt-BR')} views
+                                      </span>
+                                    </div>
+                                    <Progress value={percentage} className="h-2" />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Best Combos */}
+                          {postingAnalysis.bestDayHourCombos.length > 0 && (
+                            <div className="p-4 rounded-lg bg-background/50 border">
+                              <h4 className="font-medium flex items-center gap-2 mb-3 text-sm">
+                                <BarChart3 className="h-4 w-4 text-primary" />
+                                Combinações de Ouro
+                              </h4>
+                              <div className="space-y-2">
+                                {postingAnalysis.bestDayHourCombos.slice(0, 3).map((combo, index) => (
+                                  <div
+                                    key={`${combo.day}-${combo.hour}`}
+                                    className={`flex items-center justify-between p-2 rounded text-sm ${
+                                      index === 0 ? 'bg-primary/10 border border-primary/20' : ''
+                                    }`}
+                                  >
+                                    <span className="font-medium">
+                                      {dayNames[combo.day]} às {combo.hour}
+                                    </span>
+                                    <Badge variant={index === 0 ? 'default' : 'secondary'}>
+                                      {combo.avgViews.toLocaleString('pt-BR')} views
+                                    </Badge>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                    ) : (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>Clique no botão de atualizar para analisar seu canal</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="border-yellow-500/20 bg-yellow-500/5">
+                  <CardContent className="py-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 rounded-full bg-yellow-500/10">
+                        <Youtube className="h-6 w-6 text-yellow-500" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium">Conecte seu canal para sugestões personalizadas</h4>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Ao conectar seu canal do YouTube, analisaremos seus vídeos para descobrir 
+                          os melhores dias e horários de postagem baseados no seu histórico real.
+                        </p>
+                      </div>
+                      <Button variant="outline" asChild>
+                        <a href="/youtube">Conectar YouTube</a>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Generic Niche Suggestions (fallback) */}
+              {(!youtubeConnection || !postingAnalysis) && nicheBestTimes.length > 0 && (
+                <Card className="border-border">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Lightbulb className="h-5 w-5 text-primary" />
+                      Horários Gerais por Nicho
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {nicheBestTimes.map((niche) => (
+                        <div key={niche.niche} className="p-3 rounded-lg bg-background/50 border">
+                          <h4 className="font-semibold capitalize mb-2">{niche.niche}</h4>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <p><strong>Dias:</strong> {niche.best_days.map(d => dayNames[d] || d).join(', ')}</p>
+                            <p><strong>Horários:</strong> {niche.best_hours.join(', ')}</p>
+                            {niche.reasoning && (
+                              <p className="text-xs italic mt-2">{niche.reasoning}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
