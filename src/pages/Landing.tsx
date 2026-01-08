@@ -416,8 +416,23 @@ const Landing = () => {
 
       </section>
 
+      {/* Marquee Strip 1 */}
+      <div className="relative overflow-hidden py-3 md:py-4 bg-gradient-to-r from-primary via-amber-500 to-primary">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+        <div className="flex animate-marquee whitespace-nowrap relative z-10">
+          {[...Array(10)].map((_, i) => (
+            <span key={i} className="mx-8 md:mx-16 text-sm md:text-lg font-bold uppercase tracking-widest text-primary-foreground flex items-center gap-3 md:gap-4 drop-shadow-lg">
+              <Rocket className="w-4 h-4 md:w-5 md:h-5" />
+              A REVOLUÇÃO CHEGOU
+              <span className="text-primary-foreground/80">•</span>
+              NÃO HÁ ESPAÇO PARA AMADORES
+            </span>
+          ))}
+        </div>
+      </div>
+
       {/* Seamless Section Divider with ScrollIndicator */}
-      <div className="relative h-32 md:h-40 overflow-hidden">
+      <div className="relative h-24 md:h-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/5 to-background" />
         <ScrollIndicator variant="mouse" />
       </div>
@@ -572,6 +587,21 @@ const Landing = () => {
           </div>
         </AnimatedSection>
       </section>
+
+      {/* Marquee Strip 2 - Reverse */}
+      <div className="relative overflow-hidden py-3 md:py-4 bg-gradient-to-r from-amber-600 via-primary to-amber-600">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+        <div className="flex animate-marquee-reverse whitespace-nowrap relative z-10">
+          {[...Array(10)].map((_, i) => (
+            <span key={i} className="mx-8 md:mx-16 text-sm md:text-lg font-bold uppercase tracking-widest text-primary-foreground flex items-center gap-3 md:gap-4 drop-shadow-lg">
+              <Crown className="w-4 h-4 md:w-5 md:h-5" />
+              AUTOMATIZE SUA OPERAÇÃO
+              <span className="text-primary-foreground/80">•</span>
+              ESCALE SEUS RESULTADOS
+            </span>
+          ))}
+        </div>
+      </div>
 
       {/* Seamless Section Divider with ScrollIndicator */}
       <div className="relative h-24 md:h-32 overflow-hidden">
