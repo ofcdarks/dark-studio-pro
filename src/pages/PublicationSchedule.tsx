@@ -996,21 +996,20 @@ export default function PublicationSchedule() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="niche">Nicho</Label>
-                  <Select
-                    value={formData.niche}
-                    onValueChange={(value) => setFormData({ ...formData, niche: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
+                  <div className="relative">
+                    <Input
+                      id="niche"
+                      value={formData.niche}
+                      onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
+                      placeholder="Digite ou selecione"
+                      list="niche-options"
+                    />
+                    <datalist id="niche-options">
                       {nicheBestTimes.map((n) => (
-                        <SelectItem key={n.niche} value={n.niche} className="capitalize">
-                          {n.niche}
-                        </SelectItem>
+                        <option key={n.niche} value={n.niche} />
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </datalist>
+                  </div>
                 </div>
                 
                 <div>
