@@ -558,10 +558,26 @@ export default function ViralScriptGenerator() {
         .eq('user_id', user.id);
       
       const channels: Array<{id: string; channel_url: string; channel_name: string | null}> = [];
+      const seenNames = new Set<string>();
+      const seenUrls = new Set<string>();
+      
+      const addChannel = (c: {id: string; channel_url: string; channel_name: string | null}) => {
+        const normalizedName = c.channel_name?.toLowerCase().trim() || '';
+        const normalizedUrl = c.channel_url.toLowerCase().trim();
+        
+        // Skip if we already have this channel by name or URL
+        if ((normalizedName && seenNames.has(normalizedName)) || seenUrls.has(normalizedUrl)) {
+          return;
+        }
+        
+        if (normalizedName) seenNames.add(normalizedName);
+        seenUrls.add(normalizedUrl);
+        channels.push(c);
+      };
       
       if (ytConnections) {
         ytConnections.forEach(c => {
-          channels.push({ 
+          addChannel({ 
             id: c.channel_id, 
             channel_url: `https://youtube.com/channel/${c.channel_id}`, 
             channel_name: c.channel_name 
@@ -570,19 +586,11 @@ export default function ViralScriptGenerator() {
       }
       
       if (monitoredChannels) {
-        monitoredChannels.forEach(c => {
-          if (!channels.find(ch => ch.channel_url === c.channel_url)) {
-            channels.push(c);
-          }
-        });
+        monitoredChannels.forEach(c => addChannel(c));
       }
       
       if (analyticsChannels) {
-        analyticsChannels.forEach(c => {
-          if (!channels.find(ch => ch.channel_url === c.channel_url)) {
-            channels.push(c);
-          }
-        });
+        analyticsChannels.forEach(c => addChannel(c));
       }
       
       setUserChannels(channels);
