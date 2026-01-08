@@ -11,7 +11,8 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Youtube, CheckCircle, Upload, BarChart3, Settings, Loader2, LogOut, ExternalLink, AlertTriangle, X, FileVideo, Clock, Globe, Lock, Users, RefreshCw } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Youtube, CheckCircle, Upload, BarChart3, Settings, Loader2, LogOut, ExternalLink, AlertTriangle, X, FileVideo, Globe, Lock, Users, RefreshCw, TrendingUp, Eye, ThumbsUp, MessageCircle, Video, Lightbulb, AlertCircle, Info, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -32,6 +33,45 @@ interface YouTubeConnection {
   scopes?: string[];
 }
 
+interface AnalyticsTip {
+  type: 'success' | 'warning' | 'info';
+  title: string;
+  message: string;
+}
+
+interface ChannelAnalytics {
+  channel: {
+    id: string;
+    name: string;
+    thumbnail: string;
+  };
+  statistics: {
+    subscribers: number;
+    totalViews: number;
+    totalVideos: number;
+  };
+  recentMetrics: {
+    analyzedVideos: number;
+    totalViewsRecent: number;
+    avgViewsPerVideo: number;
+    avgLikesPerVideo: number;
+    avgEngagementRate: number;
+    videosThisWeek: number;
+    videosThisMonth: number;
+    daysSinceLastVideo: number | null;
+  };
+  topVideos: Array<{
+    videoId: string;
+    title: string;
+    thumbnail: string;
+    views: number;
+    likes: number;
+    engagementRate: string;
+  }>;
+  tips: AnalyticsTip[];
+  lastUpdated: string;
+}
+
 type PrivacyStatus = 'public' | 'unlisted' | 'private';
 
 interface UploadForm {
@@ -50,6 +90,10 @@ const YouTubeIntegration = () => {
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   
+  // Analytics state
+  const [analytics, setAnalytics] = useState<ChannelAnalytics | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  
   // Upload state
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -60,7 +104,7 @@ const YouTubeIntegration = () => {
     description: '',
     tags: '',
     privacyStatus: 'private',
-    categoryId: '22', // People & Blogs
+    categoryId: '22',
     madeForKids: false
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -94,6 +138,13 @@ const YouTubeIntegration = () => {
     }
   }, [user]);
 
+  // Fetch analytics when connection is established
+  useEffect(() => {
+    if (connection) {
+      fetchAnalytics();
+    }
+  }, [connection]);
+
   const fetchConnection = async () => {
     try {
       const { data, error } = await supabase
@@ -108,6 +159,26 @@ const YouTubeIntegration = () => {
       console.error('Error fetching connection:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    setLoadingAnalytics(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('youtube-channel-analytics');
+      
+      if (error) throw error;
+      
+      if (data.error) {
+        console.error('Analytics error:', data.error);
+        return;
+      }
+      
+      setAnalytics(data);
+    } catch (error: any) {
+      console.error('Error fetching analytics:', error);
+    } finally {
+      setLoadingAnalytics(false);
     }
   };
 
@@ -132,7 +203,6 @@ const YouTubeIntegration = () => {
 
   const handleOAuthCallback = async (code: string, state: string) => {
     setConnecting(true);
-    // Clean URL
     window.history.replaceState({}, '', '/youtube');
     
     try {
@@ -166,6 +236,7 @@ const YouTubeIntegration = () => {
       if (error) throw error;
       
       setConnection(null);
+      setAnalytics(null);
       toast.success('Canal desconectado com sucesso');
     } catch (error: any) {
       console.error('Error disconnecting:', error);
@@ -178,21 +249,18 @@ const YouTubeIntegration = () => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Check file size (max 128GB, but practical limit ~256MB for direct upload)
-      const maxSize = 256 * 1024 * 1024; // 256MB
+      const maxSize = 256 * 1024 * 1024;
       if (file.size > maxSize) {
         toast.error('Arquivo muito grande. Máximo 256MB para upload direto.');
         return;
       }
       
-      // Check file type
       if (!file.type.startsWith('video/')) {
         toast.error('Por favor, selecione um arquivo de vídeo.');
         return;
       }
       
       setSelectedFile(file);
-      // Set default title from filename
       if (!uploadForm.title) {
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
         setUploadForm(prev => ({ ...prev, title: nameWithoutExt }));
@@ -210,7 +278,6 @@ const YouTubeIntegration = () => {
     setUploadProgress(0);
 
     try {
-      // Convert file to base64
       const reader = new FileReader();
       const fileBase64 = await new Promise<string>((resolve, reject) => {
         reader.onload = () => {
@@ -221,7 +288,6 @@ const YouTubeIntegration = () => {
         reader.readAsDataURL(selectedFile);
       });
 
-      // Simulate progress for better UX
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 5, 90));
       }, 500);
@@ -245,9 +311,8 @@ const YouTubeIntegration = () => {
       if (error) throw error;
 
       setUploadProgress(100);
-      toast.success('Vídeo enviado com sucesso! ' + (data.videoUrl ? 'Processando...' : ''));
+      toast.success('Vídeo enviado com sucesso!');
       
-      // Reset form
       setTimeout(() => {
         setUploadModalOpen(false);
         setSelectedFile(null);
@@ -260,6 +325,7 @@ const YouTubeIntegration = () => {
           categoryId: '22',
           madeForKids: false
         });
+        fetchAnalytics();
       }, 1500);
 
     } catch (error: any) {
@@ -287,10 +353,10 @@ const YouTubeIntegration = () => {
     }
   };
 
-  const formatSubscribers = (count: number) => {
-    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
-    if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
-    return count.toString();
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toLocaleString('pt-BR');
   };
 
   const formatDate = (dateString: string) => {
@@ -299,6 +365,22 @@ const YouTubeIntegration = () => {
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  const getTipIcon = (type: AnalyticsTip['type']) => {
+    switch (type) {
+      case 'success': return <CheckCircle className="w-5 h-5 text-green-500" />;
+      case 'warning': return <AlertCircle className="w-5 h-5 text-amber-500" />;
+      case 'info': return <Info className="w-5 h-5 text-blue-500" />;
+    }
+  };
+
+  const getTipBg = (type: AnalyticsTip['type']) => {
+    switch (type) {
+      case 'success': return 'bg-green-500/10 border-green-500/20';
+      case 'warning': return 'bg-amber-500/10 border-amber-500/20';
+      case 'info': return 'bg-blue-500/10 border-blue-500/20';
+    }
   };
 
   const videoCategories = [
@@ -326,7 +408,7 @@ const YouTubeIntegration = () => {
       />
       <PermissionGate permission="analytics_youtube" featureName="Analytics YouTube">
         <div className="flex-1 overflow-auto p-6 lg:p-8">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-foreground mb-2">Integração YouTube</h1>
               <p className="text-muted-foreground">
@@ -382,6 +464,7 @@ const YouTubeIntegration = () => {
               </Card>
             ) : (
               <div className="space-y-6">
+                {/* Channel Card */}
                 <Card className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -399,7 +482,7 @@ const YouTubeIntegration = () => {
                       <div>
                         <h3 className="font-semibold text-foreground">{connection.channel_name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {formatSubscribers(connection.subscribers_count)} inscritos
+                          {formatNumber(connection.subscribers_count)} inscritos
                         </p>
                       </div>
                     </div>
@@ -424,6 +507,177 @@ const YouTubeIntegration = () => {
                   </div>
                 </Card>
 
+                {/* Analytics Summary */}
+                {loadingAnalytics ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map(i => (
+                      <Card key={i} className="p-4">
+                        <Skeleton className="h-4 w-20 mb-2" />
+                        <Skeleton className="h-8 w-24" />
+                      </Card>
+                    ))}
+                  </div>
+                ) : analytics ? (
+                  <>
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <Card className="p-4">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                          <Users className="w-4 h-4" />
+                          <span className="text-xs">Inscritos</span>
+                        </div>
+                        <p className="text-2xl font-bold text-foreground">
+                          {formatNumber(analytics.statistics.subscribers)}
+                        </p>
+                      </Card>
+                      
+                      <Card className="p-4">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                          <Eye className="w-4 h-4" />
+                          <span className="text-xs">Views Totais</span>
+                        </div>
+                        <p className="text-2xl font-bold text-foreground">
+                          {formatNumber(analytics.statistics.totalViews)}
+                        </p>
+                      </Card>
+                      
+                      <Card className="p-4">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                          <Video className="w-4 h-4" />
+                          <span className="text-xs">Vídeos</span>
+                        </div>
+                        <p className="text-2xl font-bold text-foreground">
+                          {formatNumber(analytics.statistics.totalVideos)}
+                        </p>
+                      </Card>
+                      
+                      <Card className="p-4">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                          <TrendingUp className="w-4 h-4" />
+                          <span className="text-xs">Engajamento</span>
+                        </div>
+                        <p className="text-2xl font-bold text-foreground">
+                          {analytics.recentMetrics.avgEngagementRate.toFixed(1)}%
+                        </p>
+                      </Card>
+                    </div>
+
+                    {/* Recent Metrics */}
+                    <Card className="p-5">
+                      <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-primary" />
+                        Métricas Recentes
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Média de Views</p>
+                          <p className="text-lg font-semibold text-foreground">
+                            {formatNumber(analytics.recentMetrics.avgViewsPerVideo)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Média de Likes</p>
+                          <p className="text-lg font-semibold text-foreground">
+                            {formatNumber(analytics.recentMetrics.avgLikesPerVideo)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Vídeos este mês</p>
+                          <p className="text-lg font-semibold text-foreground">
+                            {analytics.recentMetrics.videosThisMonth}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Último upload</p>
+                          <p className="text-lg font-semibold text-foreground">
+                            {analytics.recentMetrics.daysSinceLastVideo !== null 
+                              ? analytics.recentMetrics.daysSinceLastVideo === 0 
+                                ? 'Hoje' 
+                                : `${analytics.recentMetrics.daysSinceLastVideo} dias`
+                              : '-'}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Tips */}
+                    {analytics.tips.length > 0 && (
+                      <Card className="p-5">
+                        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                          <Lightbulb className="w-5 h-5 text-primary" />
+                          Dicas e Insights
+                        </h3>
+                        <div className="space-y-3">
+                          {analytics.tips.map((tip, index) => (
+                            <div 
+                              key={index}
+                              className={`p-4 rounded-lg border ${getTipBg(tip.type)}`}
+                            >
+                              <div className="flex items-start gap-3">
+                                {getTipIcon(tip.type)}
+                                <div>
+                                  <p className="font-medium text-foreground">{tip.title}</p>
+                                  <p className="text-sm text-muted-foreground mt-1">{tip.message}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </Card>
+                    )}
+
+                    {/* Top Videos */}
+                    {analytics.topVideos.length > 0 && (
+                      <Card className="p-5">
+                        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                          <Play className="w-5 h-5 text-primary" />
+                          Top Vídeos Recentes
+                        </h3>
+                        <div className="space-y-3">
+                          {analytics.topVideos.slice(0, 5).map((video, index) => (
+                            <a
+                              key={video.videoId}
+                              href={`https://youtube.com/watch?v=${video.videoId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-4 p-3 rounded-lg hover:bg-secondary/50 transition-colors"
+                            >
+                              <span className="text-lg font-bold text-muted-foreground w-6">
+                                #{index + 1}
+                              </span>
+                              {video.thumbnail && (
+                                <img 
+                                  src={video.thumbnail} 
+                                  alt={video.title}
+                                  className="w-24 h-14 object-cover rounded"
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-foreground truncate">
+                                  {video.title}
+                                </p>
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="w-3 h-3" />
+                                    {formatNumber(video.views)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <ThumbsUp className="w-3 h-3" />
+                                    {formatNumber(video.likes)}
+                                  </span>
+                                  <span>{video.engagementRate}% eng.</span>
+                                </div>
+                              </div>
+                              <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                            </a>
+                          ))}
+                        </div>
+                      </Card>
+                    )}
+                  </>
+                ) : null}
+
+                {/* Action Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card 
                     className="p-5 hover:border-primary/50 transition-colors cursor-pointer group"
@@ -444,10 +698,10 @@ const YouTubeIntegration = () => {
                       <BarChart3 className="w-5 h-5 text-primary" />
                     </div>
                     <h3 className="font-semibold text-foreground mb-1 flex items-center gap-2">
-                      Analytics
+                      YouTube Studio
                       <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </h3>
-                    <p className="text-sm text-muted-foreground">Abrir YouTube Studio</p>
+                    <p className="text-sm text-muted-foreground">Analytics detalhado</p>
                   </Card>
                   
                   <Card 
@@ -461,6 +715,25 @@ const YouTubeIntegration = () => {
                     <p className="text-sm text-muted-foreground">Gerencie a integração</p>
                   </Card>
                 </div>
+
+                {/* Refresh Analytics */}
+                {analytics && (
+                  <div className="flex justify-center">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={fetchAnalytics}
+                      disabled={loadingAnalytics}
+                    >
+                      {loadingAnalytics ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                      )}
+                      Atualizar Analytics
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
