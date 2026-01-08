@@ -416,25 +416,23 @@ const Landing = () => {
 
       </section>
 
-      {/* Marquee Strip 1 */}
+      {/* Scroll indicator - mouse style */}
+      <ScrollIndicator variant="mouse" />
+
+      {/* Marquee Strip - "A revolução chegou" with shimmer effect */}
       <div className="relative overflow-hidden py-3 md:py-4 bg-gradient-to-r from-primary via-amber-500 to-primary">
+        {/* Shimmer overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
         <div className="flex animate-marquee whitespace-nowrap relative z-10">
           {[...Array(10)].map((_, i) => (
             <span key={i} className="mx-8 md:mx-16 text-sm md:text-lg font-bold uppercase tracking-widest text-primary-foreground flex items-center gap-3 md:gap-4 drop-shadow-lg">
-              <Rocket className="w-4 h-4 md:w-5 md:h-5" />
+              <Diamond className="w-4 h-4 md:w-5 md:h-5" />
               A REVOLUÇÃO CHEGOU
               <span className="text-primary-foreground/80">•</span>
               NÃO HÁ ESPAÇO PARA AMADORES
             </span>
           ))}
         </div>
-      </div>
-
-      {/* Seamless Section Divider with ScrollIndicator */}
-      <div className="relative h-24 md:h-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/5 to-background" />
-        <ScrollIndicator variant="mouse" />
       </div>
 
 
@@ -588,26 +586,8 @@ const Landing = () => {
         </AnimatedSection>
       </section>
 
-      {/* Marquee Strip 2 - Reverse */}
-      <div className="relative overflow-hidden py-3 md:py-4 bg-gradient-to-r from-amber-600 via-primary to-amber-600">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-        <div className="flex animate-marquee-reverse whitespace-nowrap relative z-10">
-          {[...Array(10)].map((_, i) => (
-            <span key={i} className="mx-8 md:mx-16 text-sm md:text-lg font-bold uppercase tracking-widest text-primary-foreground flex items-center gap-3 md:gap-4 drop-shadow-lg">
-              <Crown className="w-4 h-4 md:w-5 md:h-5" />
-              AUTOMATIZE SUA OPERAÇÃO
-              <span className="text-primary-foreground/80">•</span>
-              ESCALE SEUS RESULTADOS
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Seamless Section Divider with ScrollIndicator */}
-      <div className="relative h-24 md:h-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-purple-500/3 to-background" />
-        <ScrollIndicator variant="arrow" />
-      </div>
+      {/* Scroll indicator - arrow style */}
+      <ScrollIndicator variant="arrow" />
 
       {/* Dreams Section - Glass Premium */}
       <section className="py-16 md:py-24 px-4 relative overflow-hidden">
@@ -681,11 +661,24 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Seamless Section Divider with ScrollIndicator */}
-      <div className="relative h-24 md:h-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-emerald-500/3 to-background" />
-        <ScrollIndicator variant="dots" />
+      {/* Middle Marquee Strip */}
+      <div className="relative overflow-hidden py-3 md:py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500">
+        {/* Shimmer overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+        <div className="flex animate-marquee-fast whitespace-nowrap relative z-10">
+          {[...Array(10)].map((_, i) => (
+            <span key={i} className="mx-8 md:mx-16 text-sm md:text-lg font-bold uppercase tracking-widest text-primary-foreground flex items-center gap-3 md:gap-4 drop-shadow-lg">
+              <Crown className="w-4 h-4 md:w-5 md:h-5" />
+              FERRAMENTAS PROFISSIONAIS
+              <span className="text-primary-foreground/80">•</span>
+              RESULTADOS REAIS
+            </span>
+          ))}
+        </div>
       </div>
+
+      {/* Scroll indicator - dots style */}
+      <ScrollIndicator variant="dots" />
 
       {/* Tools Section - Glass Premium */}
       <section id="funcionalidades" className="py-16 md:py-24 px-4 scroll-mt-20 relative overflow-hidden">
@@ -1161,11 +1154,8 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Seamless Section Divider with ScrollIndicator */}
-      <div className="relative h-24 md:h-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/3 to-background" />
-        <ScrollIndicator variant="line" />
-      </div>
+      {/* Scroll indicator - line style */}
+      <ScrollIndicator variant="line" />
 
       {/* How it Works - Zigzag Timeline - Glass Premium */}
       <section id="como-funciona" className="py-24 px-4 scroll-mt-20 relative overflow-hidden">
@@ -1241,11 +1231,8 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Seamless Section Divider with ScrollIndicator */}
-      <div className="relative h-24 md:h-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-purple-500/3 to-background" />
-        <ScrollIndicator variant="mouse" />
-      </div>
+      {/* Scroll indicator - mouse style */}
+      <ScrollIndicator variant="mouse" />
 
       {/* Results Section - Glass Premium */}
       <section className="py-24 px-4 relative overflow-hidden">
@@ -1338,11 +1325,8 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Seamless Section Divider with ScrollIndicator */}
-      <div className="relative h-24 md:h-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/3 to-background" />
-        <ScrollIndicator variant="arrow" />
-      </div>
+      {/* Scroll indicator - arrow style */}
+      <ScrollIndicator variant="arrow" />
 
       {/* Plans Section - Glass Premium */}
       <section id="planos" className="py-24 px-4 scroll-mt-20 relative overflow-hidden">
