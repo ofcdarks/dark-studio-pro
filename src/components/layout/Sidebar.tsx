@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { useStorage } from "@/hooks/useStorage";
 import { useCredits } from "@/hooks/useCredits";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useNavigate, useLocation, Link } from "react-router-dom";
@@ -14,12 +13,12 @@ const prefetchedRoutes = new Set<string>();
 const prefetchRoute = (href: string) => {
   if (prefetchedRoutes.has(href)) return;
   prefetchedRoutes.add(href);
-  // Warm the browser cache
   const link = document.createElement('link');
   link.rel = 'prefetch';
   link.href = href;
   document.head.appendChild(link);
 };
+
 import {
   Home,
   Video,
@@ -35,7 +34,6 @@ import {
   Youtube,
   FileText,
   Settings,
-  HardDrive,
   Crown,
   Shield,
   ChevronLeft,
@@ -47,7 +45,6 @@ import {
   Coins,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CreditHistoryModal } from "@/components/credits/CreditHistoryModal";
 
@@ -146,7 +143,6 @@ export function Sidebar() {
   
   const { signOut } = useAuth();
   const { role } = useProfile();
-  const { storageUsed, storageLimit, usagePercent } = useStorage();
   const { balance: creditsBalance, loading: creditsLoading } = useCredits();
   const { sidebarOrder, saveSidebarOrder, isLoading: prefsLoading } = useUserPreferences();
   
