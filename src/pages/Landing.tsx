@@ -28,7 +28,10 @@ import {
   Crown,
   ChevronDown,
   Flame,
-  Diamond
+  Diamond,
+  Eye,
+  Sparkles,
+  Shield
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AnimatedSection, AnimatedItem } from "@/components/landing/AnimatedSection";
@@ -664,6 +667,177 @@ const Landing = () => {
               </Card>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* AI Models Transparency Section */}
+      <section className="py-16 md:py-24 px-4 relative overflow-hidden bg-gradient-to-b from-background via-card/30 to-background">
+        <ParallaxLayer depth={0.2} className="absolute top-20 left-0 w-60 md:w-96 h-60 md:h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        <ParallaxLayer depth={0.4} className="absolute bottom-20 right-0 w-60 md:w-80 h-60 md:h-80 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="max-w-6xl mx-auto relative">
+          <AnimatedSection className="text-center space-y-4 md:space-y-6 mb-12 md:mb-16">
+            <div className="inline-flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 rounded-full bg-gradient-to-r from-primary/20 to-purple-500/20 border border-primary/30">
+              <Eye className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+              <span className="text-sm md:text-base font-medium text-primary">100% TRANSPARÊNCIA</span>
+              <Shield className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+            </div>
+            <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold">
+              Você escolhe a
+              <span className="block text-primary">Inteligência Artificial</span>
+            </h2>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
+              Nada de sistema travado ou oculto. Aqui você tem <span className="text-primary font-semibold">controle total</span> sobre 
+              qual modelo de IA usar em cada ferramenta. Transparência do início ao fim.
+            </p>
+          </AnimatedSection>
+
+          {/* AI Models Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
+            {/* GPT-4.1 */}
+            <AnimatedItem index={0} staggerDelay={100}>
+              <Card className="p-6 bg-card/80 border-border hover:border-green-500/50 transition-all duration-300 group relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-emerald-400 opacity-50 group-hover:opacity-100 transition-opacity" />
+                <div className="space-y-4">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Sparkles className="w-7 h-7 text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-foreground">GPT-4.1</h3>
+                    <p className="text-sm text-green-400 font-medium">OpenAI</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Modelo mais avançado da OpenAI. Excelente para roteiros criativos e análises complexas.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Roteiros</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Análises</span>
+                  </div>
+                </div>
+              </Card>
+            </AnimatedItem>
+
+            {/* Claude 4 Sonnet */}
+            <AnimatedItem index={1} staggerDelay={100}>
+              <Card className="p-6 bg-card/80 border-border hover:border-orange-500/50 transition-all duration-300 group relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-amber-400 opacity-50 group-hover:opacity-100 transition-opacity" />
+                <div className="space-y-4">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Sparkles className="w-7 h-7 text-orange-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-foreground">Claude 4 Sonnet</h3>
+                    <p className="text-sm text-orange-400 font-medium">Anthropic</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Raciocínio avançado e respostas equilibradas. Ideal para conteúdo de alta qualidade.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs px-2 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">Títulos</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">Criativo</span>
+                  </div>
+                </div>
+              </Card>
+            </AnimatedItem>
+
+            {/* Gemini 2.5 Pro */}
+            <AnimatedItem index={2} staggerDelay={100}>
+              <Card className="p-6 bg-card/80 border-border hover:border-blue-500/50 transition-all duration-300 group relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-400 opacity-50 group-hover:opacity-100 transition-opacity" />
+                <div className="space-y-4">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Sparkles className="w-7 h-7 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-foreground">Gemini 2.5 Pro</h3>
+                    <p className="text-sm text-blue-400 font-medium">Google</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Multimodal com contexto gigante. Perfeito para análises visuais e textuais.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Multimodal</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Contexto</span>
+                  </div>
+                </div>
+              </Card>
+            </AnimatedItem>
+
+            {/* Gemini 2.5 Flash */}
+            <AnimatedItem index={3} staggerDelay={100}>
+              <Card className="p-6 bg-card/80 border-border hover:border-purple-500/50 transition-all duration-300 group relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-violet-400 opacity-50 group-hover:opacity-100 transition-opacity" />
+                <div className="space-y-4">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-violet-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Zap className="w-7 h-7 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-foreground">Gemini 2.5 Flash</h3>
+                    <p className="text-sm text-purple-400 font-medium">Google</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Ultra-rápido e eficiente. Melhor custo-benefício para operações em escala.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">Rápido</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">Econômico</span>
+                  </div>
+                </div>
+              </Card>
+            </AnimatedItem>
+          </div>
+
+          {/* Transparency Features */}
+          <AnimatedSection className="mt-10">
+            <Card className="p-6 md:p-10 bg-gradient-to-br from-card/90 to-card/50 border-primary/20 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-purple-500 to-primary" />
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10">
+                <div className="text-center space-y-3">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                    <Eye className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-lg">Sem Caixa Preta</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Você vê exatamente qual modelo está gerando cada conteúdo. Zero segredos.
+                  </p>
+                </div>
+
+                <div className="text-center space-y-3">
+                  <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center mx-auto">
+                    <Key className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <h3 className="font-bold text-lg">Use Suas Próprias Keys</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Prefere usar suas próprias API keys? Sem problema, você tem essa opção.
+                  </p>
+                </div>
+
+                <div className="text-center space-y-3">
+                  <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
+                    <Shield className="w-8 h-8 text-green-400" />
+                  </div>
+                  <h3 className="font-bold text-lg">Controle Total</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Escolha o modelo ideal para cada tarefa. Você está sempre no comando.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-8 border-t border-border/50 text-center">
+                <p className="text-muted-foreground mb-4">
+                  <span className="text-primary font-semibold">Modo Multimodal:</span> Compare resultados de 4 IAs diferentes simultaneamente
+                </p>
+                <Link to="/auth">
+                  <Button size="lg" className="gradient-button text-primary-foreground font-semibold h-12 md:h-14 px-6 md:px-10">
+                    <Rocket className="w-5 h-5 mr-2" />
+                    Experimentar Agora
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          </AnimatedSection>
         </div>
       </section>
 
