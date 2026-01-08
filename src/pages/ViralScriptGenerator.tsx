@@ -1204,8 +1204,9 @@ ${channelContext}
     setRetentionTips([]);
 
     try {
-      const wordsPerPart = 2000;
-      const totalWords = duration * 150;
+      const wordsPerPart = 1500; // Reduced to prevent overshoot
+      const totalWords = duration * 150; // 150 WPM standard
+      const maxWords = Math.ceil(totalWords * 1.1); // Max 10% overshoot allowed (±3 min max)
       const partsNeeded = Math.ceil(totalWords / wordsPerPart);
       setTotalParts(partsNeeded);
 
@@ -1215,9 +1216,19 @@ ${channelContext}
         setCurrentPart(part);
         setProgress(((part - 1) / partsNeeded) * 100);
 
+        // Calculate words for this part
+        const currentWordCount = fullScript.split(/\s+/).filter(w => w.trim()).length;
+        const remainingWords = maxWords - currentWordCount;
+        const wordsForThisPart = part === partsNeeded 
+          ? Math.max(500, Math.min(remainingWords, wordsPerPart))
+          : Math.min(wordsPerPart, Math.ceil(remainingWords / (partsNeeded - part + 1)));
+
+        // Build strict word count instruction
+        const wordLimitInstruction = `\n\n⚠️ LIMITE RÍGIDO DE PALAVRAS: Escreva EXATAMENTE ${wordsForThisPart} palavras nesta parte. NÃO ULTRAPASSE este limite sob hipótese alguma. Conte as palavras. Meta total do roteiro: ${totalWords} palavras (${duration} minutos). Já escritas: ${currentWordCount} palavras.`;
+
         const partPrompt = partsNeeded > 1 
-          ? `${buildViralPrompt()}\n\n[PARTE ${part}/${partsNeeded}] ${part === 1 ? 'Comece do início do roteiro com hook explosivo.' : `Continue de onde parou. Texto anterior terminava em: "${fullScript.slice(-200)}"`} ${part === partsNeeded ? 'Finalize o roteiro com clímax e CTA épico.' : 'Pare em um ponto de tensão para continuar.'}`
-          : buildViralPrompt();
+          ? `${buildViralPrompt()}${wordLimitInstruction}\n\n[PARTE ${part}/${partsNeeded}] ${part === 1 ? 'Comece do início do roteiro com hook explosivo.' : `Continue de onde parou. Texto anterior terminava em: "${fullScript.slice(-200)}"`} ${part === partsNeeded ? 'Finalize o roteiro com clímax e CTA épico. ENCERRE O ROTEIRO AQUI.' : 'Pare em um ponto de tensão para continuar.'}`
+          : `${buildViralPrompt()}${wordLimitInstruction}`;
 
         const { data, error } = await supabase.functions.invoke('ai-assistant', {
           body: {
