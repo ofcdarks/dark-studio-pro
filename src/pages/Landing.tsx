@@ -943,6 +943,120 @@ const Landing = () => {
             </AnimatedItem>
           </div>
 
+          {/* High-Quality Image Generation Section */}
+          <AnimatedSection className="mb-16">
+            <Card className="relative overflow-hidden bg-gradient-to-br from-pink-500/10 via-card/40 to-rose-500/10 backdrop-blur-2xl border border-pink-500/20 shadow-2xl">
+              {/* Animated gradient background */}
+              <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-transparent to-rose-500/5 animate-pulse" />
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-pink-400/60 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rose-400/40 to-transparent" />
+              
+              {/* Floating orbs */}
+              <div className="absolute -top-20 -left-20 w-40 h-40 bg-pink-500/20 rounded-full blur-[60px]" />
+              <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-rose-500/20 rounded-full blur-[60px]" />
+              
+              <div className="relative p-8 md:p-12">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
+                  {/* Left Content */}
+                  <div className="space-y-6">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500/20 to-rose-500/20 border border-pink-500/30 backdrop-blur-xl">
+                      <Zap className="w-4 h-4 text-pink-400 animate-pulse" />
+                      <span className="text-xs font-bold tracking-wider text-pink-400 uppercase">Velocidade Absurda</span>
+                    </div>
+                    
+                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-black leading-tight">
+                      <span className="text-foreground">Gere até </span>
+                      <span className="bg-gradient-to-r from-pink-400 via-rose-400 to-pink-500 bg-clip-text text-transparent">100 Imagens</span>
+                      <span className="text-foreground"> por Minuto</span>
+                    </h3>
+                    
+                    <p className="text-lg text-muted-foreground/80 leading-relaxed">
+                      Nossa infraestrutura de ponta com <span className="text-pink-400 font-semibold">24 gerações paralelas</span> permite produzir 
+                      imagens cinematográficas em escala industrial. Enquanto outros sistemas fazem 1 imagem por vez, 
+                      nós entregamos <span className="text-pink-400 font-semibold">100+ imagens em 60 segundos</span>.
+                    </p>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                        <div className="text-3xl font-black text-pink-400">24x</div>
+                        <div className="text-sm text-muted-foreground">Paralelo</div>
+                      </div>
+                      <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                        <div className="text-3xl font-black text-rose-400">100+</div>
+                        <div className="text-sm text-muted-foreground">Imagens/min</div>
+                      </div>
+                      <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                        <div className="text-3xl font-black text-pink-400">16:9</div>
+                        <div className="text-sm text-muted-foreground">Resolução HD</div>
+                      </div>
+                      <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                        <div className="text-3xl font-black text-rose-400">∞</div>
+                        <div className="text-sm text-muted-foreground">Sem Limites</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Right Visual */}
+                  <div className="relative">
+                    <div className="grid grid-cols-3 gap-3">
+                      {[...Array(9)].map((_, i) => (
+                        <div 
+                          key={i}
+                          className="aspect-video rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/10 border border-pink-500/20 backdrop-blur-sm flex items-center justify-center overflow-hidden group hover:scale-105 transition-transform duration-300"
+                          style={{ animationDelay: `${i * 100}ms` }}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          <ImagePlus className="w-6 h-6 text-pink-400/60 group-hover:text-pink-400 group-hover:scale-110 transition-all duration-300" />
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Floating speed indicator */}
+                    <div className="absolute -top-4 -right-4 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 shadow-lg shadow-pink-500/40 animate-pulse">
+                      <span className="text-xs font-black text-white">TURBO MODE</span>
+                    </div>
+                    
+                    {/* Progress bar animation */}
+                    <div className="mt-6 space-y-2">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Gerando imagens...</span>
+                        <span className="text-pink-400 font-bold">100/min</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                        <div 
+                          className="h-full rounded-full bg-gradient-to-r from-pink-500 via-rose-400 to-pink-500 animate-pulse"
+                          style={{ width: '85%' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Bottom features */}
+                <div className="mt-10 pt-8 border-t border-white/10">
+                  <div className="flex flex-wrap justify-center gap-4 md:gap-8">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Check className="w-5 h-5 text-pink-400" />
+                      <span>Qualidade Cinematográfica</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Check className="w-5 h-5 text-pink-400" />
+                      <span>Ken Burns Automático</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Check className="w-5 h-5 text-pink-400" />
+                      <span>85+ Estilos Visuais</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Check className="w-5 h-5 text-pink-400" />
+                      <span>Exportação DaVinci XML</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </AnimatedSection>
+
           {/* Transparency Features - Glass Premium */}
           <AnimatedSection>
             <Card className="relative p-8 md:p-14 bg-card/30 backdrop-blur-2xl border border-white/10 overflow-hidden shadow-2xl">
