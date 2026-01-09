@@ -512,6 +512,22 @@ Reescreva o prompt de forma segura.`
     const workers = Array.from({ length: CONCURRENCY }, () => processNext());
     await Promise.all(workers);
 
+    // IMPORTANTE: Capturar startTime ANTES de resetar o estado
+    const capturedStartTime = Date.now() - (processed > 0 || failed > 0 ? 0 : 0);
+    const generationStartTime = state.startTime || Date.now();
+    
+    // Calcular tempo total gasto e média por minuto ANTES de resetar
+    const endTime = Date.now();
+    const totalTimeMs = endTime - generationStartTime;
+    const totalSeconds = Math.floor(totalTimeMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+    
+    // Calcular imagens por minuto
+    const totalMinutes = totalTimeMs / 60000;
+    const imagesPerMinute = totalMinutes > 0 ? (processed / totalMinutes).toFixed(1) : '0';
+
     setState(prev => ({
       ...prev,
       isGenerating: false,
@@ -522,18 +538,6 @@ Reescreva o prompt de forma segura.`
       rateLimitHit: rateLimitEncountered,
       rewriteProgress: initialRewriteProgress,
     }));
-
-    // Calcular tempo total gasto e média por minuto
-    const endTime = Date.now();
-    const totalTimeMs = endTime - (state.startTime || endTime);
-    const totalSeconds = Math.floor(totalTimeMs / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-    
-    // Calcular imagens por minuto
-    const totalMinutes = totalTimeMs / 60000;
-    const imagesPerMinute = totalMinutes > 0 ? (processed / totalMinutes).toFixed(1) : '0';
 
     if (cancelRef.current) {
       toast({

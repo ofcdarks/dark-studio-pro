@@ -33,7 +33,7 @@ const AspectRatio = {
   THUMBNAIL: "IMAGE_ASPECT_RATIO_LANDSCAPE" // 16:9 for thumbnails
 } as const;
 
-// Rewrite prompt using AI to make it safe - mais agressivo e eficaz
+// Rewrite prompt using AI to make it safe - rápido e contextual
 async function rewritePromptForSafety(originalPrompt: string, attemptNumber: number = 1): Promise<string> {
   if (!LOVABLE_API_KEY) {
     console.log('[ImageFX] No Lovable API key, cannot rewrite prompt');
@@ -42,39 +42,34 @@ async function rewritePromptForSafety(originalPrompt: string, attemptNumber: num
 
   console.log(`[ImageFX] Rewriting blocked prompt (attempt ${attemptNumber})...`);
 
-  // Estratégias mais agressivas baseadas na tentativa
-  const strategies = [
-    // Tentativa 1: Reescrita suave
-    `You are an expert at rewriting image prompts to pass AI safety filters.
+  // Estratégia única e eficaz que mantém o contexto do roteiro
+  const systemPrompt = attemptNumber === 1 
+    ? `You are an expert at rewriting image prompts to pass AI safety filters while keeping the EXACT same visual context.
 
 CRITICAL RULES:
-1. Keep the same visual scene but make it completely safe
-2. Remove ANY potentially sensitive content:
-   - Violence, weapons, blood → peaceful alternatives
-   - Political/religious symbols → neutral alternatives  
-   - Real people/celebrities → generic characters
-   - Mature themes → family-friendly alternatives
-3. Add professional photography terms: "cinematic lighting", "professional photo", "8K quality"
-4. Keep the 1280x720, 16:9 aspect ratio requirements
-5. Output ONLY the rewritten prompt, nothing else`,
+1. Keep the SAME scene, setting, and visual composition
+2. Replace sensitive elements with safe alternatives:
+   - Violence/weapons → peaceful objects or symbolic representations
+   - Blood → red fabric, flowers, or sunset lighting
+   - People in danger → people in neutral poses
+   - Scary content → mysterious atmospheric scenes
+3. Keep all visual descriptions: lighting, colors, camera angles, style
+4. Add: "professional cinematography, cinematic lighting, 8K quality"
+5. Keep: "1280x720, 16:9 aspect ratio, full frame"
+6. Output ONLY the rewritten prompt, nothing else
 
-    // Tentativa 2: Reescrita agressiva - abstrair completamente
-    `You are an expert at creating SAFE image prompts that will NEVER be blocked.
+The goal is to create the SAME visual scene but described in a safe way.`
+    : `You are creating an ABSTRACT representation of a visual concept that will NEVER be blocked.
 
-YOUR TASK: Completely transform this prompt into something abstract but visually similar.
+MANDATORY RULES:
+1. Transform the scene into pure visual elements: colors, textures, light, atmosphere
+2. NO people, NO actions, NO specific objects that could be flagged
+3. Focus on: moods, color palettes, lighting effects, abstract compositions
+4. Use terms like: "ethereal", "atmospheric", "cinematic mood", "artistic composition"
+5. Add: "abstract digital art, 1280x720, 16:9, full frame, professional photography"
+6. Output ONLY the abstract visual prompt
 
-MANDATORY TRANSFORMATIONS:
-1. Replace ALL people with: landscapes, objects, abstract shapes, or symbolic imagery
-2. Replace actions with: still life compositions or atmospheric scenes
-3. Replace specific locations with: generic beautiful environments
-4. Focus on: colors, lighting, mood, textures - NOT characters or actions
-5. Add: "digital art, professional photography, artistic composition, 1280x720, 16:9"
-6. Make it IMPOSSIBLE to be flagged by ANY safety filter
-
-Output ONLY the completely transformed safe prompt.`
-  ];
-
-  const systemPrompt = strategies[Math.min(attemptNumber - 1, strategies.length - 1)];
+Create a beautiful, safe image that captures the ESSENCE of the original scene.`;
 
   try {
     const response = await fetch(LOVABLE_AI_GATEWAY, {
