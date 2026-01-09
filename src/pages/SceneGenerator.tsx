@@ -229,6 +229,7 @@ const SceneGenerator = () => {
       const decoder = new TextDecoder();
       let buffer = "";
       const collectedScenes: ScenePrompt[] = [];
+      let maxTotal = estimatedScenes; // Usar estimatedScenes como referência inicial
 
       while (true) {
         const { done, value } = await reader.read();
@@ -245,16 +246,25 @@ const SceneGenerator = () => {
             const data = JSON.parse(line.slice(6));
             
             if (data.type === 'init') {
-              setTotalExpectedScenes(data.estimatedScenes);
+              // Atualizar total esperado com o valor real
+              maxTotal = data.estimatedScenes || estimatedScenes;
+              setTotalExpectedScenes(maxTotal);
             } else if (data.type === 'scene') {
               collectedScenes.push(data.scene);
               setScenes([...collectedScenes]);
-              setCurrentSceneCount(data.current);
-              setTotalExpectedScenes(data.total);
+              
+              // Usar o maior entre o total informado e as cenas já geradas
+              const actualTotal = Math.max(data.total || maxTotal, collectedScenes.length);
+              setCurrentSceneCount(collectedScenes.length);
+              setTotalExpectedScenes(actualTotal);
+              
               // Calcular progresso baseado nas cenas geradas
-              const progress = Math.min(95, (data.current / data.total) * 100);
+              const progress = Math.min(95, (collectedScenes.length / actualTotal) * 100);
               setGenerationProgress(progress);
             } else if (data.type === 'complete') {
+              // Atualizar total final com o número real de cenas
+              setCurrentSceneCount(collectedScenes.length);
+              setTotalExpectedScenes(collectedScenes.length);
               setGenerationProgress(100);
               setGenerationStatus("complete");
             } else if (data.type === 'error') {
@@ -268,7 +278,9 @@ const SceneGenerator = () => {
       }
 
       // Garantir que o estado final está correto
-      if (collectedScenes.length > 0 && generationStatus !== "complete") {
+      if (collectedScenes.length > 0) {
+        setCurrentSceneCount(collectedScenes.length);
+        setTotalExpectedScenes(collectedScenes.length);
         setGenerationProgress(100);
         setGenerationStatus("complete");
       }
@@ -291,10 +303,17 @@ const SceneGenerator = () => {
 
   const handleGoToBatch = () => {
     const prompts = scenes.map(s => s.imagePrompt).join("\n\n");
+    console.log("[SceneGenerator] Going to batch with prompts:", prompts.substring(0, 200));
+    
+    // Primeiro atualizar prompts e fechar modal
     setBatchPrompts(prompts);
     setProgressModalOpen(false);
-    setShouldAutoStartBatch(true);
-    setActiveTab("batch");
+    
+    // Depois ativar auto-start e mudar aba (com pequeno delay para garantir estado atualizado)
+    setTimeout(() => {
+      setShouldAutoStartBatch(true);
+      setActiveTab("batch");
+    }, 100);
   };
 
   const copyPrompt = (prompt: string, index: number) => {
