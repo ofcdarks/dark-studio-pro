@@ -54,7 +54,7 @@ export const GenerateScriptModal = ({
 }: GenerateScriptModalProps) => {
   const { user } = useAuth();
   const { logActivity } = useActivityLog();
-  const { deduct, checkBalance, getEstimatedCost } = useCreditDeduction();
+  const { deduct, checkBalance, getEstimatedCost, usePlatformCredits } = useCreditDeduction();
   const navigate = useNavigate();
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -107,17 +107,23 @@ export const GenerateScriptModal = ({
   // Result state
   const [generatedScript, setGeneratedScript] = useState<string | null>(null);
 
-  // Check balance on open
+  // Check balance on open - skip if using own API
   useEffect(() => {
     const checkCredits = async () => {
       if (open && user) {
+        // Se usa API própria, nunca mostra créditos insuficientes
+        if (usePlatformCredits === false) {
+          setInsufficientCredits(false);
+          setCurrentBalance(0);
+          return;
+        }
         const { hasBalance, currentBalance: balance } = await checkBalance(estimatedCredits);
         setCurrentBalance(balance);
         setInsufficientCredits(!hasBalance);
       }
     };
     checkCredits();
-  }, [open, user, estimatedCredits, checkBalance]);
+  }, [open, user, estimatedCredits, checkBalance, usePlatformCredits]);
 
   const handleGenerateScript = async () => {
     if (!videoTitle.trim()) {
@@ -634,8 +640,8 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
               </div>
             </div>
 
-            {/* Alerta de créditos insuficientes */}
-            {insufficientCredits && (
+            {/* Alerta de créditos insuficientes - só mostra se usa créditos da plataforma */}
+            {insufficientCredits && usePlatformCredits !== false && (
               <div className="flex items-center gap-3 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
                 <div className="flex-1">
@@ -654,6 +660,19 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
                 </Button>
               </div>
             )}
+            
+            {/* Indicador de API própria */}
+            {usePlatformCredits === false && (
+              <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/30 rounded-lg">
+                <Zap className="w-5 h-5 text-primary shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-primary">Usando sua API</p>
+                  <p className="text-xs text-muted-foreground">
+                    Sem consumo de créditos da plataforma
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Footer Buttons */}
             <div className="flex gap-3 pt-4 border-t border-border">
@@ -666,7 +685,7 @@ Gere o roteiro seguindo a estrutura e fórmula do agente, otimizado para engajam
               </Button>
               <Button
                 onClick={handleGenerateScript}
-                disabled={generating || !videoTitle.trim() || insufficientCredits}
+                disabled={generating || !videoTitle.trim() || (insufficientCredits && usePlatformCredits !== false)}
                 className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 h-11 text-sm font-semibold"
               >
                 {generating ? (
