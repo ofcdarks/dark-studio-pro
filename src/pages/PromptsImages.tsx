@@ -87,6 +87,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { useBackgroundImageGeneration } from "@/hooks/useBackgroundImageGeneration";
+import { useApiSettings } from "@/hooks/useApiSettings";
 import { useFFmpegVideoGenerator } from "@/hooks/useFFmpegVideoGenerator";
 import { useUserCinematicPresets } from "@/hooks/useUserCinematicPresets";
 import { useTutorial } from "@/hooks/useTutorial";
@@ -217,6 +218,9 @@ const PromptsImages = () => {
     syncScenes,
     setCharacters: setBgCharacters
   } = useBackgroundImageGeneration();
+
+  // API settings for cookie count
+  const { getImageFXCookieCount } = useApiSettings();
 
   // Estado para personagens detectados
   const [detectedCharacters, setDetectedCharacters] = usePersistedState<CharacterDescription[]>("prompts_characters", []);
@@ -775,8 +779,9 @@ const PromptsImages = () => {
     }
 
     // Usar o sistema de background para geração
-    // Usar o sistema de background para geração com personagens
-    startBgGeneration(generatedScenes, style, pendingIndexes, detectedCharacters);
+    // Usar o sistema de background para geração com personagens e múltiplos cookies
+    const cookieCount = getImageFXCookieCount() || 1;
+    startBgGeneration(generatedScenes, style, pendingIndexes, detectedCharacters, cookieCount);
   };
 
   // Cancelar geração
@@ -2110,7 +2115,8 @@ ${cinematicSettings.colorGrading !== 'neutral' ? `
     
     // Sincronizar e iniciar geração em background
     syncScenes(updatedScenes);
-    startBgGeneration(updatedScenes, style, pendingIndexes, detectedCharacters);
+    const cookieCount = getImageFXCookieCount() || 1;
+    startBgGeneration(updatedScenes, style, pendingIndexes, detectedCharacters, cookieCount);
     
     logActivity({ action: 'image_generated', description: `Gerando ${edlValidationData.missingScenes.length} imagens faltantes do modal EDL` });
     
@@ -3132,7 +3138,8 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
         
         // Pequeno delay para garantir sincronização
         setTimeout(() => {
-          startBgGeneration(updatedScenes, style, improvedIndexes, detectedCharacters);
+          const cookieCount = getImageFXCookieCount() || 1;
+          startBgGeneration(updatedScenes, style, improvedIndexes, detectedCharacters, cookieCount);
         }, 100);
         
       } else {
@@ -3360,7 +3367,8 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                         
                         // Sincronizar e iniciar geração em background
                         syncScenes(updatedScenes);
-                        startBgGeneration(updatedScenes, style, pendingIndexes, detectedCharacters);
+                        const cookieCount = getImageFXCookieCount() || 1;
+                        startBgGeneration(updatedScenes, style, pendingIndexes, detectedCharacters, cookieCount);
                         
                         logActivity({ action: 'image_generated', description: `Gerando ${sceneNumbers.length} imagens faltantes (100%)` });
                       }}

@@ -51,7 +51,7 @@ interface BackgroundGenerationState {
 
 interface BackgroundImageGenerationContextType {
   state: BackgroundGenerationState;
-  startGeneration: (scenes: ScenePrompt[], style: string, pendingIndexes: number[], characters?: CharacterDescription[]) => void;
+  startGeneration: (scenes: ScenePrompt[], style: string, pendingIndexes: number[], characters?: CharacterDescription[], cookieCount?: number) => void;
   cancelGeneration: () => void;
   getUpdatedScenes: () => ScenePrompt[];
   clearState: () => void;
@@ -379,7 +379,8 @@ Reescreva o prompt de forma segura.`
     scenes: ScenePrompt[], 
     style: string, 
     pendingIndexes: number[],
-    characters: CharacterDescription[] = []
+    characters: CharacterDescription[] = [],
+    cookieCount: number = 1 // Number of ImageFX cookies configured
   ) => {
     if (state.isGenerating) {
       toast({ 
@@ -408,7 +409,10 @@ Reescreva o prompt de forma segura.`
       rewriteProgress: initialRewriteProgress,
     });
 
-    const BATCH_SIZE = 5;
+    // Dynamic batch size based on number of cookies (5 per cookie, max 15)
+    const BATCH_SIZE = Math.min(cookieCount * 5, 15);
+    console.log(`[Background] Using batch size ${BATCH_SIZE} (${cookieCount} cookie(s))`);
+    
     let processed = 0;
     let failed = 0;
     let rateLimitEncountered = false;
