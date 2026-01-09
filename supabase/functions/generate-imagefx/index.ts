@@ -417,14 +417,10 @@ async function getUserImageFXCookies(userId: string): Promise<string[] | null> {
   }
 }
 
-// Round-robin cookie selector with per-user state
-const cookieIndexMap = new Map<string, number>();
-
-function getNextCookie(userId: string, cookies: string[]): { cookie: string; index: number } {
-  const currentIndex = cookieIndexMap.get(userId) || 0;
-  const cookie = cookies[currentIndex % cookies.length];
-  cookieIndexMap.set(userId, (currentIndex + 1) % cookies.length);
-  return { cookie, index: currentIndex % cookies.length };
+// Deterministic cookie selector based on scene index for ordered distribution
+function getCookieForScene(sceneIndex: number, cookies: string[]): { cookie: string; cookieIndex: number } {
+  const cookieIndex = sceneIndex % cookies.length;
+  return { cookie: cookies[cookieIndex], cookieIndex };
 }
 
 serve(async (req) => {
@@ -440,7 +436,8 @@ serve(async (req) => {
       aspectRatio = "LANDSCAPE",
       seed,
       model = "IMAGEN_3_5",
-      userId: bodyUserId 
+      userId: bodyUserId,
+      sceneIndex = 0 // Index for deterministic cookie distribution
     } = await req.json();
 
     if (!prompt?.trim()) {
@@ -484,9 +481,9 @@ serve(async (req) => {
       );
     }
 
-    // Select cookie using round-robin for load distribution
-    const { cookie: selectedCookie, index: cookieIndex } = getNextCookie(userId, cookieList);
-    console.log(`[ImageFX] Using cookie ${cookieIndex + 1}/${cookieList.length}`);
+    // Select cookie based on scene index for ordered distribution
+    const { cookie: selectedCookie, cookieIndex } = getCookieForScene(sceneIndex, cookieList);
+    console.log(`[ImageFX] Scene ${sceneIndex} -> Cookie ${cookieIndex + 1}/${cookieList.length}`);
 
     // Map aspect ratio
     let aspectRatioValue: string = AspectRatio.LANDSCAPE;
