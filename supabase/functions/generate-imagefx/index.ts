@@ -207,18 +207,14 @@ function buildPromptPayload(options: {
   
   // CRÍTICO: Instruções rigorosas para resolução 1280x720 e preenchimento total do quadro
   const enhancedPrompt = `${options.prompt}. MANDATORY TECHNICAL REQUIREMENTS: Exact 1280x720 pixel resolution, 16:9 widescreen aspect ratio, the entire image canvas must be filled edge-to-edge with visual content, ABSOLUTELY NO black bars on any side, NO letterbox, NO pillarbox, NO borders, NO empty margins, the subject and background MUST extend to fill 100% of the frame horizontally and vertically, ultra-wide angle composition that fills the complete canvas with no gaps`;
-  
-  // Negative prompt OBRIGATÓRIO para eliminar bordas pretas
-  const mandatoryNegativePrompt = "black bars, letterbox, pillarbox, borders, margins, empty space at edges, cinematic bars, film grain borders, vignette borders, any black edges, top and bottom black bars, side black bars";
-  const finalNegativePrompt = options.negativePrompt?.trim() 
-    ? `${mandatoryNegativePrompt}, ${options.negativePrompt.trim()}`
-    : mandatoryNegativePrompt;
-  
+
+  // IMPORTANTE: a API do ImageFX pode rejeitar campos de "negative prompt".
+  // Para manter compatibilidade, aplicamos as restrições (sem bordas/faixas) diretamente no prompt acima.
+
   const payload: any = {
     userInput: {
       candidatesCount: options.numberOfImages || 1,
       prompts: [enhancedPrompt],
-      negativePrompts: [finalNegativePrompt],
       seed: seed
     },
     clientContext: {
