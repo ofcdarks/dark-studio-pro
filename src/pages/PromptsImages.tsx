@@ -793,9 +793,9 @@ const PromptsImages = () => {
       return;
     }
 
-    // Usar o sistema de background para geração
     // Usar o sistema de background para geração com personagens e múltiplos cookies
-    const cookieCount = getImageFXCookieCount() || 1;
+    // Garantir mínimo de 1 cookie para evitar CONCURRENCY = 0
+    const cookieCount = Math.max(1, getImageFXCookieCount() || 1);
     startBgGeneration(generatedScenes, style, pendingIndexes, detectedCharacters, cookieCount);
   };
 
