@@ -362,8 +362,20 @@ serve(async (req) => {
       );
     }
 
-    // Verificar e debitar créditos
+    // Verificar configuração de uso de créditos da plataforma
+    let usePlatformCredits = true;
     if (userId) {
+      const { data: userApiSettings } = await supabaseAdmin
+        .from("user_api_settings")
+        .select("use_platform_credits")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      usePlatformCredits = userApiSettings?.use_platform_credits ?? true;
+    }
+
+    // Verificar e debitar créditos - apenas se usa créditos da plataforma
+    if (userId && usePlatformCredits) {
       const { data: creditData } = await supabaseAdmin
         .from("user_credits")
         .select("balance")
@@ -398,6 +410,8 @@ serve(async (req) => {
         transaction_type: "debit",
         description: `Geração de ${estimatedScenes} prompts de cenas`
       });
+    } else if (userId && !usePlatformCredits) {
+      console.log(`[Generate Scenes] User ${userId} using own API, skipping credit deduction`);
     }
 
     // Detectar personagens no roteiro primeiro

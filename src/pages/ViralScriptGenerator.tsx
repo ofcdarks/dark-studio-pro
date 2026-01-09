@@ -560,7 +560,7 @@ const detectTargetAudience = (titleText: string, nicheText: string): string => {
 export default function ViralScriptGenerator() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { deduct, checkBalance } = useCreditDeduction();
+  const { deduct, checkBalance, usePlatformCredits } = useCreditDeduction();
   const { logActivity } = useActivityLog();
 
   // Form state - Persisted
@@ -640,16 +640,21 @@ export default function ViralScriptGenerator() {
     setEstimatedCredits(estimated);
   }, [duration]);
 
-  // Check credits on mount
+  // Check credits on mount - skip if using own API
   useEffect(() => {
     const checkCredits = async () => {
       if (user) {
+        // Se usa API própria, sempre tem créditos suficientes
+        if (usePlatformCredits === false) {
+          setHasEnoughCredits(true);
+          return;
+        }
         const result = await checkBalance(estimatedCredits);
         setHasEnoughCredits(result.hasBalance);
       }
     };
     checkCredits();
-  }, [user, estimatedCredits]);
+  }, [user, estimatedCredits, usePlatformCredits]);
 
   // Fetch user's channels on mount
   useEffect(() => {
@@ -1308,7 +1313,8 @@ Os astecas eram..."
       return;
     }
 
-    if (!hasEnoughCredits) {
+    // Só verifica créditos se usa créditos da plataforma
+    if (!hasEnoughCredits && usePlatformCredits !== false) {
       toast.error("Créditos insuficientes");
       return;
     }
@@ -2186,9 +2192,16 @@ Reescreva o roteiro COMPLETO corrigindo os problemas, mantendo toda a narrativa 
                   )}
                 </Button>
 
-                {!hasEnoughCredits && (
+                {!hasEnoughCredits && usePlatformCredits !== false && (
                   <p className="text-xs text-destructive text-center mt-3">
                     Créditos insuficientes. Recarregue para continuar.
+                  </p>
+                )}
+                
+                {usePlatformCredits === false && (
+                  <p className="text-xs text-primary text-center mt-3 flex items-center justify-center gap-1">
+                    <Zap className="h-3 w-3" />
+                    Usando sua API - Sem consumo de créditos
                   </p>
                 )}
               </CardContent>
