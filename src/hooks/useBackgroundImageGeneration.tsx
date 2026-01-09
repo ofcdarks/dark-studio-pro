@@ -410,113 +410,106 @@ Reescreva o prompt de forma segura.`
       rewriteProgress: initialRewriteProgress,
     });
 
-    // Dynamic batch size based on number of cookies (5 per cookie, max 15)
-    const BATCH_SIZE = Math.min(cookieCount * 5, 15);
-    console.log(`[Background] Using batch size ${BATCH_SIZE} (${cookieCount} cookie(s))`);
+    // Pipeline contínuo: mantém N requisições ativas (1 por cookie)
+    // Assim que uma termina, a próxima da fila começa imediatamente
+    const CONCURRENCY = cookieCount; // 1 requisição por cookie ativa simultaneamente
+    console.log(`[Background] Pipeline contínuo com ${CONCURRENCY} requisições simultâneas (${cookieCount} cookie(s))`);
     
     let processed = 0;
     let failed = 0;
     let rateLimitEncountered = false;
     const failedIdxs: number[] = [];
     let errorOccurred = false;
+    
+    // Fila de índices pendentes
+    const queue = [...pendingIndexes];
+    let nextQueueIndex = 0;
+    
+    // Função para processar o próximo item da fila
+    const processNext = async (): Promise<void> => {
+      while (nextQueueIndex < queue.length && !cancelRef.current && !errorOccurred) {
+        const currentIdx = nextQueueIndex;
+        nextQueueIndex++;
+        const sceneIdx = queue[currentIdx];
+        
+        try {
+          // Função para atualizar estado de reescrita
+          const updateRewriteProgress = (progress: Partial<RewriteProgress>) => {
+            setState(prev => ({
+              ...prev,
+              rewriteProgress: { ...prev.rewriteProgress, ...progress }
+            }));
+          };
 
-    for (let batchStart = 0; batchStart < pendingIndexes.length && !errorOccurred && !cancelRef.current; batchStart += BATCH_SIZE) {
-      const batchIndexes = pendingIndexes.slice(batchStart, batchStart + BATCH_SIZE);
+          const result = await generateSingleImage(sceneIdx, scenesRef.current, style, characters, updateRewriteProgress);
 
-      if (cancelRef.current) break;
-
-      try {
-        // Iniciar requisições em paralelo e atualizar conforme cada uma conclui
-        const tasks = batchIndexes.map(async (idx) => {
           if (cancelRef.current || errorOccurred) return;
 
-          try {
-            // Função para atualizar estado de reescrita
-            const updateRewriteProgress = (progress: Partial<RewriteProgress>) => {
-              setState(prev => ({
-                ...prev,
-                rewriteProgress: { ...prev.rewriteProgress, ...progress }
-              }));
-            };
+          if (result.success && result.imageUrl) {
+            const { index, imageUrl, newPrompt } = result;
+            processed++;
 
-            const result = await generateSingleImage(idx, scenesRef.current, style, characters, updateRewriteProgress);
-
-            if (cancelRef.current || errorOccurred) return;
-
-            if (result.success && result.imageUrl) {
-              const { index, imageUrl, newPrompt } = result;
-              processed++;
-
-              // Salvar no IndexedDB para persistência
-              const scene = scenesRef.current[index];
-              if (scene) {
-                saveImageToCache(scene.number, imageUrl, newPrompt || scene.imagePrompt || '').catch(err => {
-                  console.warn('Falha ao salvar imagem no cache:', err);
-                });
-              }
-
-              // Atualizar estado imediatamente quando cada imagem fica pronta
-              setState(prev => {
-                const updatedScenes = [...prev.scenes];
-                updatedScenes[index] = { 
-                  ...updatedScenes[index], 
-                  generatedImage: imageUrl,
-                  // Se o prompt foi reescrito, atualizar também
-                  ...(newPrompt ? { imagePrompt: newPrompt } : {})
-                };
-                scenesRef.current = updatedScenes;
-
-                return {
-                  ...prev,
-                  scenes: updatedScenes,
-                  completedImages: processed,
-                  currentSceneIndex: index,
-                  currentPrompt: updatedScenes[index]?.imagePrompt ?? null,
-                  rewriteProgress: initialRewriteProgress, // Limpar após sucesso
-                };
+            // Salvar no IndexedDB para persistência
+            const scene = scenesRef.current[index];
+            if (scene) {
+              saveImageToCache(scene.number, imageUrl, newPrompt || scene.imagePrompt || '').catch(err => {
+                console.warn('Falha ao salvar imagem no cache:', err);
               });
-            } else {
-              // Falha na geração
-              failed++;
-              failedIdxs.push(result.index);
-              if (result.rateLimited) {
-                rateLimitEncountered = true;
-              }
+            }
 
-              setState(prev => ({
+            // Atualizar estado imediatamente quando cada imagem fica pronta
+            setState(prev => {
+              const updatedScenes = [...prev.scenes];
+              updatedScenes[index] = { 
+                ...updatedScenes[index], 
+                generatedImage: imageUrl,
+                ...(newPrompt ? { imagePrompt: newPrompt } : {})
+              };
+              scenesRef.current = updatedScenes;
+
+              return {
                 ...prev,
-                failedImages: failed,
-                failedIndexes: [...failedIdxs],
-                rateLimitHit: rateLimitEncountered,
-                rewriteProgress: initialRewriteProgress, // Limpar após falha
-              }));
+                scenes: updatedScenes,
+                completedImages: processed,
+                currentSceneIndex: index,
+                currentPrompt: updatedScenes[index]?.imagePrompt ?? null,
+                rewriteProgress: initialRewriteProgress,
+              };
+            });
+          } else {
+            // Falha na geração
+            failed++;
+            failedIdxs.push(result.index);
+            if (result.rateLimited) {
+              rateLimitEncountered = true;
             }
-          } catch (error: any) {
-            if (error?.message === "AUTH_ERROR") {
-              toast({
-                title: "Erro de autenticação",
-                description: "Atualize os cookies do ImageFX nas configurações.",
-                variant: "destructive",
-              });
-              errorOccurred = true;
-              cancelRef.current = true;
-            }
+
+            setState(prev => ({
+              ...prev,
+              failedImages: failed,
+              failedIndexes: [...failedIdxs],
+              rateLimitHit: rateLimitEncountered,
+              rewriteProgress: initialRewriteProgress,
+            }));
           }
-        });
-
-        await Promise.allSettled(tasks);
-      } catch (error: any) {
-        if (error.message === "AUTH_ERROR") {
-          toast({
-            title: "Erro de autenticação",
-            description: "Atualize os cookies do ImageFX nas configurações.",
-            variant: "destructive",
-          });
-          errorOccurred = true;
-          cancelRef.current = true;
+        } catch (error: any) {
+          if (error?.message === "AUTH_ERROR") {
+            toast({
+              title: "Erro de autenticação",
+              description: "Atualize os cookies do ImageFX nas configurações.",
+              variant: "destructive",
+            });
+            errorOccurred = true;
+            cancelRef.current = true;
+            return;
+          }
         }
       }
-    }
+    };
+    
+    // Iniciar N workers em paralelo que processam a fila continuamente
+    const workers = Array.from({ length: CONCURRENCY }, () => processNext());
+    await Promise.all(workers);
 
     setState(prev => ({
       ...prev,
