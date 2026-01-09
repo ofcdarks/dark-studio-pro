@@ -129,8 +129,8 @@ export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
   }, []);
 
   useEffect(() => {
-    // Skip if still loading or no user
-    if (isLoading || !user) return;
+    // Skip if still loading maintenance data
+    if (isLoading) return;
 
     const currentPath = location.pathname;
     
@@ -143,12 +143,15 @@ export const MaintenanceGuard = ({ children }: MaintenanceGuardProps) => {
       setMaintenanceMessage(info?.message);
       setEstimatedEndTime(info?.estimatedEndTime);
       
-      if (isAdmin && !isSimulatingUser) {
-        // Show banner for admins instead of blocking modal (unless simulating)
+      // For logged in admins (not simulating), show banner
+      if (user && isAdmin && !isSimulatingUser) {
         setShowAdminBanner(true);
         setShowModal(false);
       } else {
-        // Show blocking modal for regular users or admins simulating
+        // Show blocking modal for:
+        // - Regular logged-in users
+        // - Admins simulating user view
+        // - Non-logged-in users (tool is protected anyway)
         setShowModal(true);
         setShowAdminBanner(false);
       }
