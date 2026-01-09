@@ -1734,7 +1734,7 @@ echo "Agora importe o video no CapCut!"
     
     console.log(`[XML Export] lockedDuration: ${lockedDurationSeconds}s, totalBaseWithImages: ${totalBaseWithImages.toFixed(2)}s, effectiveScaleFactor: ${effectiveScaleFactor.toFixed(4)}, fps: ${cinematicSettings.fps}, scenesWithImages: ${scenesWithImages.length}/${generatedScenes.length}`);
     
-    return scenesWithImages.map(scene => {
+    const exportedScenes = scenesWithImages.map(scene => {
       // Usar scaleFactor calculado especificamente para cenas com imagem
       const baseDuration = Math.max(0.5, wordCountToSeconds(scene.wordCount));
       const durationSeconds = Math.max(0.5, baseDuration * effectiveScaleFactor);
@@ -1753,6 +1753,12 @@ echo "Agora importe o video no CapCut!"
         } : undefined
       };
     });
+    
+    // Log da duração total calculada para diagnóstico
+    const totalExportedDuration = exportedScenes.reduce((acc, s) => acc + s.durationSeconds, 0);
+    console.log(`[XML Export] Duração total das cenas exportadas: ${totalExportedDuration.toFixed(2)}s (alvo: ${lockedDurationSeconds || 'N/A'}s)`);
+    
+    return exportedScenes;
   };
 
   // Validar cenas antes de exportar EDL - retorna também lista de cenas faltantes
@@ -1831,7 +1837,7 @@ echo "Agora importe o video no CapCut!"
     const transitionFrames = Math.round(cinematicSettings.fps * cinematicSettings.transitionDuration);
     const safeFileName = (projectName.trim() || "projeto").replace(/[^a-zA-Z0-9_-]/g, "_");
     
-    // 1. Exportar XML
+    // 1. Exportar XML - com duração alvo para sincronia exata
     const xmlContent = generateFcp7XmlWithTransitions(scenesForXml, {
       title: projectName || "Projeto_Video",
       fps: cinematicSettings.fps,
@@ -1839,7 +1845,8 @@ echo "Agora importe o video no CapCut!"
       height: aspectRatioConfig.height,
       transitionFrames,
       transitionType: cinematicSettings.transitionType,
-      enableKenBurns: cinematicSettings.kenBurnsEffect
+      enableKenBurns: cinematicSettings.kenBurnsEffect,
+      targetTotalSeconds: lockedDurationSeconds || undefined
     });
 
     const xmlBlob = new Blob([xmlContent], { type: "application/xml" });
@@ -1915,7 +1922,7 @@ echo "Agora importe o video no CapCut!"
       description: `Processando ${scenesWithImages.length} imagens e arquivos de projeto` 
     });
     
-    // 1. XML do projeto
+    // 1. XML do projeto - com duração alvo para sincronia exata
     const xmlContent = generateFcp7XmlWithTransitions(scenesForXml, {
       title: projectName || "Projeto_Video",
       fps: cinematicSettings.fps,
@@ -1923,7 +1930,8 @@ echo "Agora importe o video no CapCut!"
       height: aspectRatioConfig.height,
       transitionFrames,
       transitionType: cinematicSettings.transitionType,
-      enableKenBurns: cinematicSettings.kenBurnsEffect
+      enableKenBurns: cinematicSettings.kenBurnsEffect,
+      targetTotalSeconds: lockedDurationSeconds || undefined
     });
     zip.file(`${safeFileName}_davinci.xml`, xmlContent);
     
