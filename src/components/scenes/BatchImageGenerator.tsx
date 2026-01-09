@@ -331,6 +331,15 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
             }
             lastError = errMsg;
             
+            // Network level failures - retry with backoff
+            if (errMsg.includes("Failed to fetch") || errMsg.includes("Failed to send") || errMsg.includes("NetworkError") || errMsg.includes("fetch")) {
+              const waitTime = 3000 + retries * 2000; // 3s, 5s, 7s, 9s
+              console.log(`[Batch] Network error on image ${index + 1}, retrying in ${waitTime}ms...`, errMsg);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              retries++;
+              continue;
+            }
+            
             // Check for rate limit - wait longer
             if (errMsg.includes("Limite de requisições") || errMsg.includes("429")) {
               const waitTime = 6000 + retries * 4000; // 6s, 10s, 14s, 18s
