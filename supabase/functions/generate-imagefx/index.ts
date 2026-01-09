@@ -33,14 +33,48 @@ const AspectRatio = {
   THUMBNAIL: "IMAGE_ASPECT_RATIO_LANDSCAPE" // 16:9 for thumbnails
 } as const;
 
-// Rewrite prompt using AI to make it safe
-async function rewritePromptForSafety(originalPrompt: string): Promise<string> {
+// Rewrite prompt using AI to make it safe - mais agressivo e eficaz
+async function rewritePromptForSafety(originalPrompt: string, attemptNumber: number = 1): Promise<string> {
   if (!LOVABLE_API_KEY) {
     console.log('[ImageFX] No Lovable API key, cannot rewrite prompt');
     throw new Error("Não foi possível reescrever o prompt bloqueado.");
   }
 
-  console.log('[ImageFX] Rewriting blocked prompt...');
+  console.log(`[ImageFX] Rewriting blocked prompt (attempt ${attemptNumber})...`);
+
+  // Estratégias mais agressivas baseadas na tentativa
+  const strategies = [
+    // Tentativa 1: Reescrita suave
+    `You are an expert at rewriting image prompts to pass AI safety filters.
+
+CRITICAL RULES:
+1. Keep the same visual scene but make it completely safe
+2. Remove ANY potentially sensitive content:
+   - Violence, weapons, blood → peaceful alternatives
+   - Political/religious symbols → neutral alternatives  
+   - Real people/celebrities → generic characters
+   - Mature themes → family-friendly alternatives
+3. Add professional photography terms: "cinematic lighting", "professional photo", "8K quality"
+4. Keep the 1280x720, 16:9 aspect ratio requirements
+5. Output ONLY the rewritten prompt, nothing else`,
+
+    // Tentativa 2: Reescrita agressiva - abstrair completamente
+    `You are an expert at creating SAFE image prompts that will NEVER be blocked.
+
+YOUR TASK: Completely transform this prompt into something abstract but visually similar.
+
+MANDATORY TRANSFORMATIONS:
+1. Replace ALL people with: landscapes, objects, abstract shapes, or symbolic imagery
+2. Replace actions with: still life compositions or atmospheric scenes
+3. Replace specific locations with: generic beautiful environments
+4. Focus on: colors, lighting, mood, textures - NOT characters or actions
+5. Add: "digital art, professional photography, artistic composition, 1280x720, 16:9"
+6. Make it IMPOSSIBLE to be flagged by ANY safety filter
+
+Output ONLY the completely transformed safe prompt.`
+  ];
+
+  const systemPrompt = strategies[Math.min(attemptNumber - 1, strategies.length - 1)];
 
   try {
     const response = await fetch(LOVABLE_AI_GATEWAY, {
@@ -50,26 +84,10 @@ async function rewritePromptForSafety(originalPrompt: string): Promise<string> {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-2.5-flash",
         messages: [
-          {
-            role: "system",
-            content: `You are a prompt rewriter. Your job is to take image generation prompts that were blocked for safety reasons and rewrite them to be safe while maintaining the same visual intent and style.
-
-Rules:
-- Keep the same artistic style, lighting, composition
-- Remove or replace any potentially violent, explicit, or unsafe content
-- Replace weapons with harmless alternatives (e.g., sword -> wand, gun -> camera)
-- Replace violent actions with peaceful ones (e.g., fighting -> dancing, attacking -> celebrating)
-- Keep the same mood but make it family-friendly
-- Maintain technical photography/art terms (cinematic, dramatic lighting, etc.)
-- Output ONLY the rewritten prompt, nothing else
-- Keep the prompt in the same language as the original`
-          },
-          {
-            role: "user",
-            content: `Rewrite this blocked prompt to be safe for image generation:\n\n${originalPrompt}`
-          }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Rewrite this blocked prompt:\n\n${originalPrompt}` }
         ],
         max_tokens: 500,
         temperature: 0.7
@@ -88,10 +106,15 @@ Rules:
       throw new Error("AI não retornou prompt reescrito");
     }
 
-    console.log('[ImageFX] Prompt rewritten successfully');
-    console.log('[ImageFX] New prompt:', rewrittenPrompt.substring(0, 100) + '...');
+    // Garantir que inclui requisitos de formato
+    const finalPrompt = rewrittenPrompt.includes("1280x720") 
+      ? rewrittenPrompt 
+      : `${rewrittenPrompt}, 1280x720 resolution, 16:9 aspect ratio, full frame composition, no black bars`;
 
-    return rewrittenPrompt;
+    console.log('[ImageFX] Prompt rewritten successfully');
+    console.log('[ImageFX] New prompt:', finalPrompt.substring(0, 150) + '...');
+
+    return finalPrompt;
   } catch (error) {
     console.error('[ImageFX] Error rewriting prompt:', error);
     throw new Error("Não foi possível reescrever o prompt bloqueado.");
@@ -286,17 +309,17 @@ async function generateWithImageFX(
         return generateWithImageFX(cookie, userId, options, retries - 1, allowPromptRewrite, rewriteAttempts);
       }
       
-      // Check if prompt was blocked for safety - try rewriting up to 2 times
-      const isUnsafeContent = msg.includes("inseguro") || msg.includes("bloqueado");
+      // Check if prompt was blocked for safety - try rewriting up to 3 times with increasingly aggressive strategies
+      const isUnsafeContent = msg.includes("inseguro") || msg.includes("bloqueado") || msg.includes("blocked") || msg.includes("safety") || msg.includes("violates");
       
-      if (isUnsafeContent && allowPromptRewrite && rewriteAttempts < 2) {
-        console.log(`[ImageFX] Prompt blocked (attempt ${rewriteAttempts + 1}), attempting to rewrite...`);
+      if (isUnsafeContent && allowPromptRewrite && rewriteAttempts < 3) {
+        console.log(`[ImageFX] Prompt blocked (attempt ${rewriteAttempts + 1}/3), attempting to rewrite...`);
         
         try {
-          const rewrittenPrompt = await rewritePromptForSafety(options.prompt);
+          const rewrittenPrompt = await rewritePromptForSafety(options.prompt, rewriteAttempts + 1);
           
           // Add a small delay to avoid rate limits
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           
           // Retry with rewritten prompt
           return await generateWithImageFX(
@@ -304,7 +327,7 @@ async function generateWithImageFX(
             userId,
             { ...options, prompt: rewrittenPrompt },
             retries,
-            rewriteAttempts < 1, // Allow one more rewrite if this is the first
+            rewriteAttempts < 2, // Allow more rewrites
             rewriteAttempts + 1
           );
         } catch (rewriteError) {
