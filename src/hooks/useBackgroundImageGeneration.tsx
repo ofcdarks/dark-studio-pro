@@ -173,9 +173,13 @@ Reescreva este prompt de forma segura, mantendo a intenção visual mas evitando
 
       try {
         const stylePrefix = THUMBNAIL_STYLES.find(s => s.id === style)?.promptPrefix || "";
+        
+        // Forçar resolução 1280x720 e preenchimento total do quadro
+        const resolutionPrefix = "1280x720 resolution, 16:9 aspect ratio, full frame composition, no black bars, no letterbox, no pillarbox, image must fill entire frame edge to edge";
+        
         const fullPrompt = stylePrefix
-          ? `${stylePrefix} ${currentPrompt}`
-          : currentPrompt;
+          ? `${resolutionPrefix}, ${stylePrefix} ${currentPrompt}`
+          : `${resolutionPrefix}, ${currentPrompt}`;
 
         const { data, error } = await supabase.functions.invoke("generate-imagefx", {
           body: {
