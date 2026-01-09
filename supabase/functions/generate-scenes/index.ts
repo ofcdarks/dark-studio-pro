@@ -87,7 +87,7 @@ Se não houver personagens recorrentes, retorne: {"characters":[]}`;
           { role: "system", content: systemPrompt },
           { role: "user", content: `Analise este roteiro e identifique personagens recorrentes:\n\n${script.substring(0, 8000)}` }
         ],
-        max_tokens: 2000,
+        max_tokens: 4000,
         temperature: 0.3
       }),
     });
@@ -217,57 +217,112 @@ Retorne APENAS JSON válido (numere a partir de ${startSceneNumber}):
 
 LEMBRE-SE: Seu objetivo é criar um vídeo que mantenha o espectador PRESO do primeiro ao último segundo. Cada cena deve ter PROPÓSITO e IMPACTO.`;
 
-  const response = await fetch(apiUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: apiModel,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `LOTE ${batchNumber} - Analise este trecho e divida em cenas de ALTA RETENÇÃO:\n\n${chunk}` }
-      ],
-      max_tokens: 4000,
-      temperature: 0.6 // Ligeiramente mais criativo para prompts impactantes
-    }),
-  });
+  // Retry com tentativas
+  let lastError = null;
+  const maxRetries = 2;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: apiModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `LOTE ${batchNumber} - Analise este trecho e divida em cenas de ALTA RETENÇÃO:\n\n${chunk}` }
+          ],
+          max_tokens: 8192, // Aumentado para evitar truncamento
+          temperature: 0.6
+        }),
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[Batch ${batchNumber}] API error:`, errorText);
-    throw new Error(`Erro no lote ${batchNumber}: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[Batch ${batchNumber}] API error (attempt ${attempt + 1}):`, errorText);
+        lastError = new Error(`Erro no lote ${batchNumber}: ${response.status}`);
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+          continue;
+        }
+        throw lastError;
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content?.trim() || "";
+      
+      // Verificar se resposta foi truncada (finish_reason !== 'stop')
+      const finishReason = data.choices?.[0]?.finish_reason;
+      if (finishReason === 'length') {
+        console.warn(`[Batch ${batchNumber}] Response truncated, attempting repair...`);
+      }
+
+      // Parse JSON
+      let jsonContent = content;
+      if (jsonContent.startsWith("```json")) jsonContent = jsonContent.slice(7);
+      if (jsonContent.startsWith("```")) jsonContent = jsonContent.slice(3);
+      if (jsonContent.endsWith("```")) jsonContent = jsonContent.slice(0, -3);
+      jsonContent = jsonContent.trim();
+
+      // Tentar reparar JSON truncado
+      if (!jsonContent.endsWith("]}") && !jsonContent.endsWith("}]")) {
+        // Encontrar o último objeto completo e fechar o array
+        const lastCompleteScene = jsonContent.lastIndexOf('},');
+        if (lastCompleteScene > 0) {
+          jsonContent = jsonContent.substring(0, lastCompleteScene + 1) + "]}";
+          console.log(`[Batch ${batchNumber}] Repaired truncated JSON`);
+        } else {
+          // Tentar fechar o JSON de forma mais agressiva
+          const lastBrace = jsonContent.lastIndexOf('}');
+          if (lastBrace > 0) {
+            jsonContent = jsonContent.substring(0, lastBrace + 1) + "]}";
+          }
+        }
+      }
+
+      try {
+        const parsed = JSON.parse(jsonContent);
+        const scenes = parsed.scenes || [];
+        
+        if (scenes.length === 0 && attempt < maxRetries) {
+          console.warn(`[Batch ${batchNumber}] No scenes parsed, retrying...`);
+          await new Promise(r => setTimeout(r, 2000));
+          continue;
+        }
+        
+        // Validar e enriquecer cenas
+        return scenes.map((scene: any) => ({
+          number: scene.number,
+          text: scene.text,
+          imagePrompt: scene.imagePrompt,
+          wordCount: scene.wordCount || scene.text?.split(/\s+/).filter(Boolean).length || 0,
+          characterName: scene.characterName || null,
+          emotion: scene.emotion || 'neutral',
+          retentionTrigger: scene.retentionTrigger || 'continuity'
+        }));
+      } catch (parseError) {
+        console.error(`[Batch ${batchNumber}] Parse error (attempt ${attempt + 1}):`, jsonContent.substring(0, 300));
+        lastError = parseError;
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 2000));
+          continue;
+        }
+      }
+    } catch (fetchError) {
+      console.error(`[Batch ${batchNumber}] Fetch error (attempt ${attempt + 1}):`, fetchError);
+      lastError = fetchError;
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
+        continue;
+      }
+    }
   }
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content?.trim() || "";
-
-  // Parse JSON
-  let jsonContent = content;
-  if (jsonContent.startsWith("```json")) jsonContent = jsonContent.slice(7);
-  if (jsonContent.startsWith("```")) jsonContent = jsonContent.slice(3);
-  if (jsonContent.endsWith("```")) jsonContent = jsonContent.slice(0, -3);
-  jsonContent = jsonContent.trim();
-
-  try {
-    const parsed = JSON.parse(jsonContent);
-    const scenes = parsed.scenes || [];
-    
-    // Validar e enriquecer cenas
-    return scenes.map((scene: any) => ({
-      number: scene.number,
-      text: scene.text,
-      imagePrompt: scene.imagePrompt,
-      wordCount: scene.wordCount || scene.text?.split(/\s+/).filter(Boolean).length || 0,
-      characterName: scene.characterName || null,
-      emotion: scene.emotion || 'neutral',
-      retentionTrigger: scene.retentionTrigger || 'continuity'
-    }));
-  } catch (e) {
-    console.error(`[Batch ${batchNumber}] Parse error:`, jsonContent.substring(0, 200));
-    return [];
-  }
+  
+  console.error(`[Batch ${batchNumber}] All retries failed`);
+  return [];
 }
 
 serve(async (req) => {
