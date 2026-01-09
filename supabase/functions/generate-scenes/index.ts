@@ -285,16 +285,21 @@ LEMBRE-SE: Seu objetivo é criar um vídeo que mantenha o espectador PRESO do pr
 
       try {
         const parsed = JSON.parse(jsonContent);
-        const scenes = parsed.scenes || [];
-        
-        if (scenes.length === 0 && attempt < maxRetries) {
+        const scenesRaw = Array.isArray(parsed?.scenes) ? parsed.scenes : [];
+
+        // Garantir que o modelo não devolva mais cenas do que o solicitado neste lote.
+        const scenesLimited = scenesRaw
+          .slice(0, scenesInBatch)
+          .filter((scene: any) => scene?.text && scene?.imagePrompt);
+
+        if (scenesLimited.length === 0 && attempt < maxRetries) {
           console.warn(`[Batch ${batchNumber}] No scenes parsed, retrying...`);
           await new Promise(r => setTimeout(r, 2000));
           continue;
         }
-        
+
         // Validar e enriquecer cenas
-        return scenes.map((scene: any) => ({
+        return scenesLimited.map((scene: any) => ({
           number: scene.number,
           text: scene.text,
           imagePrompt: scene.imagePrompt,
@@ -304,6 +309,13 @@ LEMBRE-SE: Seu objetivo é criar um vídeo que mantenha o espectador PRESO do pr
           retentionTrigger: scene.retentionTrigger || 'continuity'
         }));
       } catch (parseError) {
+        console.error(`[Batch ${batchNumber}] Parse error (attempt ${attempt + 1}):`, jsonContent.substring(0, 300));
+        lastError = parseError;
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 2000));
+          continue;
+        }
+      }
         console.error(`[Batch ${batchNumber}] Parse error (attempt ${attempt + 1}):`, jsonContent.substring(0, 300));
         lastError = parseError;
         if (attempt < maxRetries) {

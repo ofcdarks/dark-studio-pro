@@ -11,6 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { useState, useMemo, useRef } from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { SEOHead } from "@/components/seo/SEOHead";
+import { PermissionGate } from "@/components/auth/PermissionGate";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { Loader2, Film, Copy, Check, Image, Images, Download, ArrowRight, Upload, FileText, Sparkles, CheckCircle2, Rocket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,6 +34,7 @@ import BatchImageGenerator from "@/components/scenes/BatchImageGenerator";
 import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 import { StyleSelector } from "@/components/scenes/StyleSelector";
 import { getStyleById } from "@/lib/thumbnailStyles";
+import logo1 from "@/assets/logo_1.gif";
 
 interface ScenePrompt {
   number: number;
@@ -196,13 +210,14 @@ const SceneGenerator = () => {
       // Usar streaming com fetch direto para SSE
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
-      
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-scenes`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+          Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           script,
@@ -216,9 +231,35 @@ const SceneGenerator = () => {
         }),
       });
 
+      // Se não for SSE (ex.: função ainda não atualizada), faz fallback para JSON.
+      const contentType = response.headers.get("content-type") || "";
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erro ao gerar cenas");
+        // Tenta ler JSON, mas mantém fallback para texto.
+        let msg = "Erro ao gerar cenas";
+        try {
+          const errorData = await response.json();
+          msg = errorData?.error || msg;
+        } catch {
+          msg = (await response.text()) || msg;
+        }
+        throw new Error(msg);
+      }
+
+      if (contentType.includes("application/json")) {
+        const json = await response.json();
+        const jsonScenes = (json?.scenes || []) as ScenePrompt[];
+
+        if (!Array.isArray(jsonScenes) || jsonScenes.length === 0) {
+          throw new Error(json?.error || "Não foi possível gerar os prompts.");
+        }
+
+        setScenes(jsonScenes);
+        setCurrentSceneCount(jsonScenes.length);
+        setTotalExpectedScenes(jsonScenes.length);
+        setGenerationProgress(100);
+        setGenerationStatus("complete");
+        return;
       }
 
       if (!response.body) {
@@ -236,42 +277,43 @@ const SceneGenerator = () => {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() || "";
+        buffer = buffer.replace(/\r/g, "");
 
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          
+        const chunks = buffer.split("\n\n");
+        buffer = chunks.pop() || "";
+
+        for (const chunk of chunks) {
+          if (!chunk.startsWith("data: ")) continue;
+
           try {
-            const data = JSON.parse(line.slice(6));
-            
-            if (data.type === 'init') {
+            const data = JSON.parse(chunk.slice(6));
+
+            if (data.type === "init") {
               // Atualizar total esperado com o valor real
               maxTotal = data.estimatedScenes || estimatedScenes;
               setTotalExpectedScenes(maxTotal);
-            } else if (data.type === 'scene') {
+            } else if (data.type === "scene") {
               collectedScenes.push(data.scene);
               setScenes([...collectedScenes]);
-              
+
               // Usar o maior entre o total informado e as cenas já geradas
               const actualTotal = Math.max(data.total || maxTotal, collectedScenes.length);
               setCurrentSceneCount(collectedScenes.length);
               setTotalExpectedScenes(actualTotal);
-              
+
               // Calcular progresso baseado nas cenas geradas
               const progress = Math.min(95, (collectedScenes.length / actualTotal) * 100);
               setGenerationProgress(progress);
-            } else if (data.type === 'complete') {
+            } else if (data.type === "complete") {
               // Atualizar total final com o número real de cenas
               setCurrentSceneCount(collectedScenes.length);
               setTotalExpectedScenes(collectedScenes.length);
               setGenerationProgress(100);
               setGenerationStatus("complete");
-            } else if (data.type === 'error') {
+            } else if (data.type === "error") {
               throw new Error(data.error);
             }
           } catch (parseError) {
-            // Ignorar linhas que não são JSON válido
             console.log("[Stream] Parse error:", parseError);
           }
         }
@@ -283,8 +325,11 @@ const SceneGenerator = () => {
         setTotalExpectedScenes(collectedScenes.length);
         setGenerationProgress(100);
         setGenerationStatus("complete");
+      } else {
+        // Se chegou aqui sem cenas, é provável que a resposta não era SSE.
+        throw new Error("Não foi possível acompanhar o progresso. Tente novamente.");
       }
-      
+
     } catch (error) {
       console.error("Error generating scenes:", error);
       const errorMessage = error instanceof Error ? error.message : "Erro ao gerar prompts de cenas";
@@ -721,8 +766,8 @@ const SceneGenerator = () => {
                   <div className="relative">
                     <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shadow-[0_0_30px_hsl(var(--primary)/0.4)]">
                       <img 
-                        src="/src/assets/logo_1.gif" 
-                        alt="Processando" 
+                        src={logo1}
+                        alt="Processando"
                         className="w-full h-full object-cover scale-110"
                       />
                     </div>
