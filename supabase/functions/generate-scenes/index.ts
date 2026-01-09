@@ -353,7 +353,8 @@ serve(async (req) => {
       style = "cinematic",
       wordsPerScene = 80,
       maxScenes = 500,
-      wpm = 140 // Palavras por minuto da narração
+      wpm = 140,
+      stream = false // Nova opção para streaming
     } = body;
 
     if (!script) {
@@ -478,6 +479,134 @@ serve(async (req) => {
     const chunks = splitTextIntoChunks(script, wordsPerScene, scenesPerBatch);
     console.log(`[Generate Scenes] Split into ${chunks.length} chunks`);
 
+    // ===== STREAMING MODE =====
+    if (stream) {
+      const encoder = new TextEncoder();
+      
+      const streamBody = new ReadableStream({
+        async start(controller) {
+          try {
+            // Enviar info inicial
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+              type: 'init', 
+              estimatedScenes, 
+              totalBatches: chunks.length,
+              characters 
+            })}\n\n`));
+
+            const allScenes: SceneResult[] = [];
+            let currentSceneNumber = 1;
+
+            for (let i = 0; i < chunks.length; i++) {
+              const chunk = chunks[i];
+              const chunkWords = chunk.split(/\s+/).filter(Boolean).length;
+              const scenesInBatch = Math.min(Math.ceil(chunkWords / wordsPerScene), scenesPerBatch);
+
+              console.log(`[Generate Scenes] Processing batch ${i + 1}/${chunks.length} (${scenesInBatch} scenes)`);
+
+              try {
+                const batchScenes = await generateBatchPrompts(
+                  chunk,
+                  i + 1,
+                  currentSceneNumber,
+                  scenesInBatch,
+                  style,
+                  characters,
+                  wpm,
+                  apiUrl,
+                  apiKey,
+                  apiModel
+                );
+
+                // Enviar cada cena individualmente
+                for (const scene of batchScenes) {
+                  const numberedScene = {
+                    ...scene,
+                    number: currentSceneNumber++
+                  };
+                  allScenes.push(numberedScene);
+                  
+                  // Enviar cena via SSE
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                    type: 'scene', 
+                    scene: numberedScene,
+                    current: allScenes.length,
+                    total: estimatedScenes
+                  })}\n\n`));
+                }
+
+                console.log(`[Generate Scenes] Batch ${i + 1} completed: ${batchScenes.length} scenes`);
+
+                // Pequena pausa entre lotes para evitar rate limit
+                if (i < chunks.length - 1) {
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                }
+              } catch (batchError) {
+                console.error(`[Generate Scenes] Batch ${i + 1} failed:`, batchError);
+                // Continuar com próximo lote em caso de erro
+              }
+            }
+
+            // Se nenhuma cena foi gerada, enviar erro e reembolsar
+            if (allScenes.length === 0) {
+              if (userId && usePlatformCredits) {
+                const { data: creditData } = await supabaseAdmin
+                  .from("user_credits")
+                  .select("balance")
+                  .eq("user_id", userId)
+                  .single();
+
+                if (creditData) {
+                  await supabaseAdmin
+                    .from("user_credits")
+                    .update({ balance: creditData.balance + creditsNeeded })
+                    .eq("user_id", userId);
+
+                  await supabaseAdmin.from("credit_transactions").insert({
+                    user_id: userId,
+                    amount: creditsNeeded,
+                    transaction_type: "refund",
+                    description: "Reembolso - Falha na geração de prompts"
+                  });
+                }
+              }
+              
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                type: 'error', 
+                error: "Não foi possível gerar os prompts. Tente novamente." 
+              })}\n\n`));
+            } else {
+              // Enviar conclusão
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                type: 'complete', 
+                totalScenes: allScenes.length,
+                creditsUsed: creditsNeeded
+              })}\n\n`));
+            }
+
+            controller.close();
+          } catch (error) {
+            console.error("[Generate Scenes Stream] Error:", error);
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+              type: 'error', 
+              error: error instanceof Error ? error.message : "Unknown error" 
+            })}\n\n`));
+            controller.close();
+          }
+        }
+      });
+
+      return new Response(streamBody, {
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive"
+        }
+      });
+    }
+
+    // ===== NON-STREAMING MODE (fallback) =====
     // Processar cada chunk
     const allScenes: SceneResult[] = [];
     let currentSceneNumber = 1;
@@ -525,7 +654,7 @@ serve(async (req) => {
 
     // Se nenhuma cena foi gerada, reembolsar
     if (allScenes.length === 0) {
-      if (userId) {
+      if (userId && usePlatformCredits) {
         const { data: creditData } = await supabaseAdmin
           .from("user_credits")
           .select("balance")
