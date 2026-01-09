@@ -410,10 +410,10 @@ Reescreva o prompt de forma segura.`
       rewriteProgress: initialRewriteProgress,
     });
 
-    // Pipeline contínuo: mantém N requisições ativas (5 por cookie)
-    // Assim que uma termina, a próxima da fila começa imediatamente
-    const REQUESTS_PER_COOKIE = 5;
-    const CONCURRENCY = cookieCount * REQUESTS_PER_COOKIE; // 5 requisições por cookie ativa simultaneamente
+    // Pipeline contínuo: mantém N requisições ativas (8 por cookie para máxima velocidade)
+    // O sistema tem retry automático para rate limits, então 8 é seguro
+    const REQUESTS_PER_COOKIE = 8;
+    const CONCURRENCY = cookieCount * REQUESTS_PER_COOKIE; // 8 requisições por cookie ativa simultaneamente
     console.log(`[Background] Pipeline contínuo com ${CONCURRENCY} requisições simultâneas (${cookieCount} cookie(s) x ${REQUESTS_PER_COOKIE} req/cookie)`);
     
     let processed = 0;
