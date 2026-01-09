@@ -523,27 +523,35 @@ Reescreva o prompt de forma segura.`
       rewriteProgress: initialRewriteProgress,
     }));
 
+    // Calcular tempo total gasto
+    const endTime = Date.now();
+    const totalTimeMs = endTime - (state.startTime || endTime);
+    const totalSeconds = Math.floor(totalTimeMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+
     if (cancelRef.current) {
       toast({
         title: "Geração cancelada",
-        description: `${processed} imagens foram geradas antes do cancelamento`,
+        description: `${processed} imagens foram geradas antes do cancelamento (${timeString})`,
       });
     } else if (!errorOccurred) {
       if (rateLimitEncountered && failed > 0) {
         toast({
           title: "⏳ Limite de requisições atingido",
-          description: `${processed} imagens criadas, ${failed} falharam. Aguarde 30s e clique em "Gerar Mídias Perdidas" para continuar.`,
+          description: `${processed} imagens criadas, ${failed} falharam em ${timeString}. Aguarde 30s e clique em "Gerar Mídias Perdidas" para continuar.`,
           variant: "destructive",
         });
       } else if (failed > 0) {
         toast({
           title: "Geração parcial",
-          description: `${processed}/${pendingIndexes.length} imagens criadas. ${failed} falharam - clique em "Gerar Mídias Perdidas" para tentar novamente.`,
+          description: `${processed}/${pendingIndexes.length} imagens criadas em ${timeString}. ${failed} falharam - clique em "Gerar Mídias Perdidas" para tentar novamente.`,
         });
       } else {
         toast({
-          title: "Todas as imagens geradas!",
-          description: `${processed}/${pendingIndexes.length} imagens criadas com sucesso`,
+          title: "✅ Todas as imagens geradas!",
+          description: `${processed}/${pendingIndexes.length} imagens criadas com sucesso em ${timeString}`,
         });
       }
     }
