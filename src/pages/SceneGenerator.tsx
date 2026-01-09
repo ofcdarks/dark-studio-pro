@@ -75,6 +75,7 @@ const SceneGenerator = () => {
   const [progressModalOpen, setProgressModalOpen] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<"generating" | "complete">("generating");
   const [generationProgress, setGenerationProgress] = useState(0);
+  const [shouldAutoStartBatch, setShouldAutoStartBatch] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -256,6 +257,7 @@ const SceneGenerator = () => {
     const prompts = scenes.map(s => s.imagePrompt).join("\n\n");
     setBatchPrompts(prompts);
     setProgressModalOpen(false);
+    setShouldAutoStartBatch(true);
     setActiveTab("batch");
   };
 
@@ -324,7 +326,17 @@ const SceneGenerator = () => {
           </div>
 
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <Tabs 
+            value={activeTab} 
+            onValueChange={(tab) => {
+              setActiveTab(tab);
+              // Reset autoStart flag when switching tabs manually
+              if (tab !== "batch") {
+                setShouldAutoStartBatch(false);
+              }
+            }} 
+            className="space-y-6"
+          >
             <TabsList className="grid w-full max-w-md grid-cols-2">
               <TabsTrigger value="scenes" className="flex items-center gap-2">
                 <Film className="w-4 h-4" />
@@ -619,7 +631,10 @@ const SceneGenerator = () => {
 
             {/* Batch Image Generation Tab */}
             <TabsContent value="batch">
-              <BatchImageGenerator initialPrompts={batchPrompts} />
+              <BatchImageGenerator 
+                initialPrompts={batchPrompts} 
+                autoStart={shouldAutoStartBatch}
+              />
             </TabsContent>
           </Tabs>
         </div>

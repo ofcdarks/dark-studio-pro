@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,12 +46,13 @@ interface BatchHistory {
 
 interface BatchImageGeneratorProps {
   initialPrompts?: string;
+  autoStart?: boolean;
 }
 
-const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) => {
+const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchImageGeneratorProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { deduct, checkBalance, getEstimatedCost, CREDIT_COSTS } = useCreditDeduction();
+  const { deduct, checkBalance, getEstimatedCost, CREDIT_COSTS, usePlatformCredits } = useCreditDeduction();
   
   const [promptsText, setPromptsText] = useState(initialPrompts);
   const [selectedStyle, setSelectedStyle] = useState("");
@@ -81,16 +82,22 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
   // Cache state
   const [cacheStats, setCacheStats] = useState<{ count: number; lastUpdated: Date | null }>({ count: 0, lastUpdated: null });
   const [loadingCache, setLoadingCache] = useState(false);
+  const [autoStartTriggered, setAutoStartTriggered] = useState(false);
 
-  // Verificar saldo ao carregar
+  // Verificar saldo ao carregar (skip if using own API)
   useEffect(() => {
     const checkCredits = async () => {
+      // Se usa API própria, nunca tem créditos insuficientes
+      if (usePlatformCredits === false) {
+        setInsufficientCredits(false);
+        return;
+      }
       const cost = getEstimatedCost('batch_images');
       const { hasBalance } = await checkBalance(cost);
       setInsufficientCredits(!hasBalance);
     };
     if (user) checkCredits();
-  }, [user, checkBalance, getEstimatedCost]);
+  }, [user, checkBalance, getEstimatedCost, usePlatformCredits]);
 
   // Load cache stats on mount
   useEffect(() => {
@@ -107,6 +114,21 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
       setPromptsText(initialPrompts);
     }
   }, [initialPrompts]);
+
+  // Ref to hold the start generation function for auto-start
+  const startGenerationRef = useRef<() => void>(() => {});
+
+  // Auto-start generation when triggered from SceneGenerator
+  useEffect(() => {
+    if (autoStart && initialPrompts && !autoStartTriggered && !isGenerating && user) {
+      setAutoStartTriggered(true);
+      // Small delay to ensure state is updated
+      const timer = setTimeout(() => {
+        startGenerationRef.current();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [autoStart, initialPrompts, autoStartTriggered, isGenerating, user]);
 
   // Keyboard navigation for preview
   useEffect(() => {
@@ -434,6 +456,11 @@ const BatchImageGenerator = ({ initialPrompts = "" }: BatchImageGeneratorProps) 
     setInsufficientCredits(false);
     toast.success(`Geração concluída! ${successCount}/${initialImages.length} imagens geradas.`);
   };
+
+  // Keep ref updated with the current handleStartGeneration function
+  useEffect(() => {
+    startGenerationRef.current = handleStartGeneration;
+  });
 
   const handleRetry = async (imageId: string) => {
     const image = images.find(img => img.id === imageId);
