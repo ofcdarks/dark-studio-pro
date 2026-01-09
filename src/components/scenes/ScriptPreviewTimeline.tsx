@@ -1,15 +1,17 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Rocket, Loader2, RefreshCw, ImagePlus, Video, Lock, LockOpen } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Rocket, Loader2, RefreshCw, ImagePlus, Video, Lock, LockOpen, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useBackgroundImageGeneration } from "@/hooks/useBackgroundImageGeneration";
 
 interface KenBurnsMotion {
   type: string;
@@ -181,6 +183,43 @@ export function ScriptPreviewTimeline({
   const [lockedDurationSeconds, setLockedDurationSeconds] = useState<number | null>(null);
   const [isImproving, setIsImproving] = useState(false);
   const [regenerateAfterImprove, setRegenerateAfterImprove] = useState(true);
+  
+  // Timer em tempo real para geração de imagens
+  const { state: bgState } = useBackgroundImageGeneration();
+  const [elapsedTime, setElapsedTime] = useState(0);
+  
+  useEffect(() => {
+    if (!bgState.isGenerating || !bgState.startTime) {
+      setElapsedTime(0);
+      return;
+    }
+    
+    // Atualizar imediatamente
+    setElapsedTime(Math.floor((Date.now() - bgState.startTime) / 1000));
+    
+    // Atualizar a cada segundo
+    const interval = setInterval(() => {
+      if (bgState.startTime) {
+        setElapsedTime(Math.floor((Date.now() - bgState.startTime) / 1000));
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [bgState.isGenerating, bgState.startTime]);
+  
+  const formatElapsedTime = (seconds: number) => {
+    if (seconds < 60) return `${seconds}s`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${String(secs).padStart(2, '0')}s`;
+  };
+  
+  // Calcular imagens por minuto em tempo real
+  const imagesPerMinute = useMemo(() => {
+    if (!bgState.isGenerating || bgState.completedImages === 0 || elapsedTime === 0) return null;
+    const minutes = elapsedTime / 60;
+    return (bgState.completedImages / minutes).toFixed(1);
+  }, [bgState.isGenerating, bgState.completedImages, elapsedTime]);
   
   // Se há cenas geradas, usa elas (com timecodes corretos)
   // Senão, estima baseado em palavras por cena
@@ -518,6 +557,51 @@ export function ScriptPreviewTimeline({
 
   return (
     <Card className={`p-4 border-dashed border-primary/30 bg-primary/5 ${className}`}>
+      {/* Indicador de progresso com timer quando estiver gerando */}
+      {bgState.isGenerating && bgState.totalImages > 0 && (
+        <div className="mb-4 p-3 rounded-lg border border-primary/30 bg-primary/10">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+              <span className="text-sm font-medium text-foreground">
+                Gerando imagens...
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Timer em tempo real */}
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/20 rounded-md">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span className="text-sm font-mono font-bold text-primary">
+                  {formatElapsedTime(elapsedTime)}
+                </span>
+              </div>
+              {/* Imagens por minuto */}
+              {imagesPerMinute && (
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-green-500/20 rounded-md">
+                  <Zap className="w-3.5 h-3.5 text-green-400" />
+                  <span className="text-sm font-mono font-semibold text-green-400">
+                    {imagesPerMinute} img/min
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          <Progress 
+            value={(bgState.completedImages / bgState.totalImages) * 100} 
+            className="h-2 mb-2" 
+          />
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{bgState.completedImages}/{bgState.totalImages} imagens</span>
+            <span>{Math.round((bgState.completedImages / bgState.totalImages) * 100)}%</span>
+            {bgState.completedImages > 0 && (
+              <span>
+                ~{formatElapsedTime(Math.round(((bgState.totalImages - bgState.completedImages) / bgState.completedImages) * elapsedTime))} restante
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header com Sync integrado */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2">
@@ -526,7 +610,7 @@ export function ScriptPreviewTimeline({
           <Badge variant="outline" className="text-xs">
             {generatedScenes.length > 0 ? `${generatedScenes.filter(s => s.generatedImage).length}/${generatedScenes.length} imagens` : 'Estimativa'}
           </Badge>
-          {missingScenesCount > 0 && (
+          {missingScenesCount > 0 && !bgState.isGenerating && (
             <Badge variant="outline" className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/40">
               {missingScenesCount} faltando
             </Badge>
@@ -534,7 +618,7 @@ export function ScriptPreviewTimeline({
         </div>
         <div className="flex items-center gap-2">
           {/* Botão Gerar 100% */}
-          {missingScenesCount > 0 && onGenerateMissingImages && (
+          {missingScenesCount > 0 && onGenerateMissingImages && !bgState.isGenerating && (
             <Button
               size="sm"
               className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
