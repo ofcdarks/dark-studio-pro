@@ -206,11 +206,15 @@ export function ScriptPreviewTimeline({
     return hasMotionKeyword || !!hasActionEmotion;
   };
 
+  // CRÍTICO: Quando a duração está travada, REDISTRIBUIR proporcionalmente as durações
+  // para que todas as cenas somem exatamente o tempo travado (evita dessincronia)
   const previewScenes = useMemo(() => {
+    let baseScenes: PreviewScene[] = [];
+    
     if (generatedScenes.length > 0) {
-      // Usar as cenas geradas com seus timecodes reais
+      // Usar as cenas geradas
       let currentTime = 0;
-      return generatedScenes.map((scene, index) => {
+      baseScenes = generatedScenes.map((scene, index) => {
         const startTime = currentTime;
         const endTime = currentTime + scene.durationSeconds;
         currentTime = endTime;
@@ -229,9 +233,37 @@ export function ScriptPreviewTimeline({
           kenBurnsMotion: scene.kenBurnsMotion
         };
       });
+    } else {
+      baseScenes = estimateScenes(script, wordsPerScene, wpm);
     }
-    return estimateScenes(script, wordsPerScene, wpm);
-  }, [script, wordsPerScene, wpm, generatedScenes]);
+    
+    // Se a duração está TRAVADA, redistribuir proporcionalmente
+    if (isDurationLocked && lockedDurationSeconds && lockedDurationSeconds > 0 && baseScenes.length > 0) {
+      const originalTotalDuration = baseScenes.reduce((acc, s) => acc + s.durationSeconds, 0);
+      
+      if (originalTotalDuration > 0 && Math.abs(originalTotalDuration - lockedDurationSeconds) > 0.1) {
+        // Calcular fator de escala para encaixar no tempo travado
+        const scaleFactor = lockedDurationSeconds / originalTotalDuration;
+        
+        let currentTime = 0;
+        return baseScenes.map(scene => {
+          const scaledDuration = scene.durationSeconds * scaleFactor;
+          const startTime = currentTime;
+          const endTime = currentTime + scaledDuration;
+          currentTime = endTime;
+          
+          return {
+            ...scene,
+            durationSeconds: scaledDuration,
+            startTime,
+            endTime
+          };
+        });
+      }
+    }
+    
+    return baseScenes;
+  }, [script, wordsPerScene, wpm, generatedScenes, isDurationLocked, lockedDurationSeconds]);
   
   // Quando a duração está travada, usamos o tempo travado, não o calculado
   const totalDuration = useMemo(() => {
