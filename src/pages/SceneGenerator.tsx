@@ -75,6 +75,8 @@ const SceneGenerator = () => {
   const [progressModalOpen, setProgressModalOpen] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<"generating" | "complete">("generating");
   const [generationProgress, setGenerationProgress] = useState(0);
+  const [currentSceneCount, setCurrentSceneCount] = useState(0);
+  const [totalExpectedScenes, setTotalExpectedScenes] = useState(0);
   const [shouldAutoStartBatch, setShouldAutoStartBatch] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -181,77 +183,102 @@ const SceneGenerator = () => {
 
     // Calcular créditos baseado em lotes de 10 cenas
     const scenesMultiplier = Math.ceil(estimatedScenes / 10);
-    const totalBatches = Math.ceil(estimatedScenes / 10); // 10 cenas por batch
     
     setIsGenerating(true);
     setScenes([]);
     setProgressModalOpen(true);
     setGenerationStatus("generating");
     setGenerationProgress(0);
-
-    // Progresso gradual baseado em batches estimados
-    // Cada batch leva ~3-5 segundos, então incrementamos gradualmente
-    const estimatedTimePerBatch = 4000; // 4 segundos por batch em média
-    const totalEstimatedTime = totalBatches * estimatedTimePerBatch;
-    const updateInterval = 200; // Atualiza a cada 200ms para animação suave
-    const progressPerUpdate = (90 / (totalEstimatedTime / updateInterval)); // Vai até 90% gradualmente
-    
-    let currentProgress = 0;
-    const progressInterval = setInterval(() => {
-      currentProgress += progressPerUpdate;
-      // Adiciona pequena variação para parecer mais natural
-      const jitter = (Math.random() - 0.5) * 2;
-      const newProgress = Math.min(90, currentProgress + jitter);
-      setGenerationProgress(newProgress);
-    }, updateInterval);
+    setCurrentSceneCount(0);
+    setTotalExpectedScenes(estimatedScenes);
 
     try {
-      const { result, success, error } = await executeWithDeduction(
-        {
-          operationType: 'generate_scenes',
-          multiplier: scenesMultiplier,
-          details: { estimatedScenes, wordsPerScene: parseInt(wordsPerScene) },
-          showToast: true
+      // Usar streaming com fetch direto para SSE
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-scenes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        async () => {
-          const { data, error } = await supabase.functions.invoke("generate-scenes", {
-            body: {
-              script,
-              title,
-              niche,
-              style,
-              estimatedScenes,
-              wordsPerScene: parseInt(wordsPerScene),
-              model: selectedModel,
-            },
-          });
+        body: JSON.stringify({
+          script,
+          title,
+          niche,
+          style,
+          estimatedScenes,
+          wordsPerScene: parseInt(wordsPerScene),
+          model: selectedModel,
+          stream: true, // Ativar streaming
+        }),
+      });
 
-          if (error) throw error;
-          if (!data.success) throw new Error(data.error || "Erro ao gerar cenas");
-          
-          return data;
-        }
-      );
-
-      clearInterval(progressInterval);
-
-      if (!success) {
-        if (error !== 'Saldo insuficiente') {
-          toast.error(error || "Erro ao gerar prompts de cenas");
-        }
-        setProgressModalOpen(false);
-        return;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao gerar cenas");
       }
 
-      if (result) {
-        setScenes(result.scenes);
+      if (!response.body) {
+        throw new Error("Streaming não suportado");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      const collectedScenes: ScenePrompt[] = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          
+          try {
+            const data = JSON.parse(line.slice(6));
+            
+            if (data.type === 'init') {
+              setTotalExpectedScenes(data.estimatedScenes);
+            } else if (data.type === 'scene') {
+              collectedScenes.push(data.scene);
+              setScenes([...collectedScenes]);
+              setCurrentSceneCount(data.current);
+              setTotalExpectedScenes(data.total);
+              // Calcular progresso baseado nas cenas geradas
+              const progress = Math.min(95, (data.current / data.total) * 100);
+              setGenerationProgress(progress);
+            } else if (data.type === 'complete') {
+              setGenerationProgress(100);
+              setGenerationStatus("complete");
+            } else if (data.type === 'error') {
+              throw new Error(data.error);
+            }
+          } catch (parseError) {
+            // Ignorar linhas que não são JSON válido
+            console.log("[Stream] Parse error:", parseError);
+          }
+        }
+      }
+
+      // Garantir que o estado final está correto
+      if (collectedScenes.length > 0 && generationStatus !== "complete") {
         setGenerationProgress(100);
         setGenerationStatus("complete");
       }
+      
     } catch (error) {
-      clearInterval(progressInterval);
       console.error("Error generating scenes:", error);
-      toast.error("Erro ao gerar prompts de cenas");
+      const errorMessage = error instanceof Error ? error.message : "Erro ao gerar prompts de cenas";
+      if (!errorMessage.includes("insuficiente")) {
+        toast.error(errorMessage);
+      }
       setProgressModalOpen(false);
     } finally {
       setIsGenerating(false);
@@ -685,12 +712,16 @@ const SceneGenerator = () => {
                 </div>
                 <div className="space-y-2">
                   <Progress value={generationProgress} className="h-2" />
-                  <p className="text-sm text-muted-foreground text-center">
-                    Analisando roteiro e gerando prompts otimizados...
-                  </p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Gerando prompts otimizados...
+                    </span>
+                    <span className="font-mono font-semibold text-primary">
+                      {currentSceneCount}/{totalExpectedScenes}
+                    </span>
+                  </div>
                 </div>
                 <div className="text-center text-xs text-muted-foreground">
-                  <p>Estimativa: ~{estimatedScenes} cenas</p>
                   <p>{wordCount} palavras • {wordsPerScene} palavras/cena</p>
                 </div>
               </>
