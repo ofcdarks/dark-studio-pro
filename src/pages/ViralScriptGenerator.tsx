@@ -770,14 +770,16 @@ export default function ViralScriptGenerator() {
             
             if (!analyticsError && analyticsData?.topVideos) {
               const seenTitles = new Set<string>();
-              realChannelVideos = analyticsData.topVideos
+              // Sort by views descending and take top 100 most viewed
+              realChannelVideos = [...analyticsData.topVideos]
+                .sort((a: any, b: any) => (b.views || 0) - (a.views || 0))
                 .filter((v: any) => {
                   const normalizedTitle = (v.title || '').toLowerCase().trim();
                   if (seenTitles.has(normalizedTitle)) return false;
                   seenTitles.add(normalizedTitle);
                   return true;
                 })
-                .slice(0, 20)
+                .slice(0, 100)
                 .map((v: any) => ({
                   title: v.title || '',
                   views: v.views || 0,
@@ -823,14 +825,20 @@ export default function ViralScriptGenerator() {
           const cachedData = savedChannel.cached_data as any;
           if (cachedData.topVideos && realChannelVideos.length === 0) {
             const seenTitles = new Set<string>();
-            realChannelVideos = cachedData.topVideos
+            // Sort by views descending and take top 100 most viewed
+            realChannelVideos = [...cachedData.topVideos]
+              .sort((a: any, b: any) => {
+                const viewsA = typeof a.views === 'number' ? a.views : parseInt(a.views) || 0;
+                const viewsB = typeof b.views === 'number' ? b.views : parseInt(b.views) || 0;
+                return viewsB - viewsA;
+              })
               .filter((v: any) => {
                 const normalizedTitle = (v.title || '').toLowerCase().trim();
                 if (seenTitles.has(normalizedTitle)) return false;
                 seenTitles.add(normalizedTitle);
                 return true;
               })
-              .slice(0, 20)
+              .slice(0, 100)
               .map((v: any) => ({
                 title: v.title || '',
                 views: typeof v.views === 'number' ? v.views : parseInt(v.views) || 0,
@@ -840,18 +848,18 @@ export default function ViralScriptGenerator() {
         }
         
         // Fallback to analyzed videos if no real data available
+        // Already sorted by views from the query, take top 100 most viewed
         if (realChannelVideos.length === 0 && analyzedVideos && analyzedVideos.length > 0) {
           const seenTitles = new Set<string>();
           realChannelVideos = analyzedVideos
             .filter(v => v.original_views && v.original_title)
-            .sort((a, b) => (b.original_views || 0) - (a.original_views || 0))
             .filter(v => {
               const normalizedTitle = (v.original_title || '').toLowerCase().trim();
               if (seenTitles.has(normalizedTitle)) return false;
               seenTitles.add(normalizedTitle);
               return true;
             })
-            .slice(0, 20)
+            .slice(0, 100)
             .map(v => ({
               title: v.original_title || '',
               views: v.original_views || 0,
