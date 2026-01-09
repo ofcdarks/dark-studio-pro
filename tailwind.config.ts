@@ -96,6 +96,10 @@ export default {
           "0%": { transform: "translateX(-50%)" },
           "100%": { transform: "translateX(0%)" },
         },
+        shimmer: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -105,6 +109,7 @@ export default {
         marquee: "marquee 25s linear infinite",
         "marquee-fast": "marquee 15s linear infinite",
         "marquee-reverse": "marquee-reverse 20s linear infinite",
+        shimmer: "shimmer 2s linear infinite",
       },
       fontFamily: {
         sans: ["Plus Jakarta Sans", "ui-sans-serif", "system-ui", "sans-serif"],

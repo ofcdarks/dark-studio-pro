@@ -945,111 +945,146 @@ const Landing = () => {
 
           {/* High-Quality Image Generation Section */}
           <AnimatedSection className="mb-16">
-            <Card className="relative overflow-hidden bg-gradient-to-br from-pink-500/10 via-card/40 to-rose-500/10 backdrop-blur-2xl border border-pink-500/20 shadow-2xl">
+            <Card className="relative overflow-hidden bg-gradient-to-br from-violet-500/10 via-card/40 to-fuchsia-500/10 backdrop-blur-2xl border border-violet-500/30 shadow-2xl shadow-violet-500/10">
               {/* Animated gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-transparent to-rose-500/5 animate-pulse" />
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-pink-400/60 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rose-400/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-violet-500/5 via-transparent to-fuchsia-500/5" />
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-400/60 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-fuchsia-400/40 to-transparent" />
               
               {/* Floating orbs */}
-              <div className="absolute -top-20 -left-20 w-40 h-40 bg-pink-500/20 rounded-full blur-[60px]" />
-              <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-rose-500/20 rounded-full blur-[60px]" />
+              <div className="absolute -top-32 -left-32 w-64 h-64 bg-violet-500/20 rounded-full blur-[100px]" />
+              <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-fuchsia-500/20 rounded-full blur-[100px]" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px]" />
               
-              <div className="relative p-8 md:p-12">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
-                  {/* Left Content */}
-                  <div className="space-y-6">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500/20 to-rose-500/20 border border-pink-500/30 backdrop-blur-xl">
-                      <Zap className="w-4 h-4 text-pink-400 animate-pulse" />
-                      <span className="text-xs font-bold tracking-wider text-pink-400 uppercase">Velocidade Absurda</span>
-                    </div>
-                    
-                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-black leading-tight">
-                      <span className="text-foreground">Gere até </span>
-                      <span className="bg-gradient-to-r from-pink-400 via-rose-400 to-pink-500 bg-clip-text text-transparent">100 Imagens</span>
-                      <span className="text-foreground"> por Minuto</span>
-                    </h3>
-                    
-                    <p className="text-lg text-muted-foreground/80 leading-relaxed">
-                      Nossa infraestrutura de ponta com <span className="text-pink-400 font-semibold">24 gerações paralelas</span> permite produzir 
-                      imagens cinematográficas em escala industrial. Enquanto outros sistemas fazem 1 imagem por vez, 
-                      nós entregamos <span className="text-pink-400 font-semibold">100+ imagens em 60 segundos</span>.
-                    </p>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-                        <div className="text-3xl font-black text-pink-400">24x</div>
-                        <div className="text-sm text-muted-foreground">Paralelo</div>
-                      </div>
-                      <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-                        <div className="text-3xl font-black text-rose-400">100+</div>
-                        <div className="text-sm text-muted-foreground">Imagens/min</div>
-                      </div>
-                      <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-                        <div className="text-3xl font-black text-pink-400">16:9</div>
-                        <div className="text-sm text-muted-foreground">Resolução HD</div>
-                      </div>
-                      <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-                        <div className="text-3xl font-black text-rose-400">∞</div>
-                        <div className="text-sm text-muted-foreground">Sem Limites</div>
-                      </div>
-                    </div>
+              <div className="relative p-8 md:p-12 lg:p-16">
+                {/* Header */}
+                <div className="text-center mb-12">
+                  <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 backdrop-blur-xl mb-6">
+                    <Zap className="w-5 h-5 text-violet-400 animate-pulse" />
+                    <span className="text-sm font-bold tracking-wider text-violet-400 uppercase">Velocidade Industrial</span>
                   </div>
                   
-                  {/* Right Visual */}
-                  <div className="relative">
-                    <div className="grid grid-cols-3 gap-3">
-                      {[...Array(9)].map((_, i) => (
-                        <div 
-                          key={i}
-                          className="aspect-video rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/10 border border-pink-500/20 backdrop-blur-sm flex items-center justify-center overflow-hidden group hover:scale-105 transition-transform duration-300"
-                          style={{ animationDelay: `${i * 100}ms` }}
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                          <ImagePlus className="w-6 h-6 text-pink-400/60 group-hover:text-pink-400 group-hover:scale-110 transition-all duration-300" />
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Floating speed indicator */}
-                    <div className="absolute -top-4 -right-4 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 shadow-lg shadow-pink-500/40 animate-pulse">
-                      <span className="text-xs font-black text-white">TURBO MODE</span>
-                    </div>
-                    
-                    {/* Progress bar animation */}
-                    <div className="mt-6 space-y-2">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Gerando imagens...</span>
-                        <span className="text-pink-400 font-bold">100/min</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                        <div 
-                          className="h-full rounded-full bg-gradient-to-r from-pink-500 via-rose-400 to-pink-500 animate-pulse"
-                          style={{ width: '85%' }}
+                  <h3 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight mb-4">
+                    <span className="text-foreground">Gere até </span>
+                    <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-purple-500 bg-clip-text text-transparent">100 Imagens</span>
+                    <span className="text-foreground"> por Minuto</span>
+                  </h3>
+                  
+                  <p className="text-lg md:text-xl text-muted-foreground/80 leading-relaxed max-w-3xl mx-auto">
+                    Infraestrutura de ponta com <span className="text-violet-400 font-semibold">24 gerações paralelas</span>. 
+                    Enquanto outros fazem 1 imagem por vez, nós entregamos <span className="text-fuchsia-400 font-semibold">100+ em 60 segundos</span>.
+                  </p>
+                </div>
+
+                {/* Image Grid - Real previews */}
+                <div className="relative mb-12">
+                  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
+                    {[
+                      { src: "/src/assets/style-previews/cinematografico.jpg", label: "Cinemático" },
+                      { src: "/src/assets/style-previews/cyberpunk-3d.jpg", label: "Cyberpunk" },
+                      { src: "/src/assets/style-previews/pixar-disney.jpg", label: "Pixar" },
+                      { src: "/src/assets/style-previews/anime.jpg", label: "Anime" },
+                      { src: "/src/assets/style-previews/foto-realista.jpg", label: "Realista" },
+                      { src: "/src/assets/style-previews/neon-cyberpunk.jpg", label: "Neon" },
+                      { src: "/src/assets/style-previews/3d-viral-minimalista.jpg", label: "3D Viral" },
+                      { src: "/src/assets/style-previews/unreal-engine.jpg", label: "Unreal" },
+                      { src: "/src/assets/style-previews/fantasia.jpg", label: "Fantasia" },
+                      { src: "/src/assets/style-previews/documentario.jpg", label: "Documentário" },
+                      { src: "/src/assets/style-previews/synthwave.jpg", label: "Synthwave" },
+                      { src: "/src/assets/style-previews/noir-classico.jpg", label: "Noir" },
+                    ].map((item, i) => (
+                      <div 
+                        key={i}
+                        className="group relative aspect-video rounded-xl overflow-hidden border-2 border-white/10 hover:border-violet-500/50 transition-all duration-500 hover:scale-105 hover:z-10 shadow-lg hover:shadow-violet-500/30"
+                        style={{ animationDelay: `${i * 50}ms` }}
+                      >
+                        <img 
+                          src={item.src} 
+                          alt={item.label}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          loading="lazy"
                         />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                          <span className="text-xs font-bold text-white drop-shadow-lg">{item.label}</span>
+                        </div>
+                        {/* Shimmer effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                       </div>
+                    ))}
+                  </div>
+                  
+                  {/* Speed badge */}
+                  <div className="absolute -top-3 -right-3 md:-top-4 md:-right-4 z-20">
+                    <div className="px-4 py-2 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/40 animate-pulse">
+                      <span className="text-xs md:text-sm font-black text-white whitespace-nowrap">⚡ TURBO MODE</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                  <div className="p-5 rounded-2xl bg-gradient-to-br from-violet-500/10 to-violet-500/5 backdrop-blur-sm border border-violet-500/20 text-center group hover:border-violet-500/40 transition-all duration-300">
+                    <div className="text-4xl md:text-5xl font-black bg-gradient-to-r from-violet-400 to-violet-300 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">24x</div>
+                    <div className="text-sm text-muted-foreground mt-1">Paralelo</div>
+                  </div>
+                  <div className="p-5 rounded-2xl bg-gradient-to-br from-fuchsia-500/10 to-fuchsia-500/5 backdrop-blur-sm border border-fuchsia-500/20 text-center group hover:border-fuchsia-500/40 transition-all duration-300">
+                    <div className="text-4xl md:text-5xl font-black bg-gradient-to-r from-fuchsia-400 to-fuchsia-300 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">100+</div>
+                    <div className="text-sm text-muted-foreground mt-1">Imagens/min</div>
+                  </div>
+                  <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 backdrop-blur-sm border border-purple-500/20 text-center group hover:border-purple-500/40 transition-all duration-300">
+                    <div className="text-4xl md:text-5xl font-black bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">85+</div>
+                    <div className="text-sm text-muted-foreground mt-1">Estilos</div>
+                  </div>
+                  <div className="p-5 rounded-2xl bg-gradient-to-br from-pink-500/10 to-pink-500/5 backdrop-blur-sm border border-pink-500/20 text-center group hover:border-pink-500/40 transition-all duration-300">
+                    <div className="text-4xl md:text-5xl font-black bg-gradient-to-r from-pink-400 to-pink-300 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">∞</div>
+                    <div className="text-sm text-muted-foreground mt-1">Sem Limites</div>
+                  </div>
+                </div>
+                
+                {/* Live generation progress */}
+                <div className="max-w-2xl mx-auto mb-10">
+                  <div className="p-4 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-sm text-muted-foreground">Gerando imagens em tempo real...</span>
+                      </div>
+                      <span className="text-sm font-bold text-violet-400">98 img/min</span>
+                    </div>
+                    <div className="h-3 rounded-full bg-white/10 overflow-hidden">
+                      <div 
+                        className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-purple-500 relative overflow-hidden"
+                        style={{ width: '92%' }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+                      </div>
+                    </div>
+                    <div className="flex justify-between mt-2 text-xs text-muted-foreground/60">
+                      <span>92 de 100 imagens</span>
+                      <span>ETA: 5s</span>
                     </div>
                   </div>
                 </div>
                 
                 {/* Bottom features */}
-                <div className="mt-10 pt-8 border-t border-white/10">
+                <div className="pt-8 border-t border-white/10">
                   <div className="flex flex-wrap justify-center gap-4 md:gap-8">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="w-5 h-5 text-pink-400" />
-                      <span>Qualidade Cinematográfica</span>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                      <Check className="w-5 h-5 text-violet-400" />
+                      <span className="text-sm">Qualidade Cinematográfica</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="w-5 h-5 text-pink-400" />
-                      <span>Ken Burns Automático</span>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                      <Check className="w-5 h-5 text-fuchsia-400" />
+                      <span className="text-sm">Ken Burns Automático</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="w-5 h-5 text-pink-400" />
-                      <span>85+ Estilos Visuais</span>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                      <Check className="w-5 h-5 text-purple-400" />
+                      <span className="text-sm">Consistência de Personagem</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
                       <Check className="w-5 h-5 text-pink-400" />
-                      <span>Exportação DaVinci XML</span>
+                      <span className="text-sm">Exportação DaVinci XML</span>
                     </div>
                   </div>
                 </div>
