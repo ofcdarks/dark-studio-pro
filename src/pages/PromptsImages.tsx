@@ -77,7 +77,8 @@ import {
   Volume2,
   Type,
   Plus,
-  Star
+  Star,
+  Lock
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -310,6 +311,7 @@ const PromptsImages = () => {
   const [editingCharacterIndex, setEditingCharacterIndex] = useState<number | null>(null);
   const [timecodesUpdated, setTimecodesUpdated] = useState(false);
   const [recoveringFromCache, setRecoveringFromCache] = useState(false);
+  const [lockedDurationSeconds, setLockedDurationSeconds] = useState<number | null>(null);
   
   // SRT Preview Modal
   const [showSrtPreview, setShowSrtPreview] = useState(false);
@@ -2832,11 +2834,14 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
     }
   };
 
-  // Estatísticas do roteiro atual (usando WPM configurado)
+  // Estatísticas do roteiro atual (usando WPM configurado ou duração travada)
   const scriptStats = {
     words: script.split(/\s+/).filter(Boolean).length,
     estimatedScenes: Math.ceil(script.split(/\s+/).filter(Boolean).length / (parseInt(wordsPerScene) || 80)),
-    estimatedDuration: calculateEstimatedTimeWithWpm(script.split(/\s+/).filter(Boolean).length, currentWpm)
+    estimatedDuration: lockedDurationSeconds !== null 
+      ? formatTimecode(lockedDurationSeconds)
+      : calculateEstimatedTimeWithWpm(script.split(/\s+/).filter(Boolean).length, currentWpm),
+    isLocked: lockedDurationSeconds !== null
   };
 
   const computeScenesWithWpm = (scenes: ScenePrompt[], wpm: number): ScenePrompt[] => {
@@ -3229,11 +3234,15 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                             ~<strong className="text-foreground">{scriptStats.estimatedScenes}</strong> cenas
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">
-                            ~<strong className="text-foreground">{scriptStats.estimatedDuration}</strong> 
-                            <span className="text-xs ml-1">({currentWpm} WPM)</span>
+                        <div className={`flex items-center gap-2 ${scriptStats.isLocked ? 'bg-green-500/20 px-2 py-1 rounded-md' : ''}`}>
+                          {scriptStats.isLocked ? (
+                            <Lock className="w-4 h-4 text-green-400" />
+                          ) : (
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <span className={`text-sm ${scriptStats.isLocked ? 'text-green-400' : 'text-muted-foreground'}`}>
+                            {scriptStats.isLocked ? '' : '~'}<strong className={scriptStats.isLocked ? 'text-green-300' : 'text-foreground'}>{scriptStats.estimatedDuration}</strong> 
+                            <span className="text-xs ml-1">({currentWpm} WPM){scriptStats.isLocked && ' TRAVADO'}</span>
                           </span>
                         </div>
                       </div>
@@ -3336,6 +3345,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                           setTimeout(() => setTimecodesUpdated(false), 5000);
                         }
                       }}
+                      onLockedDurationChange={setLockedDurationSeconds}
                       onImproveScenes={handleImproveScenes}
                       onGenerateMissingImages={(sceneNumbers) => {
                         // Marcar cenas como gerando e converter para índices 0-based

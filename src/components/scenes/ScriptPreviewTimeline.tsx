@@ -50,6 +50,7 @@ interface ScriptPreviewTimelineProps {
   wpm: number;
   className?: string;
   onSyncAudio?: (newWpm: number) => void;
+  onLockedDurationChange?: (lockedSeconds: number | null) => void;
   generatedScenes?: GeneratedScene[];
   onImproveScenes?: (sceneNumbers: number[], improvementType: string, regenerateImages?: boolean) => void;
   onGenerateMissingImages?: (sceneNumbers: number[]) => void;
@@ -167,6 +168,7 @@ export function ScriptPreviewTimeline({
   wpm, 
   className = "",
   onSyncAudio,
+  onLockedDurationChange,
   generatedScenes = [],
   onImproveScenes,
   onGenerateMissingImages,
@@ -491,6 +493,11 @@ export function ScriptPreviewTimeline({
     setLockedDurationSeconds(durationSeconds);
     setIsDurationLocked(true);
     
+    // Notificar componente pai sobre a duração travada
+    if (onLockedDurationChange) {
+      onLockedDurationChange(durationSeconds);
+    }
+    
     toast.success(`✅ Sincronizado e travado! WPM: ${clampedWpm} | Duração: ${formatTimecode(durationSeconds)} | ${totalWords} palavras`);
   };
 
@@ -605,6 +612,10 @@ export function ScriptPreviewTimeline({
                 onClick={() => {
                   setIsDurationLocked(false);
                   setLockedDurationSeconds(null);
+                  // Notificar componente pai que a duração foi destravada
+                  if (onLockedDurationChange) {
+                    onLockedDurationChange(null);
+                  }
                   toast.info("Duração destravada. Altere e confirme novamente.");
                 }}
                 className="h-8 border-green-500/50 text-green-400 hover:bg-green-500/20"
