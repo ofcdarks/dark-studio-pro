@@ -183,12 +183,20 @@ const SettingsPage = () => {
     youtube: '',
     imagefx: '',
   });
+  // Separate state for ImageFX cookies (3 slots)
+  const [imagefxCookies, setImagefxCookies] = useState({
+    cookie1: '',
+    cookie2: '',
+    cookie3: '',
+  });
   const [showKeys, setShowKeys] = useState({
     openai: false,
     claude: false,
     gemini: false,
     youtube: false,
-    imagefx: false,
+    imagefx1: false,
+    imagefx2: false,
+    imagefx3: false,
   });
   
   // Notification preferences
@@ -315,6 +323,13 @@ const SettingsPage = () => {
         gemini: settings.gemini_api_key || '',
         youtube: settings.youtube_api_key || '',
         imagefx: settings.imagefx_cookies || '',
+      });
+      // Parse ImageFX cookies into separate slots
+      const cookies = (settings.imagefx_cookies || '').split('|||').map(c => c.trim());
+      setImagefxCookies({
+        cookie1: cookies[0] || '',
+        cookie2: cookies[1] || '',
+        cookie3: cookies[2] || '',
       });
       setUsePlatformCredits(settings.use_platform_credits);
     }
@@ -489,6 +504,30 @@ const SettingsPage = () => {
     }
     
     await saveSettings(updateData as any);
+  };
+
+  // Save ImageFX cookies (combines all 3 slots into single field with |||)
+  const handleSaveImageFxCookies = async () => {
+    const cookies = [
+      imagefxCookies.cookie1.trim(),
+      imagefxCookies.cookie2.trim(),
+      imagefxCookies.cookie3.trim(),
+    ].filter(c => c).join(' ||| ');
+    
+    if (!cookies) {
+      toast.error('Insira pelo menos um cookie');
+      return;
+    }
+
+    const valid = await validateApiKey('imagefx', cookies);
+    
+    await saveSettings({
+      imagefx_cookies: cookies,
+      imagefx_validated: valid,
+    } as any);
+    
+    // Update local state
+    setApiKeys(prev => ({ ...prev, imagefx: cookies }));
   };
 
   const toggleShowKey = (provider: string) => {
@@ -953,26 +992,127 @@ const SettingsPage = () => {
                 <div>
                   <p className="font-medium text-primary text-sm">Turbo Mode: Múltiplas Contas</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Use até 3 contas para triplicar a velocidade! Separe os cookies com <code className="bg-secondary px-1 rounded">|||</code>
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Exemplo: <code className="bg-secondary px-1 rounded text-[10px]">cookie_conta1 ||| cookie_conta2 ||| cookie_conta3</code>
+                    Use até 3 contas Google diferentes para triplicar a velocidade de geração!
                   </p>
                 </div>
               </div>
               
               <div className="space-y-4">
-                {renderApiKeyField('imagefx', 'Cookies do ImageFX (até 3 contas separadas por |||)', 'Cole seus cookies aqui (ex: __Secure-1PSID=xxx; ...) ou múltiplos separados por |||', !canUseImageFxCookies, true)}
-                
-                {/* Cookie count indicator */}
-                {apiKeys.imagefx && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Badge variant="outline" className="border-primary/50 text-primary">
-                      {apiKeys.imagefx.split('|||').filter(c => c.trim()).length} conta(s) configurada(s)
-                    </Badge>
-                    <span className="text-muted-foreground text-xs">
-                      = até {apiKeys.imagefx.split('|||').filter(c => c.trim()).length * 5} gerações paralelas
-                    </span>
+                {/* Cookie 1 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">Conta 1</Badge>
+                    Cookie Principal
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        type={showKeys.imagefx1 ? 'text' : 'password'}
+                        value={imagefxCookies.cookie1}
+                        onChange={(e) => setImagefxCookies(prev => ({ ...prev, cookie1: e.target.value }))}
+                        placeholder="Cole o cookie aqui (__Secure-1PSID=xxx; ...)"
+                        className="pr-10 bg-secondary border-border"
+                        disabled={!canUseImageFxCookies}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowKeys(prev => ({ ...prev, imagefx1: !prev.imagefx1 }))}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showKeys.imagefx1 ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cookie 2 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">Conta 2</Badge>
+                    Cookie Secundário
+                    <span className="text-muted-foreground text-xs">(opcional)</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        type={showKeys.imagefx2 ? 'text' : 'password'}
+                        value={imagefxCookies.cookie2}
+                        onChange={(e) => setImagefxCookies(prev => ({ ...prev, cookie2: e.target.value }))}
+                        placeholder="Cole o cookie da segunda conta (opcional)"
+                        className="pr-10 bg-secondary border-border"
+                        disabled={!canUseImageFxCookies}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowKeys(prev => ({ ...prev, imagefx2: !prev.imagefx2 }))}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showKeys.imagefx2 ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cookie 3 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">Conta 3</Badge>
+                    Cookie Terciário
+                    <span className="text-muted-foreground text-xs">(opcional)</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        type={showKeys.imagefx3 ? 'text' : 'password'}
+                        value={imagefxCookies.cookie3}
+                        onChange={(e) => setImagefxCookies(prev => ({ ...prev, cookie3: e.target.value }))}
+                        placeholder="Cole o cookie da terceira conta (opcional)"
+                        className="pr-10 bg-secondary border-border"
+                        disabled={!canUseImageFxCookies}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowKeys(prev => ({ ...prev, imagefx3: !prev.imagefx3 }))}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showKeys.imagefx3 ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save button and status */}
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-2">
+                    {[imagefxCookies.cookie1, imagefxCookies.cookie2, imagefxCookies.cookie3].filter(c => c.trim()).length > 0 && (
+                      <>
+                        <Badge variant="outline" className="border-primary/50 text-primary">
+                          {[imagefxCookies.cookie1, imagefxCookies.cookie2, imagefxCookies.cookie3].filter(c => c.trim()).length} conta(s)
+                        </Badge>
+                        <span className="text-muted-foreground text-xs">
+                          = até {[imagefxCookies.cookie1, imagefxCookies.cookie2, imagefxCookies.cookie3].filter(c => c.trim()).length * 5} gerações paralelas
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleSaveImageFxCookies}
+                    disabled={validating === 'imagefx' || !canUseImageFxCookies || !imagefxCookies.cookie1.trim()}
+                    variant="outline"
+                    className="border-border"
+                  >
+                    {validating === 'imagefx' ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : null}
+                    Validar e Salvar
+                  </Button>
+                </div>
+
+                {/* Validation status */}
+                {settings?.imagefx_validated && (
+                  <div className="flex items-center gap-2 text-sm text-green-500">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Cookies validados com sucesso</span>
                   </div>
                 )}
               </div>
