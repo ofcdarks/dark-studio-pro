@@ -291,11 +291,14 @@ async function generateWithImageFX(
         throw new Error(`Erro de autenticação: ${msg}. Atualize os cookies do ImageFX nas configurações.`);
       }
       
-      // Check if rate limited - wait longer and retry
-      const isRateLimited = msg.includes("Limite de requisições") || res.status === 429;
+      // Check if rate limited - wait longer and retry with exponential backoff
+      const isRateLimited = msg.includes("Limite de requisições") || msg.includes("throttled") || res.status === 429;
       if (isRateLimited && retries > 0) {
-        const waitTime = 3000 + (3 - retries) * 2000; // 3s, 5s, 7s
-        console.log(`[ImageFX] Rate limited, waiting ${waitTime}ms before retry...`);
+        // Exponential backoff: 5s, 10s, 20s with jitter
+        const baseWait = 5000 * Math.pow(2, 3 - retries);
+        const jitter = Math.random() * 2000;
+        const waitTime = baseWait + jitter;
+        console.log(`[ImageFX] Rate limited, waiting ${Math.round(waitTime)}ms before retry (${retries} left)...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         return generateWithImageFX(cookie, userId, options, retries - 1, allowPromptRewrite, rewriteAttempts);
       }
@@ -358,9 +361,11 @@ async function generateWithImageFX(
     }
     
     // Check if it's a rate limit that slipped through
-    if (errorMsg.includes('Limite de requisições') && retries > 0) {
-      const waitTime = 3000 + (3 - retries) * 2000;
-      console.log(`[ImageFX] Rate limit error, waiting ${waitTime}ms...`);
+    if ((errorMsg.includes('Limite de requisições') || errorMsg.includes('throttled')) && retries > 0) {
+      const baseWait = 5000 * Math.pow(2, 3 - retries);
+      const jitter = Math.random() * 2000;
+      const waitTime = baseWait + jitter;
+      console.log(`[ImageFX] Rate limit error, waiting ${Math.round(waitTime)}ms...`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
       return generateWithImageFX(cookie, userId, options, retries - 1, allowPromptRewrite, rewriteAttempts);
     }
