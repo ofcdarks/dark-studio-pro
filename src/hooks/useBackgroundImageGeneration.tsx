@@ -96,40 +96,53 @@ export const BackgroundImageGenerationProvider: React.FC<{ children: React.React
     scenesRef.current = state.scenes;
   }, [state.scenes]);
 
-  // Função para reescrever prompt bloqueado usando IA
+  // Função para reescrever prompt bloqueado usando IA - com estratégias progressivas
   const rewriteBlockedPrompt = useCallback(async (
     originalPrompt: string,
     sceneText: string,
     attemptNumber: number
   ): Promise<string | null> => {
     try {
+      // Estratégias progressivamente mais agressivas
+      const strategies = [
+        // Tentativa 1: Manter contexto, remover elementos problemáticos
+        `Você é um especialista em reescrever prompts de imagem bloqueados.
+Sua tarefa é reescrever mantendo a ESSÊNCIA VISUAL da cena, mas removendo elementos sensíveis.
+
+REGRAS OBRIGATÓRIAS:
+- Mantenha cores, iluminação, composição e atmosfera
+- Remova: violência, armas, sangue, conteúdo adulto, pessoas reais
+- Substitua por alternativas seguras e artísticas
+- Adicione: "cinematic lighting, professional photography, 8K quality, 1280x720, 16:9 aspect ratio, full frame"
+- Retorne APENAS o novo prompt`,
+
+        // Tentativa 2: Abstrair para elementos visuais puros
+        `Você é um especialista em criar prompts SEGUROS que NUNCA são bloqueados.
+Sua tarefa é TRANSFORMAR COMPLETAMENTE o prompt em algo abstrato mas visualmente relevante.
+
+TRANSFORMAÇÕES OBRIGATÓRIAS:
+1. Substitua TODAS as pessoas por: paisagens, objetos, formas abstratas ou simbolismo
+2. Substitua ações por: composições estáticas ou cenas atmosféricas  
+3. Substitua locais específicos por: ambientes genéricos e belos
+4. Foque em: cores, iluminação, mood, texturas - NÃO em personagens ou ações
+5. Adicione: "digital art, artistic composition, 1280x720, 16:9, full frame, no black bars"
+
+Retorne APENAS o prompt transformado e seguro.`
+      ];
+
+      const systemContent = strategies[Math.min(attemptNumber - 1, strategies.length - 1)];
+
       const { data, error } = await supabase.functions.invoke("ai-assistant", {
         body: {
           messages: [
-            {
-              role: "system",
-              content: `Você é um especialista em reescrever prompts de imagem que foram bloqueados por filtros de segurança.
-Sua tarefa é reescrever o prompt mantendo a essência visual, mas removendo qualquer elemento que possa ser considerado sensível.
+            { role: "system", content: systemContent },
+            { 
+              role: "user", 
+              content: `PROMPT BLOQUEADO: "${originalPrompt}"
 
-REGRAS:
-- Mantenha a cena e contexto original
-- Use linguagem descritiva e artística
-- Evite termos relacionados a violência, conteúdo adulto ou elementos controversos
-- Foque em elementos visuais cinematográficos: iluminação, composição, cores, atmosfera
-- Adicione detalhes técnicos: "cinematic lighting", "professional photography", "8K quality"
-- Se houver personagens, descreva-os de forma respeitosa e artística
+CONTEXTO DA CENA (para referência visual): "${sceneText}"
 
-Retorne APENAS o novo prompt, sem explicações.`
-            },
-            {
-              role: "user",
-              content: `O seguinte prompt foi bloqueado (tentativa ${attemptNumber}):
-
-PROMPT ORIGINAL: "${originalPrompt}"
-
-CONTEXTO DA CENA: "${sceneText}"
-
-Reescreva este prompt de forma segura, mantendo a intenção visual mas evitando bloqueios.`
+Reescreva o prompt de forma segura.`
             }
           ],
           model: "gemini-flash"
@@ -138,8 +151,17 @@ Reescreva este prompt de forma segura, mantendo a intenção visual mas evitando
 
       if (error) throw error;
       
-      const newPrompt = data?.content || data?.message;
-      return typeof newPrompt === 'string' ? newPrompt.trim() : null;
+      let newPrompt = data?.content || data?.message;
+      if (typeof newPrompt !== 'string') return null;
+      
+      newPrompt = newPrompt.trim();
+      
+      // Garantir requisitos de formato
+      if (!newPrompt.includes("1280x720")) {
+        newPrompt = `${newPrompt}, 1280x720 resolution, 16:9 aspect ratio, full frame composition, no black bars`;
+      }
+      
+      return newPrompt;
     } catch (err) {
       console.error('[Background] Failed to rewrite prompt:', err);
       return null;
@@ -154,7 +176,7 @@ Reescreva este prompt de forma segura, mantendo a intenção visual mas evitando
     updateRewriteProgress?: (progress: Partial<RewriteProgress>) => void
   ): Promise<{ index: number; success: boolean; imageUrl?: string; rateLimited?: boolean; newPrompt?: string }> => {
     const maxRetries = 3;
-    const maxRewriteAttempts = 2;
+    const maxRewriteAttempts = 3; // Aumentado para 3 tentativas de reescrita
     let retries = 0;
     let rewriteAttempts = 0;
     let lastError = "";
