@@ -181,6 +181,7 @@ const SceneGenerator = () => {
 
     // Calcular créditos baseado em lotes de 10 cenas
     const scenesMultiplier = Math.ceil(estimatedScenes / 10);
+    const totalBatches = Math.ceil(estimatedScenes / 10); // 10 cenas por batch
     
     setIsGenerating(true);
     setScenes([]);
@@ -188,13 +189,21 @@ const SceneGenerator = () => {
     setGenerationStatus("generating");
     setGenerationProgress(0);
 
-    // Simulate progress animation
+    // Progresso gradual baseado em batches estimados
+    // Cada batch leva ~3-5 segundos, então incrementamos gradualmente
+    const estimatedTimePerBatch = 4000; // 4 segundos por batch em média
+    const totalEstimatedTime = totalBatches * estimatedTimePerBatch;
+    const updateInterval = 200; // Atualiza a cada 200ms para animação suave
+    const progressPerUpdate = (90 / (totalEstimatedTime / updateInterval)); // Vai até 90% gradualmente
+    
+    let currentProgress = 0;
     const progressInterval = setInterval(() => {
-      setGenerationProgress(prev => {
-        if (prev >= 90) return prev;
-        return prev + Math.random() * 15;
-      });
-    }, 500);
+      currentProgress += progressPerUpdate;
+      // Adiciona pequena variação para parecer mais natural
+      const jitter = (Math.random() - 0.5) * 2;
+      const newProgress = Math.min(90, currentProgress + jitter);
+      setGenerationProgress(newProgress);
+    }, updateInterval);
 
     try {
       const { result, success, error } = await executeWithDeduction(
