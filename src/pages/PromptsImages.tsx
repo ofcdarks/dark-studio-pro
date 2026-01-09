@@ -468,6 +468,22 @@ const PromptsImages = () => {
   // Calcular total de palavras das cenas geradas
   const totalWords = generatedScenes.reduce((acc, scene) => acc + scene.wordCount, 0);
   
+  // Calcular scaleFactor para sincronização com áudio travado
+  const getAudioScaleFactor = (): number => {
+    if (lockedDurationSeconds === null || generatedScenes.length === 0) return 1;
+    const totalOriginalDuration = generatedScenes.reduce(
+      (acc, scene) => acc + Math.max(1, wordCountToSeconds(scene.wordCount)),
+      0
+    );
+    return totalOriginalDuration > 0 ? lockedDurationSeconds / totalOriginalDuration : 1;
+  };
+  
+  // Função para obter duração sincronizada com áudio travado
+  const getSyncedDuration = (wordCount: number): number => {
+    const baseDuration = Math.max(1, wordCountToSeconds(wordCount));
+    return baseDuration * getAudioScaleFactor();
+  };
+  
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -1695,10 +1711,13 @@ echo "Agora importe o video no CapCut!"
     await handleSaveToCapcutFolder();
   };
 
-  // Preparar dados para EDL
+  // Preparar dados para EDL - COM SINCRONIA DE ÁUDIO TRAVADA
   const getScenesForEdl = () => {
+    const scaleFactor = getAudioScaleFactor();
+    console.log(`[XML Export] lockedDuration: ${lockedDurationSeconds}s, scaleFactor: ${scaleFactor.toFixed(4)}, fps: ${cinematicSettings.fps}`);
+    
     return generatedScenes.map(scene => {
-      const durationSeconds = Math.max(1, wordCountToSeconds(scene.wordCount));
+      const durationSeconds = Math.max(0.5, getSyncedDuration(scene.wordCount));
       const imagePath = scene.generatedImage 
         ? `cena_${String(scene.number).padStart(3, "0")}.jpg`
         : undefined;
@@ -2194,14 +2213,14 @@ ${cinematicSettings.colorGrading !== 'neutral' ? `
       return;
     }
 
-    // Preparar cenas com durações
+    // Preparar cenas com durações SINCRONIZADAS com áudio travado
     const scenesForVideo = generatedScenes
       .filter(s => s.generatedImage)
       .map(scene => ({
         number: scene.number,
         text: scene.text,
         generatedImage: scene.generatedImage,
-        durationSeconds: Math.max(2, wordCountToSeconds(scene.wordCount))
+        durationSeconds: Math.max(2, getSyncedDuration(scene.wordCount))
       }));
 
     const blob = await generateVideo({
@@ -4834,7 +4853,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                     number: scene.number,
                     text: scene.text,
                     wordCount: scene.wordCount,
-                    durationSeconds: Math.max(1, wordCountToSeconds(scene.wordCount)),
+                    durationSeconds: Math.max(1, getSyncedDuration(scene.wordCount)),
                     generatedImage: scene.generatedImage
                   }))}
                   className="p-3 bg-secondary/30 rounded-lg border border-border"
