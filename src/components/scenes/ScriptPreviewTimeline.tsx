@@ -176,6 +176,7 @@ export function ScriptPreviewTimeline({
   const [showDetails, setShowDetails] = useState(false);
   const [audioDuration, setAudioDuration] = useState("");
   const [isDurationLocked, setIsDurationLocked] = useState(false);
+  const [lockedDurationSeconds, setLockedDurationSeconds] = useState<number | null>(null);
   const [isImproving, setIsImproving] = useState(false);
   const [regenerateAfterImprove, setRegenerateAfterImprove] = useState(true);
   
@@ -232,10 +233,13 @@ export function ScriptPreviewTimeline({
     return estimateScenes(script, wordsPerScene, wpm);
   }, [script, wordsPerScene, wpm, generatedScenes]);
   
-  const totalDuration = useMemo(() => 
-    previewScenes.reduce((acc, scene) => acc + scene.durationSeconds, 0), 
-    [previewScenes]
-  );
+  // Quando a duração está travada, usamos o tempo travado, não o calculado
+  const totalDuration = useMemo(() => {
+    if (isDurationLocked && lockedDurationSeconds && lockedDurationSeconds > 0) {
+      return lockedDurationSeconds;
+    }
+    return previewScenes.reduce((acc, scene) => acc + scene.durationSeconds, 0);
+  }, [previewScenes, isDurationLocked, lockedDurationSeconds]);
   
   const totalWords = useMemo(() => 
     previewScenes.reduce((acc, scene) => acc + scene.wordCount, 0), 
@@ -451,7 +455,8 @@ export function ScriptPreviewTimeline({
       onSyncAudio(clampedWpm);
     }
     
-    // TRAVAR A DURAÇÃO após sincronizar
+    // TRAVAR A DURAÇÃO após sincronizar - salva o tempo exato
+    setLockedDurationSeconds(durationSeconds);
     setIsDurationLocked(true);
     
     toast.success(`✅ Sincronizado e travado! WPM: ${clampedWpm} | Duração: ${formatTimecode(durationSeconds)} | ${totalWords} palavras`);
@@ -567,6 +572,7 @@ export function ScriptPreviewTimeline({
                 variant="outline"
                 onClick={() => {
                   setIsDurationLocked(false);
+                  setLockedDurationSeconds(null);
                   toast.info("Duração destravada. Altere e confirme novamente.");
                 }}
                 className="h-8 border-green-500/50 text-green-400 hover:bg-green-500/20"
@@ -608,8 +614,16 @@ export function ScriptPreviewTimeline({
         </div>
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-primary" />
-          <span className="text-sm font-bold text-primary">{formatTime(totalDuration)}</span>
+          <span className={`text-sm font-bold ${isDurationLocked ? 'text-green-400' : 'text-primary'}`}>
+            {isDurationLocked && <Lock className="w-3 h-3 inline mr-1" />}
+            {formatTime(totalDuration)}
+          </span>
           <span className="text-sm text-muted-foreground">@ {wpm} WPM</span>
+          {isDurationLocked && (
+            <Badge variant="outline" className="text-[10px] bg-green-500/20 text-green-400 border-green-500/30 px-1.5">
+              TRAVADO
+            </Badge>
+          )}
         </div>
         
         {/* Contador de cenas para animar */}
