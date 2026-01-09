@@ -1241,6 +1241,34 @@ NÃO INCLUA NENHUM DESTES NO ROTEIRO:
 - Números de seção ou bullets
 - Qualquer coisa que NÃO seja narração pura
 
+🚫🚫🚫 ANTI-CLICHÊS DE IA - FRASES PROIBIDAS 🚫🚫🚫
+NUNCA USE estas frases ou variações (parecem MUITO robóticas/IA):
+- "Neste vídeo vamos explorar..." / "Hoje vamos descobrir..."
+- "Você já parou para pensar..." / "Já imaginou..."
+- "Vamos mergulhar nessa história..." / "Prepare-se para descobrir..."
+- "Mas antes de continuar..." / "Antes de prosseguir..."
+- "É importante ressaltar que..." / "Vale destacar que..."
+- "De acordo com especialistas..." / "Estudos mostram que..."
+- "Incrível, não é?" / "Fascinante, não acha?"
+- "E aqui está o mais interessante..." / "E o mais surpreendente..."
+- "Como mencionei anteriormente..." / "Como vimos antes..."
+- "Em resumo..." / "Para concluir..." / "Para finalizar..."
+- "Agora que você sabe..." / "Depois de entender isso..."
+- "E é por isso que..." (no início de parágrafo)
+- "A verdade é que..." / "O fato é que..."
+- "Sem mais delongas..." / "Sem mais enrolação..."
+- "Vem comigo nessa jornada..." / "Me acompanhe nessa..."
+
+✅ ESTILO NATURAL OBRIGATÓRIO:
+- Escreva como um HUMANO contando uma história a um amigo
+- Use linguagem COLOQUIAL e fluida, não formal ou didática
+- Varie o tamanho das frases: algumas curtas e impactantes, outras mais longas
+- Entre direto no assunto sem "enrolação" ou preparação
+- Use transições INVISÍVEIS (não diga "agora vamos ver", apenas continue)
+- Evite conectivos repetitivos (porém, entretanto, contudo)
+- Prefira frases diretas a construções passivas
+- Soe como documentário da Netflix, não como vídeo de tutorial
+
 ✅ FORMATO EXATO DO OUTPUT:
 O roteiro deve ser 100% TEXTO NARRATIVO PURO, como se fosse lido em voz alta.
 Apenas parágrafos de narração separados por linha em branco.
