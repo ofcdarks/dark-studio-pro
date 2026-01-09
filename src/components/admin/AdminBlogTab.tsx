@@ -1347,6 +1347,17 @@ export const AdminBlogTab = () => {
                   <Button
                     variant="ghost"
                     size="icon"
+                    asChild
+                    title="Abrir artigo"
+                    className="h-8 w-8"
+                  >
+                    <a href={`/blog/${article.slug}`} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => {
                       setPreviewArticle(article);
                       setPreviewModalOpen(true);
