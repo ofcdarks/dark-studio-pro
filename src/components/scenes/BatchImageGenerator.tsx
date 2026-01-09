@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +18,7 @@ import { THUMBNAIL_STYLES, THUMBNAIL_STYLE_CATEGORIES, getStylesByCategory } fro
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { saveBatchImageToCache, getAllBatchCachedImages, getBatchCacheStats, clearBatchImageCache } from "@/lib/imageCache";
+import { saveBatchImageToCache, getAllBatchCachedImages, getBatchCacheStats, clearBatchImageCache, getBatchImageFromCache } from "@/lib/imageCache";
 import { useImageFXUsage } from "@/hooks/useImageFXUsage";
 import { useNavigate } from "react-router-dom";
 import { useCreditDeduction } from "@/hooks/useCreditDeduction";
@@ -31,6 +31,7 @@ interface GeneratedImage {
   status: "pending" | "generating" | "success" | "error";
   error?: string;
   wasRewritten?: boolean;
+  inCache?: boolean;
 }
 
 interface BatchHistory {
@@ -68,6 +69,8 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
   // Preview modal state
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   
   // History state
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -83,6 +86,29 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
   const [cacheStats, setCacheStats] = useState<{ count: number; lastUpdated: Date | null }>({ count: 0, lastUpdated: null });
   const [loadingCache, setLoadingCache] = useState(false);
   const [autoStartTriggered, setAutoStartTriggered] = useState(false);
+
+  // Evita travamentos / tela branca: mantém poucas imagens (base64) em memória ao mesmo tempo.
+  const MAX_IN_MEMORY_IMAGES = 8;
+
+  const pruneInMemoryImages = useCallback((imgs: GeneratedImage[]): GeneratedImage[] => {
+    const withUrl = imgs
+      .map((img, idx) => ({ img, idx }))
+      .filter(({ img }) => img.status === "success" && !!img.imageUrl);
+
+    if (withUrl.length <= MAX_IN_MEMORY_IMAGES) return imgs;
+
+    const toClear = withUrl.slice(0, withUrl.length - MAX_IN_MEMORY_IMAGES);
+    const clearSet = new Set(toClear.map(x => x.idx));
+
+    return imgs.map((img, idx) => (clearSet.has(idx) ? { ...img, imageUrl: null, inCache: true } : img));
+  }, []);
+
+  const loadImageData = useCallback(async (img: GeneratedImage): Promise<string | null> => {
+    if (img.imageUrl) return img.imageUrl;
+    const cached = await getBatchImageFromCache(img.id);
+    return cached?.imageData || null;
+  }, []);
+
 
   // Verificar saldo ao carregar (skip if using own API)
   useEffect(() => {
@@ -399,26 +425,32 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
       // Start all requests in parallel and update as each completes
       const tasks = batchIndexes.map(async (idx) => {
         const result = await generateSingleImage(initialImages[idx], idx);
-        
+
         // Update immediately when each image completes
         if (result.success && result.imageUrl) {
           successCount++;
           const imageId = initialImages[result.index].id;
-          setImages(prev => prev.map((img, i) => 
-            i === result.index ? { ...img, status: "success", imageUrl: result.imageUrl, wasRewritten: result.wasRewritten } : img
-          ));
-          
+
+          setImages(prev => {
+            const next = prev.map((img, i) =>
+              i === result.index
+                ? { ...img, status: "success", imageUrl: result.imageUrl!, wasRewritten: result.wasRewritten, inCache: true }
+                : img
+            );
+            return pruneInMemoryImages(next);
+          });
+
           // Save to cache
           saveBatchImageToCache(imageId, result.imageUrl, initialImages[result.index].prompt, result.wasRewritten).catch(err => {
             console.warn('Failed to save to cache:', err);
           });
         } else {
           refundAmount += CREDIT_COSTS.batch_images; // Contabilizar para reembolso
-          setImages(prev => prev.map((img, i) => 
+          setImages(prev => prev.map((img, i) =>
             i === result.index ? { ...img, status: "error", error: "Falha após várias tentativas" } : img
           ));
         }
-        
+
         return result;
       });
 
@@ -438,16 +470,20 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
     }
     
     // Reembolsar créditos das imagens que falharam
-    if (refundAmount > 0 && deductionResult.shouldRefund) {
-      const { refundCredits } = await import("@/lib/creditToolsMap");
-      await refundCredits(
-        user!.id,
-        refundAmount,
-        'batch_images',
-        undefined,
-        `Reembolso por ${refundAmount / CREDIT_COSTS.batch_images} imagens que falharam`
-      );
-      toast.info(`${refundAmount} créditos reembolsados por imagens que falharam`);
+    if (refundAmount > 0 && deductionResult.shouldRefund && user) {
+      try {
+        const { refundCredits } = await import("@/lib/creditToolsMap");
+        await refundCredits(
+          user.id,
+          refundAmount,
+          'batch_images',
+          undefined,
+          `Reembolso por ${refundAmount / CREDIT_COSTS.batch_images} imagens que falharam`
+        );
+        toast.info(`${refundAmount} créditos reembolsados por imagens que falharam`);
+      } catch (e) {
+        console.error("Error refunding credits:", e);
+      }
     }
     
     // Save to history with actual success count
@@ -537,18 +573,22 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
   };
 
   const handleDownloadAll = async () => {
-    const successImages = images.filter(img => img.status === "success" && img.imageUrl);
-    for (let i = 0; i < successImages.length; i++) {
-      await handleDownload(successImages[i].imageUrl!, i);
+    const successImgs = images.filter(img => img.status === "success");
+
+    for (let i = 0; i < successImgs.length; i++) {
+      const dataUrl = await loadImageData(successImgs[i]);
+      if (!dataUrl) continue;
+      await handleDownload(dataUrl, i);
       await new Promise(resolve => setTimeout(resolve, 500));
     }
-    toast.success(`${successImages.length} imagens baixadas!`);
+
+    toast.success(`${successImgs.length} imagens processadas para download!`);
   };
 
   // Download all as ZIP
   const handleDownloadZip = async () => {
-    const successImages = images.filter(img => img.status === "success" && img.imageUrl);
-    if (successImages.length === 0) {
+    const successImgs = images.filter(img => img.status === "success");
+    if (successImgs.length === 0) {
       toast.error("Nenhuma imagem para baixar");
       return;
     }
@@ -559,27 +599,32 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
       const zip = new JSZip();
       const imgFolder = zip.folder("imagens");
 
-      for (let i = 0; i < successImages.length; i++) {
-        const img = successImages[i];
-        if (!img.imageUrl) continue;
+      for (let i = 0; i < successImgs.length; i++) {
+        const img = successImgs[i];
 
-        let base64Data = img.imageUrl;
-        
-        // If it's a URL, fetch it
-        if (img.imageUrl.startsWith("http")) {
-          const response = await fetch(img.imageUrl);
-          const blob = await response.blob();
-          base64Data = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-        }
+        const dataUrl = await loadImageData(img);
+        if (!dataUrl) continue;
 
-        // Remove data URL prefix if present
-        const base64Content = base64Data.replace(/^data:image\/\w+;base64,/, "");
+        const base64Content = dataUrl.replace(/^data:image\/\w+;base64,/, "");
         imgFolder?.file(`imagem_${String(i + 1).padStart(3, "0")}.png`, base64Content, { base64: true });
       }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = window.URL.createObjectURL(content);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `imagens_lote_${format(new Date(), "yyyy-MM-dd_HH-mm")}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`ZIP com ${successImgs.length} imagens baixado!`);
+    } catch (error) {
+      console.error("Error creating ZIP:", error);
+      toast.error("Erro ao criar ZIP");
+    }
+  };
 
       const content = await zip.generateAsync({ type: "blob" });
       const url = window.URL.createObjectURL(content);
@@ -673,7 +718,7 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
     setLoadingCache(true);
     try {
       const cachedImages = await getAllBatchCachedImages();
-      
+
       if (cachedImages.length === 0) {
         toast.info("Nenhuma imagem em cache");
         setLoadingCache(false);
@@ -683,12 +728,14 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
       const recoveredImages: GeneratedImage[] = cachedImages.map((cached, index) => ({
         id: cached.id,
         prompt: cached.prompt,
-        imageUrl: cached.imageData,
+        // Evita carregar todas as imagens base64 de uma vez (pode travar o navegador)
+        imageUrl: index < MAX_IN_MEMORY_IMAGES ? cached.imageData : null,
         status: "success" as const,
         wasRewritten: cached.wasRewritten,
+        inCache: true,
       }));
 
-      setImages(recoveredImages);
+      setImages(pruneInMemoryImages(recoveredImages));
       toast.success(`${recoveredImages.length} imagens recuperadas do cache!`);
     } catch (error) {
       console.error("Error recovering from cache:", error);
@@ -698,9 +745,9 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
     }
   };
 
+  const successImages = useMemo(() => images.filter(img => img.status === "success"), [images]);
+
   const openPreview = (index: number) => {
-    // Find the index in successImages array
-    const successImages = images.filter(img => img.status === "success" && img.imageUrl);
     const originalImage = images[index];
     const previewIdx = successImages.findIndex(img => img.id === originalImage.id);
     if (previewIdx !== -1) {
@@ -709,8 +756,38 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
     }
   };
 
-  const successImages = images.filter(img => img.status === "success" && img.imageUrl);
   const currentPreviewImage = successImages[previewIndex];
+
+  useEffect(() => {
+    if (!previewOpen) {
+      setPreviewImageUrl(null);
+      setPreviewLoading(false);
+      return;
+    }
+
+    if (!currentPreviewImage) return;
+
+    let cancelled = false;
+    setPreviewLoading(true);
+
+    (async () => {
+      const url = await loadImageData(currentPreviewImage);
+      if (cancelled) return;
+
+      if (!url) {
+        toast.error("Não foi possível carregar a imagem do cache.");
+        setPreviewOpen(false);
+        return;
+      }
+
+      setPreviewImageUrl(url);
+      setPreviewLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [previewOpen, previewIndex, currentPreviewImage, loadImageData]);
 
   const promptCount = parsePrompts().length;
   const successCount = successImages.length;
@@ -996,12 +1073,21 @@ Um carro esportivo na montanha`}
                       className={`aspect-video relative ${image.status === "success" ? "cursor-pointer" : ""}`}
                       onClick={() => image.status === "success" && openPreview(index)}
                     >
-                      {image.status === "success" && image.imageUrl ? (
-                        <img
-                          src={image.imageUrl}
-                          alt={`Imagem ${index + 1}`}
-                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                        />
+                      {image.status === "success" ? (
+                        image.imageUrl ? (
+                          <img
+                            src={image.imageUrl}
+                            alt={`Imagem ${index + 1}`}
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-secondary p-2">
+                            <ImageIcon className="w-7 h-7 text-muted-foreground opacity-60" />
+                            <p className="text-xs text-muted-foreground mt-2 text-center">Imagem em cache</p>
+                          </div>
+                        )
                       ) : image.status === "generating" ? (
                         <div className="w-full h-full flex items-center justify-center bg-secondary">
                           <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -1157,11 +1243,17 @@ Um carro esportivo na montanha`}
 
               {/* Image */}
               <div className="flex items-center justify-center p-4">
-                <img
-                  src={currentPreviewImage.imageUrl!}
-                  alt={`Preview ${previewIndex + 1}`}
-                  className="max-h-[70vh] w-auto rounded-lg shadow-2xl"
-                />
+                {previewLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : previewImageUrl ? (
+                  <img
+                    src={previewImageUrl}
+                    alt={`Preview ${previewIndex + 1}`}
+                    className="max-h-[70vh] w-auto rounded-lg shadow-2xl"
+                  />
+                ) : null}
               </div>
 
               {/* Info bar */}
@@ -1192,7 +1284,11 @@ Um carro esportivo na montanha`}
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => handleDownload(currentPreviewImage.imageUrl!, previewIndex)}
+                      onClick={() => {
+                        if (!previewImageUrl) return;
+                        handleDownload(previewImageUrl, previewIndex);
+                      }}
+                      disabled={!previewImageUrl || previewLoading}
                     >
                       <Download className="w-4 h-4 mr-1" />
                       Baixar
