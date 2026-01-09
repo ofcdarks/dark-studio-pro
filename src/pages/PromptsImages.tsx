@@ -471,17 +471,16 @@ const PromptsImages = () => {
   // Calcular scaleFactor para sincronização com áudio travado
   const getAudioScaleFactor = (): number => {
     if (lockedDurationSeconds === null || generatedScenes.length === 0) return 1;
-    const totalOriginalDuration = generatedScenes.reduce(
-      (acc, scene) => acc + Math.max(1, wordCountToSeconds(scene.wordCount)),
+    const totalBaseDuration = generatedScenes.reduce(
+      (acc, scene) => acc + Math.max(0.5, wordCountToSeconds(scene.wordCount)),
       0
     );
-    return totalOriginalDuration > 0 ? lockedDurationSeconds / totalOriginalDuration : 1;
+    return totalBaseDuration > 0 ? lockedDurationSeconds / totalBaseDuration : 1;
   };
   
   // Função para obter duração sincronizada com áudio travado
   const getSyncedDuration = (wordCount: number): number => {
-    const baseDuration = Math.max(1, wordCountToSeconds(wordCount));
-    return baseDuration * getAudioScaleFactor();
+    return Math.max(0.5, wordCountToSeconds(wordCount)) * getAudioScaleFactor();
   };
   
   const { user } = useAuth();
@@ -2220,7 +2219,7 @@ ${cinematicSettings.colorGrading !== 'neutral' ? `
         number: scene.number,
         text: scene.text,
         generatedImage: scene.generatedImage,
-        durationSeconds: Math.max(2, getSyncedDuration(scene.wordCount))
+        durationSeconds: Math.max(0.5, getSyncedDuration(scene.wordCount))
       }));
 
     const blob = await generateVideo({
@@ -3396,7 +3395,7 @@ ${s.characterName ? `👤 Personagem: ${s.characterName}` : ""}
                         number: index + 1,
                         text: scene.text,
                         wordCount: scene.wordCount,
-                        durationSeconds: (scene.wordCount / currentWpm) * 60,
+                        durationSeconds: Math.max(0.5, (scene.wordCount / currentWpm) * 60),
                         generatedImage: scene.generatedImage,
                         emotion: scene.emotion,
                         retentionTrigger: scene.retentionTrigger,
