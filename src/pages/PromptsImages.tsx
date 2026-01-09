@@ -1711,15 +1711,35 @@ echo "Agora importe o video no CapCut!"
   };
 
   // Preparar dados para EDL - COM SINCRONIA DE ÁUDIO TRAVADA
+  // Exporta APENAS cenas COM imagem, com durações escaladas proporcionalmente
   const getScenesForEdl = () => {
-    const scaleFactor = getAudioScaleFactor();
-    console.log(`[XML Export] lockedDuration: ${lockedDurationSeconds}s, scaleFactor: ${scaleFactor.toFixed(4)}, fps: ${cinematicSettings.fps}`);
+    // Filtrar apenas cenas com imagem para exportação
+    const scenesWithImages = generatedScenes.filter(s => s.generatedImage);
     
-    return generatedScenes.map(scene => {
-      const durationSeconds = Math.max(0.5, getSyncedDuration(scene.wordCount));
-      const imagePath = scene.generatedImage 
-        ? `cena_${String(scene.number).padStart(3, "0")}.jpg`
-        : undefined;
+    if (scenesWithImages.length === 0) {
+      console.log(`[XML Export] Nenhuma cena com imagem para exportar`);
+      return [];
+    }
+    
+    // Calcular duração base total APENAS das cenas COM imagem
+    const totalBaseWithImages = scenesWithImages.reduce(
+      (acc, scene) => acc + Math.max(0.5, wordCountToSeconds(scene.wordCount)),
+      0
+    );
+    
+    // Se temos duração travada, calcular scaleFactor considerando APENAS cenas com imagem
+    const effectiveScaleFactor = (lockedDurationSeconds !== null && totalBaseWithImages > 0)
+      ? lockedDurationSeconds / totalBaseWithImages
+      : 1;
+    
+    console.log(`[XML Export] lockedDuration: ${lockedDurationSeconds}s, totalBaseWithImages: ${totalBaseWithImages.toFixed(2)}s, effectiveScaleFactor: ${effectiveScaleFactor.toFixed(4)}, fps: ${cinematicSettings.fps}, scenesWithImages: ${scenesWithImages.length}/${generatedScenes.length}`);
+    
+    return scenesWithImages.map(scene => {
+      // Usar scaleFactor calculado especificamente para cenas com imagem
+      const baseDuration = Math.max(0.5, wordCountToSeconds(scene.wordCount));
+      const durationSeconds = Math.max(0.5, baseDuration * effectiveScaleFactor);
+      
+      const imagePath = `cena_${String(scene.number).padStart(3, "0")}.jpg`;
       return {
         number: scene.number,
         text: scene.text,
