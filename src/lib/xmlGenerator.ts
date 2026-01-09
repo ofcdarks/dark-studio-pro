@@ -2392,6 +2392,7 @@ export const generateFcp7Xml = (
 
 /**
  * Gera XML com transições entre cenas e keyframes Ken Burns opcionais
+ * Suporta duração alvo (targetTotalSeconds) para sincronia exata com áudio
  */
 export const generateFcp7XmlWithTransitions = (
   scenes: SceneForXml[],
@@ -2403,6 +2404,7 @@ export const generateFcp7XmlWithTransitions = (
     transitionFrames?: number;
     transitionType?: TransitionType;
     enableKenBurns?: boolean;
+    targetTotalSeconds?: number; // Duração exata alvo (áudio travado)
   } = {}
 ): string => {
   const title = options.title || 'Projeto_Video';
@@ -2412,16 +2414,28 @@ export const generateFcp7XmlWithTransitions = (
   const transitionFrames = options.transitionFrames || Math.round(fps * 0.5);
   const transitionType = options.transitionType || 'cross_dissolve';
   const enableKenBurns = options.enableKenBurns !== false; // Habilitado por padrão
+  const targetTotalSeconds = options.targetTotalSeconds;
   const safeTitle = escapeXml(title.replace(/[^a-zA-Z0-9_-]/g, '_'));
   
   // Aplicar análise Ken Burns se habilitado
   const processedScenes = enableKenBurns ? applyKenBurnsToScenes(scenes) : scenes;
   
-  // Calcular duração total em frames
-  const totalDurationFrames = processedScenes.reduce(
-    (acc, scene) => acc + secondsToFrames(scene.durationSeconds, fps),
-    0
-  );
+  // Calcular frames para cada cena (arredondando individualmente)
+  const sceneFrames = processedScenes.map(scene => secondsToFrames(scene.durationSeconds, fps));
+  let totalDurationFrames = sceneFrames.reduce((acc, frames) => acc + frames, 0);
+  
+  // Se temos duração alvo, ajustar última cena para compensar diferença de arredondamento
+  if (targetTotalSeconds && processedScenes.length > 0) {
+    const targetTotalFrames = Math.round(targetTotalSeconds * fps);
+    const frameDifference = targetTotalFrames - totalDurationFrames;
+    
+    if (frameDifference !== 0) {
+      // Ajustar a última cena para fechar exatamente no tempo alvo
+      sceneFrames[sceneFrames.length - 1] += frameDifference;
+      totalDurationFrames = targetTotalFrames;
+      console.log(`[XML] Ajuste frame-accurate: ${frameDifference > 0 ? '+' : ''}${frameDifference} frames na última cena para totalizar ${targetTotalFrames} frames (${targetTotalSeconds}s)`);
+    }
+  }
   
   const sequenceId = `sequence-${Date.now()}`;
   
@@ -2472,7 +2486,8 @@ export const generateFcp7XmlWithTransitions = (
   let currentFrame = 0;
   
   processedScenes.forEach((scene, index) => {
-    const durationFrames = secondsToFrames(scene.durationSeconds, fps);
+    // Usar frames pré-calculados (com ajuste de última cena para sincronia exata)
+    const durationFrames = sceneFrames[index];
     const fileName = `cena_${String(scene.number).padStart(3, '0')}.jpg`;
     const clipId = `clip-${scene.number}`;
     const fileId = `file-${scene.number}`;
