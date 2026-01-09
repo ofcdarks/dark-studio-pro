@@ -209,6 +209,7 @@ Reescreva o prompt de forma segura.`
             aspectRatio: "LANDSCAPE",
             numberOfImages: 1,
             seed: characterSeed,
+            sceneIndex, // For deterministic cookie distribution
           },
         });
 
