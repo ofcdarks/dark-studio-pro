@@ -202,11 +202,14 @@ ${characterContext}
 
 🎨 FORMATO DO PROMPT DE IMAGEM (imagePrompt):
 - Sempre em INGLÊS, 50-80 palavras
-- Composição cinematográfica com ÂNGULO específico
+- OBRIGATÓRIO: Começar com "1280x720 resolution, 16:9 aspect ratio, full frame composition"
+- PROIBIDO: Bordas pretas, letterbox, pillarbox, margens - a imagem DEVE preencher 100% do quadro
+- Composição cinematográfica com ÂNGULO específico que preencha TODA a tela
 - Iluminação dramática que reforce a EMOÇÃO
 - Elementos visuais CONCRETOS e ESPECÍFICOS
 - Estilo: ${style}
 - Deve criar IMPACTO VISUAL imediato
+- CRÍTICO: Wide shot, close-up ou medium shot que ocupe TODO o enquadramento sem espaços vazios
 ${characterInstruction}
 
 Retorne APENAS JSON válido (numere a partir de ${startSceneNumber}):

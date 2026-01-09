@@ -182,13 +182,20 @@ function buildPromptPayload(options: {
   const seed = options.seed ?? Math.floor(Math.random() * 2147483647);
   const model = options.model === "IMAGEN_3" ? Model.IMAGEN_3 : Model.IMAGEN_3_5;
   
-  // CRÍTICO: Reforçar FORTEMENTE formato 16:9 widescreen para evitar bordas pretas cinematográficas
-  const enhancedPrompt = `${options.prompt}. CRITICAL FRAMING REQUIREMENTS: Full 16:9 widescreen aspect ratio, subject and scene must fill the ENTIRE frame edge-to-edge with NO black bars on top or bottom, NO letterbox, NO cinematic bars, NO pillarbox, NO borders whatsoever, horizontal wide-angle composition filling 100% of canvas, ultra-wide framing`;
+  // CRÍTICO: Instruções rigorosas para resolução 1280x720 e preenchimento total do quadro
+  const enhancedPrompt = `${options.prompt}. MANDATORY TECHNICAL REQUIREMENTS: Exact 1280x720 pixel resolution, 16:9 widescreen aspect ratio, the entire image canvas must be filled edge-to-edge with visual content, ABSOLUTELY NO black bars on any side, NO letterbox, NO pillarbox, NO borders, NO empty margins, the subject and background MUST extend to fill 100% of the frame horizontally and vertically, ultra-wide angle composition that fills the complete canvas with no gaps`;
+  
+  // Negative prompt OBRIGATÓRIO para eliminar bordas pretas
+  const mandatoryNegativePrompt = "black bars, letterbox, pillarbox, borders, margins, empty space at edges, cinematic bars, film grain borders, vignette borders, any black edges, top and bottom black bars, side black bars";
+  const finalNegativePrompt = options.negativePrompt?.trim() 
+    ? `${mandatoryNegativePrompt}, ${options.negativePrompt.trim()}`
+    : mandatoryNegativePrompt;
   
   const payload: any = {
     userInput: {
       candidatesCount: options.numberOfImages || 1,
       prompts: [enhancedPrompt],
+      negativePrompts: [finalNegativePrompt],
       seed: seed
     },
     clientContext: {
@@ -200,10 +207,6 @@ function buildPromptPayload(options: {
     },
     aspectRatio: options.aspectRatio || AspectRatio.LANDSCAPE
   };
-
-  if (options.negativePrompt?.trim()) {
-    payload.userInput.negativePrompts = [options.negativePrompt.trim()];
-  }
 
   return JSON.stringify(payload);
 }
