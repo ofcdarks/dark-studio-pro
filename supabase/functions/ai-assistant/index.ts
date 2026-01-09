@@ -760,6 +760,28 @@ Forneça uma dica personalizada baseada nessas estatísticas.`;
         - Emojis ou formatações visuais
         - Títulos como "# TÍTULO" ou "## PARTE 1"
         
+        🚫 FRASES PROIBIDAS (parecem robóticas/IA - NUNCA USE):
+        - "Neste vídeo vamos explorar..." / "Hoje vamos descobrir..."
+        - "Você já parou para pensar..." / "Já imaginou..."
+        - "Vamos mergulhar nessa história..." / "Prepare-se para descobrir..."
+        - "Mas antes de continuar..." / "Antes de prosseguir..."
+        - "É importante ressaltar que..." / "Vale destacar que..."
+        - "De acordo com especialistas..." / "Estudos mostram que..."
+        - "Incrível, não é?" / "Fascinante, não acha?"
+        - "E aqui está o mais interessante..." / "E o mais surpreendente..."
+        - "Em resumo..." / "Para concluir..." / "Para finalizar..."
+        - "Agora que você sabe..." / "E é por isso que..."
+        - "A verdade é que..." / "Sem mais delongas..."
+        - "Vem comigo nessa jornada..." / "Me acompanhe nessa..."
+        
+        ✅ ESTILO NATURAL:
+        - Escreva como um HUMANO contando uma história
+        - Linguagem COLOQUIAL e fluida, não formal
+        - Varie tamanhos de frases: curtas impactantes + longas narrativas
+        - Entre direto no assunto sem "preparação"
+        - Transições INVISÍVEIS (não diga "agora vamos ver")
+        - Soe como documentário da Netflix, não tutorial
+        
         📝 FORMATO DE SAÍDA:
         Texto corrido de narração, dividido em parágrafos naturais.
         Cada parágrafo deve fluir naturalmente para o próximo.
