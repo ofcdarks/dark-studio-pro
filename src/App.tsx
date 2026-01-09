@@ -65,7 +65,7 @@ const PublicationSchedule = lazy(() => import("./pages/PublicationSchedule"));
 
 // Preload core tools after initial render
 if (typeof window !== 'undefined') {
-  requestIdleCallback?.(() => {
+  const preloadCoreTools = () => {
     (VideoAnalyzer as any).preload?.();
     (ExploreNiche as any).preload?.();
     (ViralAgents as any).preload?.();
@@ -73,15 +73,14 @@ if (typeof window !== 'undefined') {
     (PromptsImages as any).preload?.();
     (ChannelAnalyzer as any).preload?.();
     (ViralScriptGenerator as any).preload?.();
-  }) || setTimeout(() => {
-    (VideoAnalyzer as any).preload?.();
-    (ExploreNiche as any).preload?.();
-    (ViralAgents as any).preload?.();
-    (SceneGenerator as any).preload?.();
-    (PromptsImages as any).preload?.();
-    (ChannelAnalyzer as any).preload?.();
-    (ViralScriptGenerator as any).preload?.();
-  }, 2000);
+  };
+  
+  // Use requestIdleCallback with fallback for Safari/iOS
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(preloadCoreTools);
+  } else {
+    setTimeout(preloadCoreTools, 2000);
+  }
 }
 
 // Static blog article pages (legacy)
