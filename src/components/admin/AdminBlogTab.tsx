@@ -784,6 +784,86 @@ export const AdminBlogTab = () => {
     }
   };
 
+  const handleRegeneratePublishedContent = async () => {
+    // Find all published articles
+    const articlesToRegenerate = articles.filter(a => a.is_published);
+    
+    if (articlesToRegenerate.length === 0) {
+      toast.info("Nenhum artigo publicado encontrado");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Isso vai regenerar o conteúdo de ${articlesToRegenerate.length} artigos publicados com formatação melhorada. Continuar?`
+    );
+    
+    if (!confirmed) return;
+
+    setRegeneratingAll(true);
+    setRegeneratingProgress({ current: 0, total: articlesToRegenerate.length });
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < articlesToRegenerate.length; i++) {
+      const article = articlesToRegenerate[i];
+      setRegeneratingProgress({ current: i + 1, total: articlesToRegenerate.length });
+      
+      try {
+        toast.info(`Melhorando: ${article.title.slice(0, 35)}...`, { duration: 2000 });
+        
+        const { data, error } = await supabase.functions.invoke("generate-blog-article", {
+          body: { 
+            topic: article.title, 
+            category: article.category,
+            mode: "keyword",
+            productName: article.product_title,
+            productUrl: article.product_url,
+            productCta: article.product_cta,
+          },
+        });
+
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        const newArticle = data.article;
+
+        const { error: updateError } = await supabase
+          .from("blog_articles")
+          .update({
+            content: newArticle.content,
+            excerpt: newArticle.excerpt,
+            meta_description: newArticle.meta_description,
+            meta_keywords: newArticle.meta_keywords,
+            read_time: newArticle.read_time,
+          })
+          .eq("id", article.id);
+
+        if (updateError) throw updateError;
+        
+        successCount++;
+      } catch (error: any) {
+        console.error(`Error regenerating ${article.title}:`, error);
+        errorCount++;
+      }
+
+      // Delay between requests to avoid rate limiting
+      if (i < articlesToRegenerate.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    }
+
+    setRegeneratingAll(false);
+    setRegeneratingProgress({ current: 0, total: 0 });
+    fetchArticles();
+
+    if (errorCount === 0) {
+      toast.success(`${successCount} artigos melhorados com sucesso!`);
+    } else {
+      toast.warning(`${successCount} sucesso, ${errorCount} erros`);
+    }
+  };
+
   const handleEditArticle = (article: BlogArticle) => {
     setEditingArticle(article);
     setEditForm({
@@ -966,7 +1046,32 @@ export const AdminBlogTab = () => {
             ) : (
               <>
                 <ImagePlus className="w-3 h-3 mr-1" />
-                Regenerar
+                Gerar Faltantes
+              </>
+            )}
+          </Button>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Publicados</p>
+          <p className="text-2xl font-bold text-primary">
+            {articles.filter((a) => a.is_published).length}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2 w-full text-xs"
+            onClick={handleRegeneratePublishedContent}
+            disabled={regeneratingCovers || regeneratingAll}
+          >
+            {regeneratingAll ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                {regeneratingProgress.current}/{regeneratingProgress.total}
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-3 h-3 mr-1" />
+                Melhorar Todos
               </>
             )}
           </Button>
