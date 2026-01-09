@@ -241,14 +241,25 @@ const DynamicArticle = () => {
           {/* Content */}
           <div
             className="prose prose-lg dark:prose-invert max-w-none
-              prose-headings:font-bold prose-headings:text-foreground
-              prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-6
-              prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-4
-              prose-p:text-muted-foreground prose-p:leading-relaxed
-              prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-              prose-strong:text-foreground
-              prose-ul:text-muted-foreground prose-ol:text-muted-foreground
-              prose-li:marker:text-primary"
+              prose-headings:font-bold prose-headings:text-foreground prose-headings:scroll-mt-20
+              prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:mt-14 prose-h2:mb-6 prose-h2:pb-3 prose-h2:border-b prose-h2:border-border/50
+              prose-h3:text-xl prose-h3:md:text-2xl prose-h3:mt-10 prose-h3:mb-4 prose-h3:text-primary/90
+              prose-h4:text-lg prose-h4:mt-8 prose-h4:mb-3 prose-h4:font-semibold
+              prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:my-5 prose-p:text-base prose-p:md:text-lg
+              prose-a:text-primary prose-a:font-medium prose-a:underline prose-a:underline-offset-4 hover:prose-a:text-primary/80
+              prose-strong:text-foreground prose-strong:font-bold
+              prose-ul:my-6 prose-ul:text-muted-foreground prose-ul:space-y-2 prose-ul:pl-0
+              prose-ol:my-6 prose-ol:text-muted-foreground prose-ol:space-y-2 prose-ol:pl-0
+              prose-li:text-base prose-li:md:text-lg prose-li:leading-relaxed prose-li:pl-2 prose-li:marker:text-primary prose-li:marker:font-bold
+              prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:rounded-r-lg prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:my-8 prose-blockquote:italic prose-blockquote:text-foreground/80
+              prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-primary
+              prose-pre:bg-muted prose-pre:rounded-xl prose-pre:p-6 prose-pre:my-8
+              prose-hr:border-border prose-hr:my-12
+              prose-img:rounded-xl prose-img:shadow-lg prose-img:my-8
+              [&_ul]:list-none [&_ul>li]:relative [&_ul>li]:pl-6
+              [&_ul>li]:before:content-['▸'] [&_ul>li]:before:absolute [&_ul>li]:before:left-0 [&_ul>li]:before:text-primary [&_ul>li]:before:font-bold
+              [&_ol]:list-decimal [&_ol]:list-inside [&_ol>li]:pl-2
+              [&_ol>li::marker]:text-primary [&_ol>li::marker]:font-bold"
             dangerouslySetInnerHTML={{ __html: article.content }}
           />
 
