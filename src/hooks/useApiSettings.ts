@@ -176,6 +176,12 @@ export function useApiSettings() {
     }
   };
 
+  // Get number of ImageFX cookies configured (for parallel generation)
+  const getImageFXCookieCount = (): number => {
+    if (!settings.imagefx_cookies || !settings.imagefx_validated) return 0;
+    return settings.imagefx_cookies.split('|||').filter(c => c.trim()).length;
+  };
+
   return {
     settings,
     loading,
@@ -184,6 +190,7 @@ export function useApiSettings() {
     saveSettings,
     getApiKey,
     isValidated,
+    getImageFXCookieCount,
     refetch: fetchSettings,
   };
 }

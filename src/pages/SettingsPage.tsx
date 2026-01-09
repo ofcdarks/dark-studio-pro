@@ -946,8 +946,35 @@ const SettingsPage = () => {
                 </a>
                 , faça login e extraia os cookies usando uma extensão como "EditThisCookie" ou "Cookie-Editor".
               </p>
+              
+              {/* Multi-cookie tip */}
+              <div className="flex items-start gap-3 p-3 mb-4 bg-primary/10 border border-primary/30 rounded-lg">
+                <Rocket className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-primary text-sm">Turbo Mode: Múltiplas Contas</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Use até 3 contas para triplicar a velocidade! Separe os cookies com <code className="bg-secondary px-1 rounded">|||</code>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Exemplo: <code className="bg-secondary px-1 rounded text-[10px]">cookie_conta1 ||| cookie_conta2 ||| cookie_conta3</code>
+                  </p>
+                </div>
+              </div>
+              
               <div className="space-y-4">
-                {renderApiKeyField('imagefx', 'Cookies do ImageFX', 'Cole seus cookies aqui (ex: __Secure-1PSID=xxx; ...)', !canUseImageFxCookies, true)}
+                {renderApiKeyField('imagefx', 'Cookies do ImageFX (até 3 contas separadas por |||)', 'Cole seus cookies aqui (ex: __Secure-1PSID=xxx; ...) ou múltiplos separados por |||', !canUseImageFxCookies, true)}
+                
+                {/* Cookie count indicator */}
+                {apiKeys.imagefx && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Badge variant="outline" className="border-primary/50 text-primary">
+                      {apiKeys.imagefx.split('|||').filter(c => c.trim()).length} conta(s) configurada(s)
+                    </Badge>
+                    <span className="text-muted-foreground text-xs">
+                      = até {apiKeys.imagefx.split('|||').filter(c => c.trim()).length * 5} gerações paralelas
+                    </span>
+                  </div>
+                )}
               </div>
             </Card>
 

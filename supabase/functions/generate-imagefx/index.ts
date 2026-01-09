@@ -382,8 +382,8 @@ async function generateWithImageFX(
   }
 }
 
-// Get user's ImageFX cookies from settings
-async function getUserImageFXCookies(userId: string): Promise<string | null> {
+// Get user's ImageFX cookies from settings - supports multiple cookies separated by |||
+async function getUserImageFXCookies(userId: string): Promise<string[] | null> {
   try {
     const { data, error } = await supabaseAdmin
       .from('user_api_settings')
@@ -401,11 +401,30 @@ async function getUserImageFXCookies(userId: string): Promise<string | null> {
       return null;
     }
 
-    return (data as any).imagefx_cookies || null;
+    const rawCookies = (data as any).imagefx_cookies || null;
+    if (!rawCookies) return null;
+    
+    // Split by ||| for multiple cookies support
+    const cookieList = rawCookies.split('|||').map((c: string) => c.trim()).filter((c: string) => c.length > 0);
+    
+    if (cookieList.length === 0) return null;
+    
+    console.log(`[ImageFX] Found ${cookieList.length} cookie(s) configured`);
+    return cookieList;
   } catch (e) {
     console.error('[ImageFX] Error fetching user cookies:', e);
     return null;
   }
+}
+
+// Round-robin cookie selector with per-user state
+const cookieIndexMap = new Map<string, number>();
+
+function getNextCookie(userId: string, cookies: string[]): { cookie: string; index: number } {
+  const currentIndex = cookieIndexMap.get(userId) || 0;
+  const cookie = cookies[currentIndex % cookies.length];
+  cookieIndexMap.set(userId, (currentIndex + 1) % cookies.length);
+  return { cookie, index: currentIndex % cookies.length };
 }
 
 serve(async (req) => {
@@ -453,10 +472,10 @@ serve(async (req) => {
       );
     }
 
-    // Get user's ImageFX cookies
-    const cookies = await getUserImageFXCookies(userId);
+    // Get user's ImageFX cookies (now returns array)
+    const cookieList = await getUserImageFXCookies(userId);
     
-    if (!cookies) {
+    if (!cookieList || cookieList.length === 0) {
       return new Response(
         JSON.stringify({ 
           error: "Cookies do ImageFX não configurados ou inválidos. Configure em Configurações > ImageFX." 
@@ -464,6 +483,10 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Select cookie using round-robin for load distribution
+    const { cookie: selectedCookie, index: cookieIndex } = getNextCookie(userId, cookieList);
+    console.log(`[ImageFX] Using cookie ${cookieIndex + 1}/${cookieList.length}`);
 
     // Map aspect ratio
     let aspectRatioValue: string = AspectRatio.LANDSCAPE;
@@ -475,8 +498,8 @@ serve(async (req) => {
       aspectRatioValue = AspectRatio.LANDSCAPE;
     }
 
-    // Generate images
-    const images = await generateWithImageFX(cookies, userId, {
+    // Generate images using selected cookie
+    const images = await generateWithImageFX(selectedCookie, userId, {
       prompt,
       negativePrompt,
       numberOfImages: Math.min(numberOfImages, 4), // Max 4 images
@@ -485,7 +508,7 @@ serve(async (req) => {
       model
     });
 
-    console.log(`[ImageFX] Returning ${images.length} image(s)`);
+    console.log(`[ImageFX] Returning ${images.length} image(s) from cookie ${cookieIndex + 1}`);
 
     return new Response(
       JSON.stringify({ 
