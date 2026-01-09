@@ -54,8 +54,17 @@ const SceneGenerator = () => {
   const [niche, setNiche] = usePersistedState("scene_niche", "");
   const [style, setStyle] = usePersistedState("scene_style", "photorealistic");
   const [wordsPerScene, setWordsPerScene] = usePersistedState("scene_wordsPerScene", "40");
+  const [selectedModel, setSelectedModel] = usePersistedState("scene_model", "gpt-4.1-fast");
   const [scenes, setScenes] = usePersistedState<ScenePrompt[]>("scene_scenes", []);
   const [batchPrompts, setBatchPrompts] = usePersistedState("batch_prompts", "");
+
+  // AI Model options (Laozhang standard)
+  const AI_MODEL_OPTIONS = [
+    { value: "gpt-4.1-fast", label: "GPT-4.1 Fast", provider: "OpenAI" },
+    { value: "claude-sonnet-4-20250514", label: "Claude 4 Sonnet", provider: "Anthropic" },
+    { value: "gemini-2.5-pro-preview-05-06", label: "Gemini 2.5 Pro", provider: "Google" },
+    { value: "deepseek-chat", label: "DeepSeek V3", provider: "DeepSeek" },
+  ];
   
   // Non-persisted states
   const [isGenerating, setIsGenerating] = useState(false);
@@ -203,6 +212,7 @@ const SceneGenerator = () => {
               style,
               estimatedScenes,
               wordsPerScene: parseInt(wordsPerScene),
+              model: selectedModel,
             },
           });
 
@@ -363,6 +373,25 @@ const SceneGenerator = () => {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
+                          <Label>Modelo de IA</Label>
+                          <Select value={selectedModel} onValueChange={setSelectedModel}>
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Selecione o modelo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {AI_MODEL_OPTIONS.map((model) => (
+                                <SelectItem key={model.value} value={model.value}>
+                                  <span className="flex items-center gap-2">
+                                    <Sparkles className="w-3 h-3 text-primary" />
+                                    {model.label}
+                                    <span className="text-muted-foreground text-xs">({model.provider})</span>
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
                           <Label>Estilo Visual</Label>
                           <div className="mt-1">
                             <StyleSelector 
@@ -371,6 +400,9 @@ const SceneGenerator = () => {
                             />
                           </div>
                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4">
                         <div>
                           <Label>Palavras por Cena</Label>
                           {showCustomWps ? (
