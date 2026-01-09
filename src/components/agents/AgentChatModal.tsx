@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateNarrationSrt } from "@/lib/srtGenerator";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
+import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 import { toast } from "sonner";
 import { addBrandingFooter } from "@/lib/utils";
 
@@ -56,6 +57,7 @@ interface AgentChatModalProps {
 export function AgentChatModal({ open, onOpenChange, agent, onModelChange, onTriggersUpdate }: AgentChatModalProps) {
   const { user } = useAuth();
   const { balance } = useCredits();
+  const { usePlatformCredits } = useCreditDeduction();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -1085,10 +1087,17 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
                 <span className="font-medium text-sm">Gerar Roteiro</span>
               </div>
               <div className="flex items-center gap-2">
-                <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
-                  <Zap className="w-3 h-3 mr-1" />
-                  ~{estimatedCredits} créditos
-                </Badge>
+                {usePlatformCredits === false ? (
+                  <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
+                    <Zap className="w-3 h-3 mr-1" />
+                    Usando sua API
+                  </Badge>
+                ) : (
+                  <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
+                    <Zap className="w-3 h-3 mr-1" />
+                    ~{estimatedCredits} créditos
+                  </Badge>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -1263,8 +1272,8 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
               </label>
             </div>
 
-            {/* Insufficient Credits Warning */}
-            {balance < estimatedCredits && (
+            {/* Insufficient Credits Warning - só se usa créditos da plataforma */}
+            {balance < estimatedCredits && usePlatformCredits !== false && (
               <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
@@ -1288,10 +1297,20 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
                 </Button>
               </div>
             )}
+            
+            {/* Indicador de uso de API própria */}
+            {usePlatformCredits === false && (
+              <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
+                <p className="text-xs text-primary text-center flex items-center justify-center gap-1.5">
+                  <Zap className="h-3 w-3" />
+                  Usando sua API - Sem consumo de créditos da plataforma
+                </p>
+              </div>
+            )}
 
             <Button
               onClick={handleGenerateScript}
-              disabled={!scriptTitle.trim() || isGeneratingScript || balance < estimatedCredits}
+              disabled={!scriptTitle.trim() || isGeneratingScript || (balance < estimatedCredits && usePlatformCredits !== false)}
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {isGeneratingScript ? (
@@ -1302,7 +1321,9 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
               ) : (
                 <>
                   <Zap className="w-4 h-4 mr-2" />
-                  Gerar Roteiro ({estimatedCredits} créditos)
+                  {usePlatformCredits === false
+                    ? "Gerar Roteiro"
+                    : `Gerar Roteiro (${estimatedCredits} créditos)`}
                 </>
               )}
             </Button>
