@@ -225,6 +225,26 @@ export const saveBatchImageToCache = async (id: string, imageData: string, promp
   }
 };
 
+export const getBatchImageFromCache = async (id: string): Promise<BatchCachedImage | null> => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(BATCH_STORE_NAME, 'readonly');
+    const store = tx.objectStore(BATCH_STORE_NAME);
+
+    const result = await new Promise<BatchCachedImage | undefined>((resolve, reject) => {
+      const request = store.get(id);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+
+    db.close();
+    return result || null;
+  } catch (error) {
+    console.error('Error getting batch image from cache:', error);
+    return null;
+  }
+};
+
 export const getAllBatchCachedImages = async (): Promise<BatchCachedImage[]> => {
   try {
     const db = await openDB();
