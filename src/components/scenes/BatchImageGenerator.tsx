@@ -138,6 +138,8 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
   useEffect(() => {
     if (initialPrompts && initialPrompts !== promptsText) {
       setPromptsText(initialPrompts);
+      // Reset autoStartTriggered when prompts change to allow new auto-start
+      setAutoStartTriggered(false);
     }
   }, [initialPrompts]);
 
@@ -147,14 +149,19 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
   // Auto-start generation when triggered from SceneGenerator
   useEffect(() => {
     if (autoStart && initialPrompts && !autoStartTriggered && !isGenerating && user) {
+      // Ensure promptsText is updated before starting
+      if (promptsText !== initialPrompts) {
+        setPromptsText(initialPrompts);
+      }
       setAutoStartTriggered(true);
-      // Small delay to ensure state is updated
+      // Delay to ensure state is updated
       const timer = setTimeout(() => {
+        console.log("[BatchImageGenerator] Auto-starting with prompts:", initialPrompts.substring(0, 100));
         startGenerationRef.current();
-      }, 500);
+      }, 800);
       return () => clearTimeout(timer);
     }
-  }, [autoStart, initialPrompts, autoStartTriggered, isGenerating, user]);
+  }, [autoStart, initialPrompts, autoStartTriggered, isGenerating, user, promptsText]);
 
   // Keyboard navigation for preview
   useEffect(() => {
@@ -254,7 +261,11 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
   };
 
   const handleStartGeneration = async () => {
+    console.log("[BatchImageGenerator] Starting generation. promptsText length:", promptsText.length);
+    
     const prompts = parsePrompts();
+    console.log("[BatchImageGenerator] Parsed prompts count:", prompts.length);
+    
     if (prompts.length === 0) {
       toast.error("Cole pelo menos um prompt de texto");
       return;

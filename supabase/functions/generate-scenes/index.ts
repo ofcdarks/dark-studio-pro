@@ -518,7 +518,7 @@ serve(async (req) => {
                   apiModel
                 );
 
-                // Enviar cada cena individualmente
+                // Enviar cada cena individualmente com total atualizado
                 for (const scene of batchScenes) {
                   const numberedScene = {
                     ...scene,
@@ -526,12 +526,26 @@ serve(async (req) => {
                   };
                   allScenes.push(numberedScene);
                   
+                  // Calcular total estimado real baseado no progresso atual
+                  // Se estamos no último chunk, o total real é o que já temos
+                  // Se não, estimar baseado na proporção
+                  const isLastChunk = i === chunks.length - 1;
+                  let dynamicTotal = estimatedScenes;
+                  
+                  if (isLastChunk) {
+                    dynamicTotal = allScenes.length;
+                  } else {
+                    // Estimar baseado na proporção de chunks processados
+                    const avgScenesPerChunk = allScenes.length / (i + 1);
+                    dynamicTotal = Math.ceil(avgScenesPerChunk * chunks.length);
+                  }
+                  
                   // Enviar cena via SSE
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
                     type: 'scene', 
                     scene: numberedScene,
                     current: allScenes.length,
-                    total: estimatedScenes
+                    total: Math.max(dynamicTotal, allScenes.length)
                   })}\n\n`));
                 }
 
