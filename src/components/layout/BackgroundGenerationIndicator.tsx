@@ -1,13 +1,36 @@
 import { useBackgroundImageGeneration } from "@/hooks/useBackgroundImageGeneration";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { X, Image, Loader2, Rocket, Wand2 } from "lucide-react";
+import { X, Image, Loader2, Rocket, Wand2, Clock } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 export const BackgroundGenerationIndicator = () => {
   const { state, cancelGeneration } = useBackgroundImageGeneration();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Timer em tempo real
+  const [elapsedTime, setElapsedTime] = useState(0);
+  
+  useEffect(() => {
+    if (!state.isGenerating || !state.startTime) {
+      setElapsedTime(0);
+      return;
+    }
+    
+    // Atualizar imediatamente
+    setElapsedTime(Math.floor((Date.now() - state.startTime) / 1000));
+    
+    // Atualizar a cada segundo
+    const interval = setInterval(() => {
+      if (state.startTime) {
+        setElapsedTime(Math.floor((Date.now() - state.startTime) / 1000));
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [state.isGenerating, state.startTime]);
 
   // Não mostrar na página /prompts - lá já tem o progresso na interface
   if (!state.isGenerating || location.pathname === '/prompts') return null;
@@ -66,6 +89,17 @@ export const BackgroundGenerationIndicator = () => {
         >
           <X className="h-4 w-4" />
         </Button>
+      </div>
+
+      {/* Timer em tempo real */}
+      <div className="flex items-center gap-2 mb-2 px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
+        <Clock className="h-3.5 w-3.5 text-primary" />
+        <span className="text-sm font-mono font-semibold text-primary">
+          {formatTime(elapsedTime)}
+        </span>
+        <span className="text-xs text-muted-foreground ml-auto">
+          Tempo decorrido
+        </span>
       </div>
 
       {/* Indicador de reescrita de prompt bloqueado */}
