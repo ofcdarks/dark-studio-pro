@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
@@ -69,6 +69,39 @@ interface DeductionResult {
 export const useCreditDeduction = () => {
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [usePlatformCredits, setUsePlatformCredits] = useState<boolean | null>(null);
+
+  // Buscar configuração de uso de créditos da plataforma
+  useEffect(() => {
+    const fetchUserSettings = async () => {
+      if (!user) {
+        setUsePlatformCredits(true); // Default para usar créditos
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('user_api_settings')
+          .select('use_platform_credits')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching user API settings:', error);
+          setUsePlatformCredits(true); // Default em caso de erro
+          return;
+        }
+
+        // Se não existe registro ou use_platform_credits é null, default é true
+        setUsePlatformCredits(data?.use_platform_credits ?? true);
+      } catch (err) {
+        console.error('Error in fetchUserSettings:', err);
+        setUsePlatformCredits(true);
+      }
+    };
+
+    fetchUserSettings();
+  }, [user]);
 
   /**
    * Calcula o custo total da operação
@@ -86,6 +119,7 @@ export const useCreditDeduction = () => {
 
   /**
    * Verifica se o usuário tem saldo suficiente
+   * Se o usuário usa API própria, sempre retorna hasBalance = true
    */
   const checkBalance = useCallback(async (requiredCredits: number): Promise<{
     hasBalance: boolean;
@@ -93,6 +127,11 @@ export const useCreditDeduction = () => {
   }> => {
     if (!user) {
       return { hasBalance: false, currentBalance: 0 };
+    }
+
+    // Se o usuário NÃO usa créditos da plataforma, sempre tem "saldo"
+    if (usePlatformCredits === false) {
+      return { hasBalance: true, currentBalance: 0 };
     }
 
     const { data, error } = await supabase
@@ -111,10 +150,11 @@ export const useCreditDeduction = () => {
       hasBalance: currentBalance >= requiredCredits,
       currentBalance
     };
-  }, [user]);
+  }, [user, usePlatformCredits]);
 
   /**
    * Deduz créditos do usuário
+   * Se o usuário está usando API própria (use_platform_credits = false), não deduz créditos
    */
   const deduct = useCallback(async (options: DeductionOptions): Promise<DeductionResult> => {
     const { 
@@ -132,6 +172,19 @@ export const useCreditDeduction = () => {
         newBalance: 0,
         shouldRefund: false,
         refund: async () => {}
+      };
+    }
+
+    // Se o usuário NÃO está usando créditos da plataforma (usa API própria), 
+    // retorna sucesso sem deduzir créditos
+    if (usePlatformCredits === false) {
+      console.log('[CreditDeduction] Usuário usando API própria, sem dedução de créditos');
+      return {
+        success: true,
+        creditsDeducted: 0,
+        newBalance: 0, // Não precisamos do saldo real
+        shouldRefund: false, // Não há o que reembolsar
+        refund: async () => {} // Noop
       };
     }
 
@@ -224,7 +277,7 @@ export const useCreditDeduction = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [user, calculateCost, checkBalance]);
+  }, [user, calculateCost, checkBalance, usePlatformCredits]);
 
   /**
    * Wrapper para executar operação com dedução automática
@@ -283,6 +336,7 @@ export const useCreditDeduction = () => {
     calculateCost,
     executeWithDeduction,
     getEstimatedCost,
+    usePlatformCredits,
     CREDIT_COSTS
   };
 };
