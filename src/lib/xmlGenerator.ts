@@ -161,11 +161,21 @@ export const analyzeSceneForKenBurns = (
     intensity = 'dramatic';
     reason = 'Momento de revelação dramática';
   }
-  // Primeira cena = zoom in para capturar atenção
+  // PRIMEIRAS 3 CENAS = Máximo impacto para retenção de audiência
   else if (sceneIndex === 0) {
+    selectedMotion = 'zoom_in_pan_right';
+    intensity = 'dramatic';
+    reason = 'Abertura IMPACTANTE - prender atenção nos primeiros segundos';
+  }
+  else if (sceneIndex === 1) {
+    selectedMotion = 'zoom_out_pan_left';
+    intensity = 'dramatic';
+    reason = 'Segunda cena - revelação épica para manter retenção';
+  }
+  else if (sceneIndex === 2) {
     selectedMotion = 'zoom_in';
-    intensity = 'normal';
-    reason = 'Abertura - capturar atenção do espectador';
+    intensity = 'dramatic';
+    reason = 'Terceira cena - foco intenso para consolidar audiência';
   }
   // Última cena = zoom out para conclusão épica
   else if (sceneIndex === totalScenes - 1) {
@@ -259,15 +269,20 @@ export const applyKenBurnsToScenes = (scenes: SceneForXml[]): SceneForXml[] => {
  */
 const getKenBurnsKeyframeParams = (
   motion: KenBurnsMotion,
-  durationFrames: number
+  durationFrames: number,
+  sceneIndex?: number
 ): { startScale: number; endScale: number; startX: number; endX: number; startY: number; endY: number } => {
-  const intensityMultiplier = motion.intensity === 'dramatic' ? 1.5 : motion.intensity === 'subtle' ? 0.5 : 1.0;
+  // Intensidade maior para as primeiras 3 cenas (retenção)
+  const isIntroScene = sceneIndex !== undefined && sceneIndex < 3;
+  const introBoost = isIntroScene ? 1.3 : 1.0;
+  
+  const intensityMultiplier = (motion.intensity === 'dramatic' ? 1.5 : motion.intensity === 'subtle' ? 0.5 : 1.0) * introBoost;
   
   // IMPORTANTE: Usar escala base de 1.08 (108%) para garantir que a imagem sempre cubra a tela
   // Isso evita bordas pretas durante qualquer movimento de zoom ou pan
   const safeBaseScale = 1.08; // Margem de segurança de 8%
-  const baseZoom = 0.06 * intensityMultiplier; // Reduzido para manter dentro da margem de segurança
-  const basePan = 0.04 * intensityMultiplier; // Reduzido para evitar mostrar bordas
+  const baseZoom = 0.06 * intensityMultiplier; // Aumentado para cenas de introdução
+  const basePan = 0.04 * intensityMultiplier; // Aumentado para cenas de introdução
   
   let params = {
     startScale: safeBaseScale,
@@ -344,13 +359,14 @@ const getKenBurnsKeyframeParams = (
 const generateKenBurnsKeyframesXml = (
   motion: KenBurnsMotion | undefined,
   durationFrames: number,
-  fps: number
+  fps: number,
+  sceneIndex?: number
 ): string => {
   if (!motion || motion.type === 'static') {
     return '';
   }
   
-  const params = getKenBurnsKeyframeParams(motion, durationFrames);
+  const params = getKenBurnsKeyframeParams(motion, durationFrames, sceneIndex);
   
   // Gerar XML de keyframes para transformação
   return `                <filter>
@@ -2500,9 +2516,9 @@ export const generateFcp7XmlWithTransitions = (
       xml += getTransitionXml(transitionType, transitionFrames);
     }
     
-    // Adicionar keyframes Ken Burns se disponível
+    // Adicionar keyframes Ken Burns se disponível - com boost de intensidade para primeiras cenas
     if (enableKenBurns && scene.kenBurnsMotion) {
-      xml += generateKenBurnsKeyframesXml(scene.kenBurnsMotion, durationFrames, fps);
+      xml += generateKenBurnsKeyframesXml(scene.kenBurnsMotion, durationFrames, fps, index);
     }
     
     if (shortText) {

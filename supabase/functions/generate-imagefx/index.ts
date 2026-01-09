@@ -182,8 +182,8 @@ function buildPromptPayload(options: {
   const seed = options.seed ?? Math.floor(Math.random() * 2147483647);
   const model = options.model === "IMAGEN_3" ? Model.IMAGEN_3 : Model.IMAGEN_3_5;
   
-  // Enriquecer prompt com formato 16:9 para evitar bordas pretas
-  const enhancedPrompt = `${options.prompt}, 16:9 aspect ratio, no black bars, no letterbox, no borders, fill entire frame`;
+  // CRÍTICO: Reforçar FORTEMENTE formato 16:9 widescreen para evitar bordas pretas cinematográficas
+  const enhancedPrompt = `${options.prompt}. CRITICAL FRAMING REQUIREMENTS: Full 16:9 widescreen aspect ratio, subject and scene must fill the ENTIRE frame edge-to-edge with NO black bars on top or bottom, NO letterbox, NO cinematic bars, NO pillarbox, NO borders whatsoever, horizontal wide-angle composition filling 100% of canvas, ultra-wide framing`;
   
   const payload: any = {
     userInput: {
