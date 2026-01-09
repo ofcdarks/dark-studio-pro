@@ -434,7 +434,7 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
           setImages(prev => {
             const next = prev.map((img, i) =>
               i === result.index
-                ? { ...img, status: "success", imageUrl: result.imageUrl!, wasRewritten: result.wasRewritten, inCache: true }
+                ? { ...img, status: "success" as const, imageUrl: result.imageUrl!, wasRewritten: result.wasRewritten, inCache: true }
                 : img
             );
             return pruneInMemoryImages(next);
@@ -620,23 +620,6 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
       window.URL.revokeObjectURL(url);
 
       toast.success(`ZIP com ${successImgs.length} imagens baixado!`);
-    } catch (error) {
-      console.error("Error creating ZIP:", error);
-      toast.error("Erro ao criar ZIP");
-    }
-  };
-
-      const content = await zip.generateAsync({ type: "blob" });
-      const url = window.URL.createObjectURL(content);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `imagens_lote_${format(new Date(), "yyyy-MM-dd_HH-mm")}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
-      toast.success(`ZIP com ${successImages.length} imagens baixado!`);
     } catch (error) {
       console.error("Error creating ZIP:", error);
       toast.error("Erro ao criar ZIP");
