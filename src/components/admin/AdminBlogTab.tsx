@@ -501,7 +501,20 @@ export const AdminBlogTab = () => {
         }
       }
 
-      toast.success("Artigo gerado com sucesso!");
+      toast.success(
+        <div className="flex flex-col gap-2">
+          <span>Artigo gerado com sucesso!</span>
+          <a 
+            href={`/blog/${savedArticle.slug}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary underline hover:text-primary/80 text-sm"
+          >
+            Ver artigo →
+          </a>
+        </div>,
+        { duration: 8000 }
+      );
       setGenerateModalOpen(false);
       setGenerateTopic("");
       setGenerateYoutubeUrl("");
@@ -713,13 +726,15 @@ export const AdminBlogTab = () => {
   };
 
   const handleRegenerateAllCovers = async () => {
-    // Find all articles
-    const articlesToUpdate = articles;
+    // Find only articles WITHOUT covers (no image_url or empty)
+    const articlesToUpdate = articles.filter(a => !a.image_url || a.image_url.trim() === "");
     
     if (articlesToUpdate.length === 0) {
-      toast.info("Nenhum artigo encontrado");
+      toast.info("Todos os artigos já possuem imagem de capa");
       return;
     }
+
+    toast.info(`Gerando capas para ${articlesToUpdate.length} artigos sem imagem...`);
 
     setRegeneratingCovers(true);
     setCoversProgress({ current: 0, total: articlesToUpdate.length });
