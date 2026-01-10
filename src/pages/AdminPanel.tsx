@@ -231,8 +231,16 @@ const AdminPanel = () => {
         user.email?.toLowerCase().includes(searchLower) ||
         user.full_name?.toLowerCase().includes(searchLower) ||
         user.whatsapp?.toLowerCase().includes(searchLower);
-      const matchesRole = filterRole === "all" || user.role === filterRole;
-      return matchesSearch && matchesRole;
+      
+      // Filter by role or status (pending)
+      let matchesFilter = true;
+      if (filterRole === "pending") {
+        matchesFilter = user.status === "pending";
+      } else if (filterRole !== "all") {
+        matchesFilter = user.role === filterRole;
+      }
+      
+      return matchesSearch && matchesFilter;
     });
   }, [users, searchTerm, filterRole]);
 
@@ -702,6 +710,7 @@ const AdminPanel = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="pending">Pendente</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="pro">Pro</SelectItem>
                       <SelectItem value="free">Free</SelectItem>
