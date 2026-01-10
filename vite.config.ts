@@ -5,6 +5,9 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 
+// Skip image optimization in Docker builds (sharp not available)
+const skipImageOptimization = process.env.VITE_SKIP_IMAGE_OPTIMIZATION === 'true';
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -49,7 +52,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
-    ViteImageOptimizer({
+    // Only include image optimizer when not in Docker build
+    !skipImageOptimization && ViteImageOptimizer({
       // Optimize existing formats
       jpg: {
         quality: 85,

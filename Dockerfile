@@ -8,15 +8,11 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Install dependencies for native modules (sharp, svgo)
-RUN apk add --no-cache python3 make g++ vips-dev
-
 # Copy package files first (for better caching)
 COPY package*.json ./
 
-# Install dependencies including sharp and svgo for image optimization
-RUN npm ci --legacy-peer-deps && \
-    npm install sharp svgo --save-optional
+# Install dependencies
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .
@@ -30,6 +26,8 @@ ARG VITE_SUPABASE_PROJECT_ID
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
 ENV VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
+# Skip image optimization in Docker (images already optimized locally)
+ENV VITE_SKIP_IMAGE_OPTIMIZATION=true
 
 # Build the application
 RUN npm run build
