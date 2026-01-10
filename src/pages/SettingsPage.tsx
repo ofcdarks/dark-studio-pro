@@ -337,6 +337,11 @@ const SettingsPage = () => {
 
   const canUseOwnApiKeys = hasPermission('usar_api_propria');
   const canUseImageFxCookies = hasPermission('imagefx_cookies');
+  // Múltiplos cookies (conta 2 e 3) apenas para planos Pro/Annual/Master
+  const isPremiumPlan = planName?.toLowerCase().includes('pro') || 
+                        planName?.toLowerCase().includes('annual') || 
+                        planName?.toLowerCase().includes('master') ||
+                        planName?.toLowerCase().includes('admin');
   const queryClient = useQueryClient();
   const [syncingPlan, setSyncingPlan] = useState(false);
 
@@ -506,13 +511,14 @@ const SettingsPage = () => {
     await saveSettings(updateData as any);
   };
 
-  // Save ImageFX cookies (combines all 3 slots into single field with |||)
+  // Save ImageFX cookies (combines all 3 slots into single field with ||| - only premium can use multiple)
   const handleSaveImageFxCookies = async () => {
-    const cookies = [
-      imagefxCookies.cookie1.trim(),
-      imagefxCookies.cookie2.trim(),
-      imagefxCookies.cookie3.trim(),
-    ].filter(c => c).join(' ||| ');
+    // Non-premium users can only use cookie1
+    const cookiesToSave = isPremiumPlan 
+      ? [imagefxCookies.cookie1.trim(), imagefxCookies.cookie2.trim(), imagefxCookies.cookie3.trim()]
+      : [imagefxCookies.cookie1.trim()];
+    
+    const cookies = cookiesToSave.filter(c => c).join(' ||| ');
     
     if (!cookies) {
       toast.error('Insira pelo menos um cookie');
@@ -986,16 +992,28 @@ const SettingsPage = () => {
                 , faça login e extraia os cookies usando uma extensão como "EditThisCookie" ou "Cookie-Editor".
               </p>
               
-              {/* Multi-cookie tip */}
-              <div className="flex items-start gap-3 p-3 mb-4 bg-primary/10 border border-primary/30 rounded-lg">
-                <Rocket className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-primary text-sm">Turbo Mode: Múltiplas Contas</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Use até 3 contas Google diferentes para triplicar a velocidade de geração!
-                  </p>
+              {/* Multi-cookie tip - only for premium */}
+              {isPremiumPlan ? (
+                <div className="flex items-start gap-3 p-3 mb-4 bg-primary/10 border border-primary/30 rounded-lg">
+                  <Rocket className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-primary text-sm">Turbo Mode: Múltiplas Contas</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Use até 3 contas Google diferentes para triplicar a velocidade de geração!
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-start gap-3 p-3 mb-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <Lock className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-amber-500 text-sm">Turbo Mode: Exclusivo Pro</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Múltiplas contas para geração paralela disponível apenas para planos Pro, Anual ou Master.
+                    </p>
+                  </div>
+                </div>
+              )}
               
               <div className="space-y-4">
                 {/* Cookie 1 */}
@@ -1025,8 +1043,16 @@ const SettingsPage = () => {
                   </div>
                 </div>
 
-                {/* Cookie 2 */}
-                <div className="space-y-2">
+                {/* Cookie 2 - Premium only */}
+                <div className={`space-y-2 relative ${!isPremiumPlan ? 'opacity-60' : ''}`}>
+                  {!isPremiumPlan && (
+                    <div className="absolute -inset-2 bg-background/50 backdrop-blur-[1px] rounded-lg z-10 flex items-center justify-center">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/20 border border-amber-500/40 rounded-full">
+                        <Lock className="w-4 h-4 text-amber-500" />
+                        <span className="text-xs font-medium text-amber-500">Pro</span>
+                      </div>
+                    </div>
+                  )}
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">Conta 2</Badge>
                     Cookie Secundário
@@ -1040,7 +1066,7 @@ const SettingsPage = () => {
                         onChange={(e) => setImagefxCookies(prev => ({ ...prev, cookie2: e.target.value }))}
                         placeholder="Cole o cookie da segunda conta (opcional)"
                         className="pr-10 bg-secondary border-border"
-                        disabled={!canUseImageFxCookies}
+                        disabled={!canUseImageFxCookies || !isPremiumPlan}
                       />
                       <button
                         type="button"
@@ -1053,8 +1079,16 @@ const SettingsPage = () => {
                   </div>
                 </div>
 
-                {/* Cookie 3 */}
-                <div className="space-y-2">
+                {/* Cookie 3 - Premium only */}
+                <div className={`space-y-2 relative ${!isPremiumPlan ? 'opacity-60' : ''}`}>
+                  {!isPremiumPlan && (
+                    <div className="absolute -inset-2 bg-background/50 backdrop-blur-[1px] rounded-lg z-10 flex items-center justify-center">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/20 border border-amber-500/40 rounded-full">
+                        <Lock className="w-4 h-4 text-amber-500" />
+                        <span className="text-xs font-medium text-amber-500">Pro</span>
+                      </div>
+                    </div>
+                  )}
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">Conta 3</Badge>
                     Cookie Terciário
@@ -1068,7 +1102,7 @@ const SettingsPage = () => {
                         onChange={(e) => setImagefxCookies(prev => ({ ...prev, cookie3: e.target.value }))}
                         placeholder="Cole o cookie da terceira conta (opcional)"
                         className="pr-10 bg-secondary border-border"
-                        disabled={!canUseImageFxCookies}
+                        disabled={!canUseImageFxCookies || !isPremiumPlan}
                       />
                       <button
                         type="button"
