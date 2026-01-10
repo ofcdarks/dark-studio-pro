@@ -322,9 +322,16 @@ const Auth = () => {
             title: "Bem-vindo!",
             description: "Login realizado com sucesso",
           });
-          // Aguardar sessão ser totalmente estabelecida
-          await new Promise(resolve => setTimeout(resolve, 500));
-          window.location.href = "/dashboard";
+
+          // Espera a sessão persistir antes de navegar (evita precisar logar 2x)
+          const start = Date.now();
+          while (Date.now() - start < 2500) {
+            const { data } = await supabase.auth.getSession();
+            if (data.session?.user) break;
+            await new Promise((r) => setTimeout(r, 150));
+          }
+
+          navigate("/dashboard", { replace: true });
         }
       } else {
         const { error } = await signUp(email, password, fullName, whatsapp);
