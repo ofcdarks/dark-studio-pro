@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Rocket, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw, AlertTriangle, ImageIcon, Coins } from "lucide-react";
+import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Rocket, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw, AlertTriangle, ImageIcon, Coins, Play } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,7 @@ import { useImageFXUsage } from "@/hooks/useImageFXUsage";
 import { useNavigate } from "react-router-dom";
 import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { VideoGenerationModal } from "./VideoGenerationModal";
 
 interface GeneratedImage {
   id: string;
@@ -86,6 +87,10 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
   const [cacheStats, setCacheStats] = useState<{ count: number; lastUpdated: Date | null }>({ count: 0, lastUpdated: null });
   const [loadingCache, setLoadingCache] = useState(false);
   const [autoStartTriggered, setAutoStartTriggered] = useState(false);
+  
+  // Video generation modal state
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [selectedImageForVideo, setSelectedImageForVideo] = useState<{ index: number; image: GeneratedImage } | null>(null);
 
   // Evita travamentos / tela branca: mantém poucas imagens (base64) em memória ao mesmo tempo.
   const MAX_IN_MEMORY_IMAGES = 8;
@@ -1125,6 +1130,23 @@ Um carro esportivo na montanha`}
                       <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {image.status === "success" && image.imageUrl && (
                           <>
+                            {/* Video Generation Button */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  className="h-6 w-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedImageForVideo({ index, image });
+                                    setVideoModalOpen(true);
+                                  }}
+                                >
+                                  <Play className="w-3 h-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Gerar Vídeo AI</TooltipContent>
+                            </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -1464,6 +1486,23 @@ Um carro esportivo na montanha`}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Video Generation Modal */}
+      {selectedImageForVideo && (
+        <VideoGenerationModal
+          open={videoModalOpen}
+          onOpenChange={(open) => {
+            setVideoModalOpen(open);
+            if (!open) setSelectedImageForVideo(null);
+          }}
+          sceneNumber={selectedImageForVideo.index + 1}
+          sceneText={selectedImageForVideo.image.prompt}
+          sceneImage={selectedImageForVideo.image.imageUrl || undefined}
+          onVideoGenerated={(sceneNumber, videoUrl) => {
+            toast.success(`Vídeo gerado para imagem ${sceneNumber}!`);
+          }}
+        />
+      )}
     </>
   );
 };
