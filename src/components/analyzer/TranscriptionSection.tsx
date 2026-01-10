@@ -21,9 +21,11 @@ import {
   Tag,
   User,
   AlertCircle,
+  Key,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 
 interface ScriptFormulaAnalysis {
   motivoSucesso: string;
@@ -57,6 +59,7 @@ interface TranscriptionSectionProps {
 }
 
 export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionSectionProps) => {
+  const { deduct, usePlatformCredits } = useCreditDeduction();
   const [transcription, setTranscription] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -64,6 +67,8 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
   const [videoDetails, setVideoDetails] = useState<VideoDetails | null>(null);
   const [noSubtitlesMessage, setNoSubtitlesMessage] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  const ANALYSIS_CREDITS = 10;
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
@@ -118,6 +123,23 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
     }
 
     setAnalyzing(true);
+
+    // CRÍTICO: Deduzir créditos ANTES da análise
+    let deductionResult: { success: boolean; refund: () => Promise<void> } | null = null;
+    
+    if (usePlatformCredits !== false) {
+      deductionResult = await deduct({
+        operationType: 'analyze_script_formula',
+        customAmount: ANALYSIS_CREDITS,
+        details: { textLength: transcription.length }
+      });
+
+      if (!deductionResult.success) {
+        setAnalyzing(false);
+        return;
+      }
+    }
+
     try {
       const response = await supabase.functions.invoke("ai-assistant", {
         body: {
@@ -142,20 +164,16 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
       toast({ title: "Análise concluída!", description: "Fórmula viral identificada" });
     } catch (error) {
       console.error("Error analyzing formula:", error);
-      // Mock data for demo
-      setFormulaAnalysis({
-        motivoSucesso: "O roteiro utiliza uma estrutura de storytelling com gancho emocional forte nos primeiros 10 segundos, seguido de revelações progressivas que mantêm a atenção do espectador.",
-        formula: "Hook emocional (0-10s) + Promessa de revelação + Desenvolvimento com tensão crescente + Clímax surpreendente + CTA natural",
-        estrutura: {
-          hook: "Pergunta provocativa ou afirmação chocante nos primeiros 10 segundos",
-          desenvolvimento: "3 blocos de conteúdo com micro-ganchos entre cada um",
-          climax: "Revelação principal com impacto emocional",
-          cta: "Chamada para ação integrada naturalmente ao conteúdo",
-        },
-        tempoTotal: "8-12 minutos",
-        gatilhosMentais: ["Curiosidade", "Urgência", "Prova Social", "Exclusividade", "Medo de Perder"],
+      toast({
+        title: "Erro na análise",
+        description: "Não foi possível analisar a fórmula do roteiro",
+        variant: "destructive",
       });
-      toast({ title: "Análise concluída", description: "Dados gerados para demonstração" });
+      
+      // Reembolsar créditos em caso de erro
+      if (deductionResult?.refund) {
+        await deductionResult.refund();
+      }
     } finally {
       setAnalyzing(false);
     }
@@ -315,10 +333,17 @@ export const TranscriptionSection = ({ onCreateAgent, videoUrl }: TranscriptionS
             <h3 className="text-xl font-bold text-foreground">Transcrição Completa do Vídeo</h3>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-primary border-primary text-sm px-3 py-1">
-              <Zap className="w-4 h-4 mr-1" />
-              Custo estimado: 10 créditos
-            </Badge>
+            {usePlatformCredits === false ? (
+              <Badge variant="outline" className="text-green-500 border-green-500/50 bg-green-500/10 text-sm px-3 py-1">
+                <Key className="w-4 h-4 mr-1" />
+                Usando sua API
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-primary border-primary text-sm px-3 py-1">
+                <Zap className="w-4 h-4 mr-1" />
+                Custo estimado: {ANALYSIS_CREDITS} créditos
+              </Badge>
+            )}
           </div>
         </div>
 

@@ -40,7 +40,9 @@ export type OperationType =
   | 'explore_niche'
   | 'search_channels'
   | 'viral_analysis'
-  | 'analyze_multiple_channels';
+  | 'analyze_multiple_channels'
+  | 'agent_chat'
+  | 'analyze_thumbnails';
 
 interface DeductionOptions {
   /** Tipo da operação */

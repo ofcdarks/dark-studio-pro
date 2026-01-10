@@ -4,13 +4,15 @@ import { SEOHead } from "@/components/seo/SEOHead";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Users, Video, TrendingUp, Plus, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, Users, Video, TrendingUp, Plus, Loader2, Zap, Key } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { SessionIndicator } from "@/components/ui/session-indicator";
+import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 
 interface SimilarChannel {
   name: string;
@@ -20,8 +22,11 @@ interface SimilarChannel {
   url?: string;
 }
 
+const SEARCH_CREDITS = 5;
+
 const SearchChannels = () => {
   const { user } = useAuth();
+  const { deduct, usePlatformCredits } = useCreditDeduction();
   
   // Persisted states
   const [channelUrl, setChannelUrl] = usePersistedState("searchChannels_url", "");
@@ -37,6 +42,23 @@ const SearchChannels = () => {
     }
 
     setLoading(true);
+
+    // CRÍTICO: Deduzir créditos ANTES da busca
+    let deductionResult: { success: boolean; refund: () => Promise<void> } | null = null;
+    
+    if (usePlatformCredits !== false) {
+      deductionResult = await deduct({
+        operationType: 'search_channels',
+        customAmount: SEARCH_CREDITS,
+        details: { channelUrl }
+      });
+
+      if (!deductionResult.success) {
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
@@ -54,6 +76,11 @@ const SearchChannels = () => {
     } catch (error) {
       console.error('Error searching channels:', error);
       toast.error('Erro ao buscar canais similares');
+      
+      // Reembolsar créditos em caso de erro
+      if (deductionResult?.refund) {
+        await deductionResult.refund();
+      }
     } finally {
       setLoading(false);
     }
@@ -112,6 +139,20 @@ const SearchChannels = () => {
           </div>
 
           <Card className="p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium text-foreground">Buscar canais similares</h3>
+              {usePlatformCredits === false ? (
+                <Badge variant="outline" className="text-green-500 border-green-500/50 bg-green-500/10">
+                  <Key className="w-3 h-3 mr-1" />
+                  Usando sua API
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-primary border-primary">
+                  <Zap className="w-3 h-3 mr-1" />
+                  {SEARCH_CREDITS} créditos por busca
+                </Badge>
+              )}
+            </div>
             <div className="flex gap-4">
               <div className="flex-1">
                 <Input
