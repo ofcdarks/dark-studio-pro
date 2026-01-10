@@ -54,15 +54,8 @@ export function InstallPrompt() {
       return;
     }
 
-    // For mobile devices, show immediately (within 300ms)
-    if (isIOS() || isAndroid()) {
-      const timer = setTimeout(() => {
-        setShowPrompt(true);
-        setInitialCheckDone(true);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-
+    // Show immediately on page load
+    setShowPrompt(true);
     setInitialCheckDone(true);
   }, [isInstalled]);
 
@@ -212,3 +205,5 @@ export function InstallPrompt() {
     </div>
   );
 }
+
+export default InstallPrompt;
