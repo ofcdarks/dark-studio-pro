@@ -70,7 +70,7 @@ export function RequireWhatsAppModal({ open, userId, onComplete }: RequireWhatsA
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="bg-card border-primary/50 rounded-xl shadow-xl sm:max-w-md"
+        className="bg-card border-primary/50 rounded-xl shadow-xl sm:max-w-md z-[10000]"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
