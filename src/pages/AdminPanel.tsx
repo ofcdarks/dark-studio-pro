@@ -77,6 +77,7 @@ import { AdminGlobalMaintenanceTab } from "@/components/admin/AdminGlobalMainten
 import { AdminMigrationTab } from "@/components/admin/AdminMigrationTab";
 import { AdminMonitoringTab } from "@/components/admin/AdminMonitoringTab";
 import { AdminBlogTab } from "@/components/admin/AdminBlogTab";
+import { AdminUserPermissionsTab } from "@/components/admin/AdminUserPermissionsTab";
 
 interface AdminStats {
   totalUsers: number;
@@ -629,6 +630,10 @@ const AdminPanel = () => {
                 <Settings className="w-4 h-4" />
                 Permissões de Planos
               </TabsTrigger>
+              <TabsTrigger value="user-permissions" className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Permissões Individuais
+              </TabsTrigger>
               <TabsTrigger value="landing" className="flex items-center gap-2">
                 <Layout className="w-4 h-4" />
                 Landing Page
@@ -974,6 +979,10 @@ const AdminPanel = () => {
 
             <TabsContent value="permissions">
               <AdminPermissionsTab />
+            </TabsContent>
+
+            <TabsContent value="user-permissions">
+              <AdminUserPermissionsTab />
             </TabsContent>
 
             <TabsContent value="landing">

@@ -27,9 +27,15 @@ interface Permissions {
   [key: string]: boolean;
 }
 
+interface IndividualPermission {
+  permission_key: string;
+  expires_at: string | null;
+}
+
 interface PermissionsData {
   permissions: Permissions;
   planName: string | null;
+  individualPermissions: string[];
 }
 
 // Cache: 10 minutos (permissões mudam com plano)
@@ -64,7 +70,19 @@ export function usePermissions() {
   const { data, isLoading } = useQuery({
     queryKey: ['permissions', user?.id, subscription?.priceId, subscription?.plan],
     queryFn: async (): Promise<PermissionsData> => {
-      if (!user) return { permissions: {}, planName: null };
+      if (!user) return { permissions: {}, planName: null, individualPermissions: [] };
+
+      // Fetch individual permissions for this user (granted by admin)
+      const { data: individualPerms } = await supabase
+        .from("user_individual_permissions")
+        .select("permission_key, expires_at")
+        .eq("user_id", user.id);
+
+      // Filter out expired permissions
+      const now = new Date();
+      const validIndividualPermissions = (individualPerms as IndividualPermission[] || [])
+        .filter(p => !p.expires_at || new Date(p.expires_at) > now)
+        .map(p => p.permission_key);
 
       // Check if user is admin
       const { data: roleData } = await supabase
@@ -74,7 +92,7 @@ export function usePermissions() {
         .maybeSingle();
 
       if (roleData?.role === "admin") {
-        return { permissions: ALL_PERMISSIONS, planName: "ADMIN" };
+        return { permissions: ALL_PERMISSIONS, planName: "ADMIN", individualPermissions: [] };
       }
 
       // Determine the plan name from subscription or default to FREE
@@ -108,6 +126,7 @@ export function usePermissions() {
         return {
           permissions: ALL_PERMISSIONS,
           planName: "PRO",
+          individualPermissions: validIndividualPermissions,
         };
       }
 
@@ -120,6 +139,7 @@ export function usePermissions() {
         .maybeSingle();
 
       // If no permissions found for exact match, try without annual filter
+      let planPermissions: Permissions = {};
       if (!permissionsData) {
         const { data: fallbackData } = await supabase
           .from("plan_permissions")
@@ -128,15 +148,21 @@ export function usePermissions() {
           .limit(1)
           .maybeSingle();
         
-        return {
-          permissions: (fallbackData?.permissions as Permissions) || {},
-          planName: currentPlanName,
-        };
+        planPermissions = (fallbackData?.permissions as Permissions) || {};
+      } else {
+        planPermissions = (permissionsData?.permissions as Permissions) || {};
       }
 
+      // Merge plan permissions with individual permissions
+      const mergedPermissions = { ...planPermissions };
+      validIndividualPermissions.forEach(key => {
+        mergedPermissions[key] = true;
+      });
+
       return {
-        permissions: (permissionsData?.permissions as Permissions) || {},
+        permissions: mergedPermissions,
         planName: currentPlanName,
+        individualPermissions: validIndividualPermissions,
       };
     },
     enabled: !!user && !subscriptionLoading,
@@ -153,5 +179,6 @@ export function usePermissions() {
     loading: isLoading || subscriptionLoading,
     hasPermission,
     planName: data?.planName || null,
+    individualPermissions: data?.individualPermissions || [],
   };
 }
