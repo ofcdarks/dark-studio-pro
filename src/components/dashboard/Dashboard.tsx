@@ -32,14 +32,15 @@ import { ptBR } from "date-fns/locale";
 
 export function Dashboard() {
   const { user } = useAuth();
-  const { profile } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
   const { balance: credits, loading: creditsLoading } = useCredits();
   const { stats, recentVideos, activityLogs, loading, refetch } = useDashboardData();
   const { isSubscribed, planName, subscription, loading: subscriptionLoading } = useSubscription();
   const navigate = useNavigate();
   
-  // Tutorial
+  // Tutorial - only show if WhatsApp is filled
   const { showTutorial, completeTutorial, openTutorial } = useTutorial(DASHBOARD_TUTORIAL.id);
+  const canShowTutorial = !profileLoading && profile?.whatsapp;
 
   const isLowCredits = credits < 100;
 
@@ -215,15 +216,17 @@ export function Dashboard() {
         </motion.div>
       </div>
       
-      {/* Tutorial Modal */}
-      <TutorialModal
-        open={showTutorial}
-        onOpenChange={(open) => !open && completeTutorial()}
-        title={DASHBOARD_TUTORIAL.title}
-        description={DASHBOARD_TUTORIAL.description}
-        steps={DASHBOARD_TUTORIAL.steps}
-        onComplete={completeTutorial}
-      />
+      {/* Tutorial Modal - only show when WhatsApp is filled */}
+      {canShowTutorial && (
+        <TutorialModal
+          open={showTutorial}
+          onOpenChange={(open) => !open && completeTutorial()}
+          title={DASHBOARD_TUTORIAL.title}
+          description={DASHBOARD_TUTORIAL.description}
+          steps={DASHBOARD_TUTORIAL.steps}
+          onComplete={completeTutorial}
+        />
+      )}
     </div>
   );
 }
