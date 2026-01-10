@@ -33,8 +33,8 @@ const Footer = () => {
           <div>
             <h4 className="font-bold text-foreground mb-4 text-lg">Legal</h4>
             <ul className="space-y-3">
-              <li><Link to="/termos-de-uso" className="text-muted-foreground hover:text-primary transition-colors">Termos de Uso</Link></li>
-              <li><Link to="/politica-de-privacidade" className="text-muted-foreground hover:text-primary transition-colors">Política de Privacidade</Link></li>
+              <li><a href="https://canaisdarks.com.br/termos-de-uso" className="text-muted-foreground hover:text-primary transition-colors">Termos de Uso</a></li>
+              <li><a href="https://canaisdarks.com.br/politica-de-privacidade" className="text-muted-foreground hover:text-primary transition-colors">Política de Privacidade</a></li>
             </ul>
           </div>
         </div>
