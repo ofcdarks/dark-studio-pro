@@ -99,6 +99,7 @@ export function AdminAPIsTab() {
   // n8n Webhook URL
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState("");
   const [savingN8nWebhook, setSavingN8nWebhook] = useState(false);
+  const [testingN8nWebhook, setTestingN8nWebhook] = useState(false);
   // Global ImageFX Cookies
   const [globalImagefxCookies, setGlobalImagefxCookies] = useState({
     cookie1: "",
@@ -715,15 +716,64 @@ export function AdminAPIsTab() {
         <div className="flex justify-end mt-4 gap-2">
           <Button
             variant="outline"
-            onClick={() => {
+            onClick={async () => {
               if (!n8nWebhookUrl) {
                 toast.error("Configure a URL do webhook primeiro");
                 return;
               }
-              window.open(n8nWebhookUrl.replace('/webhook/', '/webhook-test/'), '_blank');
+              
+              setTestingN8nWebhook(true);
+              try {
+                // Construir URL com parâmetros de teste
+                const testUrl = new URL(n8nWebhookUrl);
+                testUrl.searchParams.set('prompt', 'Test video generation from admin panel');
+                testUrl.searchParams.set('model', 'veo31-fast');
+                testUrl.searchParams.set('aspect_ratio', '16:9');
+                testUrl.searchParams.set('duration', '5');
+                testUrl.searchParams.set('test', 'true');
+                
+                console.log('[n8n Test] URL:', testUrl.toString());
+                
+                const response = await fetch(testUrl.toString(), {
+                  method: 'GET',
+                  headers: { 'Accept': 'application/json' }
+                });
+                
+                console.log('[n8n Test] Status:', response.status);
+                const responseText = await response.text();
+                console.log('[n8n Test] Response:', responseText.substring(0, 500));
+                
+                if (response.ok) {
+                  try {
+                    const data = JSON.parse(responseText);
+                    if (data.videoUrl || data.video_url || data.url) {
+                      toast.success(`✅ Webhook funcionando! Video URL recebida.`);
+                    } else if (data.status === 'processing' || data.success) {
+                      toast.success(`✅ Webhook respondeu corretamente! Status: ${data.status || 'OK'}`);
+                    } else {
+                      toast.success(`✅ Webhook acessível! Resposta: ${JSON.stringify(data).substring(0, 100)}`);
+                    }
+                  } catch {
+                    // Resposta não é JSON válido
+                    if (responseText.includes('http') && responseText.includes('mp4')) {
+                      toast.success(`✅ Webhook funcionando! URL de vídeo detectada.`);
+                    } else {
+                      toast.success(`✅ Webhook acessível! (${response.status})`);
+                    }
+                  }
+                } else {
+                  toast.error(`❌ Erro ${response.status}: ${responseText.substring(0, 100)}`);
+                }
+              } catch (error) {
+                console.error('[n8n Test] Error:', error);
+                toast.error(`❌ Erro ao testar: ${error instanceof Error ? error.message : 'Falha na conexão'}`);
+              } finally {
+                setTestingN8nWebhook(false);
+              }
             }}
-            disabled={!n8nWebhookUrl}
+            disabled={!n8nWebhookUrl || testingN8nWebhook}
           >
+            {testingN8nWebhook && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Testar Webhook
           </Button>
           <Button
