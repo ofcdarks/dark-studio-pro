@@ -95,6 +95,7 @@ interface UserData {
   whatsapp: string | null;
   status: string | null;
   user_credits_balance?: number | null;
+  auth_provider?: string | null;
 }
 
 interface UserWithRole extends UserData {
@@ -156,7 +157,7 @@ const AdminPanel = () => {
       // Fetch user profiles with whatsapp and status
       const { data: profiles, count } = await supabase
         .from("profiles")
-        .select("id, email, full_name, created_at, credits, storage_used, whatsapp, status", { count: "exact" });
+        .select("id, email, full_name, created_at, credits, storage_used, whatsapp, status, auth_provider", { count: "exact" });
 
       // Fetch user roles
       const { data: userRoles } = await supabase.from("user_roles").select("*");
@@ -788,7 +789,16 @@ const AdminPanel = () => {
                                     onCheckedChange={() => toggleUserSelection(user.id)}
                                   />
                                 </td>
-                                <td className="py-4 pr-4 text-sm text-foreground">{user.email}</td>
+                                <td className="py-4 pr-4 text-sm text-foreground">
+                                  <div className="flex items-center gap-2">
+                                    <span>{user.email}</span>
+                                    {user.auth_provider === "google" && (
+                                      <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-[10px] px-1.5 py-0">
+                                        Google
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </td>
                                 <td className="py-4 pr-4 text-sm">
                                   {user.whatsapp ? (
                                     <a 

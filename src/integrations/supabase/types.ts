@@ -1178,6 +1178,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          auth_provider: string | null
           avatar_url: string | null
           created_at: string | null
           credits: number | null
@@ -1191,6 +1192,7 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          auth_provider?: string | null
           avatar_url?: string | null
           created_at?: string | null
           credits?: number | null
@@ -1204,6 +1206,7 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          auth_provider?: string | null
           avatar_url?: string | null
           created_at?: string | null
           credits?: number | null
