@@ -67,6 +67,16 @@ const Auth = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100);
+    
+    // Carregar credenciais salvas
+    const savedEmail = localStorage.getItem("remembered-email");
+    const savedPassword = localStorage.getItem("remembered-password");
+    if (savedEmail && savedPassword) {
+      setEmail(savedEmail);
+      setPassword(atob(savedPassword));
+      setRememberPassword(true);
+    }
+    
     return () => clearTimeout(timer);
   }, []);
 
@@ -287,6 +297,15 @@ const Auth = () => {
       }
 
       if (isLogin) {
+        // Salvar credenciais se "Lembrar-me" estiver ativo
+        if (rememberPassword) {
+          localStorage.setItem("remembered-email", email);
+          localStorage.setItem("remembered-password", btoa(password));
+        } else {
+          localStorage.removeItem("remembered-email");
+          localStorage.removeItem("remembered-password");
+        }
+        
         const { error } = await signIn(email, password);
         if (error) {
           let message = "Erro ao fazer login";
@@ -303,9 +322,9 @@ const Auth = () => {
             title: "Bem-vindo!",
             description: "Login realizado com sucesso",
           });
-          // Wait for session to be fully established before navigating
-          await new Promise(resolve => setTimeout(resolve, 100));
-          navigate("/dashboard", { replace: true });
+          // Aguardar sessão ser totalmente estabelecida
+          await new Promise(resolve => setTimeout(resolve, 500));
+          window.location.href = "/dashboard";
         }
       } else {
         const { error } = await signUp(email, password, fullName, whatsapp);
@@ -739,19 +758,35 @@ const Auth = () => {
                 </div>
               </div>
 
-              {/* Recover access link */}
+              {/* Lembrar-me e Recover access */}
               {isLogin && (
-                <div className="text-left">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsRecovery(true)}
-                    className="text-primary text-sm hover:underline"
-                  >
-                    Recuperar acesso ao Core
-                  </button>
-                  <p className="text-xs text-muted-foreground mt-1 italic">
-                    Sessão vinculada à infraestrutura do operador
-                  </p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="remember"
+                      checked={rememberPassword}
+                      onCheckedChange={(checked) => setRememberPassword(checked as boolean)}
+                      className="border-border/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    />
+                    <label 
+                      htmlFor="remember" 
+                      className="text-sm text-muted-foreground cursor-pointer select-none"
+                    >
+                      Lembrar meus dados
+                    </label>
+                  </div>
+                  <div className="text-left">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsRecovery(true)}
+                      className="text-primary text-sm hover:underline"
+                    >
+                      Recuperar acesso ao Core
+                    </button>
+                    <p className="text-xs text-muted-foreground mt-1 italic">
+                      Sessão vinculada à infraestrutura do operador
+                    </p>
+                  </div>
                 </div>
               )}
 
