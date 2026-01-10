@@ -151,6 +151,7 @@ const AppRoutes = () => {
             <Route path="/scenes" element={<ProtectedRoute><SceneGenerator /></ProtectedRoute>} />
             <Route path="/schedule" element={<ProtectedRoute><PublicationSchedule /></ProtectedRoute>} />
             <Route path="/plans" element={<ProtectedRoute><PlansCredits /></ProtectedRoute>} />
+            <Route path="/planos-creditos" element={<Navigate to="/plans" replace />} />
             <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
