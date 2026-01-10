@@ -382,6 +382,35 @@ async function generateWithImageFX(
   }
 }
 
+// Get global ImageFX cookies from admin settings
+async function getGlobalImageFXCookies(): Promise<string[] | null> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'global_imagefx_cookies')
+      .maybeSingle();
+
+    if (error || !data?.value) {
+      console.log('[ImageFX] No global cookies configured');
+      return null;
+    }
+
+    const cookies = data.value as { cookie1?: string; cookie2?: string; cookie3?: string };
+    const cookieList = [cookies.cookie1, cookies.cookie2, cookies.cookie3]
+      .filter((c): c is string => !!c && c.trim().length > 0)
+      .map(c => c.trim());
+
+    if (cookieList.length === 0) return null;
+
+    console.log(`[ImageFX] Found ${cookieList.length} global cookie(s) configured`);
+    return cookieList;
+  } catch (e) {
+    console.error('[ImageFX] Error fetching global cookies:', e);
+    return null;
+  }
+}
+
 // Get user's ImageFX cookies from settings - supports multiple cookies separated by |||
 async function getUserImageFXCookies(userId: string): Promise<string[] | null> {
   try {
@@ -409,7 +438,7 @@ async function getUserImageFXCookies(userId: string): Promise<string[] | null> {
     
     if (cookieList.length === 0) return null;
     
-    console.log(`[ImageFX] Found ${cookieList.length} cookie(s) configured`);
+    console.log(`[ImageFX] Found ${cookieList.length} user cookie(s) configured`);
     return cookieList;
   } catch (e) {
     console.error('[ImageFX] Error fetching user cookies:', e);
@@ -469,17 +498,26 @@ serve(async (req) => {
       );
     }
 
-    // Get user's ImageFX cookies (now returns array)
-    const cookieList = await getUserImageFXCookies(userId);
+    // Get user's ImageFX cookies first, then fallback to global
+    let cookieList = await getUserImageFXCookies(userId);
+    let usingGlobalCookies = false;
+    
+    if (!cookieList || cookieList.length === 0) {
+      console.log('[ImageFX] No user cookies, trying global cookies...');
+      cookieList = await getGlobalImageFXCookies();
+      usingGlobalCookies = true;
+    }
     
     if (!cookieList || cookieList.length === 0) {
       return new Response(
         JSON.stringify({ 
-          error: "Cookies do ImageFX não configurados ou inválidos. Configure em Configurações > ImageFX." 
+          error: "Cookies do ImageFX não configurados. Configure seus cookies em Configurações > ImageFX, ou aguarde o administrador configurar cookies globais." 
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    console.log(`[ImageFX] Using ${usingGlobalCookies ? 'GLOBAL' : 'USER'} cookies (${cookieList.length} available)`);
 
     // Select cookie based on scene index for ordered distribution
     const { cookie: selectedCookie, cookieIndex } = getCookieForScene(sceneIndex, cookieList);
