@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { SEOHead } from "@/components/seo/SEOHead";
-import { Clock, Mail, ArrowLeft, RefreshCw, LogOut } from "lucide-react";
+import { Clock, Mail, ArrowLeft, RefreshCw, LogOut, CheckCircle } from "lucide-react";
 import logo from "@/assets/logo.gif";
 import authBg from "@/assets/auth-porsche.jpg";
 
@@ -13,6 +13,7 @@ const PendingApproval = () => {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100);
@@ -35,7 +36,11 @@ const PendingApproval = () => {
         .single();
 
       if (!error && data?.status === "active") {
-        navigate("/dashboard");
+        // Mostrar estágio 3 antes de redirecionar
+        setIsApproved(true);
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 2000);
       }
     } catch (e) {
       console.error("Erro ao verificar status:", e);
@@ -107,36 +112,46 @@ const PendingApproval = () => {
             </div>
           </div>
 
-          {/* Pending Icon */}
+          {/* Status Icon */}
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 rounded-full bg-yellow-500/20 border-2 border-yellow-500 flex items-center justify-center">
-              <Clock className="w-10 h-10 text-yellow-500 animate-pulse" />
-            </div>
+            {isApproved ? (
+              <div className="w-20 h-20 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center">
+                <CheckCircle className="w-10 h-10 text-green-500" />
+              </div>
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-yellow-500/20 border-2 border-yellow-500 flex items-center justify-center">
+                <Clock className="w-10 h-10 text-yellow-500 animate-pulse" />
+              </div>
+            )}
           </div>
 
           {/* Title */}
           <h1 className="text-2xl font-bold text-foreground text-center mb-2">
-            Aguardando Aprovação
+            {isApproved ? "Acesso Liberado!" : "Aguardando Aprovação"}
           </h1>
           
           <p className="text-muted-foreground text-center mb-6">
-            Sua solicitação de acesso foi recebida e está sendo analisada pela nossa equipe.
+            {isApproved 
+              ? "Seu acesso foi aprovado! Redirecionando para o dashboard..." 
+              : "Sua solicitação de acesso foi recebida e está sendo analisada pela nossa equipe."}
           </p>
 
           {/* Info Box */}
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <Mail className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm text-foreground font-medium">
-                  Você receberá um email quando seu acesso for aprovado
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Enviado para: {user?.email}
-                </p>
+          {!isApproved && (
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <Mail className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-foreground font-medium">
+                    Você receberá um email quando seu acesso for aprovado
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Enviado para: {user?.email}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Timeline */}
           <div className="space-y-3 mb-6">
@@ -147,47 +162,71 @@ const PendingApproval = () => {
               <span className="text-sm text-muted-foreground">Cadastro realizado</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-yellow-500/20 border border-yellow-500 flex items-center justify-center animate-pulse">
-                <Clock className="w-4 h-4 text-yellow-500" />
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                isApproved 
+                  ? "bg-green-500/20 border border-green-500" 
+                  : "bg-yellow-500/20 border border-yellow-500 animate-pulse"
+              }`}>
+                {isApproved ? (
+                  <span className="text-green-500 text-sm">✓</span>
+                ) : (
+                  <Clock className="w-4 h-4 text-yellow-500" />
+                )}
               </div>
-              <span className="text-sm text-foreground font-medium">Aguardando aprovação</span>
+              <span className={`text-sm ${isApproved ? "text-muted-foreground" : "text-foreground font-medium"}`}>
+                {isApproved ? "Aprovado" : "Aguardando aprovação"}
+              </span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-muted/50 border border-border flex items-center justify-center">
-                <span className="text-muted-foreground text-sm">3</span>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                isApproved 
+                  ? "bg-green-500/20 border border-green-500 animate-pulse" 
+                  : "bg-muted/50 border border-border"
+              }`}>
+                {isApproved ? (
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                ) : (
+                  <span className="text-muted-foreground text-sm">3</span>
+                )}
               </div>
-              <span className="text-sm text-muted-foreground">Acesso liberado</span>
+              <span className={`text-sm ${isApproved ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                Acesso liberado
+              </span>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="space-y-3">
-            <Button
-              onClick={checkStatus}
-              className="w-full h-12 gradient-button text-primary-foreground"
-              disabled={checking}
-            >
-              {checking ? (
-                <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <RefreshCw className="w-4 h-4 mr-2" />
-              )}
-              Verificar Status
-            </Button>
+          {!isApproved && (
+            <div className="space-y-3">
+              <Button
+                onClick={checkStatus}
+                className="w-full h-12 gradient-button text-primary-foreground"
+                disabled={checking}
+              >
+                {checking ? (
+                  <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                )}
+                Verificar Status
+              </Button>
 
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              className="w-full h-12"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
-          </div>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="w-full h-12"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
+            </div>
+          )}
 
           {/* Footer */}
           <p className="text-xs text-muted-foreground text-center mt-6 italic">
-            O tempo médio de aprovação é de até 24 horas úteis.
+            {isApproved 
+              ? "Bem-vindo ao La Casa Dark Core!" 
+              : "O tempo médio de aprovação é de até 24 horas úteis."}
           </p>
         </div>
       </div>
