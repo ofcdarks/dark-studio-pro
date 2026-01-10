@@ -236,8 +236,21 @@ serve(async (req) => {
     
     const creditsNeeded = CREDIT_PRICING.TITLE_ANALYSIS[modelKey];
 
-    // Verificar e debitar créditos
+    // Verificar configuração de uso de créditos da plataforma
+    let usePlatformCredits = true;
     if (userId) {
+      const { data: userApiSettings } = await supabaseAdmin
+        .from("user_api_settings")
+        .select("use_platform_credits")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      usePlatformCredits = userApiSettings?.use_platform_credits ?? true;
+      console.log(`[Analyze Titles] User ${userId} usePlatformCredits: ${usePlatformCredits}`);
+    }
+
+    // Verificar e debitar créditos - apenas se usa créditos da plataforma
+    if (userId && usePlatformCredits) {
       const { data: creditData } = await supabaseAdmin
         .from("user_credits")
         .select("balance")
@@ -266,6 +279,10 @@ serve(async (req) => {
         model_used: `${aiConfig.provider}/${aiConfig.finalModel}`,
         details: { video_id: videoId, language, provider: aiConfig.provider }
       });
+      
+      console.log(`[Analyze Titles] Debited ${creditsNeeded} credits from user ${userId}`);
+    } else if (userId && !usePlatformCredits) {
+      console.log(`[Analyze Titles] User ${userId} using own API - no credits debited`);
     }
 
     // Passo 8: Construir prompt de análise conforme documentação
