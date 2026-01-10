@@ -1860,6 +1860,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_individual_permissions: {
+        Row: {
+          expires_at: string | null
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          notes: string | null
+          permission_key: string
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          permission_key: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          permission_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_kanban_settings: {
         Row: {
           created_at: string
