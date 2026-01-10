@@ -22,11 +22,13 @@ async function generateWithN8nWebhook(
   prompt: string,
   webhookUrl: string,
   aspectRatio: string,
-  model: string
+  model: string,
+  jobId: string,
+  callbackUrl: string
 ): Promise<{ success: boolean; videoUrl?: string; taskId?: string; status?: string; error?: string }> {
   try {
     console.log(`[n8n] Enviando para webhook: ${webhookUrl}`);
-    console.log(`[n8n] Model: ${model}, Aspect: ${aspectRatio}`);
+    console.log(`[n8n] Job ID: ${jobId}, Model: ${model}, Aspect: ${aspectRatio}`);
 
     // Construir URL com query params para GET request (compatível com browser automation)
     const url = new URL(webhookUrl);
@@ -34,9 +36,11 @@ async function generateWithN8nWebhook(
     url.searchParams.set('model', model);
     url.searchParams.set('aspect_ratio', aspectRatio);
     url.searchParams.set('duration', '8');
+    url.searchParams.set('job_id', jobId);
+    url.searchParams.set('callback_url', callbackUrl);
     url.searchParams.set('timestamp', new Date().toISOString());
 
-    console.log(`[n8n] URL completa: ${url.toString().substring(0, 200)}...`);
+    console.log(`[n8n] URL completa: ${url.toString().substring(0, 300)}...`);
 
     // Usar GET request (como configurado no n8n)
     const response = await fetch(url.toString(), {
@@ -45,6 +49,8 @@ async function generateWithN8nWebhook(
         "Accept": "application/json",
       }
     });
+
+    console.log(`[n8n] Response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -70,7 +76,8 @@ async function generateWithN8nWebhook(
             return { success: true, videoUrl: urlMatch[0], status: "completed" };
           }
         }
-        return { success: true, status: "processing" };
+        // Job iniciado com sucesso, aguardando callback
+        return { success: true, status: "processing", taskId: jobId };
       }
     } else {
       // Resposta não JSON - pode ser URL direta
@@ -80,35 +87,29 @@ async function generateWithN8nWebhook(
           return { success: true, videoUrl: urlMatch[0], status: "completed" };
         }
       }
-      return { success: true, status: "processing" };
+      // Job iniciado com sucesso, aguardando callback
+      return { success: true, status: "processing", taskId: jobId };
     }
 
     console.log("[n8n] Parsed response:", JSON.stringify(data).substring(0, 500));
 
     // Aceitar vários formatos de resposta do n8n
     const videoUrl = data.videoUrl || data.video_url || data.url || data.result?.videoUrl || data.result?.url;
-    const status = data.status || "completed";
+    const status = data.status || "processing";
+    const taskId = data.taskId || data.task_id || data.id || jobId;
 
     if (videoUrl) {
       console.log("[n8n] Video URL recebida:", videoUrl);
-      return { success: true, videoUrl, status };
+      return { success: true, videoUrl, status: "completed", taskId };
     }
 
-    if (data.taskId || data.task_id) {
-      return { 
-        success: true, 
-        taskId: data.taskId || data.task_id,
-        status: "processing"
-      };
-    }
-
-    // Se n8n retornou sucesso mas sem URL, consideramos em processamento
-    if (data.success || data.ok) {
-      return { success: true, status: "processing" };
-    }
-
-    // Se chegamos aqui mas a request foi 200 OK, consideramos como iniciado
-    return { success: true, status: "processing" };
+    // Job em processamento - n8n vai chamar o callback quando terminar
+    console.log("[n8n] Job iniciado, aguardando callback...");
+    return { 
+      success: true, 
+      taskId,
+      status: "processing"
+    };
 
   } catch (error) {
     console.error(`[n8n] Erro:`, error);
@@ -298,15 +299,67 @@ serve(async (req) => {
       if (n8nWebhookUrl) {
         console.log(`[Video Generation] Usando n8n webhook`);
         
-        const result = await generateWithN8nWebhook(prompt, n8nWebhookUrl, aspect_ratio, model);
+        // Criar job no banco antes de chamar n8n
+        const { data: job, error: insertError } = await supabase
+          .from('video_generation_jobs')
+          .insert({
+            user_id: user.id,
+            prompt: prompt.substring(0, 2000), // Limitar tamanho
+            model,
+            aspect_ratio: aspect_ratio || '16:9',
+            status: 'pending',
+            attempts: 1,
+          })
+          .select()
+          .single();
+
+        if (insertError || !job) {
+          console.error('[Video Generation] Erro ao criar job:', insertError);
+          return new Response(JSON.stringify({ error: 'Erro ao iniciar geração' }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        console.log(`[Video Generation] Job criado: ${job.id}`);
+
+        // URL de callback para o n8n
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const callbackUrl = `${supabaseUrl}/functions/v1/n8n-video-callback`;
+        
+        const result = await generateWithN8nWebhook(
+          prompt, 
+          n8nWebhookUrl, 
+          aspect_ratio || '16:9', 
+          model,
+          job.id,
+          callbackUrl
+        );
 
         if (result.success) {
+          // Atualizar job com status
+          const updateData: Record<string, unknown> = {
+            status: result.status === 'completed' ? 'completed' : 'processing',
+            n8n_task_id: result.taskId,
+          };
+          
+          if (result.videoUrl) {
+            updateData.video_url = result.videoUrl;
+            updateData.completed_at = new Date().toISOString();
+          }
+
+          await supabase
+            .from('video_generation_jobs')
+            .update(updateData)
+            .eq('id', job.id);
+
           if (result.status === "processing") {
             return new Response(JSON.stringify({
               success: true,
               status: 'processing',
+              job_id: job.id,
               task_id: result.taskId,
-              message: 'Vídeo em processamento no n8n. Pode levar alguns minutos.',
+              message: 'Vídeo em processamento no n8n. Consulte o status pelo job_id.',
             }), {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
@@ -315,6 +368,7 @@ serve(async (req) => {
           return new Response(JSON.stringify({
             success: true,
             status: 'completed',
+            job_id: job.id,
             video_url: result.videoUrl,
             model: model,
             aspect_ratio: aspect_ratio,
@@ -323,7 +377,15 @@ serve(async (req) => {
           });
         }
 
-        // Se n8n falhou, tentar fallback para API direta
+        // Se n8n falhou, atualizar job e tentar fallback
+        await supabase
+          .from('video_generation_jobs')
+          .update({ 
+            status: 'failed', 
+            error_message: result.error || 'n8n webhook falhou',
+          })
+          .eq('id', job.id);
+
         console.log(`[Video Generation] n8n falhou, tentando API direta: ${result.error}`);
       }
 

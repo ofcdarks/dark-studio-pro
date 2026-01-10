@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff, Pencil, Trash2, Rocket, ImageIcon, Users } from "lucide-react";
+import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff, Pencil, Trash2, Rocket, ImageIcon, Users, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -688,7 +688,7 @@ export function AdminAPIsTab() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Video className="w-5 h-5 text-purple-500" />
-            <h3 className="font-semibold text-foreground">Webhook n8n - Geração de Vídeo</h3>
+            <h3 className="font-semibold text-foreground">Webhook n8n - Geração de Vídeo (Veo3)</h3>
             <Badge variant="secondary" className="text-xs bg-purple-500/20 text-purple-300">
               Automação
             </Badge>
@@ -696,20 +696,68 @@ export function AdminAPIsTab() {
         </div>
         
         <p className="text-sm text-muted-foreground mb-4">
-          Configure a URL do webhook n8n para geração de vídeos. O n8n processará a requisição usando suas credenciais do Veo3 e retornará o vídeo gerado.
-          <br />
-          <span className="text-xs text-purple-400">Formato esperado do retorno: {"{ videoUrl: string, status: 'completed' | 'processing' }"}</span>
+          Configure o n8n para automatizar a geração de vídeos via Google Flow (Veo3). O sistema envia requisições GET com o prompt e recebe callbacks quando o vídeo fica pronto.
         </p>
 
-        <div className="space-y-3">
+        {/* Fluxo explicativo */}
+        <div className="bg-secondary/50 rounded-lg p-4 mb-4 border border-purple-500/20">
+          <h4 className="text-sm font-medium text-purple-400 mb-2">📋 Fluxo de Integração:</h4>
+          <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+            <li>SaaS envia GET para n8n com <code className="bg-background px-1 rounded">prompt, model, job_id, callback_url</code></li>
+            <li>n8n abre o Google Flow via Browserless.io e gera o vídeo</li>
+            <li>Quando terminar, n8n faz POST para a <code className="bg-background px-1 rounded">callback_url</code></li>
+            <li>SaaS recebe a URL do vídeo e atualiza o status</li>
+          </ol>
+        </div>
+
+        <div className="space-y-4">
+          {/* URL do Webhook */}
           <div>
-            <Label className="text-xs text-muted-foreground">URL do Webhook n8n</Label>
+            <Label className="text-xs text-muted-foreground">URL do Webhook n8n (GET)</Label>
             <Input
-              placeholder="https://seu-n8n.app/webhook/video-generation"
+              placeholder="https://n8n.canaisdarks.com.br/webhook/video-generation"
               value={n8nWebhookUrl}
               onChange={(e) => setN8nWebhookUrl(e.target.value)}
               className="bg-secondary border-border font-mono text-xs"
             />
+          </div>
+
+          {/* URL de Callback (read-only) */}
+          <div>
+            <Label className="text-xs text-muted-foreground">URL de Callback (configure no n8n)</Label>
+            <div className="flex gap-2">
+              <Input
+                readOnly
+                value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-video-callback`}
+                className="bg-background border-border font-mono text-xs text-muted-foreground"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-video-callback`);
+                  toast.success("URL copiada!");
+                }}
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              O n8n deve fazer POST para esta URL com: <code className="bg-secondary px-1 rounded">{"{ job_id, status, video_url }"}</code>
+            </p>
+          </div>
+
+          {/* Parâmetros que o n8n recebe */}
+          <div className="bg-secondary/30 rounded-lg p-3 border border-border">
+            <h5 className="text-xs font-medium text-foreground mb-2">Parâmetros enviados via Query String:</h5>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div><code className="bg-background px-1 rounded">prompt</code> - Texto do vídeo</div>
+              <div><code className="bg-background px-1 rounded">model</code> - veo31 ou veo31-fast</div>
+              <div><code className="bg-background px-1 rounded">aspect_ratio</code> - 16:9, 9:16, 1:1</div>
+              <div><code className="bg-background px-1 rounded">duration</code> - Duração em segundos</div>
+              <div><code className="bg-background px-1 rounded">job_id</code> - ID único do job</div>
+              <div><code className="bg-background px-1 rounded">callback_url</code> - URL para retorno</div>
+            </div>
           </div>
         </div>
 
@@ -726,10 +774,12 @@ export function AdminAPIsTab() {
               try {
                 // Construir URL com parâmetros de teste
                 const testUrl = new URL(n8nWebhookUrl);
-                testUrl.searchParams.set('prompt', 'Test video generation from admin panel');
+                testUrl.searchParams.set('prompt', 'Test video generation from admin panel - a beautiful sunset over the ocean');
                 testUrl.searchParams.set('model', 'veo31-fast');
                 testUrl.searchParams.set('aspect_ratio', '16:9');
                 testUrl.searchParams.set('duration', '5');
+                testUrl.searchParams.set('job_id', `test-${Date.now()}`);
+                testUrl.searchParams.set('callback_url', `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-video-callback`);
                 testUrl.searchParams.set('test', 'true');
                 
                 console.log('[n8n Test] URL:', testUrl.toString());
@@ -748,8 +798,8 @@ export function AdminAPIsTab() {
                     const data = JSON.parse(responseText);
                     if (data.videoUrl || data.video_url || data.url) {
                       toast.success(`✅ Webhook funcionando! Video URL recebida.`);
-                    } else if (data.status === 'processing' || data.success) {
-                      toast.success(`✅ Webhook respondeu corretamente! Status: ${data.status || 'OK'}`);
+                    } else if (data.status === 'processing' || data.success || data.received) {
+                      toast.success(`✅ Webhook respondeu! Status: ${data.status || 'iniciado'}`);
                     } else {
                       toast.success(`✅ Webhook acessível! Resposta: ${JSON.stringify(data).substring(0, 100)}`);
                     }
