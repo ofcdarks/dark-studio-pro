@@ -197,17 +197,18 @@ export const useCreditDeduction = () => {
       // Verificar saldo
       const { hasBalance, currentBalance } = await checkBalance(creditsToDeduct);
 
-      if (!hasBalance) {
+      // CRÍTICO: Bloquear operação se saldo for insuficiente ou negativo
+      if (!hasBalance || currentBalance < creditsToDeduct || currentBalance <= 0) {
         if (showToast) {
           toast.error(`Saldo insuficiente`, {
-            description: `Você precisa de ${creditsToDeduct} créditos para usar ${toolInfo.name}. Saldo atual: ${Math.ceil(currentBalance)}`
+            description: `Você precisa de ${creditsToDeduct} créditos para usar ${toolInfo.name}. Saldo atual: ${Math.max(0, Math.ceil(currentBalance))}`
           });
         }
         return {
           success: false,
           error: 'Saldo insuficiente',
           creditsDeducted: 0,
-          newBalance: currentBalance,
+          newBalance: Math.max(0, currentBalance),
           shouldRefund: false,
           refund: async () => {}
         };

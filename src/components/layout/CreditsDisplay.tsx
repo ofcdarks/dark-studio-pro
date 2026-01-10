@@ -167,7 +167,7 @@ export function CreditsDisplay({ collapsed = false, showRefresh = true, classNam
                 <span className={cn(
                   "font-bold text-sm",
                   balance < 20 ? "text-destructive" : "text-primary"
-                )}>{balance.toLocaleString()}</span>
+                )}>{Math.max(0, balance).toLocaleString()}</span>
               )}
             </div>
           </TooltipTrigger>
