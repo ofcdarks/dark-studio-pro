@@ -17,7 +17,7 @@ interface VideoRequest {
 const VEO3_API_URL = "https://api.veo3gen.co/api/veo/text-to-video";
 const VEO3_STATUS_URL = "https://api.veo3gen.co/api/veo/status";
 
-// n8n Webhook para processamento de vídeo
+// n8n Webhook para processamento de vídeo via browser automation
 async function generateWithN8nWebhook(
   prompt: string,
   webhookUrl: string,
@@ -28,18 +28,22 @@ async function generateWithN8nWebhook(
     console.log(`[n8n] Enviando para webhook: ${webhookUrl}`);
     console.log(`[n8n] Model: ${model}, Aspect: ${aspectRatio}`);
 
-    const response = await fetch(webhookUrl, {
-      method: "POST",
+    // Construir URL com query params para GET request (compatível com browser automation)
+    const url = new URL(webhookUrl);
+    url.searchParams.set('prompt', prompt);
+    url.searchParams.set('model', model);
+    url.searchParams.set('aspect_ratio', aspectRatio);
+    url.searchParams.set('duration', '8');
+    url.searchParams.set('timestamp', new Date().toISOString());
+
+    console.log(`[n8n] URL completa: ${url.toString().substring(0, 200)}...`);
+
+    // Usar GET request (como configurado no n8n)
+    const response = await fetch(url.toString(), {
+      method: "GET",
       headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt,
-        model,
-        aspect_ratio: aspectRatio,
-        duration: 8,
-        timestamp: new Date().toISOString()
-      })
+        "Accept": "application/json",
+      }
     });
 
     if (!response.ok) {
@@ -48,11 +52,41 @@ async function generateWithN8nWebhook(
       return { success: false, error: `Erro n8n webhook: ${response.status}` };
     }
 
-    const data = await response.json();
-    console.log("[n8n] Response:", JSON.stringify(data).substring(0, 500));
+    // Verificar content type
+    const contentType = response.headers.get("content-type") || "";
+    const responseText = await response.text();
+    console.log("[n8n] Raw response:", responseText.substring(0, 500));
+
+    let data;
+    if (contentType.includes("application/json") || responseText.trim().startsWith("{") || responseText.trim().startsWith("[")) {
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        console.log("[n8n] Não foi possível parsear JSON, tratando como texto");
+        // Se for uma URL direta de vídeo
+        if (responseText.includes("http") && (responseText.includes(".mp4") || responseText.includes("video"))) {
+          const urlMatch = responseText.match(/https?:\/\/[^\s"'<>]+/);
+          if (urlMatch) {
+            return { success: true, videoUrl: urlMatch[0], status: "completed" };
+          }
+        }
+        return { success: true, status: "processing" };
+      }
+    } else {
+      // Resposta não JSON - pode ser URL direta
+      if (responseText.includes("http")) {
+        const urlMatch = responseText.match(/https?:\/\/[^\s"'<>]+/);
+        if (urlMatch) {
+          return { success: true, videoUrl: urlMatch[0], status: "completed" };
+        }
+      }
+      return { success: true, status: "processing" };
+    }
+
+    console.log("[n8n] Parsed response:", JSON.stringify(data).substring(0, 500));
 
     // Aceitar vários formatos de resposta do n8n
-    const videoUrl = data.videoUrl || data.video_url || data.url || data.result?.videoUrl;
+    const videoUrl = data.videoUrl || data.video_url || data.url || data.result?.videoUrl || data.result?.url;
     const status = data.status || "completed";
 
     if (videoUrl) {
@@ -73,7 +107,8 @@ async function generateWithN8nWebhook(
       return { success: true, status: "processing" };
     }
 
-    return { success: false, error: data.error || "Resposta inválida do n8n" };
+    // Se chegamos aqui mas a request foi 200 OK, consideramos como iniciado
+    return { success: true, status: "processing" };
 
   } catch (error) {
     console.error(`[n8n] Erro:`, error);
