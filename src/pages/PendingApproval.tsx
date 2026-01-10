@@ -23,8 +23,33 @@ const PendingApproval = () => {
   useEffect(() => {
     if (!user) {
       navigate("/auth");
+      return;
     }
+    // Verificar status automaticamente ao carregar a página
+    checkStatusSilent();
   }, [user, navigate]);
+
+  const checkStatusSilent = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", user.id)
+        .single();
+
+      if (!error && (data?.status === "active" || data?.status === "approved")) {
+        // Usuário já aprovado, redirecionar direto
+        setIsApproved(true);
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1500);
+      }
+    } catch (e) {
+      console.error("Erro ao verificar status:", e);
+    }
+  };
 
   const checkStatus = async () => {
     setChecking(true);
@@ -35,7 +60,7 @@ const PendingApproval = () => {
         .eq("id", user?.id)
         .single();
 
-      if (!error && data?.status === "active") {
+      if (!error && (data?.status === "active" || data?.status === "approved")) {
         // Mostrar estágio 3 antes de redirecionar
         setIsApproved(true);
         setTimeout(() => {
