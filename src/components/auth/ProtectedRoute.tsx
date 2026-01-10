@@ -15,6 +15,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [userStatus, setUserStatus] = useState<string | null>(null);
   const hasCheckedRef = useRef(false);
+  const isGoogleUserRef = useRef(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -22,13 +23,19 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       return;
     }
 
-    if (user && !hasCheckedRef.current) {
-      hasCheckedRef.current = true;
-      checkUserStatus();
+    if (user) {
+      const provider = user.app_metadata?.provider;
+      isGoogleUserRef.current = provider === "google";
+      
+      // Always check status for Google users or first time
+      if (!hasCheckedRef.current || isGoogleUserRef.current) {
+        hasCheckedRef.current = true;
+        checkUserStatus();
+      }
     }
   }, [user, loading, navigate]);
 
-  // Re-check when pathname changes but only if user exists and we already checked once
+  // Re-check when pathname changes but only if user exists and status is pending
   useEffect(() => {
     if (user && hasCheckedRef.current && userStatus === "pending" && location.pathname !== "/pending-approval") {
       navigate("/pending-approval", { replace: true });
@@ -48,21 +55,21 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       if (provider === "google") {
         try {
           await supabase.functions.invoke("ensure-user-profile");
-          // pequena folga para o backend persistir (evita corrida)
-          await new Promise((resolve) => setTimeout(resolve, 300));
+          // espera o backend persistir
+          await new Promise((resolve) => setTimeout(resolve, 500));
         } catch (e) {
           console.error("Erro ao garantir profile do Google:", e);
         }
       }
 
-      // Delay mais longo para usuários novos do Google OAuth (trigger pode demorar)
+      // Delay para garantir que triggers rodaram
       const isOAuthUser = provider === "google";
       const initialDelay = isOAuthUser ? 1500 : 500;
 
       await new Promise((resolve) => setTimeout(resolve, initialDelay));
 
       let retries = 0;
-      const maxRetries = 3;
+      const maxRetries = 5; // Aumentado para dar mais tempo
       let data: { status: string | null } | null = null;
       let error: any = null;
 
@@ -81,7 +88,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
         retries++;
         if (retries < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 800));
         }
       }
 
@@ -91,6 +98,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         // Se status é pending e não está na página de pending, redireciona
         if (data.status === "pending" && location.pathname !== "/pending-approval") {
           navigate("/pending-approval", { replace: true });
+          return;
+        }
+        
+        // Se status é active e está na página pending, vai pro dashboard
+        if (data.status === "active" && location.pathname === "/pending-approval") {
+          navigate("/dashboard", { replace: true });
           return;
         }
       } else {

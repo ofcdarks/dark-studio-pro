@@ -133,10 +133,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
+    // Redirect to root - ProtectedRoute will handle checking status and redirect appropriately
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${getAppBaseUrl()}/dashboard`,
+        redirectTo: `${getAppBaseUrl()}/`,
       },
     });
     
