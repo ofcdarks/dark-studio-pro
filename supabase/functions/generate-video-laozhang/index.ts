@@ -18,6 +18,8 @@ const VEO3_API_URL = "https://api.veo3gen.co/api/veo/text-to-video";
 const VEO3_STATUS_URL = "https://api.veo3gen.co/api/veo/status";
 
 // n8n Webhook para processamento de vídeo via browser automation
+// Endpoint: POST /webhook/mcp/job
+// Params: prompt, job_id, callback_url
 async function generateWithN8nWebhook(
   prompt: string,
   webhookUrl: string,
@@ -30,24 +32,27 @@ async function generateWithN8nWebhook(
     console.log(`[n8n] Enviando para webhook: ${webhookUrl}`);
     console.log(`[n8n] Job ID: ${jobId}, Model: ${model}, Aspect: ${aspectRatio}`);
 
-    // Construir URL com query params para GET request (compatível com browser automation)
-    const url = new URL(webhookUrl);
-    url.searchParams.set('prompt', prompt);
-    url.searchParams.set('model', model);
-    url.searchParams.set('aspect_ratio', aspectRatio);
-    url.searchParams.set('duration', '8');
-    url.searchParams.set('job_id', jobId);
-    url.searchParams.set('callback_url', callbackUrl);
-    url.searchParams.set('timestamp', new Date().toISOString());
+    // Preparar body para POST request
+    const requestBody = {
+      prompt,
+      job_id: jobId,
+      callback_url: callbackUrl,
+      model,
+      aspect_ratio: aspectRatio,
+      duration: 8,
+      timestamp: new Date().toISOString()
+    };
 
-    console.log(`[n8n] URL completa: ${url.toString().substring(0, 300)}...`);
+    console.log(`[n8n] Request body:`, JSON.stringify(requestBody).substring(0, 500));
 
-    // Usar GET request (como configurado no n8n)
-    const response = await fetch(url.toString(), {
-      method: "GET",
+    // Usar POST request conforme configurado no workflow n8n
+    const response = await fetch(webhookUrl, {
+      method: "POST",
       headers: {
+        "Content-Type": "application/json",
         "Accept": "application/json",
-      }
+      },
+      body: JSON.stringify(requestBody)
     });
 
     console.log(`[n8n] Response status: ${response.status}`);
@@ -55,59 +60,64 @@ async function generateWithN8nWebhook(
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[n8n] Webhook error:`, response.status, errorText.substring(0, 300));
+      
+      // Parsear erro se for JSON
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.error && errorData.missing) {
+          return { success: false, error: `Parâmetros faltando: ${errorData.missing.join(', ')}` };
+        }
+      } catch {
+        // Não é JSON
+      }
+      
       return { success: false, error: `Erro n8n webhook: ${response.status}` };
     }
 
-    // Verificar content type
-    const contentType = response.headers.get("content-type") || "";
+    // Parsear resposta
     const responseText = await response.text();
     console.log("[n8n] Raw response:", responseText.substring(0, 500));
 
     let data;
-    if (contentType.includes("application/json") || responseText.trim().startsWith("{") || responseText.trim().startsWith("[")) {
-      try {
-        data = JSON.parse(responseText);
-      } catch {
-        console.log("[n8n] Não foi possível parsear JSON, tratando como texto");
-        // Se for uma URL direta de vídeo
-        if (responseText.includes("http") && (responseText.includes(".mp4") || responseText.includes("video"))) {
-          const urlMatch = responseText.match(/https?:\/\/[^\s"'<>]+/);
-          if (urlMatch) {
-            return { success: true, videoUrl: urlMatch[0], status: "completed" };
-          }
-        }
-        // Job iniciado com sucesso, aguardando callback
-        return { success: true, status: "processing", taskId: jobId };
-      }
-    } else {
-      // Resposta não JSON - pode ser URL direta
-      if (responseText.includes("http")) {
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.log("[n8n] Resposta não é JSON, verificando se é URL de vídeo");
+      // Se for uma URL direta de vídeo
+      if (responseText.includes("http") && (responseText.includes(".mp4") || responseText.includes("video"))) {
         const urlMatch = responseText.match(/https?:\/\/[^\s"'<>]+/);
         if (urlMatch) {
           return { success: true, videoUrl: urlMatch[0], status: "completed" };
         }
       }
-      // Job iniciado com sucesso, aguardando callback
+      // Job aceito, aguardando callback
       return { success: true, status: "processing", taskId: jobId };
     }
 
     console.log("[n8n] Parsed response:", JSON.stringify(data).substring(0, 500));
 
-    // Aceitar vários formatos de resposta do n8n
-    const videoUrl = data.videoUrl || data.video_url || data.url || data.result?.videoUrl || data.result?.url;
-    const status = data.status || "processing";
-    const taskId = data.taskId || data.task_id || data.id || jobId;
+    // Verificar se foi aceito (status: accepted)
+    if (data.ok === true && data.status === "accepted") {
+      console.log("[n8n] Job aceito, aguardando callback...");
+      return { 
+        success: true, 
+        taskId: jobId,
+        status: "processing"
+      };
+    }
 
+    // Verificar se já tem URL de vídeo na resposta
+    const videoUrl = data.videoUrl || data.video_url || data.url || data.result?.videoUrl || data.result?.url;
     if (videoUrl) {
       console.log("[n8n] Video URL recebida:", videoUrl);
-      return { success: true, videoUrl, status: "completed", taskId };
+      return { success: true, videoUrl, status: "completed", taskId: jobId };
     }
 
     // Job em processamento - n8n vai chamar o callback quando terminar
     console.log("[n8n] Job iniciado, aguardando callback...");
     return { 
       success: true, 
-      taskId,
+      taskId: data.taskId || data.task_id || data.id || jobId,
       status: "processing"
     };
 
