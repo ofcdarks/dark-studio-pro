@@ -1,18 +1,12 @@
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface RequireWhatsAppModalProps {
   open: boolean;
@@ -67,54 +61,76 @@ export function RequireWhatsAppModal({ open, userId, onComplete }: RequireWhatsA
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent 
-        className="bg-card border-primary/50 rounded-xl shadow-xl sm:max-w-md z-[10000]"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-      >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Phone className="w-5 h-5 text-primary" />
-            Cadastre seu WhatsApp
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            Para continuar usando a plataforma, precisamos do seu número de WhatsApp para suporte e notificações importantes.
-          </DialogDescription>
-        </DialogHeader>
+  if (!open) return null;
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="whatsapp">Número do WhatsApp</Label>
-            <Input
-              id="whatsapp"
-              placeholder="+55 (11) 99999-9999"
-              value={whatsapp}
-              onChange={handleChange}
-              className="text-lg"
-            />
-            <p className="text-xs text-muted-foreground">
-              Inclua o código do país e DDD
-            </p>
-          </div>
-        </div>
+  // Render via portal with higher z-index than tutorial (z-[9999])
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[10001]">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/80"
+          />
 
-        <DialogFooter>
-          <Button 
-            onClick={handleSave} 
-            disabled={saving || whatsapp.replace(/\D/g, "").length < 12}
-            className="w-full"
+          {/* Modal Content */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md p-6 bg-card border border-primary/50 rounded-xl shadow-xl"
           >
-            {saving ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Phone className="w-4 h-4 mr-2" />
-            )}
-            Salvar e Continuar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            {/* Header */}
+            <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-4">
+              <h2 className="flex items-center gap-2 text-xl font-semibold leading-none tracking-tight">
+                <Phone className="w-5 h-5 text-primary" />
+                Cadastre seu WhatsApp
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Para continuar usando a plataforma, precisamos do seu número de WhatsApp para suporte e notificações importantes.
+              </p>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp">Número do WhatsApp</Label>
+                <Input
+                  id="whatsapp"
+                  placeholder="+55 (11) 99999-9999"
+                  value={whatsapp}
+                  onChange={handleChange}
+                  className="text-lg"
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground">
+                  Inclua o código do país e DDD
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+              <Button 
+                onClick={handleSave} 
+                disabled={saving || whatsapp.replace(/\D/g, "").length < 12}
+                className="w-full"
+              >
+                {saving ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Phone className="w-4 h-4 mr-2" />
+                )}
+                Salvar e Continuar
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>,
+    document.body
   );
 }
