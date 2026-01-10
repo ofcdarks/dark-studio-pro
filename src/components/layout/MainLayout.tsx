@@ -5,6 +5,7 @@ import { NotificationsBell } from "./NotificationsBell";
 import { StorageIndicator } from "./StorageIndicator";
 import { CreditsDisplay } from "./CreditsDisplay";
 import { FloatingPomodoro } from "./FloatingPomodoro";
+import { UpdateNotification } from "./UpdateNotification";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -62,6 +63,8 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="flex min-h-screen bg-background">
+      {/* Update Notification */}
+      <UpdateNotification />
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <Sidebar />
