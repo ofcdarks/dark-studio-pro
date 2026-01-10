@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff, Pencil, Trash2, Rocket } from "lucide-react";
+import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff, Pencil, Trash2, Rocket, ImageIcon, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -92,6 +92,15 @@ export function AdminAPIsTab() {
   const [laozhangValidated, setLaozhangValidated] = useState(false);
   const [laozhangShowPassword, setLaozhangShowPassword] = useState(false);
 
+  // Global ImageFX Cookies
+  const [globalImagefxCookies, setGlobalImagefxCookies] = useState({
+    cookie1: "",
+    cookie2: "",
+    cookie3: ""
+  });
+  const [globalImagefxShowPassword, setGlobalImagefxShowPassword] = useState(false);
+  const [savingGlobalImagefx, setSavingGlobalImagefx] = useState(false);
+
   const [apiProviders, setApiProviders] = useState<ApiProvider[]>([]);
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState<string | null>(null);
@@ -143,6 +152,22 @@ export function AdminAPIsTab() {
       setDownsubValidated(!!(keys.downsub_validated));
       setLaozhangKey((keys.laozhang as string) || "");
       setLaozhangValidated(!!(keys.laozhang_validated));
+    }
+
+    // Load global ImageFX cookies
+    const { data: imagefxData } = await supabase
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "global_imagefx_cookies")
+      .maybeSingle();
+
+    if (imagefxData?.value) {
+      const cookies = imagefxData.value as Record<string, string>;
+      setGlobalImagefxCookies({
+        cookie1: cookies.cookie1 || "",
+        cookie2: cookies.cookie2 || "",
+        cookie3: cookies.cookie3 || ""
+      });
     }
   };
 
@@ -514,6 +539,114 @@ export function AdminAPIsTab() {
           <p className="text-xs text-muted-foreground">{config.description}</p>
         </Card>
       ))}
+
+      {/* Global ImageFX Cookies Section */}
+      <Card className="p-6 border-2 border-primary/30 bg-primary/5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold text-foreground">Cookies ImageFX Globais</h3>
+            <Badge variant="secondary" className="text-xs">
+              <Users className="w-3 h-3 mr-1" />
+              Para todos usuários
+            </Badge>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setGlobalImagefxShowPassword(!globalImagefxShowPassword)}
+          >
+            {globalImagefxShowPassword ? (
+              <EyeOff className="w-4 h-4" />
+            ) : (
+              <Eye className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
+        
+        <p className="text-sm text-muted-foreground mb-4">
+          Configure cookies do ImageFX que serão usados como <strong>fallback</strong> quando usuários não tiverem seus próprios cookies configurados.
+          Esses cookies serão compartilhados entre todos os usuários da plataforma.
+        </p>
+
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs text-muted-foreground">Cookie Global 1 (Principal)</Label>
+            <Input
+              placeholder="Cole o cookie __Secure-1PSID aqui"
+              value={globalImagefxCookies.cookie1}
+              onChange={(e) => setGlobalImagefxCookies(prev => ({ ...prev, cookie1: e.target.value }))}
+              className="bg-secondary border-border font-mono text-xs"
+              type={globalImagefxShowPassword ? "text" : "password"}
+            />
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Cookie Global 2 (Backup)</Label>
+            <Input
+              placeholder="Cookie adicional para balanceamento"
+              value={globalImagefxCookies.cookie2}
+              onChange={(e) => setGlobalImagefxCookies(prev => ({ ...prev, cookie2: e.target.value }))}
+              className="bg-secondary border-border font-mono text-xs"
+              type={globalImagefxShowPassword ? "text" : "password"}
+            />
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Cookie Global 3 (Extra)</Label>
+            <Input
+              placeholder="Cookie extra para alta demanda"
+              value={globalImagefxCookies.cookie3}
+              onChange={(e) => setGlobalImagefxCookies(prev => ({ ...prev, cookie3: e.target.value }))}
+              className="bg-secondary border-border font-mono text-xs"
+              type={globalImagefxShowPassword ? "text" : "password"}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <Button
+            onClick={async () => {
+              setSavingGlobalImagefx(true);
+              try {
+                const { data: current } = await supabase
+                  .from("admin_settings")
+                  .select("id")
+                  .eq("key", "global_imagefx_cookies")
+                  .maybeSingle();
+
+                const cookiesValue = {
+                  cookie1: globalImagefxCookies.cookie1.trim(),
+                  cookie2: globalImagefxCookies.cookie2.trim(),
+                  cookie3: globalImagefxCookies.cookie3.trim()
+                };
+
+                if (current) {
+                  await supabase
+                    .from("admin_settings")
+                    .update({ value: cookiesValue, updated_at: new Date().toISOString() })
+                    .eq("key", "global_imagefx_cookies");
+                } else {
+                  await supabase
+                    .from("admin_settings")
+                    .insert([{ key: "global_imagefx_cookies", value: cookiesValue }]);
+                }
+
+                toast.success("Cookies ImageFX globais salvos com sucesso!");
+              } catch (error) {
+                console.error("Error saving global ImageFX cookies:", error);
+                toast.error("Erro ao salvar cookies");
+              } finally {
+                setSavingGlobalImagefx(false);
+              }
+            }}
+            disabled={savingGlobalImagefx}
+            className="bg-primary"
+          >
+            {savingGlobalImagefx && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Salvar Cookies Globais
+          </Button>
+        </div>
+      </Card>
 
       {/* API Providers Table */}
       <Card className="p-6">
