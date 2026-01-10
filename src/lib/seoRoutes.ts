@@ -64,13 +64,13 @@ export const publicRoutes: SEORoute[] = [
     lastmod: today,
   },
   {
-    path: '/terms',
+    path: '/termos-de-uso',
     changefreq: 'yearly',
     priority: 0.4,
     lastmod: today,
   },
   {
-    path: '/privacy',
+    path: '/politica-de-privacidade',
     changefreq: 'yearly',
     priority: 0.4,
     lastmod: today,

@@ -34,8 +34,8 @@ const publicRoutes: SEORoute[] = [
   { path: '/blog/crescimento-rapido', changefreq: 'monthly', priority: 0.8, lastmod: today },
   // Utility & Legal
   { path: '/reset-password', changefreq: 'yearly', priority: 0.3, lastmod: today },
-  { path: '/terms', changefreq: 'yearly', priority: 0.4, lastmod: today },
-  { path: '/privacy', changefreq: 'yearly', priority: 0.4, lastmod: today },
+  { path: '/termos-de-uso', changefreq: 'yearly', priority: 0.4, lastmod: today },
+  { path: '/politica-de-privacidade', changefreq: 'yearly', priority: 0.4, lastmod: today },
 ];
 
 const generateSitemapXML = (routes: SEORoute[], baseUrl: string): string => {
