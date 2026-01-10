@@ -50,32 +50,54 @@ export function GuidedTutorial({
       setTargetRect(rect);
 
       // Calculate tooltip position based on step position preference
-      const padding = 16;
+      const padding = 20;
       const tooltipWidth = 340;
-      const tooltipHeight = 180;
+      const tooltipHeight = 200;
       
       let x = rect.left + rect.width / 2 - tooltipWidth / 2;
       let y = rect.bottom + padding;
 
-      const position = step.position || "bottom";
+      let preferredPosition = step.position || "bottom";
       let arrow: "top" | "bottom" | "left" | "right" = "top";
 
-      switch (position) {
+      // Auto-adjust position if element is near screen edges
+      const spaceLeft = rect.left;
+      const spaceRight = window.innerWidth - rect.right;
+      const spaceTop = rect.top;
+      const spaceBottom = window.innerHeight - rect.bottom;
+
+      // If preferred position doesn't fit, find best alternative
+      if (preferredPosition === "left" && spaceLeft < tooltipWidth + padding + 20) {
+        preferredPosition = spaceRight > spaceLeft ? "right" : spaceBottom > spaceTop ? "bottom" : "top";
+      }
+      if (preferredPosition === "right" && spaceRight < tooltipWidth + padding + 20) {
+        preferredPosition = spaceLeft > spaceRight ? "left" : spaceBottom > spaceTop ? "bottom" : "top";
+      }
+      if (preferredPosition === "top" && spaceTop < tooltipHeight + padding + 20) {
+        preferredPosition = "bottom";
+      }
+      if (preferredPosition === "bottom" && spaceBottom < tooltipHeight + padding + 20) {
+        preferredPosition = "top";
+      }
+
+      switch (preferredPosition) {
         case "top":
-          y = rect.top - tooltipHeight - padding - 12; // Extra space for arrow
+          x = rect.left + rect.width / 2 - tooltipWidth / 2;
+          y = rect.top - tooltipHeight - padding - 16;
           arrow = "bottom";
           break;
         case "bottom":
-          y = rect.bottom + padding + 12; // Extra space for arrow
+          x = rect.left + rect.width / 2 - tooltipWidth / 2;
+          y = rect.bottom + padding + 16;
           arrow = "top";
           break;
         case "left":
-          x = rect.left - tooltipWidth - padding - 12;
+          x = rect.left - tooltipWidth - padding - 16;
           y = rect.top + rect.height / 2 - tooltipHeight / 2;
           arrow = "right";
           break;
         case "right":
-          x = rect.right + padding + 12;
+          x = rect.right + padding + 16;
           y = rect.top + rect.height / 2 - tooltipHeight / 2;
           arrow = "left";
           break;
@@ -87,7 +109,7 @@ export function GuidedTutorial({
       
       setArrowDirection(arrow);
 
-      // Keep tooltip within viewport
+      // Keep tooltip within viewport with better margins
       x = Math.max(padding, Math.min(x, window.innerWidth - tooltipWidth - padding));
       y = Math.max(padding, Math.min(y, window.innerHeight - tooltipHeight - padding));
 
@@ -100,7 +122,7 @@ export function GuidedTutorial({
       // Center tooltip if no element found
       setTooltipPosition({
         x: window.innerWidth / 2 - 170,
-        y: window.innerHeight / 2 - 90,
+        y: window.innerHeight / 2 - 100,
       });
     }
   }, [step]);
