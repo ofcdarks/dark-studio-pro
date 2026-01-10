@@ -13,17 +13,120 @@ interface VideoRequest {
   resolution: "720p" | "1080p";
 }
 
-// Modelos disponíveis na Laozhang API para vídeo
-// Sora 2:
-//   - sora_video2: 704×1280 (vertical) 10s - $0.15
-//   - sora_video2-landscape: 1280×704 (horizontal) 10s - $0.15
-//   - sora_video2-15s: 704×1280 (vertical) 15s - $0.15
-//   - sora_video2-landscape-15s: 1280×704 (horizontal) 15s - $0.15
-// Veo 3.1:
-//   - veo-3.1: Standard - $0.25
-//   - veo-3.1-fast: Fast - $0.15
-//   - veo-3.1-landscape: Landscape - $0.25
-//   - veo-3.1-landscape-fast: Landscape Fast - $0.15
+// Veo3 API endpoint (similar ao ImageFX)
+const VEO3_API_URL = "https://aisandbox-pa.googleapis.com/v1:runInference";
+
+async function generateWithVeo3Cookies(
+  prompt: string,
+  cookies: string[],
+  aspectRatio: string
+): Promise<{ success: boolean; videoUrl?: string; error?: string }> {
+  const validCookies = cookies.filter(c => c && c.trim().length > 0);
+  
+  if (validCookies.length === 0) {
+    return { success: false, error: "Nenhum cookie Veo3 configurado" };
+  }
+
+  // Tentar cada cookie em sequência
+  for (let i = 0; i < validCookies.length; i++) {
+    const cookie = validCookies[i];
+    console.log(`[Veo3] Tentando cookie ${i + 1}/${validCookies.length}`);
+    
+    try {
+      // Mapear aspect ratio para dimensões
+      let width = 1280;
+      let height = 720;
+      
+      if (aspectRatio === "9:16") {
+        width = 720;
+        height = 1280;
+      } else if (aspectRatio === "1:1") {
+        width = 720;
+        height = 720;
+      }
+
+      // Request body para Veo3 (formato similar ao ImageFX)
+      const requestBody = {
+        input: {
+          text: {
+            text: prompt
+          }
+        },
+        model: "models/veo-3.0-generate-preview",
+        config: {
+          generateVideoRequest: {
+            aspectRatio: aspectRatio,
+            durationSeconds: 8,
+            numberOfVideos: 1,
+            personGeneration: "dont_allow"
+          }
+        }
+      };
+
+      const response = await fetch(VEO3_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": cookie,
+          "Origin": "https://aisandbox.google.com",
+          "Referer": "https://aisandbox.google.com/",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          "X-Goog-Api-Key": "AIzaSyAbmLjPpdJdPXxGBdMITWNJ0ORMFBG4pFY"
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[Veo3] Cookie ${i + 1} falhou:`, response.status, errorText.substring(0, 200));
+        
+        // Se for rate limit ou auth error, tentar próximo cookie
+        if (response.status === 401 || response.status === 403 || response.status === 429) {
+          continue;
+        }
+        
+        // Para outros erros, retornar
+        return { success: false, error: `Erro Veo3: ${response.status}` };
+      }
+
+      const data = await response.json();
+      console.log("[Veo3] Response:", JSON.stringify(data).substring(0, 500));
+
+      // Extrair URL do vídeo da resposta
+      // A estrutura pode variar, verificar diferentes paths
+      const videoUrl = 
+        data?.output?.video?.uri ||
+        data?.output?.videoUri ||
+        data?.videos?.[0]?.uri ||
+        data?.generatedVideos?.[0]?.video?.uri ||
+        data?.result?.video?.uri;
+
+      if (videoUrl) {
+        console.log("[Veo3] Video URL encontrada:", videoUrl);
+        return { success: true, videoUrl };
+      }
+
+      // Verificar se está em processamento
+      if (data?.status === "PROCESSING" || data?.operationName) {
+        console.log("[Veo3] Vídeo em processamento");
+        return { 
+          success: true, 
+          videoUrl: undefined,
+          error: "processing"
+        };
+      }
+
+      console.log("[Veo3] Nenhuma URL encontrada na resposta");
+      continue;
+
+    } catch (error) {
+      console.error(`[Veo3] Erro com cookie ${i + 1}:`, error);
+      continue;
+    }
+  }
+
+  return { success: false, error: "Todos os cookies Veo3 falharam" };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -63,7 +166,70 @@ serve(async (req) => {
       });
     }
 
-    // Buscar chave da Laozhang API do admin_settings (formato: api_keys.laozhang)
+    console.log(`[Video Generation] Model: ${model}, Aspect: ${aspect_ratio}`);
+    console.log(`[Video Generation] Prompt: ${prompt.substring(0, 100)}...`);
+
+    // Para modelos Veo3, usar cookies do admin_settings
+    if (model === 'veo31' || model === 'veo31-fast') {
+      // Buscar cookies Veo3 do admin_settings
+      const { data: veo3Settings } = await supabase
+        .from('admin_settings')
+        .select('value')
+        .eq('key', 'global_veo3_cookies')
+        .maybeSingle();
+
+      const cookiesValue = veo3Settings?.value as Record<string, string> | null;
+      const cookies = [
+        cookiesValue?.cookie1 || '',
+        cookiesValue?.cookie2 || '',
+        cookiesValue?.cookie3 || ''
+      ].filter(c => c.trim().length > 0);
+
+      if (cookies.length === 0) {
+        console.error('[Video Generation] Nenhum cookie Veo3 configurado');
+        return new Response(JSON.stringify({ 
+          error: 'Cookies Veo3 não configurados. Configure no Painel Admin → APIs.' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      console.log(`[Video Generation] Usando ${cookies.length} cookie(s) Veo3`);
+
+      const result = await generateWithVeo3Cookies(prompt, cookies, aspect_ratio);
+
+      if (!result.success) {
+        return new Response(JSON.stringify({ 
+          error: result.error || 'Erro ao gerar vídeo com Veo3' 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (result.error === "processing") {
+        return new Response(JSON.stringify({
+          success: true,
+          status: 'processing',
+          message: 'Vídeo em processamento. Pode levar alguns minutos.',
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        status: 'completed',
+        video_url: result.videoUrl,
+        model: model,
+        aspect_ratio: aspect_ratio,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Para Sora e outros modelos, usar Laozhang API
     const { data: adminSettings } = await supabase
       .from('admin_settings')
       .select('value')
@@ -74,38 +240,26 @@ serve(async (req) => {
     const laozhangApiKey = apiKeysValue?.laozhang || Deno.env.get('LAOZHANG_API_KEY');
 
     if (!laozhangApiKey) {
-      console.error('[Video Generation] Laozhang API key not found in admin_settings or env');
+      console.error('[Video Generation] Laozhang API key not found');
       return new Response(JSON.stringify({ error: 'API Laozhang não configurada' }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Mapear modelo para nome correto da API Laozhang
+    // Mapear modelo para nome da API Laozhang
     let modelName = '';
     
     if (model === 'sora2') {
-      // Sora 2 - 10 segundos
       modelName = aspect_ratio === '9:16' ? 'sora_video2' : 'sora_video2-landscape';
     } else if (model === 'sora2-15s') {
-      // Sora 2 - 15 segundos
       modelName = aspect_ratio === '9:16' ? 'sora_video2-15s' : 'sora_video2-landscape-15s';
-    } else if (model === 'veo31') {
-      // Veo 3.1 Standard
-      modelName = aspect_ratio === '9:16' ? 'veo-3.1' : 'veo-3.1-landscape';
-    } else if (model === 'veo31-fast') {
-      // Veo 3.1 Fast
-      modelName = aspect_ratio === '9:16' ? 'veo-3.1-fast' : 'veo-3.1-landscape-fast';
     } else {
-      // Default to Sora 2 landscape
       modelName = 'sora_video2-landscape';
     }
 
-    console.log(`[Video Generation] Model: ${modelName}, Aspect: ${aspect_ratio}`);
-    console.log(`[Video Generation] Prompt: ${prompt.substring(0, 100)}...`);
+    console.log(`[Video Generation] Using Laozhang model: ${modelName}`);
 
-    // Construir o corpo da requisição conforme documentação
-    // Usa formato OpenAI Chat Completions
     const requestBody = {
       model: modelName,
       messages: [
@@ -119,10 +273,9 @@ serve(async (req) => {
           ]
         }
       ],
-      stream: true, // Streaming para obter progresso
+      stream: true,
     };
 
-    // Chamar a API Laozhang
     const laozhangResponse = await fetch('https://api.laozhang.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -145,46 +298,16 @@ serve(async (req) => {
         });
       }
 
-      if (laozhangResponse.status === 503) {
-        return new Response(JSON.stringify({ 
-          error: 'Modelo temporariamente indisponível. Tente outro modelo ou aguarde.' 
-        }), {
-          status: 503,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Parse error details
-      let errorDetails = errorText;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorDetails = errorJson.error?.message || errorText;
-      } catch {
-        // Keep original text
-      }
-
-      // Check if it's a heavy load / temporary error
-      if (errorDetails.includes('heavy load') || errorDetails.includes('try again later')) {
-        return new Response(JSON.stringify({ 
-          error: 'Servidores ocupados. Por favor, tente novamente em alguns segundos.',
-          retry: true
-        }), {
-          status: 503,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
       return new Response(JSON.stringify({ 
         error: 'Erro ao gerar vídeo.',
-        details: errorDetails
+        details: errorText.substring(0, 200)
       }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Processar resposta de streaming
-    // Para vídeos, a API retorna chunks SSE com o progresso e URL final
+    // Processar resposta streaming
     const reader = laozhangResponse.body?.getReader();
     const decoder = new TextDecoder();
     let fullContent = '';
@@ -198,7 +321,6 @@ serve(async (req) => {
         const chunk = decoder.decode(value, { stream: true });
         fullContent += chunk;
         
-        // Procurar por URLs de vídeo no streaming
         const lines = chunk.split('\n');
         for (const line of lines) {
           if (line.startsWith('data: ') && !line.includes('[DONE]')) {
@@ -209,26 +331,23 @@ serve(async (req) => {
                 const content = data.choices?.[0]?.delta?.content || data.choices?.[0]?.message?.content;
                 
                 if (content) {
-                  // Procurar URL de vídeo
                   const urlMatch = content.match(/https?:\/\/[^\s"']+\.(mp4|webm|mov)/i);
                   if (urlMatch) {
                     videoUrl = urlMatch[0];
                   }
-                  // Também verificar se é uma URL direta
                   if (content.startsWith('http') && (content.includes('.mp4') || content.includes('video'))) {
                     videoUrl = content.trim().split(/[\s"']/)[0];
                   }
                 }
               }
             } catch {
-              // Continue processing
+              // Continue
             }
           }
         }
       }
     }
 
-    console.log('[Video Generation] Full response length:', fullContent.length);
     console.log('[Video Generation] Extracted video URL:', videoUrl);
 
     if (videoUrl) {
@@ -243,15 +362,13 @@ serve(async (req) => {
       });
     }
 
-    // Se não encontrou URL direta, verificar se há link no conteúdo
+    // Procurar URL no conteúdo
     const urlPattern = /https?:\/\/[^\s"'<>]+/g;
     const urls = fullContent.match(urlPattern);
     const videoUrlFromContent = urls?.find(url => 
       url.includes('video') || 
       url.includes('.mp4') || 
-      url.includes('.webm') ||
-      url.includes('sora') ||
-      url.includes('veo')
+      url.includes('.webm')
     );
 
     if (videoUrlFromContent) {
@@ -266,12 +383,10 @@ serve(async (req) => {
       });
     }
 
-    // Se ainda não tiver URL, retornar status de processamento
     return new Response(JSON.stringify({
       success: true,
       status: 'processing',
       message: 'Vídeo em processamento. Pode levar alguns minutos.',
-      raw_response: fullContent.substring(0, 500),
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -21,10 +21,10 @@ interface VideoGenerationModalProps {
 }
 
 const VIDEO_MODELS = [
-  { id: 'veo31-fast', name: 'Veo 3.1 Fast', description: 'Rápido e econômico', credits: 50, duration: '~8s' },
-  { id: 'veo31', name: 'Veo 3.1 Standard', description: 'Alta qualidade', credits: 80, duration: '~8s' },
-  { id: 'sora2', name: 'Sora 2 (10s)', description: 'OpenAI Sora', credits: 60, duration: '10s' },
-  { id: 'sora2-15s', name: 'Sora 2 (15s)', description: 'OpenAI Sora longo', credits: 80, duration: '15s' },
+  { id: 'veo31-fast', name: 'Veo 3.1 Fast', description: 'Rápido via Cookies', credits: 50, duration: '~8s', usesCookies: true },
+  { id: 'veo31', name: 'Veo 3.1 Standard', description: 'Alta qualidade via Cookies', credits: 80, duration: '~8s', usesCookies: true },
+  { id: 'sora2', name: 'Sora 2 (10s)', description: 'OpenAI Sora via API', credits: 60, duration: '10s', usesCookies: false },
+  { id: 'sora2-15s', name: 'Sora 2 (15s)', description: 'OpenAI Sora longo via API', credits: 80, duration: '15s', usesCookies: false },
 ];
 
 export function VideoGenerationModal({
