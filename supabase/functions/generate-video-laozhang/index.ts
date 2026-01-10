@@ -13,119 +13,124 @@ interface VideoRequest {
   resolution: "720p" | "1080p";
 }
 
-// Veo3 API endpoint (similar ao ImageFX)
-const VEO3_API_URL = "https://aisandbox-pa.googleapis.com/v1:runInference";
+// VEO3 API endpoint (veo3gen.co)
+const VEO3_API_URL = "https://api.veo3gen.co/api/veo/text-to-video";
+const VEO3_STATUS_URL = "https://api.veo3gen.co/api/veo/status";
 
-async function generateWithVeo3Cookies(
+async function generateWithVeo3Api(
   prompt: string,
-  cookies: string[],
-  aspectRatio: string
-): Promise<{ success: boolean; videoUrl?: string; error?: string }> {
-  const validCookies = cookies.filter(c => c && c.trim().length > 0);
+  apiKey: string,
+  aspectRatio: string,
+  model: string
+): Promise<{ success: boolean; videoUrl?: string; taskId?: string; status?: string; error?: string }> {
   
-  if (validCookies.length === 0) {
-    return { success: false, error: "Nenhum cookie Veo3 configurado" };
-  }
+  try {
+    console.log(`[Veo3] Iniciando geração com API key`);
+    console.log(`[Veo3] Model: ${model}, Aspect: ${aspectRatio}`);
 
-  // Tentar cada cookie em sequência
-  for (let i = 0; i < validCookies.length; i++) {
-    const cookie = validCookies[i];
-    console.log(`[Veo3] Tentando cookie ${i + 1}/${validCookies.length}`);
-    
-    try {
-      // Mapear aspect ratio para dimensões
-      let width = 1280;
-      let height = 720;
+    // Mapear aspect ratio para o formato da API
+    const aspectRatioMap: Record<string, string> = {
+      "16:9": "16:9",
+      "9:16": "9:16",
+      "1:1": "1:1"
+    };
+
+    // Mapear modelo para o formato da API
+    const modelMap: Record<string, string> = {
+      "veo31": "veo-3.0-generate-preview",
+      "veo31-fast": "veo-3.0-fast-generate-preview"
+    };
+
+    const requestBody = {
+      prompt: prompt,
+      model: modelMap[model] || "veo-3.0-fast-generate-preview",
+      aspect_ratio: aspectRatioMap[aspectRatio] || "16:9",
+      duration: 8 // 8 segundos padrão
+    };
+
+    console.log(`[Veo3] Request body:`, JSON.stringify(requestBody));
+
+    const response = await fetch(VEO3_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": apiKey
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[Veo3] API error:`, response.status, errorText.substring(0, 300));
       
-      if (aspectRatio === "9:16") {
-        width = 720;
-        height = 1280;
-      } else if (aspectRatio === "1:1") {
-        width = 720;
-        height = 720;
+      if (response.status === 401) {
+        return { success: false, error: "API Key Veo3 inválida. Configure no Painel Admin." };
       }
-
-      // Request body para Veo3 (formato similar ao ImageFX)
-      const requestBody = {
-        input: {
-          text: {
-            text: prompt
-          }
-        },
-        model: "models/veo-3.0-generate-preview",
-        config: {
-          generateVideoRequest: {
-            aspectRatio: aspectRatio,
-            durationSeconds: 8,
-            numberOfVideos: 1,
-            personGeneration: "dont_allow"
-          }
-        }
-      };
-
-      const response = await fetch(VEO3_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Cookie": cookie,
-          "Origin": "https://aisandbox.google.com",
-          "Referer": "https://aisandbox.google.com/",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-          "X-Goog-Api-Key": "AIzaSyAbmLjPpdJdPXxGBdMITWNJ0ORMFBG4pFY"
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[Veo3] Cookie ${i + 1} falhou:`, response.status, errorText.substring(0, 200));
-        
-        // Se for rate limit ou auth error, tentar próximo cookie
-        if (response.status === 401 || response.status === 403 || response.status === 429) {
-          continue;
-        }
-        
-        // Para outros erros, retornar
-        return { success: false, error: `Erro Veo3: ${response.status}` };
+      if (response.status === 402) {
+        return { success: false, error: "Créditos Veo3 insuficientes." };
       }
-
-      const data = await response.json();
-      console.log("[Veo3] Response:", JSON.stringify(data).substring(0, 500));
-
-      // Extrair URL do vídeo da resposta
-      // A estrutura pode variar, verificar diferentes paths
-      const videoUrl = 
-        data?.output?.video?.uri ||
-        data?.output?.videoUri ||
-        data?.videos?.[0]?.uri ||
-        data?.generatedVideos?.[0]?.video?.uri ||
-        data?.result?.video?.uri;
-
-      if (videoUrl) {
-        console.log("[Veo3] Video URL encontrada:", videoUrl);
-        return { success: true, videoUrl };
+      if (response.status === 429) {
+        return { success: false, error: "Rate limit Veo3. Aguarde alguns minutos." };
       }
-
-      // Verificar se está em processamento
-      if (data?.status === "PROCESSING" || data?.operationName) {
-        console.log("[Veo3] Vídeo em processamento");
-        return { 
-          success: true, 
-          videoUrl: undefined,
-          error: "processing"
-        };
-      }
-
-      console.log("[Veo3] Nenhuma URL encontrada na resposta");
-      continue;
-
-    } catch (error) {
-      console.error(`[Veo3] Erro com cookie ${i + 1}:`, error);
-      continue;
+      
+      return { success: false, error: `Erro Veo3: ${response.status}` };
     }
-  }
 
-  return { success: false, error: "Todos os cookies Veo3 falharam" };
+    const data = await response.json();
+    console.log("[Veo3] Response:", JSON.stringify(data).substring(0, 500));
+
+    // A API pode retornar o vídeo diretamente ou um task_id para polling
+    if (data.video_url || data.videoUrl) {
+      const videoUrl = data.video_url || data.videoUrl;
+      console.log("[Veo3] Video URL recebida:", videoUrl);
+      return { success: true, videoUrl };
+    }
+
+    if (data.task_id || data.taskId || data.id) {
+      const taskId = data.task_id || data.taskId || data.id;
+      console.log("[Veo3] Task ID recebido:", taskId);
+      
+      // Poll para status (até 60 segundos)
+      for (let i = 0; i < 12; i++) {
+        await new Promise(resolve => setTimeout(resolve, 5000)); // 5s delay
+        
+        const statusResponse = await fetch(`${VEO3_STATUS_URL}/${taskId}`, {
+          headers: { "X-API-Key": apiKey }
+        });
+        
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          console.log(`[Veo3] Status check ${i + 1}:`, statusData.status);
+          
+          if (statusData.status === "completed" || statusData.status === "success") {
+            const videoUrl = statusData.video_url || statusData.videoUrl || statusData.result?.video_url;
+            if (videoUrl) {
+              return { success: true, videoUrl };
+            }
+          }
+          
+          if (statusData.status === "failed" || statusData.status === "error") {
+            return { success: false, error: statusData.error || "Geração falhou" };
+          }
+        }
+      }
+      
+      // Ainda processando após polling
+      return { 
+        success: true, 
+        taskId,
+        status: "processing"
+      };
+    }
+
+    // Resposta inesperada
+    console.log("[Veo3] Resposta inesperada:", JSON.stringify(data));
+    return { success: false, error: "Resposta inesperada da API Veo3" };
+
+  } catch (error) {
+    console.error(`[Veo3] Erro:`, error);
+    return { success: false, error: error instanceof Error ? error.message : "Erro desconhecido" };
+  }
 }
 
 serve(async (req) => {
@@ -169,35 +174,32 @@ serve(async (req) => {
     console.log(`[Video Generation] Model: ${model}, Aspect: ${aspect_ratio}`);
     console.log(`[Video Generation] Prompt: ${prompt.substring(0, 100)}...`);
 
-    // Para modelos Veo3, usar cookies do admin_settings
+    // Buscar API keys do admin_settings
+    const { data: adminSettings } = await supabase
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'api_keys')
+      .maybeSingle();
+
+    const apiKeysValue = adminSettings?.value as Record<string, string> | null;
+
+    // Para modelos Veo3, usar a API veo3gen.co
     if (model === 'veo31' || model === 'veo31-fast') {
-      // Buscar cookies Veo3 do admin_settings
-      const { data: veo3Settings } = await supabase
-        .from('admin_settings')
-        .select('value')
-        .eq('key', 'global_veo3_cookies')
-        .maybeSingle();
+      const veo3ApiKey = apiKeysValue?.veo3 || Deno.env.get('VEO3_API_KEY');
 
-      const cookiesValue = veo3Settings?.value as Record<string, string> | null;
-      const cookies = [
-        cookiesValue?.cookie1 || '',
-        cookiesValue?.cookie2 || '',
-        cookiesValue?.cookie3 || ''
-      ].filter(c => c.trim().length > 0);
-
-      if (cookies.length === 0) {
-        console.error('[Video Generation] Nenhum cookie Veo3 configurado');
+      if (!veo3ApiKey) {
+        console.error('[Video Generation] Veo3 API key não configurada');
         return new Response(JSON.stringify({ 
-          error: 'Cookies Veo3 não configurados. Configure no Painel Admin → APIs.' 
+          error: 'API Key Veo3 não configurada. Configure no Painel Admin → APIs → Veo3.' 
         }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      console.log(`[Video Generation] Usando ${cookies.length} cookie(s) Veo3`);
+      console.log(`[Video Generation] Usando API Veo3`);
 
-      const result = await generateWithVeo3Cookies(prompt, cookies, aspect_ratio);
+      const result = await generateWithVeo3Api(prompt, veo3ApiKey, aspect_ratio, model);
 
       if (!result.success) {
         return new Response(JSON.stringify({ 
@@ -208,10 +210,11 @@ serve(async (req) => {
         });
       }
 
-      if (result.error === "processing") {
+      if (result.status === "processing") {
         return new Response(JSON.stringify({
           success: true,
           status: 'processing',
+          task_id: result.taskId,
           message: 'Vídeo em processamento. Pode levar alguns minutos.',
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -230,13 +233,6 @@ serve(async (req) => {
     }
 
     // Para Sora e outros modelos, usar Laozhang API
-    const { data: adminSettings } = await supabase
-      .from('admin_settings')
-      .select('value')
-      .eq('key', 'api_keys')
-      .maybeSingle();
-
-    const apiKeysValue = adminSettings?.value as Record<string, string> | null;
     const laozhangApiKey = apiKeysValue?.laozhang || Deno.env.get('LAOZHANG_API_KEY');
 
     if (!laozhangApiKey) {
