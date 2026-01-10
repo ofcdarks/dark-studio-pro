@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Rocket, Loader2, RefreshCw, ImagePlus, Video, Lock, LockOpen, Zap } from "lucide-react";
+import { Eye, EyeOff, Clock, FileText, Scissors, Timer, AlertTriangle, CheckCircle2, TrendingDown, Rocket, Loader2, RefreshCw, ImagePlus, Video, Lock, LockOpen, Zap, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBackgroundImageGeneration } from "@/hooks/useBackgroundImageGeneration";
+import { VideoGenerationModal } from "./VideoGenerationModal";
 
 interface KenBurnsMotion {
   type: string;
@@ -40,9 +41,11 @@ interface GeneratedScene {
   wordCount: number;
   durationSeconds: number;
   generatedImage?: string;
+  generatedVideo?: string;
   emotion?: string;
   retentionTrigger?: string;
   motionRecommended?: boolean; // Indica se a cena se beneficia de movimento (até 11s)
+  videoRecommended?: boolean; // Indica se a cena precisa de vídeo AI (ação intensa)
   kenBurnsMotion?: KenBurnsMotion; // Movimento Ken Burns configurado
 }
 
@@ -67,9 +70,11 @@ interface PreviewScene {
   startTime: number;
   endTime: number;
   generatedImage?: string;
+  generatedVideo?: string;
   emotion?: string;
   retentionTrigger?: string;
   motionRecommended?: boolean;
+  videoRecommended?: boolean;
   kenBurnsMotion?: KenBurnsMotion;
 }
 
@@ -184,6 +189,10 @@ export function ScriptPreviewTimeline({
   const [isImproving, setIsImproving] = useState(false);
   const [regenerateAfterImprove, setRegenerateAfterImprove] = useState(true);
   
+  // Estado do modal de geração de vídeo
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [selectedSceneForVideo, setSelectedSceneForVideo] = useState<PreviewScene | null>(null);
+  
   // Timer em tempo real para geração de imagens
   const { state: bgState } = useBackgroundImageGeneration();
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -237,6 +246,26 @@ export function ScriptPreviewTimeline({
     'floresta', 'forest', 'tempestade', 'storm', 'chuva', 'rain'
   ];
 
+  // Palavras-chave que indicam cenas que PRECISAM de vídeo AI (ação intensa, não apenas Ken Burns)
+  const VIDEO_REQUIRED_KEYWORDS = [
+    'explosão', 'explosion', 'explode', 'estoura',
+    'luta', 'fight', 'combate', 'batalha', 'battle',
+    'perseguição', 'chase', 'fuga', 'escape',
+    'corre', 'correndo', 'runs', 'running', 'sprint',
+    'dança', 'dance', 'dançando', 'dancing',
+    'cachoeira', 'waterfall', 'rio fluindo', 'flowing river',
+    'tempestade', 'storm', 'furacão', 'hurricane', 'tornado',
+    'fogo', 'fire', 'chamas', 'flames', 'queimando', 'burning',
+    'onda', 'wave', 'ondas', 'waves', 'tsunami',
+    'voo', 'flying', 'voando', 'plane', 'avião', 'drone',
+    'queda', 'falling', 'caindo', 'desabando', 'collapse',
+    'carro', 'car', 'veículo', 'vehicle', 'dirigindo', 'driving',
+    'multidão', 'crowd', 'massa', 'protesto', 'manifestação',
+    'animação', 'animation', 'transformação', 'transformation',
+    'guerra', 'war', 'exército', 'army', 'soldados', 'soldiers',
+    'nave', 'spaceship', 'foguete', 'rocket', 'lançamento', 'launch'
+  ];
+
   const shouldRecommendMotion = (text: string, emotion?: string, durationSeconds?: number): boolean => {
     // Só recomendar movimento para cenas de até 11 segundos
     if (durationSeconds !== undefined && durationSeconds > 11) return false;
@@ -245,6 +274,21 @@ export function ScriptPreviewTimeline({
     const hasMotionKeyword = MOTION_KEYWORDS.some(kw => lowerText.includes(kw));
     const hasActionEmotion = emotion && ['tension', 'tensão', 'shock', 'choque', 'surprise', 'surpresa'].includes(emotion.toLowerCase());
     return hasMotionKeyword || !!hasActionEmotion;
+  };
+
+  // Detecta se a cena precisa de vídeo AI (ação intensa que não pode ser feita com Ken Burns)
+  const shouldRecommendVideo = (text: string, emotion?: string): boolean => {
+    const lowerText = text.toLowerCase();
+    const hasVideoKeyword = VIDEO_REQUIRED_KEYWORDS.some(kw => lowerText.includes(kw));
+    const hasIntenseEmotion = emotion && ['choque', 'shock', 'tensão', 'tension'].includes(emotion.toLowerCase());
+    // Precisa ter keyword de vídeo OU emoção intensa + multiple motion keywords
+    const multipleMotionKeywords = MOTION_KEYWORDS.filter(kw => lowerText.includes(kw)).length >= 2;
+    return hasVideoKeyword || (hasIntenseEmotion && multipleMotionKeywords);
+  };
+
+  const handleOpenVideoModal = (scene: PreviewScene) => {
+    setSelectedSceneForVideo(scene);
+    setVideoModalOpen(true);
   };
 
   // CRÍTICO: Quando a duração está travada, REDISTRIBUIR proporcionalmente as durações
@@ -260,6 +304,7 @@ export function ScriptPreviewTimeline({
         const endTime = currentTime + scene.durationSeconds;
         currentTime = endTime;
         const motionRecommended = scene.motionRecommended ?? shouldRecommendMotion(scene.text, scene.emotion, scene.durationSeconds);
+        const videoRecommended = scene.videoRecommended ?? shouldRecommendVideo(scene.text, scene.emotion);
         return {
           number: scene.number,
           text: scene.text,
@@ -268,9 +313,11 @@ export function ScriptPreviewTimeline({
           startTime,
           endTime,
           generatedImage: scene.generatedImage,
+          generatedVideo: scene.generatedVideo,
           emotion: scene.emotion,
           retentionTrigger: scene.retentionTrigger,
           motionRecommended,
+          videoRecommended,
           kenBurnsMotion: scene.kenBurnsMotion
         };
       });
@@ -329,6 +376,11 @@ export function ScriptPreviewTimeline({
   // Contador de cenas com movimento recomendado
   const motionScenesCount = useMemo(() => {
     return previewScenes.filter(s => s.motionRecommended).length;
+  }, [previewScenes]);
+
+  // Contador de cenas que precisam de vídeo AI
+  const videoScenesCount = useMemo(() => {
+    return previewScenes.filter(s => s.videoRecommended).length;
   }, [previewScenes]);
 
   // Gerar marcadores de tempo
@@ -774,6 +826,29 @@ export function ScriptPreviewTimeline({
           </TooltipProvider>
         )}
 
+        {/* Contador de cenas que precisam de VÍDEO AI */}
+        {videoScenesCount > 0 && generatedScenes.length > 0 && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 px-2 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/40 rounded-md cursor-help">
+                  <Play className="w-4 h-4 text-purple-400" />
+                  <span className="text-sm font-medium text-purple-400">{videoScenesCount}</span>
+                  <span className="text-sm text-purple-400/80">vídeo AI</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs">
+                <p className="font-medium mb-1">🎬 Vídeo AI Recomendado</p>
+                <p className="text-xs text-muted-foreground">
+                  {videoScenesCount} cenas contêm ação intensa (explosões, lutas, perseguições, etc.) que precisam de vídeo AI gerado por IA.
+                  <br /><br />
+                  <span className="text-purple-400">Clique no botão "Vídeo" sobre a imagem para gerar.</span>
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
         {/* Score de Retenção */}
         {retentionAnalysis && generatedScenes.length > 0 && (
           <div className="flex items-center gap-3 ml-auto">
@@ -948,6 +1023,7 @@ export function ScriptPreviewTimeline({
                 const sceneEmotion = previewScenes[index]?.emotion;
                 const sceneTrigger = previewScenes[index]?.retentionTrigger;
                 const sceneMotion = previewScenes[index]?.motionRecommended;
+                const sceneVideoRecommended = previewScenes[index]?.videoRecommended;
                 const sceneKenBurns = previewScenes[index]?.kenBurnsMotion;
                 const kenBurnsInfo = sceneKenBurns?.type ? KEN_BURNS_ICONS[sceneKenBurns.type] : null;
                 const emotionStyle = getEmotionStyle(sceneEmotion);
@@ -1016,8 +1092,23 @@ export function ScriptPreviewTimeline({
                           </div>
                         )}
                         
-                        {/* Indicador de movimento recomendado */}
-                        {sceneMotion && sceneImage && !kenBurnsInfo && (
+                        {/* BOTÃO DE GERAR VÍDEO - Aparece em cenas que precisam de vídeo AI */}
+                        {sceneVideoRecommended && sceneImage && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenVideoModal(previewScenes[index]);
+                            }}
+                            className="absolute top-1 left-1 z-30 flex items-center gap-1 px-1.5 py-1 rounded bg-gradient-to-r from-purple-600/90 to-pink-600/90 hover:from-purple-500 hover:to-pink-500 text-white text-[8px] font-bold shadow-lg transition-all hover:scale-105 border border-white/20"
+                            title="Gerar Vídeo AI para esta cena"
+                          >
+                            <Play className="w-2.5 h-2.5" />
+                            Vídeo
+                          </button>
+                        )}
+                        
+                        {/* Indicador de movimento recomendado (quando NÃO precisa de vídeo) */}
+                        {sceneMotion && sceneImage && !kenBurnsInfo && !sceneVideoRecommended && (
                           <div className="absolute top-1 right-1 z-20">
                             <span className="text-[8px] px-1 py-0.5 rounded bg-emerald-500/80 text-white font-medium">
                               🎬
@@ -1254,6 +1345,21 @@ export function ScriptPreviewTimeline({
       <p className="text-[10px] text-muted-foreground mt-2">
         💡 Esta é uma estimativa. A IA ajustará os cortes baseada em transições narrativas naturais.
       </p>
+
+      {/* Modal de Geração de Vídeo */}
+      {selectedSceneForVideo && (
+        <VideoGenerationModal
+          open={videoModalOpen}
+          onOpenChange={setVideoModalOpen}
+          sceneNumber={selectedSceneForVideo.number}
+          sceneText={selectedSceneForVideo.text}
+          sceneImage={selectedSceneForVideo.generatedImage}
+          onVideoGenerated={(sceneNumber, videoUrl) => {
+            toast.success(`Vídeo gerado para cena ${sceneNumber}!`);
+            // Aqui poderia atualizar o estado da cena com o vídeo gerado
+          }}
+        />
+      )}
     </Card>
   );
 }
