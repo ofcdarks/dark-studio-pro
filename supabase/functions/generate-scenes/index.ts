@@ -316,13 +316,6 @@ LEMBRE-SE: Seu objetivo é criar um vídeo que mantenha o espectador PRESO do pr
           continue;
         }
       }
-        console.error(`[Batch ${batchNumber}] Parse error (attempt ${attempt + 1}):`, jsonContent.substring(0, 300));
-        lastError = parseError;
-        if (attempt < maxRetries) {
-          await new Promise(r => setTimeout(r, 2000));
-          continue;
-        }
-      }
     } catch (fetchError) {
       console.error(`[Batch ${batchNumber}] Fetch error (attempt ${attempt + 1}):`, fetchError);
       lastError = fetchError;
