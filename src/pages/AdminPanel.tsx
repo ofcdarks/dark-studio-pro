@@ -94,6 +94,7 @@ interface UserData {
   storage_used: number | null;
   whatsapp: string | null;
   status: string | null;
+  user_credits_balance?: number | null;
 }
 
 interface UserWithRole extends UserData {
@@ -160,12 +161,17 @@ const AdminPanel = () => {
       // Fetch user roles
       const { data: userRoles } = await supabase.from("user_roles").select("*");
 
-      // Map roles to users
+      // Fetch user credits
+      const { data: userCredits } = await supabase.from("user_credits").select("user_id, balance");
+
+      // Map roles and credits to users
       const usersWithRoles: UserWithRole[] = (profiles || []).map((profile) => {
         const userRole = userRoles?.find((r) => r.user_id === profile.id);
+        const userCredit = userCredits?.find((c) => c.user_id === profile.id);
         return {
           ...profile,
           role: userRole?.role || "free",
+          user_credits_balance: userCredit?.balance ?? null,
         };
       });
 
@@ -758,6 +764,9 @@ const AdminPanel = () => {
                               PLANO
                             </th>
                             <th className="pb-3 pr-4 text-sm font-medium text-muted-foreground">
+                              CRÉDITOS
+                            </th>
+                            <th className="pb-3 pr-4 text-sm font-medium text-muted-foreground">
                               STATUS
                             </th>
                             <th className="pb-3 text-sm font-medium text-muted-foreground">AÇÕES</th>
@@ -766,7 +775,7 @@ const AdminPanel = () => {
                         <tbody>
                           {paginatedUsers.length === 0 ? (
                             <tr>
-                              <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                              <td colSpan={8} className="py-8 text-center text-muted-foreground">
                                 {searchTerm ? "Nenhum usuário encontrado" : "Nenhum usuário cadastrado"}
                               </td>
                             </tr>
@@ -801,6 +810,11 @@ const AdminPanel = () => {
                                   <Badge className={getRoleBadge(user.role)}>
                                     {user.role.toUpperCase()}
                                   </Badge>
+                                </td>
+                                <td className="py-4 pr-4 text-sm font-medium text-foreground">
+                                  <span className={user.user_credits_balance === 0 ? "text-destructive" : "text-primary"}>
+                                    {user.user_credits_balance !== null ? user.user_credits_balance.toLocaleString('pt-BR') : "—"}
+                                  </span>
                                 </td>
                                 <td className="py-4 pr-4">
                                   <Badge className={getStatusBadge(user.status)}>
