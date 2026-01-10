@@ -18,9 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Zap, Loader2, Star } from "lucide-react";
+import { Zap, Loader2, Star, Key } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 
 interface ScriptFormulaAnalysis {
   motivoSucesso: string;
@@ -48,6 +49,7 @@ export const ScriptAgentModal = ({
   formula,
   baseTranscription,
 }: ScriptAgentModalProps) => {
+  const { deduct, usePlatformCredits } = useCreditDeduction();
   const [agentName, setAgentName] = useState("Agente História 2");
   const [videoTitle, setVideoTitle] = useState("");
   const [duration, setDuration] = useState("5");
@@ -64,6 +66,8 @@ export const ScriptAgentModal = ({
 
   const estimatedWords = Math.round(parseInt(duration) * 130);
   const partDuration = Math.round(parseInt(duration) / parseInt(parts));
+  const durationNum = parseInt(duration) || 5;
+  const estimatedCredits = Math.ceil(durationNum * 2.8);
 
   const handleGenerateScript = async () => {
     if (!videoTitle.trim()) {
@@ -76,6 +80,23 @@ export const ScriptAgentModal = ({
     }
 
     setGenerating(true);
+
+    // CRÍTICO: Deduzir créditos ANTES da geração
+    let deductionResult: { success: boolean; refund: () => Promise<void> } | null = null;
+    
+    if (usePlatformCredits !== false) {
+      deductionResult = await deduct({
+        operationType: 'script_generation',
+        customAmount: estimatedCredits,
+        modelUsed: aiModel,
+        details: { title: videoTitle, duration }
+      });
+
+      if (!deductionResult.success) {
+        setGenerating(false);
+        return;
+      }
+    }
     try {
       const ctaPositions = [];
       if (ctaInicio) ctaPositions.push("início (primeiros 30 segundos)");
@@ -117,44 +138,12 @@ export const ScriptAgentModal = ({
       toast({ title: "Roteiro gerado!", description: "Seu roteiro foi criado com sucesso" });
     } catch (error) {
       console.error("Error generating script:", error);
-      // Mock script for demo
-      setGeneratedScript(`# ${videoTitle}
-
-## PARTE 1 - HOOK (0:00 - 0:30)
-
-[ABERTURA IMPACTANTE]
-"Você sabia que existe um segredo que mudou completamente a forma como..."
-
----
-
-## PARTE 2 - DESENVOLVIMENTO (0:30 - ${Math.round(parseInt(duration) * 0.7)}:00)
-
-[BLOCO 1 - Contexto]
-Apresentação do problema principal...
-
-[BLOCO 2 - Revelação]
-A descoberta surpreendente...
-
-[BLOCO 3 - Aplicação]
-Como você pode usar isso...
-
----
-
-## PARTE 3 - CLÍMAX E CTA (${Math.round(parseInt(duration) * 0.7)}:00 - ${duration}:00)
-
-[REVELAÇÃO FINAL]
-O momento de maior impacto...
-
-${ctaFinal ? "[CTA]\n\"Se você gostou deste conteúdo, deixe seu like e se inscreva...\"" : ""}
-
----
-
-📊 Estatísticas do Roteiro:
-- Duração estimada: ${duration} minutos
-- Palavras: ~${estimatedWords}
-- Partes: ${parts}
-- Gatilhos: ${formula?.gatilhosMentais?.slice(0, 3).join(", ") || "Curiosidade, Urgência"}`);
-      toast({ title: "Roteiro gerado", description: "Dados de demonstração" });
+      toast({ title: "Erro", description: "Falha ao gerar roteiro", variant: "destructive" });
+      
+      // Reembolsar créditos em caso de erro
+      if (deductionResult?.refund) {
+        await deductionResult.refund();
+      }
     } finally {
       setGenerating(false);
     }
@@ -166,10 +155,17 @@ ${ctaFinal ? "[CTA]\n\"Se você gostou deste conteúdo, deixe seu like e se insc
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl">Gerar Roteiro com Agente</DialogTitle>
-            <Badge variant="outline" className="text-primary border-primary">
-              <Zap className="w-3 h-3 mr-1" />
-              Custo estimado: 14 créditos
-            </Badge>
+            {usePlatformCredits === false ? (
+              <Badge variant="outline" className="text-green-500 border-green-500/50 bg-green-500/10">
+                <Key className="w-3 h-3 mr-1" />
+                Usando sua API
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-primary border-primary">
+                <Zap className="w-3 h-3 mr-1" />
+                Custo estimado: {estimatedCredits} créditos
+              </Badge>
+            )}
           </div>
         </DialogHeader>
 

@@ -1313,17 +1313,32 @@ Os astecas eram..."
       return;
     }
 
-    // Só verifica créditos se usa créditos da plataforma
-    if (!hasEnoughCredits && usePlatformCredits !== false) {
-      toast.error("Créditos insuficientes");
-      return;
-    }
-
     setIsGenerating(true);
     setGeneratedScript("");
     setProgress(0);
     setRetentionScore(null);
     setRetentionTips([]);
+
+    // CRÍTICO: Deduzir créditos ANTES da geração (apenas se usar créditos da plataforma)
+    let deductionResult: { success: boolean; refund: () => Promise<void> } | null = null;
+    
+    if (usePlatformCredits !== false) {
+      deductionResult = await deduct({
+        operationType: 'script_generation',
+        customAmount: estimatedCredits,
+        modelUsed: aiModel,
+        details: {
+          title,
+          duration,
+          formula: selectedFormula
+        }
+      });
+
+      if (!deductionResult.success) {
+        setIsGenerating(false);
+        return;
+      }
+    }
 
     try {
       const countWords = (text: string) => text.split(/\s+/).filter(w => w.trim()).length;
@@ -1398,17 +1413,6 @@ SE VOCÊ ENTREGAR MENOS PALAVRAS QUE O MÍNIMO, O ROTEIRO SERÁ REJEITADO!`;
 
       setProgress(100);
 
-      await deduct({
-        operationType: 'script_generation',
-        customAmount: estimatedCredits,
-        modelUsed: aiModel,
-        details: {
-          title,
-          duration,
-          formula: selectedFormula
-        }
-      });
-
       await logActivity({
         action: 'script_generated',
         description: `Roteiro viral: ${title} (${formatDuration(duration)})`,
@@ -1427,6 +1431,11 @@ SE VOCÊ ENTREGAR MENOS PALAVRAS QUE O MÍNIMO, O ROTEIRO SERÁ REJEITADO!`;
     } catch (error) {
       console.error('Error generating script:', error);
       toast.error("Erro ao gerar roteiro. Tente novamente.");
+      
+      // Reembolsar créditos em caso de erro
+      if (deductionResult?.refund) {
+        await deductionResult.refund();
+      }
     } finally {
       setIsGenerating(false);
     }

@@ -57,7 +57,7 @@ interface AgentChatModalProps {
 export function AgentChatModal({ open, onOpenChange, agent, onModelChange, onTriggersUpdate }: AgentChatModalProps) {
   const { user } = useAuth();
   const { balance } = useCredits();
-  const { usePlatformCredits } = useCreditDeduction();
+  const { usePlatformCredits, deduct } = useCreditDeduction();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -159,6 +159,24 @@ Você deve:
     setInput("");
     setIsLoading(true);
 
+    // CRÍTICO: Deduzir créditos ANTES do chat (custo fixo de 2 créditos por mensagem)
+    const CHAT_CREDITS = 2;
+    let deductionResult: { success: boolean; refund: () => Promise<void> } | null = null;
+    
+    if (usePlatformCredits !== false) {
+      deductionResult = await deduct({
+        operationType: 'agent_chat',
+        customAmount: CHAT_CREDITS,
+        modelUsed: selectedModel,
+        details: { agentName: agent.name }
+      });
+
+      if (!deductionResult.success) {
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
       const conversationHistory = messages
         .filter(m => m.id !== "welcome")
@@ -201,6 +219,11 @@ Você deve:
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Erro ao enviar mensagem. Tente novamente.");
+      
+      // Reembolsar créditos em caso de erro
+      if (deductionResult?.refund) {
+        await deductionResult.refund();
+      }
       
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
@@ -400,6 +423,24 @@ Retorne APENAS os 8 gatilhos, um por linha, sem numeração, hífens ou explica�
       isScript: true
     };
     setMessages(prev => [...prev, previewMessage]);
+
+    // CRÍTICO: Deduzir créditos ANTES da geração
+    let deductionResult: { success: boolean; refund: () => Promise<void> } | null = null;
+    
+    if (usePlatformCredits !== false) {
+      deductionResult = await deduct({
+        operationType: 'generate_script',
+        customAmount: estimatedCredits,
+        modelUsed: selectedModel,
+        details: { title: scriptTitle, duration: scriptDuration, agentName: agent.name }
+      });
+
+      if (!deductionResult.success) {
+        setIsGeneratingScript(false);
+        setMessages(prev => prev.filter(msg => msg.id !== previewMessageId));
+        return;
+      }
+    }
     
     try {
       const ctaPositions = [];
@@ -581,6 +622,11 @@ GERE AGORA ${numParts > 1 ? `A PARTE ${partIndex + 1}` : 'O ROTEIRO COMPLETO'} D
       toast.error("Erro ao gerar roteiro. Tente novamente.");
       // Remove the preview message on error
       setMessages(prev => prev.filter(msg => msg.id !== previewMessageId));
+      
+      // Reembolsar créditos em caso de erro
+      if (deductionResult?.refund) {
+        await deductionResult.refund();
+      }
     } finally {
       setIsGeneratingScript(false);
       setGenerationStatus("");
