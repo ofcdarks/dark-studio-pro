@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Flame, Calendar, Trophy, Zap, Target, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, subDays, eachDayOfInterval, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useQuery } from "@tanstack/react-query";
 
 interface DayActivity {
   date: string;
@@ -15,21 +15,17 @@ interface DayActivity {
 
 const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+// Cache de 10 minutos para evitar refetch constante
+const HEATMAP_STALE_TIME = 10 * 60 * 1000;
+
 export function ProductivityHeatmapCard() {
   const { user } = useAuth();
-  const [heatmapData, setHeatmapData] = useState<DayActivity[]>([]);
-  const [streak, setStreak] = useState(0);
-  const [bestStreak, setBestStreak] = useState(0);
-  const [totalActivities, setTotalActivities] = useState(0);
-  const [avgPerDay, setAvgPerDay] = useState(0);
-  const [mostActiveDay, setMostActiveDay] = useState("");
-  const [activeDays, setActiveDays] = useState(0);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const fetchActivityData = async () => {
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['productivity-heatmap', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
       const endDate = new Date();
       const startDate = subDays(endDate, 83); // ~12 weeks
 
@@ -61,16 +57,11 @@ export function ProductivityHeatmapCard() {
       const mostActiveDayIndex = Object.entries(activityByDayOfWeek).find(([_, v]) => v === maxDayActivity)?.[0];
       const mostActiveDayName = mostActiveDayIndex !== undefined ? dayNames[parseInt(mostActiveDayIndex)] : "-";
 
-      setTotalActivities(total);
-      setAvgPerDay(avg);
-      setMostActiveDay(mostActiveDayName);
-      setActiveDays(daysWithActivity);
-
       // Generate all days in range
       const days = eachDayOfInterval({ start: startDate, end: endDate });
       const maxCount = Math.max(...Object.values(activityByDay), 1);
 
-      const data: DayActivity[] = days.map(day => {
+      const heatmapData: DayActivity[] = days.map(day => {
         const dateStr = format(day, "yyyy-MM-dd");
         const count = activityByDay[dateStr] || 0;
         let level: 0 | 1 | 2 | 3 | 4 = 0;
@@ -84,34 +75,47 @@ export function ProductivityHeatmapCard() {
         return { date: dateStr, count, level };
       });
 
-      setHeatmapData(data);
-
       // Calculate streaks
       let currentStreak = 0;
       let maxStreak = 0;
       let tempStreak = 0;
 
-      for (let i = data.length - 1; i >= 0; i--) {
-        if (data[i].count > 0) {
+      for (let i = heatmapData.length - 1; i >= 0; i--) {
+        if (heatmapData[i].count > 0) {
           tempStreak++;
-          if (i === data.length - 1 || i === data.length - 2) {
+          if (i === heatmapData.length - 1 || i === heatmapData.length - 2) {
             currentStreak = tempStreak;
           }
         } else {
           if (tempStreak > maxStreak) maxStreak = tempStreak;
           tempStreak = 0;
-          if (i === data.length - 1) currentStreak = 0;
+          if (i === heatmapData.length - 1) currentStreak = 0;
         }
       }
       if (tempStreak > maxStreak) maxStreak = tempStreak;
 
-      setStreak(currentStreak);
-      setBestStreak(maxStreak);
-      setLoading(false);
-    };
+      return {
+        heatmapData,
+        streak: currentStreak,
+        bestStreak: maxStreak,
+        totalActivities: total,
+        avgPerDay: avg,
+        mostActiveDay: mostActiveDayName,
+        activeDays: daysWithActivity
+      };
+    },
+    enabled: !!user?.id,
+    staleTime: HEATMAP_STALE_TIME,
+    gcTime: 30 * 60 * 1000,
+  });
 
-    fetchActivityData();
-  }, [user?.id]);
+  const heatmapData = data?.heatmapData || [];
+  const streak = data?.streak || 0;
+  const bestStreak = data?.bestStreak || 0;
+  const totalActivities = data?.totalActivities || 0;
+  const avgPerDay = data?.avgPerDay || 0;
+  const mostActiveDay = data?.mostActiveDay || "-";
+  const activeDays = data?.activeDays || 0;
 
   // Group by weeks for display
   const weeks: DayActivity[][] = [];

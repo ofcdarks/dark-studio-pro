@@ -38,9 +38,10 @@ interface DashboardData {
   activityLogs: ActivityLog[];
 }
 
-// Cache: 3 minutos (dashboard pode ter dados novos)
-const DASHBOARD_STALE_TIME = 3 * 60 * 1000;
-const DASHBOARD_GC_TIME = 15 * 60 * 1000;
+// Cache mais agressivo: 10 minutos stale, 30 minutos garbage collection
+// Isso evita refetch constante ao navegar entre ferramentas
+const DASHBOARD_STALE_TIME = 10 * 60 * 1000;
+const DASHBOARD_GC_TIME = 30 * 60 * 1000;
 
 const defaultStats: DashboardStats = {
   totalVideos: 0,

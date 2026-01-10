@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Minus, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { startOfMonth, subMonths, endOfMonth } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
 
 interface ComparisonMetric {
   label: string;
@@ -12,15 +12,17 @@ interface ComparisonMetric {
   change: number;
 }
 
+// Cache de 10 minutos
+const COMPARISON_STALE_TIME = 10 * 60 * 1000;
+
 export function MonthlyComparisonCard() {
   const { user } = useAuth();
-  const [metrics, setMetrics] = useState<ComparisonMetric[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const fetchComparison = async () => {
+  const { data: metrics = [], isLoading: loading } = useQuery({
+    queryKey: ['monthly-comparison', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
       const now = new Date();
       const currentStart = startOfMonth(now);
       const currentEnd = now;
@@ -52,7 +54,7 @@ export function MonthlyComparisonCard() {
         return Math.round(((current - previous) / previous) * 100);
       };
 
-      setMetrics([
+      return [
         {
           label: "Vídeos Analisados",
           current: currentVideos.count || 0,
@@ -77,13 +79,12 @@ export function MonthlyComparisonCard() {
           previous: previousTitles.count || 0,
           change: calculateChange(currentTitles.count || 0, previousTitles.count || 0),
         },
-      ]);
-
-      setLoading(false);
-    };
-
-    fetchComparison();
-  }, [user?.id]);
+      ];
+    },
+    enabled: !!user?.id,
+    staleTime: COMPARISON_STALE_TIME,
+    gcTime: 30 * 60 * 1000,
+  });
 
   const getTrendIcon = (change: number) => {
     if (change > 0) return <TrendingUp className="w-4 h-4 text-green-500" />;
