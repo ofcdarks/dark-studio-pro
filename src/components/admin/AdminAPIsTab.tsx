@@ -101,6 +101,15 @@ export function AdminAPIsTab() {
   const [globalImagefxShowPassword, setGlobalImagefxShowPassword] = useState(false);
   const [savingGlobalImagefx, setSavingGlobalImagefx] = useState(false);
 
+  // Global Veo3 Cookies
+  const [globalVeo3Cookies, setGlobalVeo3Cookies] = useState({
+    cookie1: "",
+    cookie2: "",
+    cookie3: ""
+  });
+  const [globalVeo3ShowPassword, setGlobalVeo3ShowPassword] = useState(false);
+  const [savingGlobalVeo3, setSavingGlobalVeo3] = useState(false);
+
   const [apiProviders, setApiProviders] = useState<ApiProvider[]>([]);
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState<string | null>(null);
@@ -164,6 +173,22 @@ export function AdminAPIsTab() {
     if (imagefxData?.value) {
       const cookies = imagefxData.value as Record<string, string>;
       setGlobalImagefxCookies({
+        cookie1: cookies.cookie1 || "",
+        cookie2: cookies.cookie2 || "",
+        cookie3: cookies.cookie3 || ""
+      });
+    }
+
+    // Load global Veo3 cookies
+    const { data: veo3Data } = await supabase
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "global_veo3_cookies")
+      .maybeSingle();
+
+    if (veo3Data?.value) {
+      const cookies = veo3Data.value as Record<string, string>;
+      setGlobalVeo3Cookies({
         cookie1: cookies.cookie1 || "",
         cookie2: cookies.cookie2 || "",
         cookie3: cookies.cookie3 || ""
@@ -644,6 +669,114 @@ export function AdminAPIsTab() {
           >
             {savingGlobalImagefx && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Salvar Cookies Globais
+          </Button>
+        </div>
+      </Card>
+
+      {/* Global Veo3 Cookies Section */}
+      <Card className="p-6 border-2 border-purple-500/30 bg-purple-500/5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Video className="w-5 h-5 text-purple-500" />
+            <h3 className="font-semibold text-foreground">Cookies Veo3 Globais</h3>
+            <Badge variant="secondary" className="text-xs">
+              <Users className="w-3 h-3 mr-1" />
+              Para geração de vídeo
+            </Badge>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setGlobalVeo3ShowPassword(!globalVeo3ShowPassword)}
+          >
+            {globalVeo3ShowPassword ? (
+              <EyeOff className="w-4 h-4" />
+            ) : (
+              <Eye className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
+        
+        <p className="text-sm text-muted-foreground mb-4">
+          Configure cookies do Veo3 (Google AI) para geração de vídeos por IA. 
+          Esses cookies serão usados para gerar vídeos nas cenas do timeline.
+        </p>
+
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs text-muted-foreground">Cookie Veo3 1 (Principal)</Label>
+            <Input
+              placeholder="Cole o cookie __Secure-1PSID aqui"
+              value={globalVeo3Cookies.cookie1}
+              onChange={(e) => setGlobalVeo3Cookies(prev => ({ ...prev, cookie1: e.target.value }))}
+              className="bg-secondary border-border font-mono text-xs"
+              type={globalVeo3ShowPassword ? "text" : "password"}
+            />
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Cookie Veo3 2 (Backup)</Label>
+            <Input
+              placeholder="Cookie adicional para balanceamento"
+              value={globalVeo3Cookies.cookie2}
+              onChange={(e) => setGlobalVeo3Cookies(prev => ({ ...prev, cookie2: e.target.value }))}
+              className="bg-secondary border-border font-mono text-xs"
+              type={globalVeo3ShowPassword ? "text" : "password"}
+            />
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Cookie Veo3 3 (Extra)</Label>
+            <Input
+              placeholder="Cookie extra para alta demanda"
+              value={globalVeo3Cookies.cookie3}
+              onChange={(e) => setGlobalVeo3Cookies(prev => ({ ...prev, cookie3: e.target.value }))}
+              className="bg-secondary border-border font-mono text-xs"
+              type={globalVeo3ShowPassword ? "text" : "password"}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <Button
+            onClick={async () => {
+              setSavingGlobalVeo3(true);
+              try {
+                const { data: current } = await supabase
+                  .from("admin_settings")
+                  .select("id")
+                  .eq("key", "global_veo3_cookies")
+                  .maybeSingle();
+
+                const cookiesValue = {
+                  cookie1: globalVeo3Cookies.cookie1.trim(),
+                  cookie2: globalVeo3Cookies.cookie2.trim(),
+                  cookie3: globalVeo3Cookies.cookie3.trim()
+                };
+
+                if (current) {
+                  await supabase
+                    .from("admin_settings")
+                    .update({ value: cookiesValue, updated_at: new Date().toISOString() })
+                    .eq("key", "global_veo3_cookies");
+                } else {
+                  await supabase
+                    .from("admin_settings")
+                    .insert([{ key: "global_veo3_cookies", value: cookiesValue }]);
+                }
+
+                toast.success("Cookies Veo3 globais salvos com sucesso!");
+              } catch (error) {
+                console.error("Error saving global Veo3 cookies:", error);
+                toast.error("Erro ao salvar cookies Veo3");
+              } finally {
+                setSavingGlobalVeo3(false);
+              }
+            }}
+            disabled={savingGlobalVeo3}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            {savingGlobalVeo3 && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Salvar Cookies Veo3
           </Button>
         </div>
       </Card>
