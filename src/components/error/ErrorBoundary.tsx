@@ -32,8 +32,33 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
+  private isChunkLoadError(error: Error): boolean {
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('failed to fetch dynamically imported module') ||
+      message.includes('loading chunk') ||
+      message.includes('loading css chunk') ||
+      message.includes('dynamically imported module') ||
+      message.includes('failed to load module script')
+    );
+  }
+
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
+    
+    // If it's a chunk loading error, force reload to get new assets
+    if (this.isChunkLoadError(error)) {
+      console.log("Chunk load error detected, reloading page...");
+      // Clear any cached state and reload
+      sessionStorage.setItem('chunk_reload_attempted', 'true');
+      
+      // Only auto-reload if we haven't already tried
+      const alreadyReloaded = sessionStorage.getItem('chunk_reload_attempted');
+      if (!alreadyReloaded) {
+        window.location.reload();
+        return;
+      }
+    }
     
     const maxRetries = this.props.maxRetries ?? 2;
     
@@ -66,6 +91,8 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleManualRetry = () => {
+    // Clear the chunk reload flag so reload will work next time
+    sessionStorage.removeItem('chunk_reload_attempted');
     this.setState({
       hasError: false,
       error: null,
@@ -75,11 +102,14 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleReload = () => {
+    // Clear the chunk reload flag and force reload
+    sessionStorage.removeItem('chunk_reload_attempted');
     window.location.reload();
   };
 
   public render() {
     const maxRetries = this.props.maxRetries ?? 2;
+    const isChunkError = this.state.error ? this.isChunkLoadError(this.state.error) : false;
 
     // Show loading state during auto-retry
     if (this.state.isRetrying) {
@@ -105,20 +135,22 @@ export class ErrorBoundary extends Component<Props, State> {
             
             <div className="space-y-2">
               <h2 className="text-xl font-semibold text-foreground">
-                {this.props.fallbackTitle || "Algo deu errado"}
+                {isChunkError ? "Atualização Disponível" : (this.props.fallbackTitle || "Algo deu errado")}
               </h2>
               <p className="text-muted-foreground text-sm">
-                {this.props.fallbackMessage || 
-                  "Ocorreu um erro inesperado ao carregar esta página. Por favor, tente novamente."}
+                {isChunkError 
+                  ? "Uma nova versão da aplicação foi publicada. Clique em 'Recarregar Página' para atualizar."
+                  : (this.props.fallbackMessage || 
+                    "Ocorreu um erro inesperado ao carregar esta página. Por favor, tente novamente.")}
               </p>
-              {this.state.retryCount > 0 && (
+              {this.state.retryCount > 0 && !isChunkError && (
                 <p className="text-xs text-muted-foreground">
                   Tentativas automáticas esgotadas ({this.state.retryCount}/{maxRetries})
                 </p>
               )}
             </div>
 
-            {this.state.error && (
+            {this.state.error && !isChunkError && (
               <div className="bg-muted/50 rounded-lg p-3 text-left">
                 <p className="text-xs text-muted-foreground font-mono break-all">
                   {this.state.error.message}
