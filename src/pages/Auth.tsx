@@ -303,7 +303,9 @@ const Auth = () => {
             title: "Bem-vindo!",
             description: "Login realizado com sucesso",
           });
-          navigate("/dashboard");
+          // Wait for session to be fully established before navigating
+          await new Promise(resolve => setTimeout(resolve, 100));
+          navigate("/dashboard", { replace: true });
         }
       } else {
         const { error } = await signUp(email, password, fullName, whatsapp);
