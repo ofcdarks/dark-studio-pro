@@ -22,32 +22,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Flag to track if we already set initial session
-    let initialSessionSet = false;
-    
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        // Only update if this is a real auth event or we haven't set initial session
-        if (event !== 'INITIAL_SESSION' || !initialSessionSet) {
-          setSession(session);
-          setUser(session?.user ?? null);
-        }
+    let isMounted = true;
+    let sessionChecked = false;
+    let didSettleLoading = false;
+
+    const settleLoadingIfReady = () => {
+      if (!didSettleLoading && sessionChecked && isMounted) {
+        didSettleLoading = true;
         setLoading(false);
       }
-    );
+    };
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!initialSessionSet) {
-        initialSessionSet = true;
-        setSession(session);
-        setUser(session?.user ?? null);
+    // Listener primeiro (evita perder eventos)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) return;
+
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      // Para eventos reais (login/logout/refresh), pode liberar loading na hora.
+      // Para INITIAL_SESSION, esperamos o getSession finalizar pelo menos 1x
+      // (evita "piscar" user=null e ProtectedRoute mandar de volta pro /auth).
+      if (event !== "INITIAL_SESSION") {
+        didSettleLoading = true;
         setLoading(false);
+      } else {
+        settleLoadingIfReady();
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Depois checa sessão atual
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (!isMounted) return;
+        sessionChecked = true;
+        setSession(session);
+        setUser(session?.user ?? null);
+        settleLoadingIfReady();
+      })
+      .catch(() => {
+        sessionChecked = true;
+        settleLoadingIfReady();
+      });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string, whatsapp?: string) => {
