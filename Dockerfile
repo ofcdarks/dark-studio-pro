@@ -8,14 +8,15 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Install dependencies for native modules
-RUN apk add --no-cache python3 make g++
+# Install dependencies for native modules (sharp, svgo)
+RUN apk add --no-cache python3 make g++ vips-dev
 
 # Copy package files first (for better caching)
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --legacy-peer-deps
+# Install dependencies including sharp and svgo for image optimization
+RUN npm ci --legacy-peer-deps && \
+    npm install sharp svgo --save-optional
 
 # Copy source code
 COPY . .
