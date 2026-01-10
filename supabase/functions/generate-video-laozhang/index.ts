@@ -17,6 +17,70 @@ interface VideoRequest {
 const VEO3_API_URL = "https://api.veo3gen.co/api/veo/text-to-video";
 const VEO3_STATUS_URL = "https://api.veo3gen.co/api/veo/status";
 
+// n8n Webhook para processamento de vídeo
+async function generateWithN8nWebhook(
+  prompt: string,
+  webhookUrl: string,
+  aspectRatio: string,
+  model: string
+): Promise<{ success: boolean; videoUrl?: string; taskId?: string; status?: string; error?: string }> {
+  try {
+    console.log(`[n8n] Enviando para webhook: ${webhookUrl}`);
+    console.log(`[n8n] Model: ${model}, Aspect: ${aspectRatio}`);
+
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt,
+        model,
+        aspect_ratio: aspectRatio,
+        duration: 8,
+        timestamp: new Date().toISOString()
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[n8n] Webhook error:`, response.status, errorText.substring(0, 300));
+      return { success: false, error: `Erro n8n webhook: ${response.status}` };
+    }
+
+    const data = await response.json();
+    console.log("[n8n] Response:", JSON.stringify(data).substring(0, 500));
+
+    // Aceitar vários formatos de resposta do n8n
+    const videoUrl = data.videoUrl || data.video_url || data.url || data.result?.videoUrl;
+    const status = data.status || "completed";
+
+    if (videoUrl) {
+      console.log("[n8n] Video URL recebida:", videoUrl);
+      return { success: true, videoUrl, status };
+    }
+
+    if (data.taskId || data.task_id) {
+      return { 
+        success: true, 
+        taskId: data.taskId || data.task_id,
+        status: "processing"
+      };
+    }
+
+    // Se n8n retornou sucesso mas sem URL, consideramos em processamento
+    if (data.success || data.ok) {
+      return { success: true, status: "processing" };
+    }
+
+    return { success: false, error: data.error || "Resposta inválida do n8n" };
+
+  } catch (error) {
+    console.error(`[n8n] Erro:`, error);
+    return { success: false, error: error instanceof Error ? error.message : "Erro ao chamar n8n webhook" };
+  }
+}
+
 async function generateWithVeo3Api(
   prompt: string,
   apiKey: string,
@@ -183,21 +247,74 @@ serve(async (req) => {
 
     const apiKeysValue = adminSettings?.value as Record<string, string> | null;
 
-    // Para modelos Veo3, usar a API veo3gen.co
+    // Buscar configuração do n8n webhook
+    const { data: n8nSettings } = await supabase
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'n8n_video_webhook')
+      .maybeSingle();
+
+    const n8nWebhookUrl = (n8nSettings?.value as Record<string, string>)?.webhook_url;
+
+    // Para modelos Veo3, priorizar n8n webhook se configurado
     if (model === 'veo31' || model === 'veo31-fast') {
+      
+      // Primeiro tentar n8n webhook
+      if (n8nWebhookUrl) {
+        console.log(`[Video Generation] Usando n8n webhook`);
+        
+        const result = await generateWithN8nWebhook(prompt, n8nWebhookUrl, aspect_ratio, model);
+
+        if (result.success) {
+          if (result.status === "processing") {
+            return new Response(JSON.stringify({
+              success: true,
+              status: 'processing',
+              task_id: result.taskId,
+              message: 'Vídeo em processamento no n8n. Pode levar alguns minutos.',
+            }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          return new Response(JSON.stringify({
+            success: true,
+            status: 'completed',
+            video_url: result.videoUrl,
+            model: model,
+            aspect_ratio: aspect_ratio,
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Se n8n falhou, tentar fallback para API direta
+        console.log(`[Video Generation] n8n falhou, tentando API direta: ${result.error}`);
+      }
+
+      // Fallback: usar API veo3gen.co diretamente
       const veo3ApiKey = apiKeysValue?.veo3 || Deno.env.get('VEO3_API_KEY');
 
-      if (!veo3ApiKey) {
-        console.error('[Video Generation] Veo3 API key não configurada');
+      if (!veo3ApiKey && !n8nWebhookUrl) {
+        console.error('[Video Generation] Veo3 API key e n8n webhook não configurados');
         return new Response(JSON.stringify({ 
-          error: 'API Key Veo3 não configurada. Configure no Painel Admin → APIs → Veo3.' 
+          error: 'Configure o Webhook n8n ou a API Key Veo3 no Painel Admin → APIs.' 
         }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      console.log(`[Video Generation] Usando API Veo3`);
+      if (!veo3ApiKey) {
+        return new Response(JSON.stringify({ 
+          error: 'n8n webhook falhou e API Key Veo3 não está configurada como fallback.' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      console.log(`[Video Generation] Usando API Veo3 direta`);
 
       const result = await generateWithVeo3Api(prompt, veo3ApiKey, aspect_ratio, model);
 

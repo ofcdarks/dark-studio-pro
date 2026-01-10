@@ -95,6 +95,10 @@ export function AdminAPIsTab() {
   const [veo3Key, setVeo3Key] = useState("");
   const [veo3Validated, setVeo3Validated] = useState(false);
   const [veo3ShowPassword, setVeo3ShowPassword] = useState(false);
+
+  // n8n Webhook URL
+  const [n8nWebhookUrl, setN8nWebhookUrl] = useState("");
+  const [savingN8nWebhook, setSavingN8nWebhook] = useState(false);
   // Global ImageFX Cookies
   const [globalImagefxCookies, setGlobalImagefxCookies] = useState({
     cookie1: "",
@@ -157,6 +161,18 @@ export function AdminAPIsTab() {
       setLaozhangValidated(!!(keys.laozhang_validated));
       setVeo3Key((keys.veo3 as string) || "");
       setVeo3Validated(!!(keys.veo3_validated));
+    }
+
+    // Load n8n webhook URL
+    const { data: n8nData } = await supabase
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "n8n_video_webhook")
+      .maybeSingle();
+
+    if (n8nData?.value) {
+      const n8nConfig = n8nData.value as Record<string, string>;
+      setN8nWebhookUrl(n8nConfig.webhook_url || "");
     }
 
     // Load global ImageFX cookies
@@ -662,6 +678,93 @@ export function AdminAPIsTab() {
           >
             {savingGlobalImagefx && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Salvar Cookies Globais
+          </Button>
+        </div>
+      </Card>
+
+      {/* n8n Video Webhook Section */}
+      <Card className="p-6 border-2 border-purple-500/30 bg-purple-500/5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Video className="w-5 h-5 text-purple-500" />
+            <h3 className="font-semibold text-foreground">Webhook n8n - Geração de Vídeo</h3>
+            <Badge variant="secondary" className="text-xs bg-purple-500/20 text-purple-300">
+              Automação
+            </Badge>
+          </div>
+        </div>
+        
+        <p className="text-sm text-muted-foreground mb-4">
+          Configure a URL do webhook n8n para geração de vídeos. O n8n processará a requisição usando suas credenciais do Veo3 e retornará o vídeo gerado.
+          <br />
+          <span className="text-xs text-purple-400">Formato esperado do retorno: {"{ videoUrl: string, status: 'completed' | 'processing' }"}</span>
+        </p>
+
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs text-muted-foreground">URL do Webhook n8n</Label>
+            <Input
+              placeholder="https://seu-n8n.app/webhook/video-generation"
+              value={n8nWebhookUrl}
+              onChange={(e) => setN8nWebhookUrl(e.target.value)}
+              className="bg-secondary border-border font-mono text-xs"
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-4 gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (!n8nWebhookUrl) {
+                toast.error("Configure a URL do webhook primeiro");
+                return;
+              }
+              window.open(n8nWebhookUrl.replace('/webhook/', '/webhook-test/'), '_blank');
+            }}
+            disabled={!n8nWebhookUrl}
+          >
+            Testar Webhook
+          </Button>
+          <Button
+            onClick={async () => {
+              setSavingN8nWebhook(true);
+              try {
+                const { data: current } = await supabase
+                  .from("admin_settings")
+                  .select("id")
+                  .eq("key", "n8n_video_webhook")
+                  .maybeSingle();
+
+                const webhookValue = {
+                  webhook_url: n8nWebhookUrl.trim(),
+                  updated_at: new Date().toISOString()
+                };
+
+                if (current) {
+                  await supabase
+                    .from("admin_settings")
+                    .update({ value: webhookValue, updated_at: new Date().toISOString() })
+                    .eq("key", "n8n_video_webhook");
+                } else {
+                  await supabase
+                    .from("admin_settings")
+                    .insert([{ key: "n8n_video_webhook", value: webhookValue }]);
+                }
+
+                toast.success("Webhook n8n salvo com sucesso!");
+              } catch (error) {
+                console.error("Error saving n8n webhook:", error);
+                toast.error("Erro ao salvar webhook");
+              } finally {
+                setSavingN8nWebhook(false);
+              }
+            }}
+            disabled={savingN8nWebhook}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            {savingN8nWebhook && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Salvar Webhook
           </Button>
         </div>
       </Card>
