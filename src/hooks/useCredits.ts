@@ -46,7 +46,8 @@ export const useCredits = () => {
         return 50;
       }
       
-      return Math.ceil(data.balance);
+      // Garantir que saldo nunca seja negativo
+      return Math.max(0, Math.ceil(data.balance));
     },
     enabled: !!user,
     staleTime: CREDITS_STALE_TIME,

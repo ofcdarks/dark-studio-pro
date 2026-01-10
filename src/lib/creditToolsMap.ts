@@ -406,11 +406,13 @@ export async function deductCredits(
 
     const currentBalance = currentCredits?.balance || 0;
 
+    // CRÍTICO: Nunca permitir saldo negativo
     if (currentBalance < creditsUsed) {
       return { success: false, error: 'Saldo insuficiente', shouldRefund: false };
     }
 
-    const newBalance = currentBalance - creditsUsed;
+    // Garantir que o novo saldo nunca seja negativo
+    const newBalance = Math.max(0, currentBalance - creditsUsed);
 
     // Atualizar saldo
     const { error: updateError } = await supabase
