@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Rocket, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw, AlertTriangle, ImageIcon, Coins, Play } from "lucide-react";
+import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Rocket, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw, AlertTriangle, ImageIcon, Coins, Play, Video } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +33,10 @@ interface GeneratedImage {
   error?: string;
   wasRewritten?: boolean;
   inCache?: boolean;
+  hasVideo?: boolean;
+  videoDuration?: number;
+  videoReason?: string;
+  sceneNumber?: number;
 }
 
 interface BatchHistory {
@@ -46,12 +50,23 @@ interface BatchHistory {
   created_at: string;
 }
 
+interface SceneData {
+  number: number;
+  text: string;
+  imagePrompt: string;
+  wordCount: number;
+  hasVideo?: boolean;
+  videoDuration?: number;
+  videoReason?: string;
+}
+
 interface BatchImageGeneratorProps {
   initialPrompts?: string;
   autoStart?: boolean;
+  scenes?: SceneData[];
 }
 
-const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchImageGeneratorProps) => {
+const BatchImageGenerator = ({ initialPrompts = "", autoStart = false, scenes = [] }: BatchImageGeneratorProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { deduct, checkBalance, getEstimatedCost, CREDIT_COSTS, usePlatformCredits } = useCreditDeduction();
@@ -302,13 +317,20 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchIm
 
     const stylePrefix = getStylePrefix();
     
-    // Initialize all images as pending
-    const initialImages: GeneratedImage[] = prompts.map((prompt, index) => ({
-      id: `img-${Date.now()}-${index}`,
-      prompt: stylePrefix + prompt,
-      imageUrl: null,
-      status: "pending"
-    }));
+    // Initialize all images as pending, with scene metadata if available
+    const initialImages: GeneratedImage[] = prompts.map((prompt, index) => {
+      const sceneData = scenes[index];
+      return {
+        id: `img-${Date.now()}-${index}`,
+        prompt: stylePrefix + prompt,
+        imageUrl: null,
+        status: "pending",
+        hasVideo: sceneData?.hasVideo || false,
+        videoDuration: sceneData?.videoDuration || undefined,
+        videoReason: sceneData?.videoReason || undefined,
+        sceneNumber: sceneData?.number || (index + 1)
+      };
+    });
 
     setImages(initialImages);
     setIsGenerating(true);
@@ -1113,11 +1135,17 @@ Um carro esportivo na montanha`}
                         </div>
                       )}
 
-                      {/* Number Badge */}
+                      {/* Number Badge and Video Indicator */}
                       <div className="absolute top-1 left-1 flex items-center gap-1">
                         <div className="bg-background/80 backdrop-blur-sm rounded px-1.5 py-0.5">
-                          <span className="text-xs font-medium">{index + 1}</span>
+                          <span className="text-xs font-medium">{image.sceneNumber || index + 1}</span>
                         </div>
+                        {image.hasVideo && (
+                          <div className="bg-primary/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-1">
+                            <Video className="w-2.5 h-2.5 text-primary-foreground" />
+                            <span className="text-[10px] font-medium text-primary-foreground">8s</span>
+                          </div>
+                        )}
                         {image.wasRewritten && (
                           <div className="bg-amber-500/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-1">
                             <Wand2 className="w-2.5 h-2.5 text-white" />
