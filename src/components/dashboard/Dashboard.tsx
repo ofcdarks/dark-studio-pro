@@ -1,3 +1,4 @@
+import { lazy, Suspense, memo } from "react";
 import { Video, Eye, Coins, TrendingUp, Type, Image, Crown, Rocket } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,21 +15,23 @@ import { NextStepsCard } from "./NextStepsCard";
 import { DailyQuoteCard } from "./DailyQuoteCard";
 import { RecentVideosCard } from "./RecentVideosCard";
 import { OperationalLogsCard } from "./OperationalLogsCard";
-import { ProductivityHeatmapCard } from "./ProductivityHeatmapCard";
-import { MonthlyComparisonCard } from "./MonthlyComparisonCard";
-import { SmartAlertsCard } from "./SmartAlertsCard";
-import { ConsistencyScoreCard } from "./ConsistencyScoreCard";
-import { CreditsROICard } from "./CreditsROICard";
-import { NicheSuggestionsCard } from "./NicheSuggestionsCard";
-
-import { UserGoalsCard } from "./UserGoalsCard";
-import { ProductionBoardCard } from "./ProductionBoardCard";
+import { LazyDashboardCard, ProductionBoardSkeleton } from "./LazyDashboardCard";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+// Lazy load heavy components que fazem queries independentes
+const ProductionBoardCard = lazy(() => import("./ProductionBoardCard").then(m => ({ default: m.ProductionBoardCard })));
+const ProductivityHeatmapCard = lazy(() => import("./ProductivityHeatmapCard").then(m => ({ default: m.ProductivityHeatmapCard })));
+const MonthlyComparisonCard = lazy(() => import("./MonthlyComparisonCard").then(m => ({ default: m.MonthlyComparisonCard })));
+const SmartAlertsCard = lazy(() => import("./SmartAlertsCard").then(m => ({ default: m.SmartAlertsCard })));
+const ConsistencyScoreCard = lazy(() => import("./ConsistencyScoreCard").then(m => ({ default: m.ConsistencyScoreCard })));
+const CreditsROICard = lazy(() => import("./CreditsROICard").then(m => ({ default: m.CreditsROICard })));
+const NicheSuggestionsCard = lazy(() => import("./NicheSuggestionsCard").then(m => ({ default: m.NicheSuggestionsCard })));
+const UserGoalsCard = lazy(() => import("./UserGoalsCard").then(m => ({ default: m.UserGoalsCard })));
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -158,36 +161,38 @@ export function Dashboard() {
         </motion.div>
 
 
-        {/* Production Board - Full Width */}
+        {/* Production Board - Full Width with lazy loading */}
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="mb-6">
           <motion.div variants={itemVariants}>
-            <ProductionBoardCard />
+            <Suspense fallback={<ProductionBoardSkeleton />}>
+              <ProductionBoardCard />
+            </Suspense>
           </motion.div>
         </motion.div>
 
-        {/* Insights Row */}
+        {/* Insights Row - Lazy loaded */}
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <motion.div variants={itemVariants} className="h-full">
+          <LazyDashboardCard minHeight="250px" className="h-full">
             <ProductivityHeatmapCard />
-          </motion.div>
-          <motion.div variants={itemVariants} className="h-full">
+          </LazyDashboardCard>
+          <LazyDashboardCard minHeight="250px" className="h-full">
             <MonthlyComparisonCard />
-          </motion.div>
+          </LazyDashboardCard>
         </motion.div>
 
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <motion.div variants={itemVariants} className="h-full">
+          <LazyDashboardCard minHeight="200px" className="h-full">
             <UserGoalsCard />
-          </motion.div>
-          <motion.div variants={itemVariants} className="h-full">
+          </LazyDashboardCard>
+          <LazyDashboardCard minHeight="200px" className="h-full">
             <SmartAlertsCard />
-          </motion.div>
-          <motion.div variants={itemVariants} className="h-full">
+          </LazyDashboardCard>
+          <LazyDashboardCard minHeight="200px" className="h-full">
             <ConsistencyScoreCard />
-          </motion.div>
-          <motion.div variants={itemVariants} className="h-full">
+          </LazyDashboardCard>
+          <LazyDashboardCard minHeight="200px" className="h-full">
             <CreditsROICard />
-          </motion.div>
+          </LazyDashboardCard>
         </motion.div>
 
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -210,7 +215,9 @@ export function Dashboard() {
             </motion.div>
           </div>
           <div className="space-y-6" data-tutorial="sidebar-nav">
-            <motion.div variants={itemVariants}><NicheSuggestionsCard /></motion.div>
+            <LazyDashboardCard minHeight="200px">
+              <NicheSuggestionsCard />
+            </LazyDashboardCard>
             <motion.div variants={itemVariants}><OperationalLogsCard logs={activityLogs} /></motion.div>
           </div>
         </motion.div>

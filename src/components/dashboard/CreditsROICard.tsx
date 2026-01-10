@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Coins, TrendingUp, FileText, Image, Mic, Type } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { startOfMonth, endOfMonth } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
 
 interface ToolUsage {
   label: string;
@@ -14,17 +14,17 @@ interface ToolUsage {
   avgCost: number;
 }
 
+// Cache de 10 minutos
+const ROI_STALE_TIME = 10 * 60 * 1000;
+
 export function CreditsROICard() {
   const { user } = useAuth();
-  const [totalSpent, setTotalSpent] = useState(0);
-  const [totalContent, setTotalContent] = useState(0);
-  const [toolsUsage, setToolsUsage] = useState<ToolUsage[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const fetchROI = async () => {
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['credits-roi', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
       const now = new Date();
       const monthStart = startOfMonth(now);
       const monthEnd = endOfMonth(now);
@@ -51,8 +51,6 @@ export function CreditsROICard() {
         total += usage.credits_used;
       });
 
-      setTotalSpent(total);
-
       // Map to display format
       const typeLabels: Record<string, { label: string; icon: React.ReactNode }> = {
         "script_generation": { label: "Roteiros", icon: <FileText className="w-4 h-4" /> },
@@ -69,7 +67,7 @@ export function CreditsROICard() {
         "dashboard_insight": { label: "Insights IA", icon: <TrendingUp className="w-4 h-4" /> },
       };
 
-      const tools: ToolUsage[] = Object.entries(usageByType)
+      const toolsUsage: ToolUsage[] = Object.entries(usageByType)
         .map(([type, data]) => ({
           label: typeLabels[type]?.label || type.replace(/_/g, ' ').slice(0, 15),
           icon: typeLabels[type]?.icon || <Coins className="w-4 h-4" />,
@@ -80,14 +78,18 @@ export function CreditsROICard() {
         .sort((a, b) => b.credits - a.credits)
         .slice(0, 5);
 
-      setToolsUsage(tools);
-      setTotalContent(tools.reduce((sum, t) => sum + t.count, 0));
-      setLoading(false);
-    };
+      const totalContent = toolsUsage.reduce((sum, t) => sum + t.count, 0);
 
-    fetchROI();
-  }, [user?.id]);
+      return { totalSpent: total, totalContent, toolsUsage };
+    },
+    enabled: !!user?.id,
+    staleTime: ROI_STALE_TIME,
+    gcTime: 30 * 60 * 1000,
+  });
 
+  const totalSpent = data?.totalSpent || 0;
+  const totalContent = data?.totalContent || 0;
+  const toolsUsage = data?.toolsUsage || [];
   const costPerContent = totalContent > 0 ? Math.round(totalSpent / totalContent) : 0;
 
   return (

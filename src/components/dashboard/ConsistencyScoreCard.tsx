@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Target, Zap, Award, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Progress } from "@/components/ui/progress";
 import { subDays, startOfWeek, endOfWeek } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
 
 interface WeeklyGoal {
   label: string;
@@ -13,18 +13,17 @@ interface WeeklyGoal {
   completed: boolean;
 }
 
+// Cache de 10 minutos
+const CONSISTENCY_STALE_TIME = 10 * 60 * 1000;
+
 export function ConsistencyScoreCard() {
   const { user } = useAuth();
-  const [score, setScore] = useState(0);
-  const [level, setLevel] = useState("");
-  const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoal[]>([]);
-  const [daysActive, setDaysActive] = useState(0);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const calculateConsistency = async () => {
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['consistency-score', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
       const now = new Date();
       const weekStart = startOfWeek(now, { weekStartsOn: 1 });
       const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
@@ -46,14 +45,12 @@ export function ConsistencyScoreCard() {
       ]);
 
       // Weekly goals (adjusted for realistic targets)
-      const goals: WeeklyGoal[] = [
+      const weeklyGoals: WeeklyGoal[] = [
         { label: "Vídeos analisados", current: weeklyVideos.count || 0, target: 5, completed: (weeklyVideos.count || 0) >= 5 },
         { label: "Roteiros gerados", current: weeklyScripts.count || 0, target: 3, completed: (weeklyScripts.count || 0) >= 3 },
         { label: "Imagens criadas", current: weeklyImages.count || 0, target: 5, completed: (weeklyImages.count || 0) >= 5 },
         { label: "Títulos gerados", current: weeklyTitles.count || 0, target: 10, completed: (weeklyTitles.count || 0) >= 10 },
       ];
-
-      setWeeklyGoals(goals);
 
       // Calculate days active in last 30 days
       const uniqueDays = new Set<string>();
@@ -61,41 +58,39 @@ export function ConsistencyScoreCard() {
         const day = log.created_at?.split("T")[0];
         if (day) uniqueDays.add(day);
       });
-      setDaysActive(uniqueDays.size);
+      const daysActive = uniqueDays.size;
 
       // Calculate consistency score (0-100)
-      const goalsCompleted = goals.filter(g => g.completed).length;
-      const goalsProgress = goals.reduce((sum, g) => sum + Math.min(g.current / g.target, 1), 0) / goals.length;
+      const goalsCompleted = weeklyGoals.filter(g => g.completed).length;
+      const goalsProgress = weeklyGoals.reduce((sum, g) => sum + Math.min(g.current / g.target, 1), 0) / weeklyGoals.length;
       const daysRatio = uniqueDays.size / 30;
 
-      const calculatedScore = Math.round((goalsProgress * 40) + (goalsCompleted / goals.length * 30) + (daysRatio * 30));
-      setScore(calculatedScore);
+      const score = Math.round((goalsProgress * 40) + (goalsCompleted / weeklyGoals.length * 30) + (daysRatio * 30));
 
       // Determine level
-      if (calculatedScore >= 90) setLevel("Lendário");
-      else if (calculatedScore >= 70) setLevel("Mestre");
-      else if (calculatedScore >= 50) setLevel("Consistente");
-      else if (calculatedScore >= 30) setLevel("Iniciante");
-      else setLevel("Novato");
+      let level = "Novato";
+      if (score >= 90) level = "Lendário";
+      else if (score >= 70) level = "Mestre";
+      else if (score >= 50) level = "Consistente";
+      else if (score >= 30) level = "Iniciante";
 
-      setLoading(false);
-    };
+      return { score, level, weeklyGoals, daysActive };
+    },
+    enabled: !!user?.id,
+    staleTime: CONSISTENCY_STALE_TIME,
+    gcTime: 30 * 60 * 1000,
+  });
 
-    calculateConsistency();
-  }, [user?.id]);
+  const score = data?.score || 0;
+  const level = data?.level || "Novato";
+  const weeklyGoals = data?.weeklyGoals || [];
+  const daysActive = data?.daysActive || 0;
 
   const getScoreColor = () => {
     if (score >= 80) return "text-green-500";
     if (score >= 60) return "text-primary";
     if (score >= 40) return "text-yellow-500";
     return "text-red-500";
-  };
-
-  const getProgressColor = () => {
-    if (score >= 80) return "bg-green-500";
-    if (score >= 60) return "bg-primary";
-    if (score >= 40) return "bg-yellow-500";
-    return "bg-red-500";
   };
 
   return (
