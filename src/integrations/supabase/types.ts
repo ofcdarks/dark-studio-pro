@@ -2016,6 +2016,57 @@ export type Database = {
         }
         Relationships: []
       }
+      video_generation_jobs: {
+        Row: {
+          aspect_ratio: string
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          model: string
+          n8n_task_id: string | null
+          prompt: string
+          status: string
+          updated_at: string
+          user_id: string
+          video_url: string | null
+          webhook_response: Json | null
+        }
+        Insert: {
+          aspect_ratio?: string
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          model?: string
+          n8n_task_id?: string | null
+          prompt: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          video_url?: string | null
+          webhook_response?: Json | null
+        }
+        Update: {
+          aspect_ratio?: string
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          model?: string
+          n8n_task_id?: string | null
+          prompt?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          video_url?: string | null
+          webhook_response?: Json | null
+        }
+        Relationships: []
+      }
       video_notifications: {
         Row: {
           channel_id: string | null

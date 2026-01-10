@@ -131,3 +131,9 @@ verify_jwt = false
 
 [functions.youtube-channel-analytics]
 verify_jwt = false
+
+[functions.n8n-video-callback]
+verify_jwt = false
+
+[functions.n8n-video-status]
+verify_jwt = false
