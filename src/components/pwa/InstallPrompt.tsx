@@ -25,13 +25,14 @@ export function InstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
+  // Initial check for mobile devices - run immediately
   useEffect(() => {
-    // Check if user already dismissed
+    // Check if already dismissed recently
     const wasDismissed = localStorage.getItem("pwa-install-dismissed");
     const dismissedAt = localStorage.getItem("pwa-install-dismissed-at");
     
-    // Allow showing again after 24 hours
     if (wasDismissed && dismissedAt) {
       const dismissedTime = parseInt(dismissedAt, 10);
       const now = Date.now();
@@ -39,9 +40,9 @@ export function InstallPrompt() {
       
       if (hoursElapsed < 24) {
         setDismissed(true);
+        setInitialCheckDone(true);
         return;
       } else {
-        // Clear old dismissal
         localStorage.removeItem("pwa-install-dismissed");
         localStorage.removeItem("pwa-install-dismissed-at");
       }
@@ -49,22 +50,33 @@ export function InstallPrompt() {
 
     // Don't show if already installed or in standalone mode
     if (isInstalled || isStandalone()) {
+      setInitialCheckDone(true);
       return;
     }
 
-    // Show prompt after a short delay
-    const timer = setTimeout(() => {
-      // Show native prompt if available, otherwise show manual instructions
-      if (isInstallable) {
+    // For mobile devices, show immediately (within 300ms)
+    if (isIOS() || isAndroid()) {
+      const timer = setTimeout(() => {
         setShowPrompt(true);
-      } else if (isIOS() || isAndroid()) {
-        // On mobile without native prompt, show manual instructions
-        setShowPrompt(true);
-      }
-    }, 2000);
+        setInitialCheckDone(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
 
-    return () => clearTimeout(timer);
-  }, [isInstallable, isInstalled]);
+    setInitialCheckDone(true);
+  }, [isInstalled]);
+
+  // Secondary check for native install prompt (desktop browsers)
+  useEffect(() => {
+    if (!initialCheckDone || dismissed || isInstalled || isStandalone()) {
+      return;
+    }
+
+    // If native install prompt becomes available, show it
+    if (isInstallable && !showPrompt) {
+      setShowPrompt(true);
+    }
+  }, [isInstallable, initialCheckDone, dismissed, isInstalled, showPrompt]);
 
   const handleInstall = async () => {
     if (isInstallable) {
