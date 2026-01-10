@@ -105,8 +105,9 @@ function DraggableNavItem({
         boxShadow: "0 8px 20px -4px hsl(var(--primary) / 0.3)",
         zIndex: 50 
       }}
-      layout="position"
-      transition={{ duration: 0.15 }}
+      initial={false}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0 }}
     >
       <Link
         to={item.href}
