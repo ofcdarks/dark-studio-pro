@@ -22,17 +22,17 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/user_api_settings?user_id=eq.{{ $env.TARGET_USER_ID }}&select=youtube_api_key",
+        "url": "https://kabnbvnephjifeazaiis.supabase.co/rest/v1/user_api_settings?user_id=eq.57d1e620-a5d4-4d2a-a063-2f0c59aac42d&select=youtube_api_key",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+              "value": "COLE_SUA_SERVICE_ROLE_KEY_AQUI"
             },
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+              "value": "Bearer COLE_SUA_SERVICE_ROLE_KEY_AQUI"
             }
           ]
         },
@@ -43,17 +43,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [220, 300],
-      "notes": "Busca API key do YouTube do usuário"
+      "notes": "⚠️ SUBSTITUA 'COLE_SUA_SERVICE_ROLE_KEY_AQUI' pela sua Service Role Key do Supabase"
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst apiKey = Array.isArray(data) ? data[0]?.youtube_api_key : data?.youtube_api_key;\n\nif (!apiKey) {\n  throw new Error('YouTube API key não configurada para este usuário');\n}\n\nconst niche = $env.SEARCH_NICHE || 'dark channel';\nconst publishedAfter = new Date();\npublishedAfter.setDate(publishedAfter.getDate() - 7);\n\nreturn [{\n  json: {\n    apiKey,\n    niche,\n    publishedAfter: publishedAfter.toISOString(),\n    searchUrl: `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(niche)}&type=video&order=viewCount&publishedAfter=${publishedAfter.toISOString()}&maxResults=50&key=${apiKey}`\n  }\n}];"
+        "jsCode": "const data = $input.first().json;\nconst apiKey = Array.isArray(data) ? data[0]?.youtube_api_key : data?.youtube_api_key;\n\nif (!apiKey) {\n  throw new Error('YouTube API key não configurada. Vá em Configurações > APIs no app.');\n}\n\nconst niche = 'dark channel';\nconst publishedAfter = new Date();\npublishedAfter.setDate(publishedAfter.getDate() - 7);\n\nreturn [{\n  json: {\n    apiKey,\n    niche,\n    publishedAfter: publishedAfter.toISOString(),\n    searchUrl: `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(niche)}&type=video&order=viewCount&publishedAfter=${publishedAfter.toISOString()}&maxResults=50&key=${apiKey}`\n  }\n}];"
       },
       "id": "prepare-config",
       "name": "Prepare Config",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 300]
+      "position": [440, 300],
+      "notes": "Altere 'dark channel' para o nicho desejado"
     },
     {
       "parameters": {
@@ -69,13 +70,42 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.first().json.items || [];\nconst config = $('Prepare Config').first().json;\n\nconst videos = items.map(item => ({\n  videoId: item.id.videoId,\n  title: item.snippet.title,\n  channelTitle: item.snippet.channelTitle,\n  channelId: item.snippet.channelId,\n  publishedAt: item.snippet.publishedAt,\n  thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,\n  niche: config.niche\n}));\n\nconst videoIds = videos.map(v => v.videoId).join(',');\nconst statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${config.apiKey}`;\n\nreturn [{ json: { videos, statsUrl, apiKey: config.apiKey } }];"
+        "jsCode": "const items = $input.first().json.items || [];\nconst config = $('Prepare Config').first().json;\n\nif (items.length === 0) {\n  return [{ json: { empty: true } }];\n}\n\nconst videos = items.map(item => ({\n  videoId: item.id.videoId,\n  title: item.snippet.title,\n  channelTitle: item.snippet.channelTitle,\n  channelId: item.snippet.channelId,\n  publishedAt: item.snippet.publishedAt,\n  thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,\n  niche: config.niche\n}));\n\nconst videoIds = videos.map(v => v.videoId).join(',');\nconst statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${config.apiKey}`;\n\nreturn [{ json: { videos, statsUrl, apiKey: config.apiKey, empty: false } }];"
       },
       "id": "parse-videos",
       "name": "Parse Video Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-empty",
+              "leftValue": "={{ $json.empty }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-videos",
+      "name": "Has Videos?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, 300]
     },
     {
       "parameters": {
@@ -87,7 +117,7 @@
       "name": "Get Video Statistics",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1100, 300]
+      "position": [1320, 200]
     },
     {
       "parameters": {
@@ -97,7 +127,8 @@
       "name": "Calculate Viral Score",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1320, 300]
+      "position": [1540, 200],
+      "notes": "Threshold: 1000 views/hora = viral"
     },
     {
       "parameters": {
@@ -126,18 +157,18 @@
       "name": "Filter Empty Results",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1540, 300]
+      "position": [1760, 200]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/functions/v1/viral-webhook",
+        "url": "https://kabnbvnephjifeazaiis.supabase.co/functions/v1/viral-webhook",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+              "value": "Bearer COLE_SUA_SERVICE_ROLE_KEY_AQUI"
             },
             {
               "name": "Content-Type",
@@ -147,14 +178,15 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"videos\": {{ JSON.stringify($json.videos.map(v => ({\n    user_id: $env.TARGET_USER_ID,\n    video_id: v.videoId,\n    video_url: 'https://www.youtube.com/watch?v=' + v.videoId,\n    title: v.title,\n    thumbnail_url: v.thumbnailUrl,\n    channel_name: v.channelTitle,\n    channel_url: 'https://www.youtube.com/channel/' + v.channelId,\n    views: v.views,\n    likes: v.likes,\n    comments: v.comments,\n    published_at: v.publishedAt,\n    viral_score: v.viralScore,\n    niche: v.niche\n  }))) }}\n}",
+        "jsonBody": "={\n  \"videos\": {{ JSON.stringify($json.videos.map(v => ({\n    user_id: \"57d1e620-a5d4-4d2a-a063-2f0c59aac42d\",\n    video_id: v.videoId,\n    video_url: 'https://www.youtube.com/watch?v=' + v.videoId,\n    title: v.title,\n    thumbnail_url: v.thumbnailUrl,\n    channel_name: v.channelTitle,\n    channel_url: 'https://www.youtube.com/channel/' + v.channelId,\n    views: v.views,\n    likes: v.likes,\n    comments: v.comments,\n    published_at: v.publishedAt,\n    viral_score: v.viralScore,\n    niche: v.niche\n  }))) }}\n}",
         "options": {}
       },
       "id": "send-webhook",
       "name": "Send to Viral Webhook",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1760, 200]
+      "position": [1980, 100],
+      "notes": "⚠️ SUBSTITUA 'COLE_SUA_SERVICE_ROLE_KEY_AQUI' pela sua Service Role Key"
     },
     {
       "parameters": {},
@@ -162,7 +194,15 @@
       "name": "No Viral Videos",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1760, 400]
+      "position": [1980, 300]
+    },
+    {
+      "parameters": {},
+      "id": "no-videos-found",
+      "name": "No Videos Found",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1320, 400]
     }
   ],
   "connections": {
@@ -179,7 +219,13 @@
       "main": [[{ "node": "Parse Video Data", "type": "main", "index": 0 }]]
     },
     "Parse Video Data": {
-      "main": [[{ "node": "Get Video Statistics", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Has Videos?", "type": "main", "index": 0 }]]
+    },
+    "Has Videos?": {
+      "main": [
+        [{ "node": "Get Video Statistics", "type": "main", "index": 0 }],
+        [{ "node": "No Videos Found", "type": "main", "index": 0 }]
+      ]
     },
     "Get Video Statistics": {
       "main": [[{ "node": "Calculate Viral Score", "type": "main", "index": 0 }]]
@@ -196,5 +242,5 @@
   },
   "settings": { "executionOrder": "v1" },
   "tags": ["viral", "youtube"],
-  "meta": { "templateId": "viral-detection-v3" }
+  "meta": { "templateId": "viral-detection-v4" }
 }
