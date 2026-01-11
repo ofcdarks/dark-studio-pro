@@ -933,12 +933,10 @@ const MonitoredChannels = () => {
                     <Pin className="w-4 h-4" />
                     Fixados
                   </TabsTrigger>
-                  {/* Dynamic niche tabs */}
                   {userNiches.map((niche) => {
-                    const nicheVideos = viralVideos?.filter(v => 
-                      v.niche?.toLowerCase() === niche.toLowerCase() &&
-                      !pinnedVideos?.some(p => p.video_id === v.video_id)
-                    ) || [];
+                    const nicheVideos = viralVideos?.filter(
+                      (v) => v.niche?.toLowerCase() === niche.toLowerCase()
+                    ) ?? [];
                     return (
                       <TabsTrigger key={niche} value={`niche-${niche}`} className="flex items-center gap-2 capitalize">
                         <TrendingUp className="w-4 h-4" />
@@ -964,13 +962,13 @@ const MonitoredChannels = () => {
                   </div>
                 </div>
 
-                {viralVideos && viralVideos.filter(v => !pinnedVideos?.some(p => p.video_id === v.video_id)).length > 0 ? (
+                {viralVideos && viralVideos.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {viralVideos.filter(v => !pinnedVideos?.some(p => p.video_id === v.video_id)).map((video) => (
+                    {viralVideos.map((video) => (
                       <ViralVideoCard
                         key={video.id}
                         video={video}
-                        isPinned={pinnedVideos?.some(p => p.video_id === video.video_id) || false}
+                        isPinned={pinnedVideos?.some((p) => p.video_id === video.video_id) || false}
                         onAnalyze={() => {
                           markViralAsReadMutation.mutate(video.id);
                           handleAnalyzeVideo(video.video_url, {
@@ -1002,10 +1000,9 @@ const MonitoredChannels = () => {
 
               {/* Dynamic Niche Tabs Content */}
               {userNiches.map((niche) => {
-                const nicheVideos = viralVideos?.filter(v => 
-                  v.niche?.toLowerCase() === niche.toLowerCase() &&
-                  !pinnedVideos?.some(p => p.video_id === v.video_id)
-                ).slice(0, 6) || [];
+                const nicheVideos = (
+                  viralVideos?.filter((v) => v.niche?.toLowerCase() === niche.toLowerCase()) ?? []
+                ).slice(0, 6);
                 
                 return (
                   <TabsContent key={niche} value={`niche-${niche}`}>
