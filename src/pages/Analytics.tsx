@@ -1340,10 +1340,14 @@ const Analytics = () => {
                     onDragOver={handleDragOver}
                     onDrop={() => handleDrop(channel.id)}
                     onDragEnd={handleDragEnd}
-                    className={`relative p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all hover:border-primary ${
+                    className={`relative p-3 rounded-lg border cursor-pointer transition-all hover:border-primary ${
                       channelUrl === channel.channel_url ? 'border-primary bg-primary/5' : 'border-border bg-secondary/30'
                     } ${draggedChannel === channel.id ? 'opacity-50 scale-95' : ''}`}
-                    onClick={() => loadSavedChannel(channel)}
+                    onClick={(e) => {
+                      // Prevent loading if dragging
+                      if (draggedChannel) return;
+                      loadSavedChannel(channel);
+                    }}
                   >
                     <Button
                       variant="ghost"
@@ -1356,7 +1360,7 @@ const Analytics = () => {
                     >
                       <PinOff className="w-3 h-3" />
                     </Button>
-                    <div className="absolute top-1 left-1 opacity-40 hover:opacity-100 transition-opacity">
+                    <div className="absolute top-1 left-1 opacity-40 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
                       <GripVertical className="w-3 h-3 text-muted-foreground" />
                     </div>
                     <div className="flex items-center gap-2 pl-3">
