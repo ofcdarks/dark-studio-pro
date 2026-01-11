@@ -1,5 +1,5 @@
 {
-  "name": "🔥 Detecção de Vídeos Virais v8 (Filtro de Shorts)",
+  "name": "🔥 Detecção de Vídeos Virais v9 (Filtro País + Shorts)",
   "nodes": [
     {
       "parameters": {
@@ -40,7 +40,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\n\nif (!response.success || !response.configs || response.configs.length === 0) {\n  return [{ json: { hasConfigs: false, message: 'No active configs found' } }];\n}\n\nreturn response.configs.map(config => ({\n  json: {\n    hasConfigs: true,\n    user_id: config.user_id,\n    niches: config.niches,\n    viral_threshold: config.viral_threshold,\n    youtube_api_key: config.youtube_api_key\n  }\n}));"
+        "jsCode": "const response = $input.first().json;\n\nif (!response.success || !response.configs || response.configs.length === 0) {\n  return [{ json: { hasConfigs: false, message: 'No active configs found' } }];\n}\n\nreturn response.configs.map(config => ({\n  json: {\n    hasConfigs: true,\n    user_id: config.user_id,\n    niches: config.niches,\n    viral_threshold: config.viral_threshold,\n    youtube_api_key: config.youtube_api_key,\n    country: config.country || 'US',\n    video_types: config.video_types || ['long', 'short']\n  }\n}));"
       },
       "id": "prepare-configs",
       "name": "Prepare Configs",
@@ -63,14 +63,14 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst niches = item.niches;\nconst youtubeApiKey = item.youtube_api_key;\nconst userId = item.user_id;\nconst viralThreshold = item.viral_threshold || 1000;\nconst videoTypes = item.video_types || ['long']; // Default: only long videos\n\nconst publishedAfter = new Date();\npublishedAfter.setDate(publishedAfter.getDate() - 7);\nconst publishedAfterISO = publishedAfter.toISOString();\n\n// Determine video duration filter based on user preference\n// YouTube API: short (<4min), medium (4-20min), long (>20min)\n// Shorts are typically <1min, so they fall under 'short'\nlet videoDurationFilter = '';\nif (videoTypes.includes('long') && videoTypes.includes('short')) {\n  // User wants both - don't filter by duration\n  videoDurationFilter = '';\n} else if (videoTypes.includes('long')) {\n  // Only long videos - use medium+long (YouTube doesn't have 'not short')\n  // We'll filter shorts out in post-processing by checking title for #shorts\n  videoDurationFilter = '&videoDuration=medium';\n} else if (videoTypes.includes('short')) {\n  // Only shorts\n  videoDurationFilter = '&videoDuration=short';\n}\n\nconst searchUrls = niches.map(niche => ({\n  niche: niche,\n  url: `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=viewCount&maxResults=25&publishedAfter=${publishedAfterISO}${videoDurationFilter}&q=${encodeURIComponent(niche)}&key=${youtubeApiKey}`\n}));\n\nreturn searchUrls.map(item => ({\n  json: {\n    user_id: userId,\n    viral_threshold: viralThreshold,\n    youtube_api_key: youtubeApiKey,\n    video_types: videoTypes,\n    niche: item.niche,\n    searchUrl: item.url\n  }\n}));"
+        "jsCode": "const item = $input.first().json;\nconst niches = item.niches;\nconst youtubeApiKey = item.youtube_api_key;\nconst userId = item.user_id;\nconst viralThreshold = item.viral_threshold || 1000;\nconst videoTypes = item.video_types || ['long'];\nconst country = item.country || 'US';\n\nconst publishedAfter = new Date();\npublishedAfter.setDate(publishedAfter.getDate() - 7);\nconst publishedAfterISO = publishedAfter.toISOString();\n\n// Determine video duration filter based on user preference\nlet videoDurationFilter = '';\nif (videoTypes.includes('long') && videoTypes.includes('short')) {\n  videoDurationFilter = '';\n} else if (videoTypes.includes('long')) {\n  videoDurationFilter = '&videoDuration=medium';\n} else if (videoTypes.includes('short')) {\n  videoDurationFilter = '&videoDuration=short';\n}\n\n// Build search URL with regionCode and relevanceLanguage\nconst searchUrls = niches.map(niche => ({\n  niche: niche,\n  url: `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=viewCount&maxResults=25&publishedAfter=${publishedAfterISO}${videoDurationFilter}&regionCode=${country}&relevanceLanguage=${country === 'BR' ? 'pt' : country === 'ES' ? 'es' : country === 'US' ? 'en' : 'en'}&q=${encodeURIComponent(niche)}&key=${youtubeApiKey}`\n}));\n\nreturn searchUrls.map(item => ({\n  json: {\n    user_id: userId,\n    viral_threshold: viralThreshold,\n    youtube_api_key: youtubeApiKey,\n    video_types: videoTypes,\n    country: country,\n    niche: item.niche,\n    searchUrl: item.url\n  }\n}));"
       },
       "id": "prepare-searches",
       "name": "Prepare Search URLs",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [660, 200],
-      "notes": "Gera URL de busca para cada nicho, filtrando por tipo de vídeo"
+      "notes": "Gera URL de busca com regionCode e relevanceLanguage do país do usuário"
     },
     {
       "parameters": {
