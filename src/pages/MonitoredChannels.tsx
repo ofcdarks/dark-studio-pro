@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import {
   Eye,
   Plus,
@@ -20,8 +22,12 @@ import {
   RefreshCw,
   Clock,
   Settings,
+  Flame,
+  TrendingUp,
+  ExternalLink,
+  MessageCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -72,6 +78,26 @@ interface PinnedVideo {
   thumbnail_url: string;
   views: string;
   likes: string;
+}
+
+interface ViralVideo {
+  id: string;
+  user_id: string;
+  video_id: string;
+  video_url: string;
+  title: string | null;
+  thumbnail_url: string | null;
+  channel_name: string | null;
+  channel_url: string | null;
+  views: number;
+  likes: number;
+  comments: number;
+  published_at: string | null;
+  detected_at: string;
+  viral_score: number;
+  niche: string | null;
+  keywords: string[] | null;
+  is_read: boolean;
 }
 
 const MonitoredChannels = () => {
@@ -127,6 +153,85 @@ const MonitoredChannels = () => {
       return data as PinnedVideo[];
     },
     enabled: !!user,
+  });
+
+  // Fetch viral videos
+  const { data: viralVideos, refetch: refetchVirals } = useQuery({
+    queryKey: ["viral-videos", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("viral_videos")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("detected_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data as ViralVideo[];
+    },
+    enabled: !!user,
+  });
+
+  // Subscribe to realtime viral video updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('viral-videos-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'viral_videos',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('New viral video detected:', payload);
+          refetchVirals();
+          toast({
+            title: "🔥 Vídeo Viral Detectado!",
+            description: (payload.new as ViralVideo).title || "Novo vídeo viralizando no seu nicho",
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, refetchVirals, toast]);
+
+  // Count unread viral videos
+  const unreadViralCount = viralVideos?.filter(v => !v.is_read).length || 0;
+
+  // Mark viral video as read
+  const markViralAsReadMutation = useMutation({
+    mutationFn: async (videoId: string) => {
+      const { error } = await supabase
+        .from("viral_videos")
+        .update({ is_read: true })
+        .eq("id", videoId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["viral-videos"] });
+    },
+  });
+
+  // Delete viral video
+  const deleteViralMutation = useMutation({
+    mutationFn: async (videoId: string) => {
+      const { error } = await supabase
+        .from("viral_videos")
+        .delete()
+        .eq("id", videoId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["viral-videos"] });
+      toast({ title: "Vídeo removido da lista" });
+    },
   });
 
   // Extract channel name from URL
@@ -688,82 +793,134 @@ const MonitoredChannels = () => {
             </Card>
           </div>
 
-          {/* Pinned Videos Section */}
+          {/* Videos Tabs Section */}
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-foreground">
-                Vídeos Fixados
-              </h2>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Canal:</span>
-                <Select value={pinnedFilter} onValueChange={setPinnedFilter}>
-                  <SelectTrigger className="w-[180px] bg-secondary border-border">
-                    <SelectValue placeholder="Todos os Canais" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os Canais</SelectItem>
-                    {channels?.map((channel) => (
-                      <SelectItem key={channel.id} value={channel.id}>
-                        {channel.channel_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <Tabs defaultValue="viral" className="w-full">
+              <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+                <TabsTrigger value="viral" className="flex items-center gap-2">
+                  <Flame className="w-4 h-4" />
+                  Viralizando
+                  {unreadViralCount > 0 && (
+                    <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
+                      {unreadViralCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="pinned" className="flex items-center gap-2">
+                  <Pin className="w-4 h-4" />
+                  Fixados
+                </TabsTrigger>
+              </TabsList>
 
-            {pinnedVideos && pinnedVideos.length > 0 ? (
-              <div className="space-y-6">
-                {pinnedFilter === "all" ? (
-                  // Grouped by channel
-                  Object.entries(groupedPinnedVideos || {}).map(
-                    ([channelId, { channelName, videos }]) => (
-                      <div key={channelId}>
-                        <div className="flex items-center gap-2 mb-4">
-                          <Folder className="w-4 h-4 text-primary" />
-                          <span className="font-medium text-foreground">
-                            {channelName}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            ({videos.length} vídeos fixados)
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {videos.map((video) => (
-                            <PinnedVideoCard
-                              key={video.id}
-                              video={video}
-                              onAnalyze={() => handleAnalyzeVideo(video.video_url)}
-                              onUnpin={() => unpinVideoMutation.mutate(video.id)}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  )
-                ) : (
-                  // Filtered by specific channel
+              {/* Viral Videos Tab */}
+              <TabsContent value="viral">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Vídeos detectados viralizando no seu nicho via automação n8n
+                    </p>
+                  </div>
+                </div>
+
+                {viralVideos && viralVideos.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredPinnedVideos?.map((video) => (
-                      <PinnedVideoCard
+                    {viralVideos.map((video) => (
+                      <ViralVideoCard
                         key={video.id}
                         video={video}
-                        onAnalyze={() => handleAnalyzeVideo(video.video_url)}
-                        onUnpin={() => unpinVideoMutation.mutate(video.id)}
+                        onAnalyze={() => {
+                          markViralAsReadMutation.mutate(video.id);
+                          handleAnalyzeVideo(video.video_url);
+                        }}
+                        onDelete={() => deleteViralMutation.mutate(video.id)}
+                        onMarkRead={() => markViralAsReadMutation.mutate(video.id)}
                       />
                     ))}
                   </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Flame className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
+                    <p className="text-muted-foreground">Nenhum vídeo viral detectado ainda</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Configure um workflow no n8n para detectar vídeos viralizando
+                    </p>
+                  </div>
                 )}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Pin className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground">Nenhum vídeo fixado ainda</p>
-                <p className="text-sm text-muted-foreground">
-                  Busque vídeos de um canal e fixe até 3 por canal
-                </p>
-              </div>
-            )}
+              </TabsContent>
+
+              {/* Pinned Videos Tab */}
+              <TabsContent value="pinned">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Canal:</span>
+                    <Select value={pinnedFilter} onValueChange={setPinnedFilter}>
+                      <SelectTrigger className="w-[180px] bg-secondary border-border">
+                        <SelectValue placeholder="Todos os Canais" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os Canais</SelectItem>
+                        {channels?.map((channel) => (
+                          <SelectItem key={channel.id} value={channel.id}>
+                            {channel.channel_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {pinnedVideos && pinnedVideos.length > 0 ? (
+                  <div className="space-y-6">
+                    {pinnedFilter === "all" ? (
+                      Object.entries(groupedPinnedVideos || {}).map(
+                        ([channelId, { channelName, videos }]) => (
+                          <div key={channelId}>
+                            <div className="flex items-center gap-2 mb-4">
+                              <Folder className="w-4 h-4 text-primary" />
+                              <span className="font-medium text-foreground">
+                                {channelName}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                ({videos.length} vídeos fixados)
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {videos.map((video) => (
+                                <PinnedVideoCard
+                                  key={video.id}
+                                  video={video}
+                                  onAnalyze={() => handleAnalyzeVideo(video.video_url)}
+                                  onUnpin={() => unpinVideoMutation.mutate(video.id)}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      )
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredPinnedVideos?.map((video) => (
+                          <PinnedVideoCard
+                            key={video.id}
+                            video={video}
+                            onAnalyze={() => handleAnalyzeVideo(video.video_url)}
+                            onUnpin={() => unpinVideoMutation.mutate(video.id)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Pin className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
+                    <p className="text-muted-foreground">Nenhum vídeo fixado ainda</p>
+                    <p className="text-sm text-muted-foreground">
+                      Busque vídeos de um canal e fixe até 3 por canal
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </Card>
         </div>
       </div>
@@ -954,6 +1111,122 @@ const PinnedVideoCard = ({ video, onAnalyze, onUnpin }: PinnedVideoCardProps) =>
             size="sm"
             variant="outline"
             className="px-3 text-destructive hover:bg-destructive/10"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+// Viral Video Card Component
+interface ViralVideoCardProps {
+  video: ViralVideo;
+  onAnalyze: () => void;
+  onDelete: () => void;
+  onMarkRead: () => void;
+}
+
+const formatViralScore = (score: number) => {
+  if (score >= 100000) return `${(score / 1000).toFixed(0)}K/h`;
+  if (score >= 1000) return `${(score / 1000).toFixed(1)}K/h`;
+  return `${score}/h`;
+};
+
+const formatNumber = (num: number) => {
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+  return num.toString();
+};
+
+const getTimeAgo = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffDays > 0) return `${diffDays}d atrás`;
+  if (diffHours > 0) return `${diffHours}h atrás`;
+  return "Agora";
+};
+
+const ViralVideoCard = ({ video, onAnalyze, onDelete, onMarkRead }: ViralVideoCardProps) => {
+  return (
+    <Card className={`overflow-hidden relative ${!video.is_read ? 'ring-2 ring-primary/50' : ''}`}>
+      {!video.is_read && (
+        <div className="absolute top-2 left-2 z-10">
+          <Badge variant="destructive" className="flex items-center gap-1">
+            <Flame className="w-3 h-3" />
+            Novo
+          </Badge>
+        </div>
+      )}
+      <div className="absolute top-2 right-2 z-10">
+        <Badge className="bg-primary/90 text-primary-foreground flex items-center gap-1">
+          <TrendingUp className="w-3 h-3" />
+          {formatViralScore(video.viral_score)}
+        </Badge>
+      </div>
+      <div className="relative aspect-video">
+        {video.thumbnail_url ? (
+          <img
+            src={video.thumbnail_url}
+            alt={video.title || "Vídeo viral"}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-secondary flex items-center justify-center">
+            <Play className="w-12 h-12 text-muted-foreground" />
+          </div>
+        )}
+        <a
+          href={video.video_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center"
+        >
+          <ExternalLink className="w-8 h-8 text-white" />
+        </a>
+      </div>
+      <div className="p-3">
+        <h4 className="font-medium text-foreground text-sm line-clamp-2 mb-1">
+          {video.title || "Vídeo sem título"}
+        </h4>
+        {video.channel_name && (
+          <p className="text-xs text-muted-foreground mb-2 truncate">
+            {video.channel_name}
+          </p>
+        )}
+        <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+          <span className="flex items-center gap-1">
+            <Eye className="w-3 h-3" /> {formatNumber(video.views)}
+          </span>
+          <span className="flex items-center gap-1">
+            <ThumbsUp className="w-3 h-3" /> {formatNumber(video.likes)}
+          </span>
+          <span className="flex items-center gap-1">
+            <MessageCircle className="w-3 h-3" /> {formatNumber(video.comments)}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Detectado {getTimeAgo(video.detected_at)}
+        </p>
+        <div className="flex gap-2">
+          <Button
+            onClick={onAnalyze}
+            size="sm"
+            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            Analisar
+          </Button>
+          <Button
+            onClick={onDelete}
+            size="sm"
+            variant="outline"
+            className="px-3 text-destructive hover:bg-destructive/10"
+            title="Remover"
           >
             <X className="w-4 h-4" />
           </Button>

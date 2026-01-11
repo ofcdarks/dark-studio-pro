@@ -131,3 +131,12 @@ verify_jwt = false
 
 [functions.youtube-channel-analytics]
 verify_jwt = false
+
+[functions.viral-webhook]
+verify_jwt = false
+
+[functions.check-schedule-reminders]
+verify_jwt = false
+
+[functions.analyze-posting-times]
+verify_jwt = false
