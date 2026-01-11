@@ -58,11 +58,12 @@ export function useViralDetectionUsage() {
     
     if (userRole === "pro") {
       // Check specific plan tier from subscription
-      const planName = subscription?.plan_name?.toLowerCase() || "";
+      // check-subscription returns 'plan' not 'plan_name'
+      const planName = (subscription?.plan || subscription?.plan_name || "").toLowerCase();
       
       if (planName.includes("master")) return PLAN_LIMITS.master;
       if (planName.includes("turbo")) return PLAN_LIMITS.turbo;
-      if (planName.includes("start")) return PLAN_LIMITS.pro;
+      if (planName.includes("start") || planName.includes("creator")) return PLAN_LIMITS.pro;
       
       // Default pro to start creator limits
       return PLAN_LIMITS.pro;
