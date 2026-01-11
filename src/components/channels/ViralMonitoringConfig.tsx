@@ -445,9 +445,8 @@ export const ViralMonitoringConfig = () => {
 
           {/* Sugestões de nichos dos canais fixados no Analytics */}
           {savedAnalyticsChannels && savedAnalyticsChannels.length > 0 && niches.length < 5 && (() => {
-            // Extract niches from notes of saved channels
             // Lista de nichos válidos do YouTube
-            const validNiches = new Set([
+            const validNichesList = [
               // Entretenimento/Educação
               'historia', 'história', 'documentário', 'documental', 'misterios', 'mistérios',
               'curiosidades', 'dark', 'terror', 'horror', 'motivacional', 'motivação',
@@ -474,28 +473,29 @@ export const ViralMonitoringConfig = () => {
               // Outros
               'asmr', 'vlogs', 'reactions', 'unboxing', 'reviews', 'análises',
               'comédia', 'humor', 'podcast', 'entrevistas', 'notícias', 'news'
-            ]);
+            ];
             
             const detectedNiches: string[] = [];
             
-            savedAnalyticsChannels.forEach((channel) => {
+            // Iterar por cada canal salvo
+            for (const channel of savedAnalyticsChannels) {
               const notes = channel.notes?.trim() || "";
-              if (!notes) return;
+              if (!notes) continue;
               
               const contentLower = notes.toLowerCase();
               
               // Buscar nichos válidos no conteúdo das notas
-              validNiches.forEach(niche => {
+              for (const niche of validNichesList) {
                 if (contentLower.includes(niche) && !detectedNiches.includes(niche)) {
                   detectedNiches.push(niche);
                 }
-              });
-            });
+              }
+            }
             
             // Remove duplicates and filter already added niches
-            const suggestedNiches = [...new Set(detectedNiches)]
+            const suggestedNiches = detectedNiches
               .filter(niche => !niches.includes(niche))
-              .slice(0, 8); // Show up to 8 suggestions
+              .slice(0, 8);
             
             if (suggestedNiches.length === 0) return null;
             
