@@ -42,6 +42,7 @@ serve(async (req) => {
           user_id: config.user_id,
           niches: config.niches || [],
           viral_threshold: config.viral_threshold || 1000,
+          video_types: config.video_types || ["long", "short"],
           youtube_api_key: apiSettings?.youtube_api_key || null,
         };
       })

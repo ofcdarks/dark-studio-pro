@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Settings,
   Plus,
@@ -13,6 +14,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
+  Film,
+  Clapperboard,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +35,7 @@ interface ViralMonitoringConfigData {
   check_interval_hours: number;
   viral_threshold: number;
   last_checked_at: string | null;
+  video_types: string[];
 }
 
 export const ViralMonitoringConfig = () => {
@@ -154,8 +158,31 @@ export const ViralMonitoringConfig = () => {
     });
   };
 
+  const handleToggleVideoType = (type: string, checked: boolean) => {
+    const currentTypes = config?.video_types || ["long", "short"];
+    let newTypes: string[];
+    
+    if (checked) {
+      newTypes = [...currentTypes, type];
+    } else {
+      newTypes = currentTypes.filter((t) => t !== type);
+    }
+    
+    // Ensure at least one type is selected
+    if (newTypes.length === 0) {
+      toast({
+        title: "Selecione pelo menos um tipo",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    saveConfigMutation.mutate({ video_types: newTypes });
+  };
+
   const niches = config?.niches || [];
   const isActive = config?.is_active ?? false;
+  const videoTypes = config?.video_types || ["long", "short"];
 
   return (
     <Card className="p-4 mb-6">
@@ -220,6 +247,35 @@ export const ViralMonitoringConfig = () => {
               onCheckedChange={handleToggleActive}
               disabled={!hasYouTubeApiKey || niches.length === 0}
             />
+          </div>
+
+          {/* Tipo de Vídeo */}
+          <div>
+            <Label className="text-sm mb-3 block">Tipos de vídeo</Label>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="video-type-long"
+                  checked={videoTypes.includes("long")}
+                  onCheckedChange={(checked) => handleToggleVideoType("long", !!checked)}
+                />
+                <Label htmlFor="video-type-long" className="text-sm flex items-center gap-1.5 cursor-pointer">
+                  <Film className="w-4 h-4 text-muted-foreground" />
+                  Vídeos Longos
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="video-type-short"
+                  checked={videoTypes.includes("short")}
+                  onCheckedChange={(checked) => handleToggleVideoType("short", !!checked)}
+                />
+                <Label htmlFor="video-type-short" className="text-sm flex items-center gap-1.5 cursor-pointer">
+                  <Clapperboard className="w-4 h-4 text-muted-foreground" />
+                  Shorts
+                </Label>
+              </div>
+            </div>
           </div>
 
           {/* Nichos atuais */}
@@ -319,6 +375,7 @@ export const ViralMonitoringConfig = () => {
               <li>Nossa automação busca sua config de nichos automaticamente</li>
               <li>Usa sua própria YouTube API Key para pesquisar</li>
               <li>Detecta vídeos com +1000 views/hora no nicho</li>
+              <li>A IA analisa por que o vídeo está viralizando</li>
               <li>Você recebe notificação em tempo real</li>
             </ul>
           </div>

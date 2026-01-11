@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface ViralVideoPayload {
-  user_id: string;
+  user_id?: string;
   video_id: string;
   video_url: string;
   title?: string;
@@ -21,6 +21,9 @@ interface ViralVideoPayload {
   viral_score?: number;
   niche?: string;
   keywords?: string[];
+  video_type?: string;
+  duration?: string;
+  hours_ago?: number;
 }
 
 serve(async (req) => {
@@ -39,12 +42,19 @@ serve(async (req) => {
     const body = await req.json();
     console.log('[viral-webhook] Received payload:', JSON.stringify(body, null, 2));
 
+    // Extract user_id from the root level (for n8n workflow)
+    const rootUserId = body.user_id;
+
     // Support both single video and array of videos
-    const videos: ViralVideoPayload[] = Array.isArray(body.videos) 
-      ? body.videos 
-      : body.video 
-        ? [body.video] 
-        : [body];
+    let videos: ViralVideoPayload[] = [];
+    
+    if (Array.isArray(body.videos)) {
+      videos = body.videos;
+    } else if (body.video) {
+      videos = [body.video];
+    } else if (body.video_id && body.video_url) {
+      videos = [body];
+    }
 
     if (!videos.length) {
       return new Response(
@@ -57,10 +67,13 @@ serve(async (req) => {
     const errors = [];
 
     for (const video of videos) {
-      if (!video.user_id || !video.video_id || !video.video_url) {
+      // Use user_id from video if present, otherwise use root user_id
+      const userId = video.user_id || rootUserId;
+      
+      if (!userId || !video.video_id || !video.video_url) {
         errors.push({ 
           video_id: video.video_id, 
-          error: 'Missing required fields: user_id, video_id, video_url' 
+          error: `Missing required fields: ${!userId ? 'user_id, ' : ''}${!video.video_id ? 'video_id, ' : ''}${!video.video_url ? 'video_url' : ''}`.replace(/, $/, '')
         });
         continue;
       }
@@ -73,11 +86,20 @@ serve(async (req) => {
         viralScore = hoursOld > 0 ? Math.round(video.views / hoursOld) : video.views;
       }
 
+      // Determine video type based on duration or title hints
+      let videoType = video.video_type || 'long';
+      if (!video.video_type) {
+        const titleLower = (video.title || '').toLowerCase();
+        if (titleLower.includes('#shorts') || titleLower.includes('#short')) {
+          videoType = 'short';
+        }
+      }
+
       // Upsert the viral video (update if exists, insert if not)
       const { data, error } = await supabaseAdmin
         .from('viral_videos')
         .upsert({
-          user_id: video.user_id,
+          user_id: userId,
           video_id: video.video_id,
           video_url: video.video_url,
           title: video.title,
@@ -91,6 +113,8 @@ serve(async (req) => {
           viral_score: viralScore || 0,
           niche: video.niche,
           keywords: video.keywords,
+          video_type: videoType,
+          duration: video.duration,
           detected_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id,video_id',
@@ -110,7 +134,7 @@ serve(async (req) => {
           const { data: subscriptions } = await supabaseAdmin
             .from('push_subscriptions')
             .select('*')
-            .eq('user_id', video.user_id);
+            .eq('user_id', userId);
 
           if (subscriptions && subscriptions.length > 0) {
             console.log(`[viral-webhook] Found ${subscriptions.length} push subscriptions for user`);
