@@ -443,27 +443,51 @@ export const ViralMonitoringConfig = () => {
             </div>
           )}
 
-          {/* Sugestões dos canais fixados no Analytics */}
-          {savedAnalyticsChannels && savedAnalyticsChannels.length > 0 && niches.length < 5 && (
-            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Youtube className="w-4 h-4 text-primary" />
-                <p className="text-xs font-medium text-foreground">
-                  Sugestões dos seus canais fixados:
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {savedAnalyticsChannels
-                  .map((channel) => {
-                    // Extract keywords from channel name for niche suggestion
-                    const channelName = channel.channel_name?.toLowerCase() || "";
-                    return channelName;
-                  })
-                  .filter((name) => name && !niches.includes(name))
-                  .slice(0, 5)
-                  .map((channelName) => (
+          {/* Sugestões de nichos dos canais fixados no Analytics */}
+          {savedAnalyticsChannels && savedAnalyticsChannels.length > 0 && niches.length < 5 && (() => {
+            // Extract niches from notes of saved channels
+            const suggestedNiches = savedAnalyticsChannels
+              .map((channel) => {
+                // Parse notes to extract niche - look for patterns like "Nicho: X" or just use first line
+                const notes = channel.notes?.trim() || "";
+                if (!notes) return null;
+                
+                // Try to find "Nicho:" pattern
+                const nicheMatch = notes.match(/nicho[:\s]+([^\n,]+)/i);
+                if (nicheMatch) {
+                  return nicheMatch[1].trim().toLowerCase();
+                }
+                
+                // Otherwise use first meaningful line/word as niche hint
+                const firstLine = notes.split('\n')[0].trim().toLowerCase();
+                if (firstLine.length > 2 && firstLine.length < 50) {
+                  return firstLine;
+                }
+                
+                return null;
+              })
+              .filter((niche): niche is string => 
+                niche !== null && 
+                niche.length > 0 && 
+                !niches.includes(niche)
+              )
+              .filter((niche, index, self) => self.indexOf(niche) === index) // Remove duplicates
+              .slice(0, 5);
+            
+            if (suggestedNiches.length === 0) return null;
+            
+            return (
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Youtube className="w-4 h-4 text-primary" />
+                  <p className="text-xs font-medium text-foreground">
+                    Nichos dos seus canais fixados:
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {suggestedNiches.map((niche) => (
                     <Button
-                      key={channelName}
+                      key={niche}
                       variant="outline"
                       size="sm"
                       className="h-7 px-2 text-xs bg-background"
@@ -478,26 +502,27 @@ export const ViralMonitoringConfig = () => {
                           return;
                         }
                         saveConfigMutation.mutate({
-                          niches: [...currentNiches, channelName],
+                          niches: [...currentNiches, niche],
                         });
                         toast({ title: "Nicho adicionado!" });
                       }}
                       disabled={saveConfigMutation.isPending}
                     >
                       <Plus className="w-3 h-3 mr-1" />
-                      {channelName}
+                      {niche}
                     </Button>
                   ))}
+                </div>
+                <Link 
+                  to="/analytics" 
+                  className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1"
+                >
+                  <Link2 className="w-3 h-3" />
+                  Gerenciar canais e nichos
+                </Link>
               </div>
-              <Link 
-                to="/analytics" 
-                className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1"
-              >
-                <Link2 className="w-3 h-3" />
-                Gerenciar canais fixados
-              </Link>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Link para Analytics se não tiver canais fixados */}
           {(!savedAnalyticsChannels || savedAnalyticsChannels.length === 0) && (
