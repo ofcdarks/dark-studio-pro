@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Rocket, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw, AlertTriangle, ImageIcon, Coins, Play, Video } from "lucide-react";
+import { Loader2, Images, Download, Trash2, RefreshCw, AlertCircle, Rocket, Copy, Check, ChevronLeft, ChevronRight, X, History, Clock, Save, Wand2, Edit3, FolderDown, RotateCcw, AlertTriangle, ImageIcon, Coins } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +23,6 @@ import { useImageFXUsage } from "@/hooks/useImageFXUsage";
 import { useNavigate } from "react-router-dom";
 import { useCreditDeduction } from "@/hooks/useCreditDeduction";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { VideoGenerationModal } from "./VideoGenerationModal";
 
 interface GeneratedImage {
   id: string;
@@ -33,10 +32,6 @@ interface GeneratedImage {
   error?: string;
   wasRewritten?: boolean;
   inCache?: boolean;
-  hasVideo?: boolean;
-  videoDuration?: number;
-  videoReason?: string;
-  sceneNumber?: number;
 }
 
 interface BatchHistory {
@@ -50,23 +45,12 @@ interface BatchHistory {
   created_at: string;
 }
 
-interface SceneData {
-  number: number;
-  text: string;
-  imagePrompt: string;
-  wordCount: number;
-  hasVideo?: boolean;
-  videoDuration?: number;
-  videoReason?: string;
-}
-
 interface BatchImageGeneratorProps {
   initialPrompts?: string;
   autoStart?: boolean;
-  scenes?: SceneData[];
 }
 
-const BatchImageGenerator = ({ initialPrompts = "", autoStart = false, scenes = [] }: BatchImageGeneratorProps) => {
+const BatchImageGenerator = ({ initialPrompts = "", autoStart = false }: BatchImageGeneratorProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { deduct, checkBalance, getEstimatedCost, CREDIT_COSTS, usePlatformCredits } = useCreditDeduction();
@@ -102,10 +86,6 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false, scenes = 
   const [cacheStats, setCacheStats] = useState<{ count: number; lastUpdated: Date | null }>({ count: 0, lastUpdated: null });
   const [loadingCache, setLoadingCache] = useState(false);
   const [autoStartTriggered, setAutoStartTriggered] = useState(false);
-  
-  // Video generation modal state
-  const [videoModalOpen, setVideoModalOpen] = useState(false);
-  const [selectedImageForVideo, setSelectedImageForVideo] = useState<{ index: number; image: GeneratedImage } | null>(null);
 
   // Evita travamentos / tela branca: mantém poucas imagens (base64) em memória ao mesmo tempo.
   const MAX_IN_MEMORY_IMAGES = 8;
@@ -317,20 +297,13 @@ const BatchImageGenerator = ({ initialPrompts = "", autoStart = false, scenes = 
 
     const stylePrefix = getStylePrefix();
     
-    // Initialize all images as pending, with scene metadata if available
-    const initialImages: GeneratedImage[] = prompts.map((prompt, index) => {
-      const sceneData = scenes[index];
-      return {
-        id: `img-${Date.now()}-${index}`,
-        prompt: stylePrefix + prompt,
-        imageUrl: null,
-        status: "pending",
-        hasVideo: sceneData?.hasVideo || false,
-        videoDuration: sceneData?.videoDuration || undefined,
-        videoReason: sceneData?.videoReason || undefined,
-        sceneNumber: sceneData?.number || (index + 1)
-      };
-    });
+    // Initialize all images as pending
+    const initialImages: GeneratedImage[] = prompts.map((prompt, index) => ({
+      id: `img-${Date.now()}-${index}`,
+      prompt: stylePrefix + prompt,
+      imageUrl: null,
+      status: "pending"
+    }));
 
     setImages(initialImages);
     setIsGenerating(true);
@@ -1135,17 +1108,11 @@ Um carro esportivo na montanha`}
                         </div>
                       )}
 
-                      {/* Number Badge and Video Indicator */}
+                      {/* Number Badge */}
                       <div className="absolute top-1 left-1 flex items-center gap-1">
                         <div className="bg-background/80 backdrop-blur-sm rounded px-1.5 py-0.5">
-                          <span className="text-xs font-medium">{image.sceneNumber || index + 1}</span>
+                          <span className="text-xs font-medium">{index + 1}</span>
                         </div>
-                        {image.hasVideo && (
-                          <div className="bg-primary/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-1">
-                            <Video className="w-2.5 h-2.5 text-primary-foreground" />
-                            <span className="text-[10px] font-medium text-primary-foreground">8s</span>
-                          </div>
-                        )}
                         {image.wasRewritten && (
                           <div className="bg-amber-500/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-1">
                             <Wand2 className="w-2.5 h-2.5 text-white" />
@@ -1158,23 +1125,6 @@ Um carro esportivo na montanha`}
                       <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {image.status === "success" && image.imageUrl && (
                           <>
-                            {/* Video Generation Button */}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  className="h-6 w-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedImageForVideo({ index, image });
-                                    setVideoModalOpen(true);
-                                  }}
-                                >
-                                  <Play className="w-3 h-3" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Gerar Vídeo AI</TooltipContent>
-                            </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -1514,23 +1464,6 @@ Um carro esportivo na montanha`}
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Video Generation Modal */}
-      {selectedImageForVideo && (
-        <VideoGenerationModal
-          open={videoModalOpen}
-          onOpenChange={(open) => {
-            setVideoModalOpen(open);
-            if (!open) setSelectedImageForVideo(null);
-          }}
-          sceneNumber={selectedImageForVideo.index + 1}
-          sceneText={selectedImageForVideo.image.prompt}
-          sceneImage={selectedImageForVideo.image.imageUrl || undefined}
-          onVideoGenerated={(sceneNumber, videoUrl) => {
-            toast.success(`Vídeo gerado para imagem ${sceneNumber}!`);
-          }}
-        />
-      )}
     </>
   );
 };

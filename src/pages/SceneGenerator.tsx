@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Film, Copy, Check, Image, Images, Download, ArrowRight, Upload, FileText, Sparkles, CheckCircle2, Rocket, Video } from "lucide-react";
+import { Loader2, Film, Copy, Check, Image, Images, Download, ArrowRight, Upload, FileText, Sparkles, CheckCircle2, Rocket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { addBrandingFooter } from "@/lib/utils";
@@ -28,9 +28,6 @@ interface ScenePrompt {
   text: string;
   imagePrompt: string;
   wordCount: number;
-  hasVideo?: boolean;
-  videoDuration?: number;
-  videoReason?: string;
 }
 
 const WORDS_PER_SCENE_OPTIONS = [
@@ -665,24 +662,12 @@ const SceneGenerator = () => {
                           {scenes.map((scene, index) => (
                             <div
                               key={index}
-                              className={`p-3 rounded-lg space-y-2 ${
-                                scene.hasVideo 
-                                  ? 'bg-primary/10 border border-primary/30' 
-                                  : 'bg-secondary/50'
-                              }`}
+                              className="p-3 bg-secondary/50 rounded-lg space-y-2"
                             >
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-medium text-primary">
-                                    Cena {scene.number}
-                                  </span>
-                                  {scene.hasVideo && (
-                                    <span className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/20 px-2 py-0.5 rounded-full">
-                                      <Video className="w-3 h-3" />
-                                      8s
-                                    </span>
-                                  )}
-                                </div>
+                                <span className="text-xs font-medium text-primary">
+                                  Cena {scene.number}
+                                </span>
                                 <Button
                                   size="icon"
                                   variant="ghost"
@@ -702,11 +687,6 @@ const SceneGenerator = () => {
                               <p className="text-sm text-foreground">
                                 {scene.imagePrompt.substring(0, 150)}...
                               </p>
-                              {scene.hasVideo && scene.videoReason && (
-                                <p className="text-xs text-primary/70 italic">
-                                  🎬 {scene.videoReason}
-                                </p>
-                              )}
                             </div>
                           ))}
                         </div>
@@ -741,7 +721,6 @@ const SceneGenerator = () => {
               <BatchImageGenerator 
                 initialPrompts={batchPrompts} 
                 autoStart={shouldAutoStartBatch}
-                scenes={scenes}
               />
             </TabsContent>
           </Tabs>
@@ -799,22 +778,13 @@ const SceneGenerator = () => {
               </>
             ) : (
               <>
-                <div className="flex items-center justify-center py-4 gap-6">
+                <div className="flex items-center justify-center py-4">
                   <div className="text-center">
                     <div className="text-4xl font-bold text-primary mb-1">
                       {scenes.length}
                     </div>
                     <p className="text-sm text-muted-foreground">prompts gerados</p>
                   </div>
-                  {scenes.filter(s => s.hasVideo).length > 0 && (
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-green-500 mb-1 flex items-center gap-1">
-                        <Video className="w-6 h-6" />
-                        {scenes.filter(s => s.hasVideo).length}
-                      </div>
-                      <p className="text-sm text-muted-foreground">com vídeo (8s)</p>
-                    </div>
-                  )}
                 </div>
 
                 <div className="p-3 bg-secondary/50 rounded-lg">

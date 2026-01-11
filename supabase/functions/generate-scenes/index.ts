@@ -38,9 +38,6 @@ interface SceneResult {
   characterName?: string; // Nome do personagem principal nesta cena
   emotion?: string; // Emoção dominante: tensão, surpresa, medo, admiração, choque, curiosidade
   retentionTrigger?: string; // Gatilho de retenção: curiosidade, quebra_padrão, antecipação, revelação, mistério
-  hasVideo?: boolean; // Se esta cena deve ter vídeo gerado
-  videoDuration?: number; // Duração do vídeo em segundos (padrão: 8s)
-  videoReason?: string; // Justificativa para ter vídeo: ação, movimento, transição, clímax, revelação
 }
 
 // Função para dividir texto em partes
@@ -188,25 +185,6 @@ ${characterContext}
 - 🎬 imagePrompt: Descrição visual CINEMATOGRÁFICA e IMPACTANTE
 - 🧠 emotion: Emoção dominante (tensão/surpresa/medo/admiração/choque/curiosidade)
 - 🔁 retentionTrigger: Gatilho usado (curiosidade/quebra_padrão/antecipação/revelação/mistério)
-- 🎥 hasVideo: true/false - Se esta cena MERECE ter VÍDEO ANIMADO (não apenas imagem estática)
-- ⏱️ videoDuration: 8 (sempre 8 segundos quando hasVideo=true)
-- 📝 videoReason: Justificativa quando hasVideo=true
-
-🎬 CRITÉRIOS PARA MARCAR hasVideo=true (20-30% das cenas):
-Marque hasVideo=true APENAS para cenas que tenham:
-1. AÇÃO FÍSICA: Movimento corporal, corrida, luta, dança, queda, salto
-2. TRANSFORMAÇÃO: Antes/depois, metamorfose, mudança visual dramática
-3. MOVIMENTO DE CÂMERA: Cenas que pedem zoom, pan, dolly, travelling
-4. FENÔMENOS NATURAIS: Chuva, vento, fogo, explosão, tempestade
-5. CLÍMAX NARRATIVO: Revelações bombásticas, plot twists, momentos de tensão máxima
-6. TRANSIÇÕES ÉPICAS: Passagem de tempo, mudança de cenário dramática
-7. ELEMENTOS DINÂMICOS: Veículos em movimento, multidões, água fluindo
-
-NÃO use hasVideo para:
-- Cenas explicativas ou descritivas simples
-- Diálogos sem ação física
-- Momentos contemplativos ou estáticos
-- Apresentação de dados ou informações
 
 🎥 REGRAS DE CORTE PARA MÁXIMA RETENÇÃO:
 - Corte em MUDANÇAS de assunto ou conceito
@@ -232,13 +210,10 @@ NÃO use hasVideo para:
 - Estilo: ${style}
 - Deve criar IMPACTO VISUAL imediato
 - CRÍTICO: Wide shot, close-up ou medium shot que ocupe TODO o enquadramento sem espaços vazios
-- QUANDO hasVideo=true: Descreva a AÇÃO/MOVIMENTO que deve acontecer no vídeo
 ${characterInstruction}
 
 Retorne APENAS JSON válido (numere a partir de ${startSceneNumber}):
-{"scenes":[{"number":${startSceneNumber},"text":"TRECHO EXATO DO ROTEIRO","imagePrompt":"cinematic english prompt with dramatic composition and lighting","wordCount":NÚMERO_EXATO,"emotion":"emoção_dominante","retentionTrigger":"gatilho_usado","hasVideo":false,"videoDuration":null,"videoReason":null${characters.length > 0 ? ',"characterName":"Nome ou null"' : ''}}]}
-
-IMPORTANTE: Apenas 20-30% das cenas devem ter hasVideo=true. Quando hasVideo=true, videoDuration SEMPRE será 8 e videoReason deve explicar o motivo (ex: "ação física", "transformação visual", "movimento de câmera").
+{"scenes":[{"number":${startSceneNumber},"text":"TRECHO EXATO DO ROTEIRO","imagePrompt":"cinematic english prompt with dramatic composition and lighting","wordCount":NÚMERO_EXATO,"emotion":"emoção_dominante","retentionTrigger":"gatilho_usado"${characters.length > 0 ? ',"characterName":"Nome ou null"' : ''}}]}
 
 LEMBRE-SE: Seu objetivo é criar um vídeo que mantenha o espectador PRESO do primeiro ao último segundo. Cada cena deve ter PROPÓSITO e IMPACTO.`;
 
@@ -331,10 +306,7 @@ LEMBRE-SE: Seu objetivo é criar um vídeo que mantenha o espectador PRESO do pr
           wordCount: scene.wordCount || scene.text?.split(/\s+/).filter(Boolean).length || 0,
           characterName: scene.characterName || null,
           emotion: scene.emotion || 'neutral',
-          retentionTrigger: scene.retentionTrigger || 'continuity',
-          hasVideo: scene.hasVideo === true,
-          videoDuration: scene.hasVideo === true ? 8 : null,
-          videoReason: scene.hasVideo === true ? (scene.videoReason || 'movimento detectado') : null
+          retentionTrigger: scene.retentionTrigger || 'continuity'
         }));
       } catch (parseError) {
         console.error(`[Batch ${batchNumber}] Parse error (attempt ${attempt + 1}):`, jsonContent.substring(0, 300));

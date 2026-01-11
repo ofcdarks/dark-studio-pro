@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff, Pencil, Trash2, Rocket, ImageIcon, Users, Copy } from "lucide-react";
+import { Mic, Video, Key, Download, Plus, Info, Loader2, CheckCircle, XCircle, Eye, EyeOff, Pencil, Trash2, Rocket, ImageIcon, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -100,20 +100,6 @@ export function AdminAPIsTab() {
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState("");
   const [savingN8nWebhook, setSavingN8nWebhook] = useState(false);
   const [testingN8nWebhook, setTestingN8nWebhook] = useState(false);
-  
-  // n8n Credentials (for Veo3 automation)
-  const [n8nGoogleEmail, setN8nGoogleEmail] = useState("");
-  const [n8nGooglePassword, setN8nGooglePassword] = useState("");
-  const [n8nBrowserlessToken, setN8nBrowserlessToken] = useState("");
-  const [n8nShowPasswords, setN8nShowPasswords] = useState(false);
-  const [savingN8nCredentials, setSavingN8nCredentials] = useState(false);
-  
-  // n8n Video Generation Test
-  const [n8nTestPrompt, setN8nTestPrompt] = useState("Um pôr do sol vibrante sobre o oceano com nuvens coloridas refletindo na água");
-  const [n8nTestJobId, setN8nTestJobId] = useState<string | null>(null);
-  const [n8nTestStatus, setN8nTestStatus] = useState<string | null>(null);
-  const [n8nTestVideoUrl, setN8nTestVideoUrl] = useState<string | null>(null);
-  const [n8nGeneratingVideo, setN8nGeneratingVideo] = useState(false);
   // Global ImageFX Cookies
   const [globalImagefxCookies, setGlobalImagefxCookies] = useState({
     cookie1: "",
@@ -188,9 +174,6 @@ export function AdminAPIsTab() {
     if (n8nData?.value) {
       const n8nConfig = n8nData.value as Record<string, string>;
       setN8nWebhookUrl(n8nConfig.webhook_url || "");
-      setN8nGoogleEmail(n8nConfig.google_email || "");
-      setN8nGooglePassword(n8nConfig.google_password || "");
-      setN8nBrowserlessToken(n8nConfig.browserless_token || "");
     }
 
     // Load global ImageFX cookies
@@ -705,123 +688,28 @@ export function AdminAPIsTab() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Video className="w-5 h-5 text-purple-500" />
-            <h3 className="font-semibold text-foreground">Automação n8n - Geração de Vídeo (Veo3)</h3>
+            <h3 className="font-semibold text-foreground">Webhook n8n - Geração de Vídeo</h3>
             <Badge variant="secondary" className="text-xs bg-purple-500/20 text-purple-300">
-              Automação Completa
+              Automação
             </Badge>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setN8nShowPasswords(!n8nShowPasswords)}
-          >
-            {n8nShowPasswords ? (
-              <EyeOff className="w-4 h-4" />
-            ) : (
-              <Eye className="w-4 h-4" />
-            )}
-          </Button>
         </div>
         
         <p className="text-sm text-muted-foreground mb-4">
-          Configure o n8n para automatizar a geração de vídeos via Google Veo3. O sistema usa Browserless.io para automação do navegador.
+          Configure a URL do webhook n8n para geração de vídeos. O n8n processará a requisição usando suas credenciais do Veo3 e retornará o vídeo gerado.
+          <br />
+          <span className="text-xs text-purple-400">Formato esperado do retorno: {"{ videoUrl: string, status: 'completed' | 'processing' }"}</span>
         </p>
 
-        {/* Fluxo explicativo */}
-        <div className="bg-secondary/50 rounded-lg p-4 mb-4 border border-purple-500/20">
-          <h4 className="text-sm font-medium text-purple-400 mb-2">📋 Fluxo de Integração:</h4>
-          <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-            <li>SaaS envia POST para n8n com <code className="bg-background px-1 rounded">prompt, job_id, callback_url</code></li>
-            <li>n8n usa Browserless + Playwright para fazer login no Google e gerar vídeo no Veo3</li>
-            <li>Quando terminar, n8n faz POST para a <code className="bg-background px-1 rounded">callback_url</code></li>
-            <li>SaaS recebe a URL do vídeo e atualiza o status</li>
-          </ol>
-        </div>
-
-        <div className="space-y-4">
-          {/* URL do Webhook */}
+        <div className="space-y-3">
           <div>
             <Label className="text-xs text-muted-foreground">URL do Webhook n8n</Label>
             <Input
-              placeholder="https://n8n.canaisdarks.com.br/webhook/veo3/generate"
+              placeholder="https://seu-n8n.app/webhook/video-generation"
               value={n8nWebhookUrl}
               onChange={(e) => setN8nWebhookUrl(e.target.value)}
               className="bg-secondary border-border font-mono text-xs"
             />
-          </div>
-
-          {/* Credenciais do n8n */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-secondary/30 rounded-lg border border-purple-500/20">
-            <div>
-              <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                <Key className="w-3 h-3" />
-                Google Email (para login)
-              </Label>
-              <Input
-                placeholder="seu.email@gmail.com"
-                value={n8nGoogleEmail}
-                onChange={(e) => setN8nGoogleEmail(e.target.value)}
-                className="bg-secondary border-border font-mono text-xs"
-                type="email"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                <Key className="w-3 h-3" />
-                Google Password
-              </Label>
-              <Input
-                placeholder="Senha da conta Google"
-                value={n8nGooglePassword}
-                onChange={(e) => setN8nGooglePassword(e.target.value)}
-                className="bg-secondary border-border font-mono text-xs"
-                type={n8nShowPasswords ? "text" : "password"}
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                <Key className="w-3 h-3" />
-                Browserless Token
-              </Label>
-              <Input
-                placeholder="Token da API Browserless.io"
-                value={n8nBrowserlessToken}
-                onChange={(e) => setN8nBrowserlessToken(e.target.value)}
-                className="bg-secondary border-border font-mono text-xs"
-                type={n8nShowPasswords ? "text" : "password"}
-              />
-            </div>
-          </div>
-
-          <Alert className="border-yellow-500/50 bg-yellow-500/10">
-            <Info className="w-4 h-4 text-yellow-500" />
-            <AlertDescription className="text-yellow-200 text-xs">
-              <strong>Importante:</strong> Use uma conta Google dedicada para automação (sem 2FA). 
-              Obtenha o token Browserless em <a href="https://browserless.io" target="_blank" rel="noopener noreferrer" className="underline">browserless.io</a> (plano gratuito disponível).
-            </AlertDescription>
-          </Alert>
-
-          {/* URL de Callback (read-only) */}
-          <div>
-            <Label className="text-xs text-muted-foreground">URL de Callback (configure no n8n)</Label>
-            <div className="flex gap-2">
-              <Input
-                readOnly
-                value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-video-callback`}
-                className="bg-background border-border font-mono text-xs text-muted-foreground"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-video-callback`);
-                  toast.success("URL copiada!");
-                }}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
           </div>
         </div>
 
@@ -836,37 +724,45 @@ export function AdminAPIsTab() {
               
               setTestingN8nWebhook(true);
               try {
-                console.log('[n8n Test] Testing via edge function...');
+                // Construir URL com parâmetros de teste
+                const testUrl = new URL(n8nWebhookUrl);
+                testUrl.searchParams.set('prompt', 'Test video generation from admin panel');
+                testUrl.searchParams.set('model', 'veo31-fast');
+                testUrl.searchParams.set('aspect_ratio', '16:9');
+                testUrl.searchParams.set('duration', '5');
+                testUrl.searchParams.set('test', 'true');
                 
-                const { data, error } = await supabase.functions.invoke('test-n8n-webhook', {
-                  body: {
-                    webhook_url: n8nWebhookUrl.trim(),
-                    google_email: n8nGoogleEmail.trim(),
-                    google_password: n8nGooglePassword,
-                    browserless_token: n8nBrowserlessToken.trim()
-                  }
+                console.log('[n8n Test] URL:', testUrl.toString());
+                
+                const response = await fetch(testUrl.toString(), {
+                  method: 'GET',
+                  headers: { 'Accept': 'application/json' }
                 });
                 
-                console.log('[n8n Test] Result:', data, error);
+                console.log('[n8n Test] Status:', response.status);
+                const responseText = await response.text();
+                console.log('[n8n Test] Response:', responseText.substring(0, 500));
                 
-                if (error) {
-                  toast.error(`❌ Erro: ${error.message}`);
-                } else if (data?.success) {
-                  const responseData = data.data;
-                  if (responseData?.videoUrl || responseData?.video_url || responseData?.url) {
-                    toast.success(`✅ Webhook funcionando! Video URL recebida.`);
-                  } else if (responseData?.status === 'processing' || responseData?.received) {
-                    toast.success(`✅ Webhook respondeu! Status: ${responseData.status || 'iniciado'}`);
-                  } else {
-                    toast.success(`✅ Webhook acessível! (Status: ${data.status})`);
+                if (response.ok) {
+                  try {
+                    const data = JSON.parse(responseText);
+                    if (data.videoUrl || data.video_url || data.url) {
+                      toast.success(`✅ Webhook funcionando! Video URL recebida.`);
+                    } else if (data.status === 'processing' || data.success) {
+                      toast.success(`✅ Webhook respondeu corretamente! Status: ${data.status || 'OK'}`);
+                    } else {
+                      toast.success(`✅ Webhook acessível! Resposta: ${JSON.stringify(data).substring(0, 100)}`);
+                    }
+                  } catch {
+                    // Resposta não é JSON válido
+                    if (responseText.includes('http') && responseText.includes('mp4')) {
+                      toast.success(`✅ Webhook funcionando! URL de vídeo detectada.`);
+                    } else {
+                      toast.success(`✅ Webhook acessível! (${response.status})`);
+                    }
                   }
                 } else {
-                  const errMsg = String(data?.error || 'Falha na conexão');
-                  if (errMsg.includes('not registered for POST')) {
-                    toast.error("❌ O Webhook no n8n está configurado para GET. No node Webhook, mude o HTTP Method para POST e ative o workflow.");
-                  } else {
-                    toast.error(`❌ Erro ${data?.status || ''}: ${errMsg}`);
-                  }
+                  toast.error(`❌ Erro ${response.status}: ${responseText.substring(0, 100)}`);
                 }
               } catch (error) {
                 console.error('[n8n Test] Error:', error);
@@ -892,9 +788,6 @@ export function AdminAPIsTab() {
 
                 const webhookValue = {
                   webhook_url: n8nWebhookUrl.trim(),
-                  google_email: n8nGoogleEmail.trim(),
-                  google_password: n8nGooglePassword,
-                  browserless_token: n8nBrowserlessToken.trim(),
                   updated_at: new Date().toISOString()
                 };
 
@@ -909,10 +802,10 @@ export function AdminAPIsTab() {
                     .insert([{ key: "n8n_video_webhook", value: webhookValue }]);
                 }
 
-                toast.success("Configurações n8n salvas com sucesso!");
+                toast.success("Webhook n8n salvo com sucesso!");
               } catch (error) {
-                console.error("Error saving n8n config:", error);
-                toast.error("Erro ao salvar configurações");
+                console.error("Error saving n8n webhook:", error);
+                toast.error("Erro ao salvar webhook");
               } finally {
                 setSavingN8nWebhook(false);
               }
@@ -921,187 +814,8 @@ export function AdminAPIsTab() {
             className="bg-purple-600 hover:bg-purple-700"
           >
             {savingN8nWebhook && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Salvar Configurações n8n
+            Salvar Webhook
           </Button>
-        </div>
-        
-        {/* Video Generation Test Section */}
-        <div className="mt-6 pt-6 border-t border-border">
-          <div className="flex items-center gap-2 mb-4">
-            <Rocket className="w-5 h-5 text-green-500" />
-            <h4 className="font-medium text-foreground">Testar Geração de Vídeo</h4>
-            <Badge variant="outline" className="text-xs">Teste Real</Badge>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <Label className="text-sm text-muted-foreground">Prompt de Teste</Label>
-              <Input
-                value={n8nTestPrompt}
-                onChange={(e) => setN8nTestPrompt(e.target.value)}
-                placeholder="Descreva o vídeo que deseja gerar..."
-                className="mt-1"
-              />
-            </div>
-            
-            {n8nTestJobId && (
-              <div className="p-4 rounded-lg bg-muted/50 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Job ID:</span>
-                  <code className="text-xs font-mono bg-background px-2 py-1 rounded">{n8nTestJobId}</code>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Status:</span>
-                  <Badge variant={n8nTestStatus === 'completed' ? 'default' : n8nTestStatus === 'failed' ? 'destructive' : 'secondary'}>
-                    {n8nTestStatus || 'pending'}
-                  </Badge>
-                </div>
-                {n8nTestVideoUrl && (
-                  <div className="mt-4">
-                    <Label className="text-sm text-muted-foreground mb-2 block">Vídeo Gerado:</Label>
-                    <video 
-                      src={n8nTestVideoUrl} 
-                      controls 
-                      className="w-full max-w-md rounded-lg border border-border"
-                    />
-                    <a 
-                      href={n8nTestVideoUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline mt-2 block"
-                    >
-                      Abrir em nova aba
-                    </a>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            <div className="flex gap-2">
-              <Button
-                onClick={async () => {
-                  if (!n8nWebhookUrl) {
-                    toast.error("Configure a URL do webhook primeiro");
-                    return;
-                  }
-                  if (!n8nTestPrompt.trim()) {
-                    toast.error("Digite um prompt para o vídeo");
-                    return;
-                  }
-                  
-                  setN8nGeneratingVideo(true);
-                  setN8nTestJobId(null);
-                  setN8nTestStatus(null);
-                  setN8nTestVideoUrl(null);
-                  
-                  try {
-                    // Chamar a edge function para gerar vídeo real
-                    const { data, error } = await supabase.functions.invoke('generate-video-laozhang', {
-                      body: {
-                        prompt: n8nTestPrompt.trim(),
-                        model: 'veo31',
-                        aspect_ratio: '16:9',
-                        resolution: '1080p'
-                      }
-                    });
-                    
-                    console.log('[n8n Video Test] Result:', data, error);
-                    
-                    if (error) {
-                      toast.error(`❌ Erro: ${error.message}`);
-                      setN8nTestStatus('failed');
-                    } else if (data?.success) {
-                      setN8nTestJobId(data.taskId || data.job_id || 'N/A');
-                      
-                      if (data.videoUrl) {
-                        setN8nTestVideoUrl(data.videoUrl);
-                        setN8nTestStatus('completed');
-                        toast.success("✅ Vídeo gerado com sucesso!");
-                      } else {
-                        setN8nTestStatus(data.status || 'processing');
-                        toast.info("🔄 Vídeo em processamento. O n8n enviará o resultado via callback.");
-                        
-                        // Poll para verificar status
-                        let attempts = 0;
-                        const maxAttempts = 60; // 5 minutos (5s * 60)
-                        const pollInterval = setInterval(async () => {
-                          attempts++;
-                          
-                          try {
-                            const { data: statusData } = await supabase.functions.invoke('n8n-video-status', {
-                              body: { job_id: data.taskId || data.job_id }
-                            });
-                            
-                            if (statusData?.status === 'completed' && statusData?.video_url) {
-                              setN8nTestVideoUrl(statusData.video_url);
-                              setN8nTestStatus('completed');
-                              toast.success("✅ Vídeo gerado com sucesso!");
-                              clearInterval(pollInterval);
-                              setN8nGeneratingVideo(false);
-                            } else if (statusData?.status === 'failed') {
-                              setN8nTestStatus('failed');
-                              toast.error("❌ Geração falhou: " + (statusData.error || 'Erro desconhecido'));
-                              clearInterval(pollInterval);
-                              setN8nGeneratingVideo(false);
-                            } else {
-                              setN8nTestStatus(statusData?.status || 'processing');
-                            }
-                          } catch (e) {
-                            console.error('[Poll Error]', e);
-                          }
-                          
-                          if (attempts >= maxAttempts) {
-                            clearInterval(pollInterval);
-                            setN8nGeneratingVideo(false);
-                            toast.warning("⏱️ Timeout. Verifique os logs do n8n.");
-                          }
-                        }, 5000);
-                      }
-                    } else {
-                      toast.error(`❌ ${data?.error || 'Falha na geração'}`);
-                      setN8nTestStatus('failed');
-                    }
-                  } catch (error) {
-                    console.error('[n8n Video Test] Error:', error);
-                    toast.error(`❌ Erro: ${error instanceof Error ? error.message : 'Falha na conexão'}`);
-                    setN8nTestStatus('failed');
-                  } finally {
-                    if (!n8nTestJobId) {
-                      setN8nGeneratingVideo(false);
-                    }
-                  }
-                }}
-                disabled={!n8nWebhookUrl || n8nGeneratingVideo || !n8nTestPrompt.trim()}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {n8nGeneratingVideo ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Gerando Vídeo...
-                  </>
-                ) : (
-                  <>
-                    <Video className="w-4 h-4 mr-2" />
-                    Gerar Vídeo de Teste
-                  </>
-                )}
-              </Button>
-              
-              {n8nTestJobId && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setN8nTestJobId(null);
-                    setN8nTestStatus(null);
-                    setN8nTestVideoUrl(null);
-                    setN8nGeneratingVideo(false);
-                  }}
-                >
-                  Limpar
-                </Button>
-              )}
-            </div>
-          </div>
         </div>
       </Card>
 
