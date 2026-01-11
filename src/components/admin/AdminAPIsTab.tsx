@@ -829,54 +829,32 @@ export function AdminAPIsTab() {
               
               setTestingN8nWebhook(true);
               try {
-                // Construir URL com parâmetros de teste
-                const testUrl = new URL(n8nWebhookUrl);
+                console.log('[n8n Test] Testing via edge function...');
                 
-                const testPayload = {
-                  prompt: 'Test video generation from admin panel - a beautiful sunset over the ocean',
-                  model: 'veo3',
-                  aspect_ratio: '16:9',
-                  duration: 8,
-                  job_id: `test-${Date.now()}`,
-                  callback_url: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-video-callback`,
-                  test: true
-                };
-                
-                console.log('[n8n Test] URL:', testUrl.toString());
-                console.log('[n8n Test] Payload:', testPayload);
-                
-                const response = await fetch(testUrl.toString(), {
-                  method: 'POST',
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json' 
-                  },
-                  body: JSON.stringify(testPayload)
+                const { data, error } = await supabase.functions.invoke('test-n8n-webhook', {
+                  body: {
+                    webhook_url: n8nWebhookUrl.trim(),
+                    google_email: n8nGoogleEmail.trim(),
+                    google_password: n8nGooglePassword,
+                    browserless_token: n8nBrowserlessToken.trim()
+                  }
                 });
                 
-                console.log('[n8n Test] Status:', response.status);
-                const responseText = await response.text();
-                console.log('[n8n Test] Response:', responseText.substring(0, 500));
+                console.log('[n8n Test] Result:', data, error);
                 
-                if (response.ok) {
-                  try {
-                    const data = JSON.parse(responseText);
-                    if (data.videoUrl || data.video_url || data.url) {
-                      toast.success(`✅ Webhook funcionando! Video URL recebida.`);
-                    } else if (data.status === 'processing' || data.success || data.received) {
-                      toast.success(`✅ Webhook respondeu! Status: ${data.status || 'iniciado'}`);
-                    } else {
-                      toast.success(`✅ Webhook acessível! Resposta: ${JSON.stringify(data).substring(0, 100)}`);
-                    }
-                  } catch {
-                    if (responseText.includes('http') && responseText.includes('mp4')) {
-                      toast.success(`✅ Webhook funcionando! URL de vídeo detectada.`);
-                    } else {
-                      toast.success(`✅ Webhook acessível! (${response.status})`);
-                    }
+                if (error) {
+                  toast.error(`❌ Erro: ${error.message}`);
+                } else if (data?.success) {
+                  const responseData = data.data;
+                  if (responseData?.videoUrl || responseData?.video_url || responseData?.url) {
+                    toast.success(`✅ Webhook funcionando! Video URL recebida.`);
+                  } else if (responseData?.status === 'processing' || responseData?.received) {
+                    toast.success(`✅ Webhook respondeu! Status: ${responseData.status || 'iniciado'}`);
+                  } else {
+                    toast.success(`✅ Webhook acessível! (Status: ${data.status})`);
                   }
                 } else {
-                  toast.error(`❌ Erro ${response.status}: ${responseText.substring(0, 100)}`);
+                  toast.error(`❌ Erro ${data?.status || ''}: ${data?.error || 'Falha na conexão'}`);
                 }
               } catch (error) {
                 console.error('[n8n Test] Error:', error);
