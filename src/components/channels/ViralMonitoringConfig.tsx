@@ -312,11 +312,11 @@ export const ViralMonitoringConfig = () => {
             </div>
           </div>
 
-          {/* Info sobre o workflow */}
+          {/* Info sobre como funciona */}
           <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
             <p className="font-medium mb-1">💡 Como funciona:</p>
             <ul className="space-y-1 list-disc list-inside">
-              <li>O workflow n8n busca sua config de nichos automaticamente</li>
+              <li>Nossa automação busca sua config de nichos automaticamente</li>
               <li>Usa sua própria YouTube API Key para pesquisar</li>
               <li>Detecta vídeos com +1000 views/hora no nicho</li>
               <li>Você recebe notificação em tempo real</li>
