@@ -13,11 +13,11 @@
         }
       },
       "id": "schedule-trigger",
-      "name": "Gatilho de agendamento",
+      "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [0, 300],
-      "notes": "Executa a cada 1 hora para verificar novos vídeos virais"
+      "notes": "Executa a cada 1 hora"
     },
     {
       "parameters": {
@@ -38,121 +38,66 @@
         },
         "options": {}
       },
-      "id": "fetch-user-api-key",
-      "name": "Buscar API Key do Usuário",
+      "id": "fetch-api-key",
+      "name": "Fetch API Key",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [220, 300],
-      "notes": "Busca a API key do YouTube das configurações do usuário no Supabase"
+      "notes": "Busca API key do YouTube do usuário"
     },
     {
       "parameters": {
-        "jsCode": "const settings = $input.first().json;\nconst apiKey = Array.isArray(settings) ? settings[0]?.youtube_api_key : settings?.youtube_api_key;\n\nif (!apiKey) {\n  throw new Error('API key do YouTube não encontrada. Configure em Configurações > APIs.');\n}\n\nconst niche = $env.SEARCH_NICHE || 'dark channel';\nconst publishedAfter = new Date();\npublishedAfter.setDate(publishedAfter.getDate() - 7);\n\nreturn [{\n  json: {\n    apiKey,\n    niche,\n    publishedAfter: publishedAfter.toISOString()\n  }\n}];"
+        "jsCode": "const data = $input.first().json;\nconst apiKey = Array.isArray(data) ? data[0]?.youtube_api_key : data?.youtube_api_key;\n\nif (!apiKey) {\n  throw new Error('YouTube API key não configurada para este usuário');\n}\n\nconst niche = $env.SEARCH_NICHE || 'dark channel';\nconst publishedAfter = new Date();\npublishedAfter.setDate(publishedAfter.getDate() - 7);\n\nreturn [{\n  json: {\n    apiKey,\n    niche,\n    publishedAfter: publishedAfter.toISOString(),\n    searchUrl: `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(niche)}&type=video&order=viewCount&publishedAfter=${publishedAfter.toISOString()}&maxResults=50&key=${apiKey}`\n  }\n}];"
       },
-      "id": "prepare-search",
-      "name": "Preparar Busca",
+      "id": "prepare-config",
+      "name": "Prepare Config",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 300],
-      "notes": "Prepara os parâmetros de busca com a API key do usuário"
+      "position": [440, 300]
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "https://www.googleapis.com/youtube/v3/search",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "part",
-              "value": "snippet"
-            },
-            {
-              "name": "q",
-              "value": "={{ $json.niche }}"
-            },
-            {
-              "name": "type",
-              "value": "video"
-            },
-            {
-              "name": "order",
-              "value": "viewCount"
-            },
-            {
-              "name": "publishedAfter",
-              "value": "={{ $json.publishedAfter }}"
-            },
-            {
-              "name": "maxResults",
-              "value": "50"
-            },
-            {
-              "name": "key",
-              "value": "={{ $json.apiKey }}"
-            }
-          ]
-        },
+        "url": "={{ $json.searchUrl }}",
         "options": {}
       },
       "id": "youtube-search",
-      "name": "Pesquisar vídeos do YouTube",
+      "name": "Search YouTube Videos",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [660, 300],
-      "notes": "Busca vídeos recentes por nicho usando API key do usuário"
+      "position": [660, 300]
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.first().json.items || [];\nconst apiKey = $('Preparar Busca').first().json.apiKey;\nconst niche = $('Preparar Busca').first().json.niche;\n\nconst videos = items.map(item => ({\n  videoId: item.id.videoId,\n  title: item.snippet.title,\n  channelTitle: item.snippet.channelTitle,\n  channelId: item.snippet.channelId,\n  publishedAt: item.snippet.publishedAt,\n  thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,\n  niche\n}));\n\nreturn [{ json: { videos, apiKey } }];"
+        "jsCode": "const items = $input.first().json.items || [];\nconst config = $('Prepare Config').first().json;\n\nconst videos = items.map(item => ({\n  videoId: item.id.videoId,\n  title: item.snippet.title,\n  channelTitle: item.snippet.channelTitle,\n  channelId: item.snippet.channelId,\n  publishedAt: item.snippet.publishedAt,\n  thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,\n  niche: config.niche\n}));\n\nconst videoIds = videos.map(v => v.videoId).join(',');\nconst statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${config.apiKey}`;\n\nreturn [{ json: { videos, statsUrl, apiKey: config.apiKey } }];"
       },
       "id": "parse-videos",
-      "name": "Analisar dados de vídeo",
+      "name": "Parse Video Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 300],
-      "notes": "Extrai dados dos vídeos encontrados"
+      "position": [880, 300]
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "https://www.googleapis.com/youtube/v3/videos",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "part",
-              "value": "statistics"
-            },
-            {
-              "name": "id",
-              "value": "={{ $json.videos.map(v => v.videoId).join(',') }}"
-            },
-            {
-              "name": "key",
-              "value": "={{ $json.apiKey }}"
-            }
-          ]
-        },
+        "url": "={{ $json.statsUrl }}",
         "options": {}
       },
       "id": "get-statistics",
-      "name": "Obtenha as estatísticas do vídeo",
+      "name": "Get Video Statistics",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1100, 300],
-      "notes": "Obtém estatísticas (views, likes, comentários) em batch"
+      "position": [1100, 300]
     },
     {
       "parameters": {
-        "jsCode": "const statsItems = $input.first().json.items || [];\nconst videos = $('Analisar dados de vídeo').first().json.videos;\nconst VIRAL_THRESHOLD = 1000; // views por hora\n\nconst statsMap = {};\nstatsItems.forEach(item => {\n  statsMap[item.id] = {\n    views: parseInt(item.statistics.viewCount || 0),\n    likes: parseInt(item.statistics.likeCount || 0),\n    comments: parseInt(item.statistics.commentCount || 0)\n  };\n});\n\nconst viralVideos = videos.map(video => {\n  const stats = statsMap[video.videoId] || { views: 0, likes: 0, comments: 0 };\n  const publishedAt = new Date(video.publishedAt);\n  const hoursSincePublished = (Date.now() - publishedAt.getTime()) / (1000 * 60 * 60);\n  const viralScore = Math.round(stats.views / Math.max(hoursSincePublished, 1));\n  \n  return {\n    ...video,\n    ...stats,\n    viralScore,\n    hoursSincePublished: Math.round(hoursSincePublished)\n  };\n}).filter(v => v.viralScore >= VIRAL_THRESHOLD);\n\nif (viralVideos.length === 0) {\n  return [{ json: { hasResults: false } }];\n}\n\nreturn [{ json: { videos: viralVideos, hasResults: true } }];"
+        "jsCode": "const statsItems = $input.first().json.items || [];\nconst videosData = $('Parse Video Data').first().json.videos;\nconst VIRAL_THRESHOLD = 1000;\n\nconst statsMap = {};\nstatsItems.forEach(item => {\n  statsMap[item.id] = {\n    views: parseInt(item.statistics.viewCount || 0),\n    likes: parseInt(item.statistics.likeCount || 0),\n    comments: parseInt(item.statistics.commentCount || 0)\n  };\n});\n\nconst viralVideos = videosData.map(video => {\n  const stats = statsMap[video.videoId] || { views: 0, likes: 0, comments: 0 };\n  const publishedAt = new Date(video.publishedAt);\n  const hours = (Date.now() - publishedAt.getTime()) / (1000 * 60 * 60);\n  const viralScore = Math.round(stats.views / Math.max(hours, 1));\n  \n  return { ...video, ...stats, viralScore };\n}).filter(v => v.viralScore >= VIRAL_THRESHOLD);\n\nif (viralVideos.length === 0) {\n  return [{ json: { hasResults: false } }];\n}\n\nreturn [{ json: { videos: viralVideos, hasResults: true } }];"
       },
-      "id": "calculate-viral-score",
-      "name": "Calcular pontuação viral",
+      "id": "calculate-score",
+      "name": "Calculate Viral Score",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1320, 300],
-      "notes": "Calcula score viral (views/hora) e filtra >= 1000"
+      "position": [1320, 300]
     },
     {
       "parameters": {
@@ -164,7 +109,7 @@
           },
           "conditions": [
             {
-              "id": "condition-1",
+              "id": "has-results",
               "leftValue": "={{ $json.hasResults }}",
               "rightValue": true,
               "operator": {
@@ -177,8 +122,8 @@
         },
         "options": {}
       },
-      "id": "filter-results",
-      "name": "Filtrar Resultados Vazios",
+      "id": "filter-empty",
+      "name": "Filter Empty Results",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [1540, 300]
@@ -205,126 +150,51 @@
         "jsonBody": "={\n  \"videos\": {{ JSON.stringify($json.videos.map(v => ({\n    user_id: $env.TARGET_USER_ID,\n    video_id: v.videoId,\n    video_url: 'https://www.youtube.com/watch?v=' + v.videoId,\n    title: v.title,\n    thumbnail_url: v.thumbnailUrl,\n    channel_name: v.channelTitle,\n    channel_url: 'https://www.youtube.com/channel/' + v.channelId,\n    views: v.views,\n    likes: v.likes,\n    comments: v.comments,\n    published_at: v.publishedAt,\n    viral_score: v.viralScore,\n    niche: v.niche\n  }))) }}\n}",
         "options": {}
       },
-      "id": "send-to-webhook",
-      "name": "Enviar para Webhook Viral",
+      "id": "send-webhook",
+      "name": "Send to Viral Webhook",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1760, 200],
-      "notes": "Envia vídeos virais para o sistema"
+      "position": [1760, 200]
     },
     {
       "parameters": {},
-      "id": "no-op",
-      "name": "Sem vídeos virais",
+      "id": "no-viral",
+      "name": "No Viral Videos",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [1760, 400]
     }
   ],
   "connections": {
-    "Gatilho de agendamento": {
-      "main": [
-        [
-          {
-            "node": "Buscar API Key do Usuário",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Schedule Trigger": {
+      "main": [[{ "node": "Fetch API Key", "type": "main", "index": 0 }]]
     },
-    "Buscar API Key do Usuário": {
-      "main": [
-        [
-          {
-            "node": "Preparar Busca",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Fetch API Key": {
+      "main": [[{ "node": "Prepare Config", "type": "main", "index": 0 }]]
     },
-    "Preparar Busca": {
-      "main": [
-        [
-          {
-            "node": "Pesquisar vídeos do YouTube",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Prepare Config": {
+      "main": [[{ "node": "Search YouTube Videos", "type": "main", "index": 0 }]]
     },
-    "Pesquisar vídeos do YouTube": {
-      "main": [
-        [
-          {
-            "node": "Analisar dados de vídeo",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Search YouTube Videos": {
+      "main": [[{ "node": "Parse Video Data", "type": "main", "index": 0 }]]
     },
-    "Analisar dados de vídeo": {
-      "main": [
-        [
-          {
-            "node": "Obtenha as estatísticas do vídeo",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Parse Video Data": {
+      "main": [[{ "node": "Get Video Statistics", "type": "main", "index": 0 }]]
     },
-    "Obtenha as estatísticas do vídeo": {
-      "main": [
-        [
-          {
-            "node": "Calcular pontuação viral",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Get Video Statistics": {
+      "main": [[{ "node": "Calculate Viral Score", "type": "main", "index": 0 }]]
     },
-    "Calcular pontuação viral": {
-      "main": [
-        [
-          {
-            "node": "Filtrar Resultados Vazios",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Calculate Viral Score": {
+      "main": [[{ "node": "Filter Empty Results", "type": "main", "index": 0 }]]
     },
-    "Filtrar Resultados Vazios": {
+    "Filter Empty Results": {
       "main": [
-        [
-          {
-            "node": "Enviar para Webhook Viral",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Sem vídeos virais",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Send to Viral Webhook", "type": "main", "index": 0 }],
+        [{ "node": "No Viral Videos", "type": "main", "index": 0 }]
       ]
     }
   },
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "staticData": null,
-  "tags": ["viral", "youtube", "monitoramento"],
-  "triggerCount": 1,
-  "meta": {
-    "templateId": "viral-video-detection-v2"
-  }
+  "settings": { "executionOrder": "v1" },
+  "tags": ["viral", "youtube"],
+  "meta": { "templateId": "viral-detection-v3" }
 }
