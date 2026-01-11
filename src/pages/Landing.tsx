@@ -1178,6 +1178,164 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Viral Detection Section - Competitive Advantage */}
+      <section className="py-20 md:py-28 px-4 relative overflow-hidden">
+        {/* Animated background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-red-500/5 via-transparent to-orange-500/5 pointer-events-none" />
+        <ParallaxLayer depth={0.3} className="absolute top-20 -right-20 w-72 h-72 bg-red-500/10 rounded-full blur-3xl pointer-events-none hidden md:block animate-pulse" />
+        <ParallaxLayer depth={0.4} className="absolute bottom-20 -left-20 w-56 h-56 bg-orange-500/10 rounded-full blur-3xl pointer-events-none hidden md:block animate-pulse" />
+        
+        <div className="max-w-6xl mx-auto relative">
+          <AnimatedSection className="text-center space-y-6 mb-14">
+            {/* Premium badges */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30">
+                <Flame className="w-5 h-5 animate-pulse" />
+                <span className="text-base font-bold uppercase tracking-wide">Detecção de Virais</span>
+              </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 backdrop-blur-xl">
+                <Zap className="w-4 h-4 text-green-400" />
+                <span className="text-xs font-bold text-green-400">EM BREVE: EMAIL + WHATSAPP</span>
+              </div>
+            </div>
+            
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight">
+              <span className="text-foreground">Saia na </span>
+              <span className="bg-gradient-to-r from-red-400 via-orange-400 to-amber-400 bg-clip-text text-transparent">Frente da Concorrência</span>
+            </h2>
+            
+            <p className="text-lg md:text-xl text-muted-foreground/80 leading-relaxed max-w-3xl mx-auto">
+              Enquanto seus concorrentes ainda estão <span className="text-red-400 font-semibold">descobrindo o que viralizou ontem</span>, 
+              você recebe alertas em <span className="text-orange-400 font-semibold">tempo real</span> sobre vídeos 
+              explodindo no seu nicho.
+            </p>
+          </AnimatedSection>
+
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-12">
+            {/* Real-time Detection */}
+            <AnimatedItem index={0} staggerDelay={100}>
+              <Card className="group relative p-8 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-red-500/50 transition-all duration-500 overflow-hidden h-full shadow-2xl hover:shadow-red-500/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 via-transparent to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-400/60 to-transparent" />
+                
+                <div className="relative space-y-5">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500/20 to-orange-600/20 backdrop-blur-sm border border-red-500/30 flex items-center justify-center shadow-lg shadow-red-500/20 group-hover:scale-110 transition-all duration-300">
+                    <Flame className="w-8 h-8 text-red-400" />
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-black text-xl text-foreground">Detecção em Tempo Real</h3>
+                    <p className="text-sm text-red-400/80 font-semibold">Monitoramento 24/7</p>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground/80 leading-relaxed">
+                    Nossa IA monitora milhares de vídeos por hora e detecta padrões de viralização 
+                    <span className="text-red-400 font-medium"> antes de explodirem</span>.
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-red-500/10 text-red-400/90 border border-red-500/20 font-medium">+1000 views/hora</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-red-500/10 text-red-400/90 border border-red-500/20 font-medium">Filtro por nicho</span>
+                  </div>
+                </div>
+              </Card>
+            </AnimatedItem>
+
+            {/* Email & WhatsApp Alerts */}
+            <AnimatedItem index={1} staggerDelay={100}>
+              <Card className="group relative p-8 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-green-500/50 transition-all duration-500 overflow-hidden h-full shadow-2xl hover:shadow-green-500/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-green-400/60 to-transparent" />
+                <div className="absolute top-4 right-4 px-2 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/30">
+                  <span className="text-xs font-bold text-yellow-400">EM BREVE</span>
+                </div>
+                
+                <div className="relative space-y-5">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center shadow-lg shadow-green-500/20 group-hover:scale-110 transition-all duration-300">
+                    <Mail className="w-8 h-8 text-green-400" />
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-black text-xl text-foreground">Alertas por Email & WhatsApp</h3>
+                    <p className="text-sm text-green-400/80 font-semibold">Notificações Instantâneas</p>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground/80 leading-relaxed">
+                    Receba os vídeos virais do seu nicho diretamente no seu <span className="text-green-400 font-medium">email e WhatsApp</span>. 
+                    Nunca mais perca uma oportunidade.
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/10 text-green-400/90 border border-green-500/20 font-medium">📧 Email</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/10 text-green-400/90 border border-green-500/20 font-medium">📱 WhatsApp</span>
+                  </div>
+                </div>
+              </Card>
+            </AnimatedItem>
+
+            {/* Competitive Edge */}
+            <AnimatedItem index={2} staggerDelay={100}>
+              <Card className="group relative p-8 bg-card/40 backdrop-blur-xl border border-white/10 hover:border-primary/50 transition-all duration-500 overflow-hidden h-full shadow-2xl hover:shadow-primary/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+                
+                <div className="relative space-y-5">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-amber-600/20 backdrop-blur-sm border border-primary/30 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-all duration-300">
+                    <TrendingUp className="w-8 h-8 text-primary" />
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-black text-xl text-foreground">Vantagem Competitiva</h3>
+                    <p className="text-sm text-primary/80 font-semibold">Horas na Frente</p>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground/80 leading-relaxed">
+                    Publique seu vídeo sobre o tema viral <span className="text-primary font-medium">enquanto ainda está quente</span>. 
+                    Chegue primeiro e pegue a onda do algoritmo.
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary/90 border border-primary/20 font-medium">📊 Análise IA</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary/90 border border-primary/20 font-medium">🚀 1-Click Roteiro</span>
+                  </div>
+                </div>
+              </Card>
+            </AnimatedItem>
+          </div>
+
+          {/* CTA */}
+          <AnimatedSection className="text-center">
+            <Card className="inline-block p-8 md:p-10 bg-gradient-to-r from-red-500/10 via-card/40 to-orange-500/10 backdrop-blur-xl border border-red-500/20 shadow-2xl">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center animate-pulse">
+                      <Flame className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-green-500 border-2 border-background flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">✓</span>
+                    </div>
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-lg">Detecte vídeos viralizando AGORA</p>
+                    <p className="text-sm text-muted-foreground">Receba por email e WhatsApp em breve!</p>
+                  </div>
+                </div>
+                
+                <Link to="/auth">
+                  <Button size="lg" className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold h-14 px-8 text-lg shadow-lg shadow-red-500/30 group">
+                    <Rocket className="w-5 h-5 mr-2 group-hover:animate-bounce" />
+                    Quero Sair na Frente
+                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          </AnimatedSection>
+        </div>
+      </section>
+
       {/* Styles Carousel Section */}
       <StylesCarousel />
 
