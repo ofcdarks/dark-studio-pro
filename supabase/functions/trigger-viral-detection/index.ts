@@ -71,23 +71,53 @@ serve(async (req) => {
 
       console.log('[trigger-viral-detection] Payload:', JSON.stringify(payload));
 
-      // Build URL with query params for GET request
-      const url = new URL(n8nWebhookUrl);
-      url.searchParams.set('user_id', payload.user_id);
-      url.searchParams.set('niches', JSON.stringify(payload.niches));
-      url.searchParams.set('viral_threshold', String(payload.viral_threshold));
-      url.searchParams.set('video_types', JSON.stringify(payload.video_types));
-      url.searchParams.set('country', payload.country);
-      if (payload.youtube_api_key) {
-        url.searchParams.set('youtube_api_key', payload.youtube_api_key);
+      const buildGetUrl = () => {
+        const url = new URL(n8nWebhookUrl);
+        url.searchParams.set('user_id', payload.user_id);
+        url.searchParams.set('niches', JSON.stringify(payload.niches));
+        url.searchParams.set('viral_threshold', String(payload.viral_threshold));
+        url.searchParams.set('video_types', JSON.stringify(payload.video_types));
+        url.searchParams.set('country', payload.country);
+        if (payload.youtube_api_key) {
+          url.searchParams.set('youtube_api_key', payload.youtube_api_key);
+        }
+        url.searchParams.set('triggered_at', payload.triggered_at);
+        return url.toString();
+      };
+
+      const callPost = () =>
+        fetch(n8nWebhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+      const callGet = () => fetch(buildGetUrl(), { method: 'GET' });
+
+      // Prefer POST (default in n8n). If n8n indicates the wrong method, retry once with the suggested method.
+      let n8nResponse = await callPost();
+      let responseText = await n8nResponse.text();
+
+      if (
+        !n8nResponse.ok &&
+        responseText.includes('not registered for POST') &&
+        responseText.toLowerCase().includes('get request')
+      ) {
+        console.log('[trigger-viral-detection] Retrying n8n webhook with GET');
+        n8nResponse = await callGet();
+        responseText = await n8nResponse.text();
+      } else if (
+        !n8nResponse.ok &&
+        responseText.includes('not registered for GET') &&
+        responseText.toLowerCase().includes('post request')
+      ) {
+        console.log('[trigger-viral-detection] Retrying n8n webhook with POST');
+        n8nResponse = await callPost();
+        responseText = await n8nResponse.text();
       }
-      url.searchParams.set('triggered_at', payload.triggered_at);
 
-      const n8nResponse = await fetch(url.toString(), {
-        method: 'GET',
-      });
-
-      const responseText = await n8nResponse.text();
       console.log(`[trigger-viral-detection] n8n response: ${n8nResponse.status} - ${responseText}`);
 
       if (!n8nResponse.ok) {
