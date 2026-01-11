@@ -25,6 +25,8 @@ import {
   Clapperboard,
   Globe,
   TrendingUp,
+  Youtube,
+  Link2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +37,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Link } from "react-router-dom";
 
 const COUNTRIES = [
   { code: "BR", name: "Brasil", flag: "🇧🇷" },
@@ -96,6 +99,22 @@ export const ViralMonitoringConfig = () => {
         .select("youtube_api_key, youtube_validated")
         .eq("user_id", user.id)
         .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Fetch saved analytics channels (pinned channels from Analytics page)
+  const { data: savedAnalyticsChannels } = useQuery({
+    queryKey: ["saved-analytics-channels", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("saved_analytics_channels")
+        .select("id, channel_name, channel_thumbnail, notes")
+        .eq("user_id", user.id)
+        .order("display_order", { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -424,7 +443,84 @@ export const ViralMonitoringConfig = () => {
             </div>
           )}
 
-          {/* Sugestões de nichos */}
+          {/* Sugestões dos canais fixados no Analytics */}
+          {savedAnalyticsChannels && savedAnalyticsChannels.length > 0 && niches.length < 5 && (
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Youtube className="w-4 h-4 text-primary" />
+                <p className="text-xs font-medium text-foreground">
+                  Sugestões dos seus canais fixados:
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {savedAnalyticsChannels
+                  .map((channel) => {
+                    // Extract keywords from channel name for niche suggestion
+                    const channelName = channel.channel_name?.toLowerCase() || "";
+                    return channelName;
+                  })
+                  .filter((name) => name && !niches.includes(name))
+                  .slice(0, 5)
+                  .map((channelName) => (
+                    <Button
+                      key={channelName}
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs bg-background"
+                      onClick={() => {
+                        const currentNiches = config?.niches || [];
+                        if (currentNiches.length >= 5) {
+                          toast({
+                            title: "Limite atingido",
+                            description: "Máximo de 5 nichos",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        saveConfigMutation.mutate({
+                          niches: [...currentNiches, channelName],
+                        });
+                        toast({ title: "Nicho adicionado!" });
+                      }}
+                      disabled={saveConfigMutation.isPending}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      {channelName}
+                    </Button>
+                  ))}
+              </div>
+              <Link 
+                to="/analytics" 
+                className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1"
+              >
+                <Link2 className="w-3 h-3" />
+                Gerenciar canais fixados
+              </Link>
+            </div>
+          )}
+
+          {/* Link para Analytics se não tiver canais fixados */}
+          {(!savedAnalyticsChannels || savedAnalyticsChannels.length === 0) && (
+            <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
+              <div className="flex items-center gap-2 mb-1">
+                <Youtube className="w-4 h-4 text-muted-foreground" />
+                <p className="text-xs font-medium text-muted-foreground">
+                  Vincule canais do Analytics
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2">
+                Fixe canais no Analytics para sugerir nichos automaticamente
+              </p>
+              <Link to="/analytics">
+                <Button variant="outline" size="sm" className="h-7 text-xs">
+                  <Link2 className="w-3 h-3 mr-1" />
+                  Ir para Analytics
+                </Button>
+              </Link>
+            </div>
+          )}
+
+          {/* Sugestões populares */}
           <div>
             <p className="text-xs text-muted-foreground mb-2">
               Sugestões populares:
