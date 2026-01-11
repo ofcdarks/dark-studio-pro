@@ -563,8 +563,24 @@ const MonitoredChannels = () => {
     }
   };
 
-  const handleAnalyzeVideo = (videoUrl: string) => {
-    navigate(`/analyzer?url=${encodeURIComponent(videoUrl)}`);
+  const handleAnalyzeVideo = (videoUrl: string, videoData?: {
+    title?: string;
+    thumbnail?: string;
+    views?: number;
+    likes?: number;
+    comments?: number;
+    channel?: string;
+    publishedAt?: string;
+  }) => {
+    const params = new URLSearchParams({ url: videoUrl });
+    if (videoData?.title) params.set('title', videoData.title);
+    if (videoData?.thumbnail) params.set('thumbnail', videoData.thumbnail);
+    if (videoData?.views) params.set('views', String(videoData.views));
+    if (videoData?.likes) params.set('likes', String(videoData.likes));
+    if (videoData?.comments) params.set('comments', String(videoData.comments));
+    if (videoData?.channel) params.set('channel', videoData.channel);
+    if (videoData?.publishedAt) params.set('publishedAt', videoData.publishedAt);
+    navigate(`/analyzer?${params.toString()}`);
   };
 
   const isVideoPinned = (videoId: string) => {
@@ -821,7 +837,7 @@ const MonitoredChannels = () => {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      Vídeos detectados viralizando no seu nicho via automação n8n
+                      Vídeos detectados viralizando no seu nicho
                     </p>
                   </div>
                 </div>
@@ -834,7 +850,15 @@ const MonitoredChannels = () => {
                         video={video}
                         onAnalyze={() => {
                           markViralAsReadMutation.mutate(video.id);
-                          handleAnalyzeVideo(video.video_url);
+                          handleAnalyzeVideo(video.video_url, {
+                            title: video.title || undefined,
+                            thumbnail: video.thumbnail_url || undefined,
+                            views: video.views,
+                            likes: video.likes,
+                            comments: video.comments,
+                            channel: video.channel_name || undefined,
+                            publishedAt: video.published_at || undefined,
+                          });
                         }}
                         onDelete={() => deleteViralMutation.mutate(video.id)}
                         onMarkRead={() => markViralAsReadMutation.mutate(video.id)}
@@ -846,7 +870,7 @@ const MonitoredChannels = () => {
                     <Flame className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
                     <p className="text-muted-foreground">Nenhum vídeo viral detectado ainda</p>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Configure um workflow no n8n para detectar vídeos viralizando
+                      Configure o monitoramento de nichos acima para detectar vídeos viralizando
                     </p>
                   </div>
                 )}
@@ -1156,7 +1180,17 @@ const getTimeAgo = (dateString: string) => {
   return "Agora";
 };
 
+const getVideoDaysOld = (dateString: string | null): number | null => {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+};
+
 const ViralVideoCard = ({ video, onAnalyze, onDelete, onMarkRead }: ViralVideoCardProps) => {
+  const videoDays = getVideoDaysOld(video.published_at);
+  
   return (
     <Card className={`overflow-hidden relative ${!video.is_read ? 'ring-2 ring-primary/50' : ''}`}>
       {!video.is_read && (
@@ -1203,7 +1237,7 @@ const ViralVideoCard = ({ video, onAnalyze, onDelete, onMarkRead }: ViralVideoCa
             {video.channel_name}
           </p>
         )}
-        <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+        <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
           <span className="flex items-center gap-1">
             <Eye className="w-3 h-3" /> {formatNumber(video.views)}
           </span>
@@ -1214,9 +1248,15 @@ const ViralVideoCard = ({ video, onAnalyze, onDelete, onMarkRead }: ViralVideoCa
             <MessageCircle className="w-3 h-3" /> {formatNumber(video.comments)}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground mb-3">
-          Detectado {getTimeAgo(video.detected_at)}
-        </p>
+        <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+          {videoDays !== null && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {videoDays === 0 ? "Hoje" : videoDays === 1 ? "1 dia" : `${videoDays} dias`}
+            </span>
+          )}
+          <span>Detectado {getTimeAgo(video.detected_at)}</span>
+        </div>
         <div className="flex gap-2">
           <Button
             onClick={onAnalyze}
