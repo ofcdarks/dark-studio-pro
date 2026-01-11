@@ -14,7 +14,7 @@ export interface SEORoute {
 export const BASE_URL = 'https://canaisdarks.com.br';
 
 // Current date for lastmod - Fixed to ensure consistency
-const today = '2026-01-08';
+const today = '2026-01-11';
 
 /**
  * Public routes that should be indexed by search engines
