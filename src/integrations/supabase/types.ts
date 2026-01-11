@@ -2189,6 +2189,7 @@ export type Database = {
       viral_monitoring_config: {
         Row: {
           check_interval_hours: number
+          country: string | null
           created_at: string
           id: string
           is_active: boolean
@@ -2201,6 +2202,7 @@ export type Database = {
         }
         Insert: {
           check_interval_hours?: number
+          country?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -2213,6 +2215,7 @@ export type Database = {
         }
         Update: {
           check_interval_hours?: number
+          country?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
