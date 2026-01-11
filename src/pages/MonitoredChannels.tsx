@@ -490,31 +490,17 @@ const MonitoredChannels = () => {
           .eq("id", viralConfig.id);
       }
       
-      // Execute n8n workflow
-      const response = await fetch('https://lovableagencia.app.n8n.cloud/mcp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          method: 'tools/call',
-          params: {
-            name: 'execute_workflow',
-            arguments: {
-              workflowId: '3GWL4qH_KSMPJ_Iof7ORH'
-            }
-          }
-        })
-      });
+      // Execute n8n workflow via edge function (avoids CORS)
+      const { data, error } = await supabase.functions.invoke("trigger-viral-detection");
       
-      if (!response.ok) {
-        // Fallback to edge function if MCP fails
-        const { data, error } = await supabase.functions.invoke("check-new-videos");
-        if (error) throw error;
-        return data;
+      if (error) {
+        // Fallback to check-new-videos if trigger fails
+        const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke("check-new-videos");
+        if (fallbackError) throw fallbackError;
+        return fallbackData;
       }
       
-      return { success: true, message: "Workflow executado" };
+      return data;
     },
     onSuccess: () => {
       setCheckingVideos(false);
