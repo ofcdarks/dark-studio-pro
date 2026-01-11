@@ -107,6 +107,13 @@ export function AdminAPIsTab() {
   const [n8nBrowserlessToken, setN8nBrowserlessToken] = useState("");
   const [n8nShowPasswords, setN8nShowPasswords] = useState(false);
   const [savingN8nCredentials, setSavingN8nCredentials] = useState(false);
+  
+  // n8n Video Generation Test
+  const [n8nTestPrompt, setN8nTestPrompt] = useState("Um pôr do sol vibrante sobre o oceano com nuvens coloridas refletindo na água");
+  const [n8nTestJobId, setN8nTestJobId] = useState<string | null>(null);
+  const [n8nTestStatus, setN8nTestStatus] = useState<string | null>(null);
+  const [n8nTestVideoUrl, setN8nTestVideoUrl] = useState<string | null>(null);
+  const [n8nGeneratingVideo, setN8nGeneratingVideo] = useState(false);
   // Global ImageFX Cookies
   const [globalImagefxCookies, setGlobalImagefxCookies] = useState({
     cookie1: "",
@@ -916,6 +923,185 @@ export function AdminAPIsTab() {
             {savingN8nWebhook && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Salvar Configurações n8n
           </Button>
+        </div>
+        
+        {/* Video Generation Test Section */}
+        <div className="mt-6 pt-6 border-t border-border">
+          <div className="flex items-center gap-2 mb-4">
+            <Rocket className="w-5 h-5 text-green-500" />
+            <h4 className="font-medium text-foreground">Testar Geração de Vídeo</h4>
+            <Badge variant="outline" className="text-xs">Teste Real</Badge>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm text-muted-foreground">Prompt de Teste</Label>
+              <Input
+                value={n8nTestPrompt}
+                onChange={(e) => setN8nTestPrompt(e.target.value)}
+                placeholder="Descreva o vídeo que deseja gerar..."
+                className="mt-1"
+              />
+            </div>
+            
+            {n8nTestJobId && (
+              <div className="p-4 rounded-lg bg-muted/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Job ID:</span>
+                  <code className="text-xs font-mono bg-background px-2 py-1 rounded">{n8nTestJobId}</code>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Status:</span>
+                  <Badge variant={n8nTestStatus === 'completed' ? 'default' : n8nTestStatus === 'failed' ? 'destructive' : 'secondary'}>
+                    {n8nTestStatus || 'pending'}
+                  </Badge>
+                </div>
+                {n8nTestVideoUrl && (
+                  <div className="mt-4">
+                    <Label className="text-sm text-muted-foreground mb-2 block">Vídeo Gerado:</Label>
+                    <video 
+                      src={n8nTestVideoUrl} 
+                      controls 
+                      className="w-full max-w-md rounded-lg border border-border"
+                    />
+                    <a 
+                      href={n8nTestVideoUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline mt-2 block"
+                    >
+                      Abrir em nova aba
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="flex gap-2">
+              <Button
+                onClick={async () => {
+                  if (!n8nWebhookUrl) {
+                    toast.error("Configure a URL do webhook primeiro");
+                    return;
+                  }
+                  if (!n8nTestPrompt.trim()) {
+                    toast.error("Digite um prompt para o vídeo");
+                    return;
+                  }
+                  
+                  setN8nGeneratingVideo(true);
+                  setN8nTestJobId(null);
+                  setN8nTestStatus(null);
+                  setN8nTestVideoUrl(null);
+                  
+                  try {
+                    // Chamar a edge function para gerar vídeo real
+                    const { data, error } = await supabase.functions.invoke('generate-video-laozhang', {
+                      body: {
+                        prompt: n8nTestPrompt.trim(),
+                        model: 'veo31',
+                        aspect_ratio: '16:9',
+                        resolution: '1080p'
+                      }
+                    });
+                    
+                    console.log('[n8n Video Test] Result:', data, error);
+                    
+                    if (error) {
+                      toast.error(`❌ Erro: ${error.message}`);
+                      setN8nTestStatus('failed');
+                    } else if (data?.success) {
+                      setN8nTestJobId(data.taskId || data.job_id || 'N/A');
+                      
+                      if (data.videoUrl) {
+                        setN8nTestVideoUrl(data.videoUrl);
+                        setN8nTestStatus('completed');
+                        toast.success("✅ Vídeo gerado com sucesso!");
+                      } else {
+                        setN8nTestStatus(data.status || 'processing');
+                        toast.info("🔄 Vídeo em processamento. O n8n enviará o resultado via callback.");
+                        
+                        // Poll para verificar status
+                        let attempts = 0;
+                        const maxAttempts = 60; // 5 minutos (5s * 60)
+                        const pollInterval = setInterval(async () => {
+                          attempts++;
+                          
+                          try {
+                            const { data: statusData } = await supabase.functions.invoke('n8n-video-status', {
+                              body: { job_id: data.taskId || data.job_id }
+                            });
+                            
+                            if (statusData?.status === 'completed' && statusData?.video_url) {
+                              setN8nTestVideoUrl(statusData.video_url);
+                              setN8nTestStatus('completed');
+                              toast.success("✅ Vídeo gerado com sucesso!");
+                              clearInterval(pollInterval);
+                              setN8nGeneratingVideo(false);
+                            } else if (statusData?.status === 'failed') {
+                              setN8nTestStatus('failed');
+                              toast.error("❌ Geração falhou: " + (statusData.error || 'Erro desconhecido'));
+                              clearInterval(pollInterval);
+                              setN8nGeneratingVideo(false);
+                            } else {
+                              setN8nTestStatus(statusData?.status || 'processing');
+                            }
+                          } catch (e) {
+                            console.error('[Poll Error]', e);
+                          }
+                          
+                          if (attempts >= maxAttempts) {
+                            clearInterval(pollInterval);
+                            setN8nGeneratingVideo(false);
+                            toast.warning("⏱️ Timeout. Verifique os logs do n8n.");
+                          }
+                        }, 5000);
+                      }
+                    } else {
+                      toast.error(`❌ ${data?.error || 'Falha na geração'}`);
+                      setN8nTestStatus('failed');
+                    }
+                  } catch (error) {
+                    console.error('[n8n Video Test] Error:', error);
+                    toast.error(`❌ Erro: ${error instanceof Error ? error.message : 'Falha na conexão'}`);
+                    setN8nTestStatus('failed');
+                  } finally {
+                    if (!n8nTestJobId) {
+                      setN8nGeneratingVideo(false);
+                    }
+                  }
+                }}
+                disabled={!n8nWebhookUrl || n8nGeneratingVideo || !n8nTestPrompt.trim()}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {n8nGeneratingVideo ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Gerando Vídeo...
+                  </>
+                ) : (
+                  <>
+                    <Video className="w-4 h-4 mr-2" />
+                    Gerar Vídeo de Teste
+                  </>
+                )}
+              </Button>
+              
+              {n8nTestJobId && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setN8nTestJobId(null);
+                    setN8nTestStatus(null);
+                    setN8nTestVideoUrl(null);
+                    setN8nGeneratingVideo(false);
+                  }}
+                >
+                  Limpar
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </Card>
 
