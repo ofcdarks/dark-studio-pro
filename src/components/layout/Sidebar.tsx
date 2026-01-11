@@ -80,8 +80,8 @@ const defaultNavItems: NavItem[] = [
   { id: "settings", icon: Settings, label: "Configurações", href: "/settings", category: "organizacao" },
 ];
 
-// Component for individual draggable nav item - optimized for speed
-function DraggableNavItem({ 
+// Wrapper to use hook inside map
+function NavItemWrapper({ 
   item, 
   collapsed, 
   isActive, 
@@ -100,13 +100,7 @@ function DraggableNavItem({
       dragListener={false}
       dragControls={dragControls}
       className="list-none"
-      whileDrag={{ 
-        scale: 1.02, 
-        boxShadow: "0 8px 20px -4px hsl(var(--primary) / 0.3)",
-        zIndex: 50 
-      }}
       initial={false}
-      animate={{ opacity: 1 }}
       transition={{ duration: 0 }}
     >
       <Link
@@ -262,10 +256,9 @@ export function Sidebar() {
           values={navItems} 
           onReorder={handleReorder}
           className="space-y-0.5"
-          layoutScroll
         >
           {navItems.map((item) => (
-            <DraggableNavItem
+            <NavItemWrapper
               key={item.id}
               item={item}
               collapsed={collapsed}
