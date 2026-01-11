@@ -16,10 +16,12 @@ Configure as seguintes variáveis no n8n:
 
 | Variável | Descrição |
 |----------|-----------|
-| `YOUTUBE_API_KEY` | Chave da API do YouTube Data v3 |
 | `SUPABASE_URL` | URL do seu projeto Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service Role Key do Supabase |
 | `TARGET_USER_ID` | UUID do usuário que receberá os alertas |
+| `SEARCH_NICHE` | (Opcional) Nicho para buscar, ex: "dark channel" |
+
+> ⚠️ **Nota**: A chave da API do YouTube é obtida automaticamente das configurações do usuário (`user_api_settings.youtube_api_key`)
 
 ---
 
