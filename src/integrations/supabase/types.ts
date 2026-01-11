@@ -2196,6 +2196,7 @@ export type Database = {
           niches: string[]
           updated_at: string
           user_id: string
+          video_types: string[] | null
           viral_threshold: number
         }
         Insert: {
@@ -2207,6 +2208,7 @@ export type Database = {
           niches?: string[]
           updated_at?: string
           user_id: string
+          video_types?: string[] | null
           viral_threshold?: number
         }
         Update: {
@@ -2218,6 +2220,7 @@ export type Database = {
           niches?: string[]
           updated_at?: string
           user_id?: string
+          video_types?: string[] | null
           viral_threshold?: number
         }
         Relationships: []
@@ -2269,11 +2272,13 @@ export type Database = {
       }
       viral_videos: {
         Row: {
+          ai_analysis: string | null
           channel_name: string | null
           channel_url: string | null
           comments: number | null
           created_at: string
           detected_at: string
+          duration: string | null
           id: string
           is_read: boolean | null
           keywords: string[] | null
@@ -2284,16 +2289,19 @@ export type Database = {
           title: string | null
           user_id: string
           video_id: string
+          video_type: string | null
           video_url: string
           views: number | null
           viral_score: number | null
         }
         Insert: {
+          ai_analysis?: string | null
           channel_name?: string | null
           channel_url?: string | null
           comments?: number | null
           created_at?: string
           detected_at?: string
+          duration?: string | null
           id?: string
           is_read?: boolean | null
           keywords?: string[] | null
@@ -2304,16 +2312,19 @@ export type Database = {
           title?: string | null
           user_id: string
           video_id: string
+          video_type?: string | null
           video_url: string
           views?: number | null
           viral_score?: number | null
         }
         Update: {
+          ai_analysis?: string | null
           channel_name?: string | null
           channel_url?: string | null
           comments?: number | null
           created_at?: string
           detected_at?: string
+          duration?: string | null
           id?: string
           is_read?: boolean | null
           keywords?: string[] | null
@@ -2324,6 +2335,7 @@ export type Database = {
           title?: string | null
           user_id?: string
           video_id?: string
+          video_type?: string | null
           video_url?: string
           views?: number | null
           viral_score?: number | null
