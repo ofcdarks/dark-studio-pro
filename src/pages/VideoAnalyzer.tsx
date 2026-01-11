@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PermissionGate } from "@/components/auth/PermissionGate";
@@ -96,6 +97,8 @@ const LOADING_MESSAGES = [
 ];
 
 const VideoAnalyzer = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  
   // Credit deduction hook
   const { executeWithDeduction, getEstimatedCost } = useCreditDeduction();
   
@@ -126,6 +129,45 @@ const VideoAnalyzer = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { logActivity } = useActivityLog();
+
+  // Load video data from URL params (when coming from viral videos)
+  useEffect(() => {
+    const urlParam = searchParams.get('url');
+    const titleParam = searchParams.get('title');
+    const thumbnailParam = searchParams.get('thumbnail');
+    const viewsParam = searchParams.get('views');
+    const likesParam = searchParams.get('likes');
+    const commentsParam = searchParams.get('comments');
+    const channelParam = searchParams.get('channel');
+    const publishedAtParam = searchParams.get('publishedAt');
+    
+    if (urlParam) {
+      setVideoUrl(urlParam);
+      
+      // If we have pre-loaded video data from viral detection
+      if (titleParam || viewsParam) {
+        const daysAgo = publishedAtParam 
+          ? Math.floor((Date.now() - new Date(publishedAtParam).getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
+        
+        setVideoInfo({
+          title: titleParam || '',
+          thumbnail: thumbnailParam || '',
+          views: parseInt(viewsParam || '0'),
+          daysAgo,
+          comments: parseInt(commentsParam || '0'),
+          estimatedRevenue: { usd: 0, brl: 0 },
+          rpm: { usd: 3.5, brl: 17.5 },
+          niche: '',
+          subNiche: '',
+          microNiche: '',
+        });
+      }
+      
+      // Clear URL params after loading to avoid confusion
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
 
   const { data: folders } = useQuery({
     queryKey: ["folders", user?.id],
