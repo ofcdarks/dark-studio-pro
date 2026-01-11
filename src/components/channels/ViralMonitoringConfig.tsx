@@ -24,6 +24,7 @@ import {
   Film,
   Clapperboard,
   Globe,
+  TrendingUp,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -209,10 +210,17 @@ export const ViralMonitoringConfig = () => {
     toast({ title: "País atualizado!" });
   };
 
+  const handleViralThresholdChange = (value: string) => {
+    const threshold = parseInt(value, 10);
+    if (isNaN(threshold) || threshold < 100) return;
+    saveConfigMutation.mutate({ viral_threshold: threshold });
+  };
+
   const niches = config?.niches || [];
   const isActive = config?.is_active ?? false;
   const videoTypes = config?.video_types || ["long", "short"];
   const country = config?.country || "BR";
+  const viralThreshold = config?.viral_threshold || 1000;
 
   return (
     <Card className="p-4 mb-6">
@@ -302,6 +310,32 @@ export const ViralMonitoringConfig = () => {
             </Select>
             <p className="text-xs text-muted-foreground mt-1">
               Vídeos serão buscados em tendência neste país
+            </p>
+          </div>
+
+          {/* Threshold de VPH */}
+          <div>
+            <Label className="text-sm mb-2 block flex items-center gap-1.5">
+              <TrendingUp className="w-4 h-4 text-muted-foreground" />
+              Threshold VPH (Views Por Hora)
+            </Label>
+            <Input
+              type="number"
+              min={100}
+              step={100}
+              value={viralThreshold}
+              onChange={(e) => handleViralThresholdChange(e.target.value)}
+              onBlur={(e) => {
+                const val = parseInt(e.target.value, 10);
+                if (isNaN(val) || val < 100) {
+                  saveConfigMutation.mutate({ viral_threshold: 1000 });
+                }
+              }}
+              className="w-full"
+              placeholder="1000"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Vídeos com mais views/hora que este valor serão considerados virais
             </p>
           </div>
 
