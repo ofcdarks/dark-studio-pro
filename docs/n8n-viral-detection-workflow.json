@@ -28,11 +28,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "COLE_SUA_SERVICE_ROLE_KEY_AQUI"
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthYm5idm5lcGhqaWZlYXphaWlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxNDU0ODksImV4cCI6MjA4MjcyMTQ4OX0.usAoqnQCFqrxCujKBqrBTmxp_MmVY-w_LhzKAa7Nm5I"
             },
             {
               "name": "Authorization",
-              "value": "Bearer COLE_SUA_SERVICE_ROLE_KEY_AQUI"
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthYm5idm5lcGhqaWZlYXphaWlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxNDU0ODksImV4cCI6MjA4MjcyMTQ4OX0.usAoqnQCFqrxCujKBqrBTmxp_MmVY-w_LhzKAa7Nm5I"
             }
           ]
         },
@@ -43,7 +43,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [220, 300],
-      "notes": "⚠️ SUBSTITUA 'COLE_SUA_SERVICE_ROLE_KEY_AQUI' pela sua Service Role Key do Supabase"
+      "notes": "Busca a YouTube API Key do usuário"
     },
     {
       "parameters": {
@@ -168,7 +168,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer COLE_SUA_SERVICE_ROLE_KEY_AQUI"
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthYm5idm5lcGhqaWZlYXphaWlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxNDU0ODksImV4cCI6MjA4MjcyMTQ4OX0.usAoqnQCFqrxCujKBqrBTmxp_MmVY-w_LhzKAa7Nm5I"
             },
             {
               "name": "Content-Type",
@@ -186,7 +186,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [1980, 100],
-      "notes": "⚠️ SUBSTITUA 'COLE_SUA_SERVICE_ROLE_KEY_AQUI' pela sua Service Role Key"
+      "notes": "Envia vídeos virais para o sistema"
     },
     {
       "parameters": {},
@@ -242,5 +242,5 @@
   },
   "settings": { "executionOrder": "v1" },
   "tags": ["viral", "youtube"],
-  "meta": { "templateId": "viral-detection-v4" }
+  "meta": { "templateId": "viral-detection-v5" }
 }
