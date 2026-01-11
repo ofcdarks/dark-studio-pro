@@ -446,33 +446,57 @@ export const ViralMonitoringConfig = () => {
           {/* Sugestões de nichos dos canais fixados no Analytics */}
           {savedAnalyticsChannels && savedAnalyticsChannels.length > 0 && niches.length < 5 && (() => {
             // Extract niches from notes of saved channels
-            const suggestedNiches = savedAnalyticsChannels
-              .map((channel) => {
-                // Parse notes to extract niche - look for patterns like "Nicho: X" or just use first line
-                const notes = channel.notes?.trim() || "";
-                if (!notes) return null;
+            const allNicheKeywords: string[] = [];
+            
+            savedAnalyticsChannels.forEach((channel) => {
+              const notes = channel.notes?.trim() || "";
+              if (!notes) return;
+              
+              // 1. Try to find "PALAVRAS-CHAVE DO NICHO:" section
+              const keywordsMatch = notes.match(/palavras[- ]chave do nicho[:\s]*\n?([^\n═]+)/i);
+              if (keywordsMatch) {
+                const keywords = keywordsMatch[1]
+                  .split(',')
+                  .map(k => k.trim().toLowerCase())
+                  .filter(k => k.length >= 3 && k.length <= 30);
+                allNicheKeywords.push(...keywords.slice(0, 5)); // Take top 5 keywords from each channel
+                return;
+              }
+              
+              // 2. Try to find niche from title strategy section
+              const estrategiaMatch = notes.match(/estratégia viral para[:\s]+([^\n]+)/i);
+              if (estrategiaMatch) {
+                // Extract context from the notes - look for common niche words
+                const contentLower = notes.toLowerCase();
+                const nichePatterns = [
+                  'historia', 'documentário', 'documental', 'misterios', 'mistérios',
+                  'curiosidades', 'dark', 'terror', 'motivacional', 'finanças',
+                  'tecnologia', 'ciência', 'gaming', 'música', 'esportes',
+                  'educação', 'tutorial', 'lifestyle', 'viagem', 'culinária',
+                  'animação', '3d', 'anime', 'true crime', 'conspirações'
+                ];
                 
-                // Try to find "Nicho:" pattern
-                const nicheMatch = notes.match(/nicho[:\s]+([^\n,]+)/i);
-                if (nicheMatch) {
-                  return nicheMatch[1].trim().toLowerCase();
+                for (const pattern of nichePatterns) {
+                  if (contentLower.includes(pattern) && !allNicheKeywords.includes(pattern)) {
+                    allNicheKeywords.push(pattern);
+                  }
                 }
-                
-                // Otherwise use first meaningful line/word as niche hint
-                const firstLine = notes.split('\n')[0].trim().toLowerCase();
-                if (firstLine.length > 2 && firstLine.length < 50) {
-                  return firstLine;
-                }
-                
-                return null;
-              })
-              .filter((niche): niche is string => 
-                niche !== null && 
-                niche.length > 0 && 
-                !niches.includes(niche)
-              )
-              .filter((niche, index, self) => self.indexOf(niche) === index) // Remove duplicates
-              .slice(0, 5);
+              }
+              
+              // 3. Fallback: look for hashtags
+              const hashtagMatch = notes.match(/#(\w+)/g);
+              if (hashtagMatch && hashtagMatch.length > 0) {
+                const hashtags = hashtagMatch
+                  .map(h => h.replace('#', '').toLowerCase())
+                  .filter(h => h.length >= 3 && h.length <= 25);
+                allNicheKeywords.push(...hashtags.slice(0, 3));
+              }
+            });
+            
+            // Remove duplicates and filter already added niches
+            const suggestedNiches = [...new Set(allNicheKeywords)]
+              .filter(niche => !niches.includes(niche))
+              .slice(0, 8); // Show up to 8 suggestions
             
             if (suggestedNiches.length === 0) return null;
             
@@ -481,7 +505,7 @@ export const ViralMonitoringConfig = () => {
                 <div className="flex items-center gap-2 mb-2">
                   <Youtube className="w-4 h-4 text-primary" />
                   <p className="text-xs font-medium text-foreground">
-                    Nichos dos seus canais fixados:
+                    Nichos detectados dos seus canais:
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-1">
