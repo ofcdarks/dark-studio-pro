@@ -446,55 +446,54 @@ export const ViralMonitoringConfig = () => {
           {/* Sugestões de nichos dos canais fixados no Analytics */}
           {savedAnalyticsChannels && savedAnalyticsChannels.length > 0 && niches.length < 5 && (() => {
             // Extract niches from notes of saved channels
-            const allNicheKeywords: string[] = [];
+            // Lista de nichos válidos do YouTube
+            const validNiches = new Set([
+              // Entretenimento/Educação
+              'historia', 'história', 'documentário', 'documental', 'misterios', 'mistérios',
+              'curiosidades', 'dark', 'terror', 'horror', 'motivacional', 'motivação',
+              // Finanças/Negócios
+              'finanças', 'investimentos', 'criptomoedas', 'crypto', 'empreendedorismo', 'negócios',
+              // Tech
+              'tecnologia', 'tech', 'programação', 'ia', 'inteligência artificial', 'gadgets',
+              // Ciência
+              'ciência', 'ciencias', 'ciencia', 'astronomia', 'física', 'biologia', 'medicina',
+              // Gaming
+              'gaming', 'games', 'jogos', 'minecraft', 'fortnite', 'valorant', 'lol',
+              // Música/Arte
+              'música', 'musica', 'arte', 'desenho', 'pintura',
+              // Esportes
+              'esportes', 'futebol', 'basquete', 'fitness', 'academia', 'treino',
+              // Lifestyle
+              'lifestyle', 'viagem', 'viagens', 'culinária', 'receitas', 'diy', 'decoração',
+              // Animação
+              'animação', 'animation', '3d', 'anime', 'manga', 'cartoon',
+              // True Crime/Conspiração
+              'true crime', 'crime', 'conspirações', 'teorias', 'aliens', 'ovnis',
+              // Educação
+              'educação', 'estudo', 'enem', 'concurso', 'idiomas', 'inglês',
+              // Outros
+              'asmr', 'vlogs', 'reactions', 'unboxing', 'reviews', 'análises',
+              'comédia', 'humor', 'podcast', 'entrevistas', 'notícias', 'news'
+            ]);
+            
+            const detectedNiches: string[] = [];
             
             savedAnalyticsChannels.forEach((channel) => {
               const notes = channel.notes?.trim() || "";
               if (!notes) return;
               
-              // 1. Try to find "PALAVRAS-CHAVE DO NICHO:" section
-              const keywordsMatch = notes.match(/palavras[- ]chave do nicho[:\s]*\n?([^\n═]+)/i);
-              if (keywordsMatch) {
-                const keywords = keywordsMatch[1]
-                  .split(',')
-                  .map(k => k.trim().toLowerCase())
-                  .filter(k => k.length >= 3 && k.length <= 30);
-                allNicheKeywords.push(...keywords.slice(0, 5)); // Take top 5 keywords from each channel
-                return;
-              }
+              const contentLower = notes.toLowerCase();
               
-              // 2. Try to find niche from title strategy section
-              const estrategiaMatch = notes.match(/estratégia viral para[:\s]+([^\n]+)/i);
-              if (estrategiaMatch) {
-                // Extract context from the notes - look for common niche words
-                const contentLower = notes.toLowerCase();
-                const nichePatterns = [
-                  'historia', 'documentário', 'documental', 'misterios', 'mistérios',
-                  'curiosidades', 'dark', 'terror', 'motivacional', 'finanças',
-                  'tecnologia', 'ciência', 'gaming', 'música', 'esportes',
-                  'educação', 'tutorial', 'lifestyle', 'viagem', 'culinária',
-                  'animação', '3d', 'anime', 'true crime', 'conspirações'
-                ];
-                
-                for (const pattern of nichePatterns) {
-                  if (contentLower.includes(pattern) && !allNicheKeywords.includes(pattern)) {
-                    allNicheKeywords.push(pattern);
-                  }
+              // Buscar nichos válidos no conteúdo das notas
+              validNiches.forEach(niche => {
+                if (contentLower.includes(niche) && !detectedNiches.includes(niche)) {
+                  detectedNiches.push(niche);
                 }
-              }
-              
-              // 3. Fallback: look for hashtags
-              const hashtagMatch = notes.match(/#(\w+)/g);
-              if (hashtagMatch && hashtagMatch.length > 0) {
-                const hashtags = hashtagMatch
-                  .map(h => h.replace('#', '').toLowerCase())
-                  .filter(h => h.length >= 3 && h.length <= 25);
-                allNicheKeywords.push(...hashtags.slice(0, 3));
-              }
+              });
             });
             
             // Remove duplicates and filter already added niches
-            const suggestedNiches = [...new Set(allNicheKeywords)]
+            const suggestedNiches = [...new Set(detectedNiches)]
               .filter(niche => !niches.includes(niche))
               .slice(0, 8); // Show up to 8 suggestions
             
