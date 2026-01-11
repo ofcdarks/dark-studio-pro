@@ -153,9 +153,10 @@ const AppRoutes = () => {
             <Route path="/plans" element={<ProtectedRoute><PlansCredits /></ProtectedRoute>} />
             <Route path="/planos-creditos" element={<Navigate to="/plans" replace />} />
             <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
-            <Route path="/terms" element={<TermsOfService />} />
+            {/* Rotas canônicas em português - redirecionamento das versões em inglês */}
+            <Route path="/terms" element={<Navigate to="/termos-de-uso" replace />} />
             <Route path="/termos-de-uso" element={<TermsOfService />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/privacy" element={<Navigate to="/politica-de-privacidade" replace />} />
             <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />

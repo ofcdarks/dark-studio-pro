@@ -8,10 +8,10 @@ const TermsOfService = () => {
   return (
     <>
       <SEOHead
-        title="Termos de Serviço"
-        description="Termos de serviço da plataforma La Casa Dark CORE. Regras de uso, pagamentos, propriedade intelectual e responsabilidades."
-        canonical="/termos-de-servico"
-        keywords="termos de serviço, condições de uso, la casa dark, canal dark youtube"
+        title="Termos de Uso"
+        description="Termos de uso da plataforma La Casa Dark CORE. Regras de uso, pagamentos, propriedade intelectual e responsabilidades."
+        canonical="/termos-de-uso"
+        keywords="termos de uso, condições de uso, la casa dark, canal dark youtube"
       />
       <div className="min-h-screen bg-background text-foreground">
       {/* Navigation */}
@@ -138,8 +138,8 @@ const TermsOfService = () => {
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <p>© 2026 La Casa Dark CORE. Todos os direitos reservados.</p>
           <div className="flex gap-6">
-            <Link to="/terms" className="text-primary hover:underline">Termos de Uso</Link>
-            <Link to="/privacy" className="hover:text-foreground transition-colors">Política de Privacidade</Link>
+            <Link to="/termos-de-uso" className="text-primary hover:underline">Termos de Uso</Link>
+            <Link to="/politica-de-privacidade" className="hover:text-foreground transition-colors">Política de Privacidade</Link>
           </div>
         </div>
       </footer>
