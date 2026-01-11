@@ -2186,6 +2186,42 @@ export type Database = {
         }
         Relationships: []
       }
+      viral_monitoring_config: {
+        Row: {
+          check_interval_hours: number
+          created_at: string
+          id: string
+          is_active: boolean
+          last_checked_at: string | null
+          niches: string[]
+          updated_at: string
+          user_id: string
+          viral_threshold: number
+        }
+        Insert: {
+          check_interval_hours?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_checked_at?: string | null
+          niches?: string[]
+          updated_at?: string
+          user_id: string
+          viral_threshold?: number
+        }
+        Update: {
+          check_interval_hours?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_checked_at?: string | null
+          niches?: string[]
+          updated_at?: string
+          user_id?: string
+          viral_threshold?: number
+        }
+        Relationships: []
+      }
       viral_thumbnails: {
         Row: {
           created_at: string

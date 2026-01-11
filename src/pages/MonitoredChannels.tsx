@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { ViralMonitoringConfig } from "@/components/channels/ViralMonitoringConfig";
 import {
   Eye,
   Plus,
@@ -643,6 +644,9 @@ const MonitoredChannels = () => {
               </Button>
             </div>
           </div>
+
+          {/* Viral Monitoring Config */}
+          <ViralMonitoringConfig />
 
           {/* Two column layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
