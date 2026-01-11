@@ -2231,6 +2231,69 @@ export type Database = {
         }
         Relationships: []
       }
+      viral_videos: {
+        Row: {
+          channel_name: string | null
+          channel_url: string | null
+          comments: number | null
+          created_at: string
+          detected_at: string
+          id: string
+          is_read: boolean | null
+          keywords: string[] | null
+          likes: number | null
+          niche: string | null
+          published_at: string | null
+          thumbnail_url: string | null
+          title: string | null
+          user_id: string
+          video_id: string
+          video_url: string
+          views: number | null
+          viral_score: number | null
+        }
+        Insert: {
+          channel_name?: string | null
+          channel_url?: string | null
+          comments?: number | null
+          created_at?: string
+          detected_at?: string
+          id?: string
+          is_read?: boolean | null
+          keywords?: string[] | null
+          likes?: number | null
+          niche?: string | null
+          published_at?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          user_id: string
+          video_id: string
+          video_url: string
+          views?: number | null
+          viral_score?: number | null
+        }
+        Update: {
+          channel_name?: string | null
+          channel_url?: string | null
+          comments?: number | null
+          created_at?: string
+          detected_at?: string
+          id?: string
+          is_read?: boolean | null
+          keywords?: string[] | null
+          likes?: number | null
+          niche?: string | null
+          published_at?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          user_id?: string
+          video_id?: string
+          video_url?: string
+          views?: number | null
+          viral_score?: number | null
+        }
+        Relationships: []
+      }
       youtube_connections: {
         Row: {
           access_token: string
