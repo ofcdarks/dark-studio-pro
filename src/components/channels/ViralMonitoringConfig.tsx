@@ -7,6 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Settings,
   Plus,
   X,
@@ -16,6 +23,7 @@ import {
   Loader2,
   Film,
   Clapperboard,
+  Globe,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,6 +35,21 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
+const COUNTRIES = [
+  { code: "BR", name: "Brasil", flag: "🇧🇷" },
+  { code: "US", name: "Estados Unidos", flag: "🇺🇸" },
+  { code: "PT", name: "Portugal", flag: "🇵🇹" },
+  { code: "ES", name: "Espanha", flag: "🇪🇸" },
+  { code: "MX", name: "México", flag: "🇲🇽" },
+  { code: "AR", name: "Argentina", flag: "🇦🇷" },
+  { code: "GB", name: "Reino Unido", flag: "🇬🇧" },
+  { code: "FR", name: "França", flag: "🇫🇷" },
+  { code: "DE", name: "Alemanha", flag: "🇩🇪" },
+  { code: "IT", name: "Itália", flag: "🇮🇹" },
+  { code: "JP", name: "Japão", flag: "🇯🇵" },
+  { code: "IN", name: "Índia", flag: "🇮🇳" },
+];
+
 interface ViralMonitoringConfigData {
   id: string;
   user_id: string;
@@ -36,6 +59,7 @@ interface ViralMonitoringConfigData {
   viral_threshold: number;
   last_checked_at: string | null;
   video_types: string[];
+  country: string;
 }
 
 export const ViralMonitoringConfig = () => {
@@ -180,9 +204,15 @@ export const ViralMonitoringConfig = () => {
     saveConfigMutation.mutate({ video_types: newTypes });
   };
 
+  const handleCountryChange = (countryCode: string) => {
+    saveConfigMutation.mutate({ country: countryCode });
+    toast({ title: "País atualizado!" });
+  };
+
   const niches = config?.niches || [];
   const isActive = config?.is_active ?? false;
   const videoTypes = config?.video_types || ["long", "short"];
+  const country = config?.country || "BR";
 
   return (
     <Card className="p-4 mb-6">
@@ -247,6 +277,32 @@ export const ViralMonitoringConfig = () => {
               onCheckedChange={handleToggleActive}
               disabled={!hasYouTubeApiKey || niches.length === 0}
             />
+          </div>
+
+          {/* País */}
+          <div>
+            <Label className="text-sm mb-2 block flex items-center gap-1.5">
+              <Globe className="w-4 h-4 text-muted-foreground" />
+              País para busca
+            </Label>
+            <Select value={country} onValueChange={handleCountryChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione o país" />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    <span className="flex items-center gap-2">
+                      <span>{c.flag}</span>
+                      <span>{c.name}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Vídeos serão buscados em tendência neste país
+            </p>
           </div>
 
           {/* Tipo de Vídeo */}

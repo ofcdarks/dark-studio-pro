@@ -43,6 +43,7 @@ serve(async (req) => {
           niches: config.niches || [],
           viral_threshold: config.viral_threshold || 1000,
           video_types: config.video_types || ["long", "short"],
+          country: config.country || "BR",
           youtube_api_key: apiSettings?.youtube_api_key || null,
         };
       })
