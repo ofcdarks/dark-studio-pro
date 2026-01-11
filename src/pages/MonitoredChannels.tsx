@@ -173,6 +173,25 @@ const MonitoredChannels = () => {
     enabled: !!user,
   });
 
+  // Fetch viral monitoring config to get user's niches
+  const { data: viralConfig } = useQuery({
+    queryKey: ["viral-monitoring-config", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from("viral_monitoring_config")
+        .select("niches")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { niches: string[] } | null;
+    },
+    enabled: !!user,
+  });
+
+  // Get unique niches from config
+  const userNiches = viralConfig?.niches || [];
+
   // Subscribe to realtime viral video updates
   useEffect(() => {
     if (!user) return;
@@ -332,6 +351,43 @@ const MonitoredChannels = () => {
         thumbnail_url: video.thumbnail,
         views: video.views,
         likes: video.likes,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pinned-videos"] });
+      toast({ title: "Vídeo fixado!" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Pin viral video mutation (without requiring channelId)
+  const pinViralVideoMutation = useMutation({
+    mutationFn: async (video: ViralVideo) => {
+      if (!user) throw new Error("User not authenticated");
+
+      // Check if already pinned
+      const existingPin = pinnedVideos?.find((v) => v.video_id === video.video_id);
+      if (existingPin) {
+        throw new Error("Este vídeo já está fixado");
+      }
+
+      const { error } = await supabase.from("pinned_videos").insert({
+        user_id: user.id,
+        channel_id: null, // Viral videos don't require channel association
+        video_id: video.video_id,
+        video_url: video.video_url,
+        title: video.title,
+        thumbnail_url: video.thumbnail_url,
+        views: String(video.views),
+        likes: String(video.likes),
+        published_at: video.published_at,
       });
       if (error) throw error;
     },
@@ -816,23 +872,42 @@ const MonitoredChannels = () => {
           {/* Videos Tabs Section */}
           <Card className="p-6">
             <Tabs defaultValue="viral" className="w-full">
-              <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-                <TabsTrigger value="viral" className="flex items-center gap-2">
-                  <Flame className="w-4 h-4" />
-                  Viralizando
-                  {unreadViralCount > 0 && (
-                    <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
-                      {unreadViralCount}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="pinned" className="flex items-center gap-2">
-                  <Pin className="w-4 h-4" />
-                  Fixados
-                </TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto pb-2">
+                <TabsList className="inline-flex w-auto min-w-full md:min-w-0 mb-6">
+                  <TabsTrigger value="viral" className="flex items-center gap-2">
+                    <Flame className="w-4 h-4" />
+                    Viralizando
+                    {unreadViralCount > 0 && (
+                      <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
+                        {unreadViralCount}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="pinned" className="flex items-center gap-2">
+                    <Pin className="w-4 h-4" />
+                    Fixados
+                  </TabsTrigger>
+                  {/* Dynamic niche tabs */}
+                  {userNiches.map((niche) => {
+                    const nicheVideos = viralVideos?.filter(v => 
+                      v.niche?.toLowerCase() === niche.toLowerCase()
+                    ) || [];
+                    return (
+                      <TabsTrigger key={niche} value={`niche-${niche}`} className="flex items-center gap-2 capitalize">
+                        <TrendingUp className="w-4 h-4" />
+                        {niche}
+                        {nicheVideos.length > 0 && (
+                          <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                            {nicheVideos.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
+              </div>
 
-              {/* Viral Videos Tab */}
+              {/* Viral Videos Tab - All */}
               <TabsContent value="viral">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -848,6 +923,7 @@ const MonitoredChannels = () => {
                       <ViralVideoCard
                         key={video.id}
                         video={video}
+                        isPinned={pinnedVideos?.some(p => p.video_id === video.video_id) || false}
                         onAnalyze={() => {
                           markViralAsReadMutation.mutate(video.id);
                           handleAnalyzeVideo(video.video_url, {
@@ -860,6 +936,7 @@ const MonitoredChannels = () => {
                             publishedAt: video.published_at || undefined,
                           });
                         }}
+                        onPin={() => pinViralVideoMutation.mutate(video)}
                         onDelete={() => deleteViralMutation.mutate(video.id)}
                         onMarkRead={() => markViralAsReadMutation.mutate(video.id)}
                       />
@@ -875,6 +952,60 @@ const MonitoredChannels = () => {
                   </div>
                 )}
               </TabsContent>
+
+              {/* Dynamic Niche Tabs Content */}
+              {userNiches.map((niche) => {
+                const nicheVideos = viralVideos?.filter(v => 
+                  v.niche?.toLowerCase() === niche.toLowerCase()
+                ).slice(0, 6) || [];
+                
+                return (
+                  <TabsContent key={niche} value={`niche-${niche}`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Vídeos viralizando no nicho <span className="font-medium text-primary capitalize">{niche}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {nicheVideos.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {nicheVideos.map((video) => (
+                          <ViralVideoCard
+                            key={video.id}
+                            video={video}
+                            isPinned={pinnedVideos?.some(p => p.video_id === video.video_id) || false}
+                            onAnalyze={() => {
+                              markViralAsReadMutation.mutate(video.id);
+                              handleAnalyzeVideo(video.video_url, {
+                                title: video.title || undefined,
+                                thumbnail: video.thumbnail_url || undefined,
+                                views: video.views,
+                                likes: video.likes,
+                                comments: video.comments,
+                                channel: video.channel_name || undefined,
+                                publishedAt: video.published_at || undefined,
+                              });
+                            }}
+                            onPin={() => pinViralVideoMutation.mutate(video)}
+                            onDelete={() => deleteViralMutation.mutate(video.id)}
+                            onMarkRead={() => markViralAsReadMutation.mutate(video.id)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <TrendingUp className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
+                        <p className="text-muted-foreground">Nenhum vídeo viral detectado neste nicho</p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          O sistema irá detectar novos vídeos automaticamente
+                        </p>
+                      </div>
+                    )}
+                  </TabsContent>
+                );
+              })}
 
               {/* Pinned Videos Tab */}
               <TabsContent value="pinned">
@@ -1154,6 +1285,8 @@ interface ViralVideoCardProps {
   onAnalyze: () => void;
   onDelete: () => void;
   onMarkRead: () => void;
+  onPin: () => void;
+  isPinned: boolean;
 }
 
 const formatViralScore = (score: number) => {
@@ -1188,7 +1321,7 @@ const getVideoDaysOld = (dateString: string | null): number | null => {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 };
 
-const ViralVideoCard = ({ video, onAnalyze, onDelete, onMarkRead }: ViralVideoCardProps) => {
+const ViralVideoCard = ({ video, onAnalyze, onDelete, onMarkRead, onPin, isPinned }: ViralVideoCardProps) => {
   const videoDays = getVideoDaysOld(video.published_at);
   
   return (
@@ -1264,6 +1397,16 @@ const ViralVideoCard = ({ video, onAnalyze, onDelete, onMarkRead }: ViralVideoCa
             className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             Analisar
+          </Button>
+          <Button
+            onClick={onPin}
+            size="sm"
+            variant="outline"
+            disabled={isPinned}
+            className="px-3"
+            title={isPinned ? "Já fixado" : "Fixar vídeo"}
+          >
+            <Pin className={`w-4 h-4 ${isPinned ? "text-primary" : ""}`} />
           </Button>
           <Button
             onClick={onDelete}
