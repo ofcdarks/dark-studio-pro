@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ViralMonitoringConfig } from "@/components/channels/ViralMonitoringConfig";
+import { useViralDetectionUsage } from "@/hooks/useViralDetectionUsage";
 import {
   Eye,
   Plus,
@@ -27,6 +28,7 @@ import {
   TrendingUp,
   ExternalLink,
   MessageCircle,
+  Infinity,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -123,6 +125,9 @@ const MonitoredChannels = () => {
   
   // Tutorial hook
   const { showTutorial, completeTutorial, openTutorial } = useTutorial(MONITORED_CHANNELS_TUTORIAL.id);
+  
+  // Viral detection usage hook
+  const { usage: viralUsage, incrementUsage, isPaidPlan } = useViralDetectionUsage();
 
   // Fetch monitored channels
   const { data: channels, isLoading } = useQuery({
@@ -452,12 +457,11 @@ const MonitoredChannels = () => {
     },
   });
 
-  // Check remaining clicks for today
-  const today = new Date().toISOString().split('T')[0];
-  const dailyClicksCount = viralConfig?.daily_clicks_date === today 
-    ? (viralConfig?.daily_clicks_count || 0) 
-    : 0;
-  const remainingClicks = 5 - dailyClicksCount;
+  // Use the viral detection usage hook for limits
+  const canLoadMore = viralUsage.canUse;
+  const usageDisplay = viralUsage.dailyLimit === null 
+    ? `${viralUsage.currentCount}/∞`
+    : `${viralUsage.currentCount}/${viralUsage.dailyLimit}`;
 
   // Check new videos mutation - now triggers n8n workflow
   const [checkingVideos, setCheckingVideos] = useState(false);
@@ -465,30 +469,16 @@ const MonitoredChannels = () => {
     mutationFn: async () => {
       if (!user) throw new Error("User not authenticated");
       
-      // Check click limit
-      const currentDate = new Date().toISOString().split('T')[0];
-      let currentClickCount = 0;
-      
-      if (viralConfig?.daily_clicks_date === currentDate) {
-        currentClickCount = viralConfig?.daily_clicks_count || 0;
-      }
-      
-      if (currentClickCount >= 5) {
-        throw new Error("Você atingiu o limite de 5 verificações manuais por dia");
+      // Check limit using the hook
+      if (!viralUsage.canUse) {
+        const limitText = viralUsage.dailyLimit === null ? "ilimitado" : viralUsage.dailyLimit;
+        throw new Error(`Você atingiu o limite de ${limitText} verificação(ões) por dia`);
       }
       
       setCheckingVideos(true);
       
-      // Update click count in database
-      if (viralConfig?.id) {
-        await supabase
-          .from("viral_monitoring_config")
-          .update({ 
-            daily_clicks_count: currentClickCount + 1,
-            daily_clicks_date: currentDate
-          })
-          .eq("id", viralConfig.id);
-      }
+      // Increment usage count
+      await incrementUsage.mutateAsync();
       
       // Execute n8n workflow via edge function (avoids CORS)
       const { data, error } = await supabase.functions.invoke("trigger-viral-detection");
@@ -507,6 +497,7 @@ const MonitoredChannels = () => {
       refetchViralConfig();
       queryClient.invalidateQueries({ queryKey: ["video-notifications"] });
       queryClient.invalidateQueries({ queryKey: ["viral-videos"] });
+      queryClient.invalidateQueries({ queryKey: ["viral-detection-usage"] });
       toast({
         title: "Verificação iniciada",
         description: "Buscando vídeos virais nos seus nichos...",
@@ -731,34 +722,36 @@ const MonitoredChannels = () => {
             </div>
             <div className="flex items-center gap-3">
               <TutorialHelpButton onClick={openTutorial} />
-              {/* Scheduled time selector */}
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <Select
-                  value={viralConfig?.scheduled_time || "09:00"}
-                  onValueChange={(value) => updateScheduledTimeMutation.mutate(value)}
-                >
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Horário" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[200px]">
-                    {timeOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Scheduled time selector - only for paid plans */}
+              {isPaidPlan && (
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <Select
+                    value={viralConfig?.scheduled_time || "09:00"}
+                    onValueChange={(value) => updateScheduledTimeMutation.mutate(value)}
+                  >
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Horário" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[200px]">
+                      {timeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <Button
                 onClick={() => checkNewVideosMutation.mutate()}
-                disabled={checkingVideos || remainingClicks <= 0}
+                disabled={checkingVideos || !canLoadMore}
                 variant="outline"
                 className="flex items-center gap-2"
-                title={remainingClicks <= 0 ? "Limite diário atingido" : `${remainingClicks} verificações restantes hoje`}
+                title={!canLoadMore ? "Limite diário atingido" : `Verificações hoje: ${usageDisplay}`}
               >
                 <RefreshCw className={`w-4 h-4 ${checkingVideos ? "animate-spin" : ""}`} />
-                Carregar ({remainingClicks}/5)
+                Carregar ({usageDisplay})
               </Button>
             </div>
           </div>

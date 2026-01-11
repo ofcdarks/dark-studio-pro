@@ -2150,6 +2150,36 @@ export type Database = {
           },
         ]
       }
+      viral_detection_usage: {
+        Row: {
+          created_at: string
+          id: string
+          last_used_at: string | null
+          updated_at: string
+          usage_count: number
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          updated_at?: string
+          usage_count?: number
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          updated_at?: string
+          usage_count?: number
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       viral_library: {
         Row: {
           created_at: string | null
@@ -2421,6 +2451,14 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: number
       }
+      get_viral_detection_usage: {
+        Args: { p_user_id: string }
+        Returns: {
+          current_count: number
+          daily_limit: number
+          remaining: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2434,6 +2472,14 @@ export type Database = {
           is_limit_reached: boolean
           month_limit: number
           new_count: number
+        }[]
+      }
+      increment_viral_detection_usage: {
+        Args: { p_user_id: string }
+        Returns: {
+          can_use: boolean
+          current_count: number
+          daily_limit: number
         }[]
       }
     }
