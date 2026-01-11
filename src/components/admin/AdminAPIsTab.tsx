@@ -854,7 +854,12 @@ export function AdminAPIsTab() {
                     toast.success(`✅ Webhook acessível! (Status: ${data.status})`);
                   }
                 } else {
-                  toast.error(`❌ Erro ${data?.status || ''}: ${data?.error || 'Falha na conexão'}`);
+                  const errMsg = String(data?.error || 'Falha na conexão');
+                  if (errMsg.includes('not registered for POST')) {
+                    toast.error("❌ O Webhook no n8n está configurado para GET. No node Webhook, mude o HTTP Method para POST e ative o workflow.");
+                  } else {
+                    toast.error(`❌ Erro ${data?.status || ''}: ${errMsg}`);
+                  }
                 }
               } catch (error) {
                 console.error('[n8n Test] Error:', error);
