@@ -1,5 +1,5 @@
 {
-  "name": "🔥 Detecção de Vídeos Virais v6 (Multi-User)",
+  "name": "🔥 Detecção de Vídeos Virais v7 (Multi-User - FIXED)",
   "nodes": [
     {
       "parameters": {
@@ -76,24 +76,32 @@
       "parameters": {
         "method": "GET",
         "url": "={{ $json.searchUrl }}",
-        "options": {}
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
       },
       "id": "search-youtube",
       "name": "Search YouTube",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [880, 200],
-      "notes": "Busca vídeos no YouTube para o nicho"
+      "notes": "Busca vídeos no YouTube para o nicho",
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first();\nconst prevData = $('Prepare Search URLs').first().json;\nconst searchResult = item.json;\n\nif (!searchResult.items || searchResult.items.length === 0) {\n  return [{ json: { hasVideos: false, user_id: prevData.user_id, niche: prevData.niche } }];\n}\n\nconst videoIds = searchResult.items.map(item => item.id.videoId).join(',');\nconst statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${videoIds}&key=${prevData.youtube_api_key}`;\n\nreturn [{\n  json: {\n    hasVideos: true,\n    user_id: prevData.user_id,\n    niche: prevData.niche,\n    viral_threshold: prevData.viral_threshold,\n    videos: searchResult.items,\n    statsUrl: statsUrl\n  }\n}];"
+        "jsCode": "// CORREÇÃO v7: Usar $input.item para pegar metadados do item atual\n// O HTTP Request preserva os dados de entrada, então acessamos via $input\nconst currentItem = $input.first();\nconst searchResult = currentItem.json;\n\n// Buscar metadados do item correspondente usando $itemIndex\nconst itemIndex = typeof $itemIndex !== 'undefined' ? $itemIndex : 0;\nconst allPreparedItems = $('Prepare Search URLs').all();\nconst prevData = allPreparedItems[itemIndex]?.json || allPreparedItems[0]?.json;\n\nif (!searchResult.items || searchResult.items.length === 0) {\n  return [{ \n    json: { \n      hasVideos: false, \n      user_id: prevData.user_id, \n      niche: prevData.niche,\n      error: searchResult.error?.message || 'No videos found'\n    } \n  }];\n}\n\nconst videoIds = searchResult.items.map(item => item.id.videoId).filter(id => id).join(',');\n\nif (!videoIds) {\n  return [{ \n    json: { \n      hasVideos: false, \n      user_id: prevData.user_id, \n      niche: prevData.niche,\n      error: 'No valid video IDs found'\n    } \n  }];\n}\n\nconst statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${videoIds}&key=${prevData.youtube_api_key}`;\n\nreturn [{\n  json: {\n    hasVideos: true,\n    user_id: prevData.user_id,\n    niche: prevData.niche,\n    viral_threshold: prevData.viral_threshold,\n    youtube_api_key: prevData.youtube_api_key,\n    videos: searchResult.items,\n    statsUrl: statsUrl\n  }\n}];"
       },
       "id": "parse-search",
       "name": "Parse Search Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 200]
+      "position": [1100, 200],
+      "notes": "CORRIGIDO v7: Usa $itemIndex para pegar o item correto"
     },
     {
       "parameters": {
@@ -111,25 +119,32 @@
       "parameters": {
         "method": "GET",
         "url": "={{ $json.statsUrl }}",
-        "options": {}
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
       },
       "id": "get-stats",
       "name": "Get Video Statistics",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [1540, 100],
-      "notes": "Busca estatísticas dos vídeos encontrados"
+      "notes": "Busca estatísticas dos vídeos encontrados",
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first();\nconst prevData = $('Parse Search Results').first().json;\nconst statsResult = item.json;\n\nconst viralThreshold = prevData.viral_threshold;\n\nconst viralVideos = statsResult.items\n  .map(video => {\n    const views = parseInt(video.statistics.viewCount || '0');\n    const likes = parseInt(video.statistics.likeCount || '0');\n    const comments = parseInt(video.statistics.commentCount || '0');\n    const publishedAt = new Date(video.snippet.publishedAt);\n    const hoursAgo = (Date.now() - publishedAt.getTime()) / (1000 * 60 * 60);\n    const viewsPerHour = hoursAgo > 0 ? views / hoursAgo : 0;\n    \n    return {\n      video_id: video.id,\n      title: video.snippet.title,\n      channel_name: video.snippet.channelTitle,\n      channel_url: 'https://www.youtube.com/channel/' + video.snippet.channelId,\n      video_url: 'https://www.youtube.com/watch?v=' + video.id,\n      thumbnail_url: video.snippet.thumbnails?.high?.url || video.snippet.thumbnails?.default?.url,\n      views: views,\n      likes: likes,\n      comments: comments,\n      published_at: video.snippet.publishedAt,\n      viral_score: Math.round(viewsPerHour),\n      niche: prevData.niche,\n      hours_ago: Math.round(hoursAgo)\n    };\n  })\n  .filter(video => video.viral_score >= viralThreshold)\n  .sort((a, b) => b.viral_score - a.viral_score)\n  .slice(0, 5);\n\nif (viralVideos.length === 0) {\n  return [{ json: { hasVirals: false, user_id: prevData.user_id, niche: prevData.niche } }];\n}\n\nreturn [{\n  json: {\n    hasVirals: true,\n    user_id: prevData.user_id,\n    niche: prevData.niche,\n    viralVideos: viralVideos\n  }\n}];"
+        "jsCode": "// CORREÇÃO v7: Usar $input.first() em vez de referência a nó anterior\nconst currentItem = $input.first();\nconst statsResult = currentItem.json;\n\n// Buscar metadados do item correspondente usando $itemIndex\nconst itemIndex = typeof $itemIndex !== 'undefined' ? $itemIndex : 0;\nconst allParsedItems = $('Parse Search Results').all();\nconst prevData = allParsedItems[itemIndex]?.json || allParsedItems[0]?.json;\n\nconst viralThreshold = prevData.viral_threshold || 1000;\n\n// Verificar se temos resultados válidos\nif (!statsResult.items || statsResult.items.length === 0) {\n  return [{ \n    json: { \n      hasVirals: false, \n      user_id: prevData.user_id, \n      niche: prevData.niche,\n      error: statsResult.error?.message || 'No stats found'\n    } \n  }];\n}\n\nconst viralVideos = statsResult.items\n  .map(video => {\n    const views = parseInt(video.statistics?.viewCount || '0');\n    const likes = parseInt(video.statistics?.likeCount || '0');\n    const comments = parseInt(video.statistics?.commentCount || '0');\n    const publishedAt = new Date(video.snippet?.publishedAt);\n    const hoursAgo = (Date.now() - publishedAt.getTime()) / (1000 * 60 * 60);\n    const viewsPerHour = hoursAgo > 0 ? views / hoursAgo : 0;\n    \n    return {\n      video_id: video.id,\n      title: video.snippet?.title || 'Untitled',\n      channel_name: video.snippet?.channelTitle || 'Unknown',\n      channel_url: 'https://www.youtube.com/channel/' + (video.snippet?.channelId || ''),\n      video_url: 'https://www.youtube.com/watch?v=' + video.id,\n      thumbnail_url: video.snippet?.thumbnails?.high?.url || video.snippet?.thumbnails?.default?.url || '',\n      views: views,\n      likes: likes,\n      comments: comments,\n      published_at: video.snippet?.publishedAt,\n      viral_score: Math.round(viewsPerHour),\n      niche: prevData.niche,\n      hours_ago: Math.round(hoursAgo)\n    };\n  })\n  .filter(video => video.viral_score >= viralThreshold)\n  .sort((a, b) => b.viral_score - a.viral_score)\n  .slice(0, 5);\n\nif (viralVideos.length === 0) {\n  return [{ \n    json: { \n      hasVirals: false, \n      user_id: prevData.user_id, \n      niche: prevData.niche,\n      message: `No videos above threshold (${viralThreshold} views/hour)`,\n      maxScore: Math.max(...statsResult.items.map(v => {\n        const views = parseInt(v.statistics?.viewCount || '0');\n        const publishedAt = new Date(v.snippet?.publishedAt);\n        const hoursAgo = (Date.now() - publishedAt.getTime()) / (1000 * 60 * 60);\n        return hoursAgo > 0 ? Math.round(views / hoursAgo) : 0;\n      }))\n    } \n  }];\n}\n\nreturn [{\n  json: {\n    hasVirals: true,\n    user_id: prevData.user_id,\n    niche: prevData.niche,\n    viralVideos: viralVideos,\n    count: viralVideos.length\n  }\n}];"
       },
       "id": "calculate-viral",
       "name": "Calculate Viral Score",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1760, 100],
-      "notes": "Calcula viral score (views/hora) e filtra vídeos virais"
+      "notes": "CORRIGIDO v7: Usa $itemIndex para sincronizar com item correto"
     },
     {
       "parameters": {
@@ -232,5 +247,5 @@
   "active": false,
   "settings": { "executionOrder": "v1" },
   "tags": ["viral", "youtube", "multi-user"],
-  "meta": { "templateId": "viral-detection-v6-multiuser" }
+  "meta": { "templateId": "viral-detection-v7-multiuser-fixed" }
 }
