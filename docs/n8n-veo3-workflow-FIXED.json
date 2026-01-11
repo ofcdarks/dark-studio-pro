@@ -1,0 +1,250 @@
+{
+  "name": "VEO3 Video Generator - Complete",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "veo3/generate",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "334f8c1c-a99e-478b-a204-6ff98fd0afb3",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-720, 192],
+      "webhookId": "veo3-generate"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json || {};\nconst query = $input.first().json.query || {};\n\nconst prompt = body.prompt || query.prompt || '';\nconst job_id = body.job_id || query.job_id || '';\nconst callback_url = body.callback_url || query.callback_url || '';\nconst google_email = body.google_email || query.google_email || '';\nconst google_password = body.google_password || query.google_password || '';\n\nconst required = ['prompt', 'job_id', 'callback_url'];\nconst values = { prompt, job_id, callback_url };\nconst missing = required.filter((k) => !String(values[k] ?? '').trim());\n\nreturn [{\n  json: {\n    prompt,\n    duration: parseInt(body.duration || query.duration || '8'),\n    aspect_ratio: body.aspect_ratio || query.aspect_ratio || '16:9',\n    job_id,\n    callback_url,\n    model: body.model || query.model || 'veo3',\n    google_email,\n    google_password,\n    browserless_token: body.browserless_token || query.browserless_token || '',\n    isValid: missing.length === 0,\n    missing\n  }\n}];"
+      },
+      "id": "3451b185-7b9f-4a08-91e9-5a8104369772",
+      "name": "Normalize Inputs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-480, 192]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isValid }}",
+              "value2": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "af4b5e6f-192e-4a4f-8902-b10cddfa4539",
+      "name": "Is Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-240, 192]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { error: 'Missing required parameters', missing: $json.missing } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "808e5255-af8e-4045-b2ac-b3c9c03ad874",
+      "name": "Respond 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [0, 368]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, job_id: $json.job_id, status: 'processing', message: 'Video generation started' } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "44617ae5-4299-4046-a28a-8b4cc53168a4",
+      "name": "Respond 200 - Accepted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\nconst SAFE_EMAIL = JSON.stringify(item.google_email ?? \"\");\nconst SAFE_PASS = JSON.stringify(item.google_password ?? \"\");\nconst SAFE_PROMPT = JSON.stringify(item.prompt ?? \"\");\n\nconst playwrightScript = `\nexport default async ({ page }) => {\n  const GOOGLE_EMAIL = ${SAFE_EMAIL};\n  const GOOGLE_PASSWORD = ${SAFE_PASS};\n  const PROMPT = ${SAFE_PROMPT};\n\n  const wait = (ms) => page.waitForTimeout(ms);\n\n  try {\n    // 1) Login Google\n    await page.goto('https://accounts.google.com/signin', {\n      waitUntil: 'networkidle2',\n      timeout: 60000,\n    });\n    await wait(2000);\n\n    const hasEmail = await page.$('input[type=\"email\"]');\n    if (hasEmail) {\n      await page.type('input[type=\"email\"]', GOOGLE_EMAIL, { delay: 20 });\n      await page.click('#identifierNext');\n      await wait(3000);\n\n      await page.waitForSelector('input[type=\"password\"]', { timeout: 20000 });\n      await page.type('input[type=\"password\"]', GOOGLE_PASSWORD, { delay: 20 });\n      await page.click('#passwordNext');\n      await wait(6000);\n\n      const stillLogin = await page.$('input[type=\"password\"], input[type=\"email\"]');\n      if (stillLogin) {\n        return {\n          success: false,\n          video_url: null,\n          error: 'Login bloqueado (2FA/captcha). Precisa sessão já logada.',\n        };\n      }\n    }\n\n    // 2) Abrir VideoFX\n    await page.goto('https://labs.google/fx/tools/video-fx', {\n      waitUntil: 'networkidle2',\n      timeout: 60000,\n    });\n    await wait(6000);\n\n    // 3) Aceitar termos se aparecer\n    const acceptBtn = await page.$x(\"//button[contains(., 'Accept') or contains(., 'Aceitar') or contains(., 'I agree')]\");\n    if (acceptBtn && acceptBtn.length > 0) {\n      await acceptBtn[0].click();\n      await wait(2000);\n    }\n\n    // 4) Campo do prompt\n    const promptSelectors = [\n      'textarea[aria-label*=\"prompt\"]',\n      'textarea[placeholder*=\"Describe\"]',\n      'textarea[placeholder*=\"Enter\"]',\n      'textarea',\n    ];\n\n    let promptHandle = null;\n    let usedSelector = 'textarea';\n    for (const sel of promptSelectors) {\n      promptHandle = await page.$(sel);\n      if (promptHandle) {\n        usedSelector = sel;\n        break;\n      }\n    }\n    if (!promptHandle) {\n      return { success: false, video_url: null, error: 'Campo do prompt não encontrado.' };\n    }\n\n    await promptHandle.click({ clickCount: 3 });\n    await page.keyboard.press('Backspace');\n    await page.type(usedSelector, PROMPT, { delay: 10 });\n    await wait(800);\n\n    // 5) Botão Generate\n    const genBtn = await page.$x(\"//button[contains(., 'Generate') or contains(., 'Create') or contains(., 'Gerar')]\");\n    if (genBtn && genBtn.length > 0) {\n      await genBtn[0].click();\n    } else {\n      await page.keyboard.press('Enter');\n    }\n\n    // 6) Esperar vídeo (até 8 min)\n    await wait(8000);\n\n    const maxAttempts = 96;\n    for (let i = 0; i < maxAttempts; i++) {\n      const source = await page.$('video source');\n      if (source) {\n        const src = await page.evaluate((el) => el.src, source);\n        if (src && src.startsWith('http')) return { success: true, video_url: src };\n      }\n\n      const video = await page.$('video[src]');\n      if (video) {\n        const src = await page.evaluate((el) => el.src, video);\n        if (src && src.startsWith('http')) return { success: true, video_url: src };\n      }\n\n      const alert = await page.$('[role=\"alert\"], .error, .error-message');\n      if (alert) {\n        const txt = await page.evaluate((el) => el.textContent, alert);\n        if (txt && txt.trim().length > 3) return { success: false, video_url: null, error: txt.trim() };\n      }\n\n      await wait(5000);\n    }\n\n    return { success: false, video_url: null, error: 'Timeout esperando o vídeo (8min).' };\n  } catch (e) {\n    return { success: false, video_url: null, error: e?.message || String(e) };\n  }\n};\n`;\n\nreturn [{ json: { ...item, code: playwrightScript } }];"
+      },
+      "id": "b60e3d8c-80c8-4e67-aae9-f19e74c1a8a3",
+      "name": "Prepare Browserless Script",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 192]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://chrome.browserless.io/function",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { code: $json.code } }}",
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "id": "b46bc288-7cc3-496b-b602-3635e0684369",
+      "name": "Execute Browserless",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 192],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "TBduu13vhToOgoZq",
+          "name": "Query Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const browserResult = $input.first().json;\nconst originalData = $('Prepare Browserless Script').item.json;\n\nlet result;\n\nif (browserResult.success && browserResult.video_url) {\n  result = {\n    job_id: originalData.job_id,\n    status: 'completed',\n    video_url: browserResult.video_url,\n    duration: originalData.duration,\n    aspect_ratio: originalData.aspect_ratio,\n    completed_at: new Date().toISOString()\n  };\n} else {\n  result = {\n    job_id: originalData.job_id,\n    status: 'failed',\n    error_message: browserResult.error || 'Unknown error during video generation',\n    failed_at: new Date().toISOString()\n  };\n}\n\nreturn [{\n  json: {\n    ...result,\n    callback_url: originalData.callback_url\n  }\n}];"
+      },
+      "id": "fe0d1f1c-86fb-4e13-afda-82e7ec5951b8",
+      "name": "Process Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 192]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callback_url }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { job_id: $json.job_id, status: $json.status, video_url: $json.video_url || null, error_message: $json.error_message || null, duration: $json.duration, aspect_ratio: $json.aspect_ratio, completed_at: $json.completed_at || $json.failed_at } }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "d720b3ac-96d6-49b4-82f8-29f692d1db53",
+      "name": "POST Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 192]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $('Process Result').item.json;\nconsole.log('=== VEO3 Generation Complete ===');\nconsole.log('Job ID:', result.job_id);\nconsole.log('Status:', result.status);\nif (result.video_url) console.log('Video URL:', result.video_url);\nif (result.error_message) console.log('Error:', result.error_message);\nreturn [$input.item];"
+      },
+      "id": "139bd076-e284-472b-9561-9515f1fc564b",
+      "name": "Log Complete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 192]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Inputs": {
+      "main": [
+        [
+          {
+            "node": "Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 - Accepted",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Browserless Script",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Browserless Script": {
+      "main": [
+        [
+          {
+            "node": "Execute Browserless",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Browserless": {
+      "main": [
+        [
+          {
+            "node": "Process Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Result": {
+      "main": [
+        [
+          {
+            "node": "POST Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST Callback": {
+      "main": [
+        [
+          {
+            "node": "Log Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "meta": {
+    "instanceId": "f07460e98a81c0bf242a7b6ff2bac5fee475a1ee85914ef563cebce506ee78bd"
+  },
+  "id": "vsOUKkNeyhd4sVblP3pBw",
+  "tags": []
+}
