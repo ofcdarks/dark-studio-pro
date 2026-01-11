@@ -683,22 +683,36 @@ const MonitoredChannels = () => {
   const filteredPinnedVideos =
     pinnedFilter === "all"
       ? pinnedVideos
-      : pinnedVideos?.filter((v) => v.channel_id === pinnedFilter);
+      : pinnedFilter === "viral"
+        ? pinnedVideos?.filter((v) => v.channel_id === null)
+        : pinnedVideos?.filter((v) => v.channel_id === pinnedFilter);
 
-  // Group pinned videos by channel
-  const groupedPinnedVideos = channels?.reduce(
-    (acc, channel) => {
+  // Group pinned videos by channel (including viral videos with null channel_id)
+  const groupedPinnedVideos = (() => {
+    const groups: Record<string, { channelName: string; videos: PinnedVideo[] }> = {};
+    
+    // Group by channel
+    channels?.forEach((channel) => {
       const videos = pinnedVideos?.filter((v) => v.channel_id === channel.id) || [];
       if (videos.length > 0) {
-        acc[channel.id] = {
+        groups[channel.id] = {
           channelName: channel.channel_name || "Canal",
           videos,
         };
       }
-      return acc;
-    },
-    {} as Record<string, { channelName: string; videos: PinnedVideo[] }>
-  );
+    });
+    
+    // Add viral videos (channel_id === null)
+    const viralPinnedVideos = pinnedVideos?.filter((v) => v.channel_id === null) || [];
+    if (viralPinnedVideos.length > 0) {
+      groups["viral"] = {
+        channelName: "Vídeos Virais",
+        videos: viralPinnedVideos,
+      };
+    }
+    
+    return groups;
+  })();
 
   return (
     <MainLayout>
@@ -1064,6 +1078,7 @@ const MonitoredChannels = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todos os Canais</SelectItem>
+                        <SelectItem value="viral">Vídeos Virais</SelectItem>
                         {channels?.map((channel) => (
                           <SelectItem key={channel.id} value={channel.id}>
                             {channel.channel_name}
