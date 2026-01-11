@@ -890,7 +890,8 @@ const MonitoredChannels = () => {
                   {/* Dynamic niche tabs */}
                   {userNiches.map((niche) => {
                     const nicheVideos = viralVideos?.filter(v => 
-                      v.niche?.toLowerCase() === niche.toLowerCase()
+                      v.niche?.toLowerCase() === niche.toLowerCase() &&
+                      !pinnedVideos?.some(p => p.video_id === v.video_id)
                     ) || [];
                     return (
                       <TabsTrigger key={niche} value={`niche-${niche}`} className="flex items-center gap-2 capitalize">
@@ -917,9 +918,9 @@ const MonitoredChannels = () => {
                   </div>
                 </div>
 
-                {viralVideos && viralVideos.length > 0 ? (
+                {viralVideos && viralVideos.filter(v => !pinnedVideos?.some(p => p.video_id === v.video_id)).length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {viralVideos.map((video) => (
+                    {viralVideos.filter(v => !pinnedVideos?.some(p => p.video_id === v.video_id)).map((video) => (
                       <ViralVideoCard
                         key={video.id}
                         video={video}
@@ -956,7 +957,8 @@ const MonitoredChannels = () => {
               {/* Dynamic Niche Tabs Content */}
               {userNiches.map((niche) => {
                 const nicheVideos = viralVideos?.filter(v => 
-                  v.niche?.toLowerCase() === niche.toLowerCase()
+                  v.niche?.toLowerCase() === niche.toLowerCase() &&
+                  !pinnedVideos?.some(p => p.video_id === v.video_id)
                 ).slice(0, 6) || [];
                 
                 return (
