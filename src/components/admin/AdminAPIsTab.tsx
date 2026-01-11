@@ -100,6 +100,13 @@ export function AdminAPIsTab() {
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState("");
   const [savingN8nWebhook, setSavingN8nWebhook] = useState(false);
   const [testingN8nWebhook, setTestingN8nWebhook] = useState(false);
+  
+  // n8n Credentials (for Veo3 automation)
+  const [n8nGoogleEmail, setN8nGoogleEmail] = useState("");
+  const [n8nGooglePassword, setN8nGooglePassword] = useState("");
+  const [n8nBrowserlessToken, setN8nBrowserlessToken] = useState("");
+  const [n8nShowPasswords, setN8nShowPasswords] = useState(false);
+  const [savingN8nCredentials, setSavingN8nCredentials] = useState(false);
   // Global ImageFX Cookies
   const [globalImagefxCookies, setGlobalImagefxCookies] = useState({
     cookie1: "",
@@ -174,6 +181,9 @@ export function AdminAPIsTab() {
     if (n8nData?.value) {
       const n8nConfig = n8nData.value as Record<string, string>;
       setN8nWebhookUrl(n8nConfig.webhook_url || "");
+      setN8nGoogleEmail(n8nConfig.google_email || "");
+      setN8nGooglePassword(n8nConfig.google_password || "");
+      setN8nBrowserlessToken(n8nConfig.browserless_token || "");
     }
 
     // Load global ImageFX cookies
@@ -688,23 +698,35 @@ export function AdminAPIsTab() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Video className="w-5 h-5 text-purple-500" />
-            <h3 className="font-semibold text-foreground">Webhook n8n - Geração de Vídeo (Veo3)</h3>
+            <h3 className="font-semibold text-foreground">Automação n8n - Geração de Vídeo (Veo3)</h3>
             <Badge variant="secondary" className="text-xs bg-purple-500/20 text-purple-300">
-              Automação
+              Automação Completa
             </Badge>
           </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setN8nShowPasswords(!n8nShowPasswords)}
+          >
+            {n8nShowPasswords ? (
+              <EyeOff className="w-4 h-4" />
+            ) : (
+              <Eye className="w-4 h-4" />
+            )}
+          </Button>
         </div>
         
         <p className="text-sm text-muted-foreground mb-4">
-          Configure o n8n para automatizar a geração de vídeos via Google Flow (Veo3). O sistema envia requisições GET com o prompt e recebe callbacks quando o vídeo fica pronto.
+          Configure o n8n para automatizar a geração de vídeos via Google Veo3. O sistema usa Browserless.io para automação do navegador.
         </p>
 
         {/* Fluxo explicativo */}
         <div className="bg-secondary/50 rounded-lg p-4 mb-4 border border-purple-500/20">
           <h4 className="text-sm font-medium text-purple-400 mb-2">📋 Fluxo de Integração:</h4>
           <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-            <li>SaaS envia GET para n8n com <code className="bg-background px-1 rounded">prompt, model, job_id, callback_url</code></li>
-            <li>n8n abre o Google Flow via Browserless.io e gera o vídeo</li>
+            <li>SaaS envia POST para n8n com <code className="bg-background px-1 rounded">prompt, job_id, callback_url</code></li>
+            <li>n8n usa Browserless + Playwright para fazer login no Google e gerar vídeo no Veo3</li>
             <li>Quando terminar, n8n faz POST para a <code className="bg-background px-1 rounded">callback_url</code></li>
             <li>SaaS recebe a URL do vídeo e atualiza o status</li>
           </ol>
@@ -713,14 +735,65 @@ export function AdminAPIsTab() {
         <div className="space-y-4">
           {/* URL do Webhook */}
           <div>
-            <Label className="text-xs text-muted-foreground">URL do Webhook n8n (GET)</Label>
+            <Label className="text-xs text-muted-foreground">URL do Webhook n8n</Label>
             <Input
-              placeholder="https://n8n.canaisdarks.com.br/webhook/video-generation"
+              placeholder="https://n8n.canaisdarks.com.br/webhook/veo3/generate"
               value={n8nWebhookUrl}
               onChange={(e) => setN8nWebhookUrl(e.target.value)}
               className="bg-secondary border-border font-mono text-xs"
             />
           </div>
+
+          {/* Credenciais do n8n */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-secondary/30 rounded-lg border border-purple-500/20">
+            <div>
+              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                <Key className="w-3 h-3" />
+                Google Email (para login)
+              </Label>
+              <Input
+                placeholder="seu.email@gmail.com"
+                value={n8nGoogleEmail}
+                onChange={(e) => setN8nGoogleEmail(e.target.value)}
+                className="bg-secondary border-border font-mono text-xs"
+                type="email"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                <Key className="w-3 h-3" />
+                Google Password
+              </Label>
+              <Input
+                placeholder="Senha da conta Google"
+                value={n8nGooglePassword}
+                onChange={(e) => setN8nGooglePassword(e.target.value)}
+                className="bg-secondary border-border font-mono text-xs"
+                type={n8nShowPasswords ? "text" : "password"}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                <Key className="w-3 h-3" />
+                Browserless Token
+              </Label>
+              <Input
+                placeholder="Token da API Browserless.io"
+                value={n8nBrowserlessToken}
+                onChange={(e) => setN8nBrowserlessToken(e.target.value)}
+                className="bg-secondary border-border font-mono text-xs"
+                type={n8nShowPasswords ? "text" : "password"}
+              />
+            </div>
+          </div>
+
+          <Alert className="border-yellow-500/50 bg-yellow-500/10">
+            <Info className="w-4 h-4 text-yellow-500" />
+            <AlertDescription className="text-yellow-200 text-xs">
+              <strong>Importante:</strong> Use uma conta Google dedicada para automação (sem 2FA). 
+              Obtenha o token Browserless em <a href="https://browserless.io" target="_blank" rel="noopener noreferrer" className="underline">browserless.io</a> (plano gratuito disponível).
+            </AlertDescription>
+          </Alert>
 
           {/* URL de Callback (read-only) */}
           <div>
@@ -742,22 +815,6 @@ export function AdminAPIsTab() {
                 <Copy className="w-4 h-4" />
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              O n8n deve fazer POST para esta URL com: <code className="bg-secondary px-1 rounded">{"{ job_id, status, video_url }"}</code>
-            </p>
-          </div>
-
-          {/* Parâmetros que o n8n recebe */}
-          <div className="bg-secondary/30 rounded-lg p-3 border border-border">
-            <h5 className="text-xs font-medium text-foreground mb-2">Parâmetros enviados via Query String:</h5>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div><code className="bg-background px-1 rounded">prompt</code> - Texto do vídeo</div>
-              <div><code className="bg-background px-1 rounded">model</code> - veo31 ou veo31-fast</div>
-              <div><code className="bg-background px-1 rounded">aspect_ratio</code> - 16:9, 9:16, 1:1</div>
-              <div><code className="bg-background px-1 rounded">duration</code> - Duração em segundos</div>
-              <div><code className="bg-background px-1 rounded">job_id</code> - ID único do job</div>
-              <div><code className="bg-background px-1 rounded">callback_url</code> - URL para retorno</div>
-            </div>
           </div>
         </div>
 
@@ -774,19 +831,27 @@ export function AdminAPIsTab() {
               try {
                 // Construir URL com parâmetros de teste
                 const testUrl = new URL(n8nWebhookUrl);
-                testUrl.searchParams.set('prompt', 'Test video generation from admin panel - a beautiful sunset over the ocean');
-                testUrl.searchParams.set('model', 'veo31-fast');
-                testUrl.searchParams.set('aspect_ratio', '16:9');
-                testUrl.searchParams.set('duration', '5');
-                testUrl.searchParams.set('job_id', `test-${Date.now()}`);
-                testUrl.searchParams.set('callback_url', `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-video-callback`);
-                testUrl.searchParams.set('test', 'true');
+                
+                const testPayload = {
+                  prompt: 'Test video generation from admin panel - a beautiful sunset over the ocean',
+                  model: 'veo3',
+                  aspect_ratio: '16:9',
+                  duration: 8,
+                  job_id: `test-${Date.now()}`,
+                  callback_url: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-video-callback`,
+                  test: true
+                };
                 
                 console.log('[n8n Test] URL:', testUrl.toString());
+                console.log('[n8n Test] Payload:', testPayload);
                 
                 const response = await fetch(testUrl.toString(), {
-                  method: 'GET',
-                  headers: { 'Accept': 'application/json' }
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json' 
+                  },
+                  body: JSON.stringify(testPayload)
                 });
                 
                 console.log('[n8n Test] Status:', response.status);
@@ -804,7 +869,6 @@ export function AdminAPIsTab() {
                       toast.success(`✅ Webhook acessível! Resposta: ${JSON.stringify(data).substring(0, 100)}`);
                     }
                   } catch {
-                    // Resposta não é JSON válido
                     if (responseText.includes('http') && responseText.includes('mp4')) {
                       toast.success(`✅ Webhook funcionando! URL de vídeo detectada.`);
                     } else {
@@ -838,6 +902,9 @@ export function AdminAPIsTab() {
 
                 const webhookValue = {
                   webhook_url: n8nWebhookUrl.trim(),
+                  google_email: n8nGoogleEmail.trim(),
+                  google_password: n8nGooglePassword,
+                  browserless_token: n8nBrowserlessToken.trim(),
                   updated_at: new Date().toISOString()
                 };
 
@@ -852,10 +919,10 @@ export function AdminAPIsTab() {
                     .insert([{ key: "n8n_video_webhook", value: webhookValue }]);
                 }
 
-                toast.success("Webhook n8n salvo com sucesso!");
+                toast.success("Configurações n8n salvas com sucesso!");
               } catch (error) {
-                console.error("Error saving n8n webhook:", error);
-                toast.error("Erro ao salvar webhook");
+                console.error("Error saving n8n config:", error);
+                toast.error("Erro ao salvar configurações");
               } finally {
                 setSavingN8nWebhook(false);
               }
@@ -864,7 +931,7 @@ export function AdminAPIsTab() {
             className="bg-purple-600 hover:bg-purple-700"
           >
             {savingN8nWebhook && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Salvar Webhook
+            Salvar Configurações n8n
           </Button>
         </div>
       </Card>

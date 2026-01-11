@@ -26,14 +26,15 @@ async function generateWithN8nWebhook(
   aspectRatio: string,
   model: string,
   jobId: string,
-  callbackUrl: string
+  callbackUrl: string,
+  credentials?: { googleEmail?: string; googlePassword?: string; browserlessToken?: string }
 ): Promise<{ success: boolean; videoUrl?: string; taskId?: string; status?: string; error?: string }> {
   try {
     console.log(`[n8n] Enviando para webhook: ${webhookUrl}`);
     console.log(`[n8n] Job ID: ${jobId}, Model: ${model}, Aspect: ${aspectRatio}`);
 
     // Preparar body para POST request
-    const requestBody = {
+    const requestBody: Record<string, unknown> = {
       prompt,
       job_id: jobId,
       callback_url: callbackUrl,
@@ -43,7 +44,18 @@ async function generateWithN8nWebhook(
       timestamp: new Date().toISOString()
     };
 
-    console.log(`[n8n] Request body:`, JSON.stringify(requestBody).substring(0, 500));
+    // Adicionar credenciais se fornecidas (para automação Browserless)
+    if (credentials?.googleEmail) {
+      requestBody.google_email = credentials.googleEmail;
+    }
+    if (credentials?.googlePassword) {
+      requestBody.google_password = credentials.googlePassword;
+    }
+    if (credentials?.browserlessToken) {
+      requestBody.browserless_token = credentials.browserlessToken;
+    }
+
+    console.log(`[n8n] Request body (sem senhas):`, JSON.stringify({ ...requestBody, google_password: '***', browserless_token: '***' }).substring(0, 500));
 
     // Usar POST request conforme configurado no workflow n8n
     const response = await fetch(webhookUrl, {
@@ -293,14 +305,22 @@ serve(async (req) => {
 
     const apiKeysValue = adminSettings?.value as Record<string, string> | null;
 
-    // Buscar configuração do n8n webhook
+    // Buscar configuração do n8n webhook (inclui credenciais)
     const { data: n8nSettings } = await supabase
       .from('admin_settings')
       .select('value')
       .eq('key', 'n8n_video_webhook')
       .maybeSingle();
 
-    const n8nWebhookUrl = (n8nSettings?.value as Record<string, string>)?.webhook_url;
+    const n8nConfig = n8nSettings?.value as Record<string, string> | null;
+    const n8nWebhookUrl = n8nConfig?.webhook_url;
+    
+    // Credenciais para automação Browserless (salvas no Admin Panel)
+    const n8nCredentials = n8nConfig ? {
+      googleEmail: n8nConfig.google_email,
+      googlePassword: n8nConfig.google_password,
+      browserlessToken: n8nConfig.browserless_token,
+    } : undefined;
 
     // Para modelos Veo3, priorizar n8n webhook se configurado
     if (model === 'veo31' || model === 'veo31-fast') {
@@ -343,7 +363,8 @@ serve(async (req) => {
           aspect_ratio || '16:9', 
           model,
           job.id,
-          callbackUrl
+          callbackUrl,
+          n8nCredentials
         );
 
         if (result.success) {
