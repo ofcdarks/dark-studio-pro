@@ -71,12 +71,20 @@ serve(async (req) => {
 
       console.log('[trigger-viral-detection] Payload:', JSON.stringify(payload));
 
-      const n8nResponse = await fetch(n8nWebhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+      // Build URL with query params for GET request
+      const url = new URL(n8nWebhookUrl);
+      url.searchParams.set('user_id', payload.user_id);
+      url.searchParams.set('niches', JSON.stringify(payload.niches));
+      url.searchParams.set('viral_threshold', String(payload.viral_threshold));
+      url.searchParams.set('video_types', JSON.stringify(payload.video_types));
+      url.searchParams.set('country', payload.country);
+      if (payload.youtube_api_key) {
+        url.searchParams.set('youtube_api_key', payload.youtube_api_key);
+      }
+      url.searchParams.set('triggered_at', payload.triggered_at);
+
+      const n8nResponse = await fetch(url.toString(), {
+        method: 'GET',
       });
 
       const responseText = await n8nResponse.text();
