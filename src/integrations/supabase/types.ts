@@ -2191,10 +2191,13 @@ export type Database = {
           check_interval_hours: number
           country: string | null
           created_at: string
+          daily_clicks_count: number | null
+          daily_clicks_date: string | null
           id: string
           is_active: boolean
           last_checked_at: string | null
           niches: string[]
+          scheduled_time: string | null
           updated_at: string
           user_id: string
           video_types: string[] | null
@@ -2204,10 +2207,13 @@ export type Database = {
           check_interval_hours?: number
           country?: string | null
           created_at?: string
+          daily_clicks_count?: number | null
+          daily_clicks_date?: string | null
           id?: string
           is_active?: boolean
           last_checked_at?: string | null
           niches?: string[]
+          scheduled_time?: string | null
           updated_at?: string
           user_id: string
           video_types?: string[] | null
@@ -2217,10 +2223,13 @@ export type Database = {
           check_interval_hours?: number
           country?: string | null
           created_at?: string
+          daily_clicks_count?: number | null
+          daily_clicks_date?: string | null
           id?: string
           is_active?: boolean
           last_checked_at?: string | null
           niches?: string[]
+          scheduled_time?: string | null
           updated_at?: string
           user_id?: string
           video_types?: string[] | null
