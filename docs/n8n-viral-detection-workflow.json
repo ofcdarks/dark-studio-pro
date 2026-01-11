@@ -1,0 +1,261 @@
+{
+  "name": "Viral Video Detection - YouTube Monitoring",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300],
+      "notes": "Executa a cada 1 hora para verificar novos vídeos virais"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://youtube.googleapis.com/youtube/v3/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet"
+            },
+            {
+              "name": "type",
+              "value": "video"
+            },
+            {
+              "name": "order",
+              "value": "viewCount"
+            },
+            {
+              "name": "publishedAfter",
+              "value": "={{ $now.minus({ days: 7 }).toISO() }}"
+            },
+            {
+              "name": "maxResults",
+              "value": "50"
+            },
+            {
+              "name": "q",
+              "value": "={{ $json.niche || 'dark channel' }}"
+            },
+            {
+              "name": "key",
+              "value": "={{ $env.YOUTUBE_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "id": "youtube-search",
+      "name": "Search YouTube Videos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "notes": "Busca vídeos recentes por nicho"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse YouTube search results\nconst items = $input.first().json.items || [];\n\nreturn items.map(item => ({\n  json: {\n    video_id: item.id.videoId,\n    video_url: `https://www.youtube.com/watch?v=${item.id.videoId}`,\n    title: item.snippet.title,\n    thumbnail_url: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,\n    channel_name: item.snippet.channelTitle,\n    channel_url: `https://www.youtube.com/channel/${item.snippet.channelId}`,\n    published_at: item.snippet.publishedAt,\n    niche: $('Schedule Trigger').first().json.niche || 'geral'\n  }\n}));"
+      },
+      "id": "parse-videos",
+      "name": "Parse Video Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://youtube.googleapis.com/youtube/v3/videos",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "statistics"
+            },
+            {
+              "name": "id",
+              "value": "={{ $json.video_id }}"
+            },
+            {
+              "name": "key",
+              "value": "={{ $env.YOUTUBE_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "id": "get-video-stats",
+      "name": "Get Video Statistics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "notes": "Obtém views, likes e comentários"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge video data with statistics and calculate viral score\nconst videoData = $('Parse Video Data').first().json;\nconst stats = $input.first().json.items?.[0]?.statistics || {};\n\nconst views = parseInt(stats.viewCount || 0);\nconst likes = parseInt(stats.likeCount || 0);\nconst comments = parseInt(stats.commentCount || 0);\nconst publishedAt = new Date(videoData.published_at);\nconst hoursOld = (Date.now() - publishedAt.getTime()) / (1000 * 60 * 60);\n\n// Calculate viral score (views per hour)\nconst viralScore = hoursOld > 0 ? Math.round(views / hoursOld) : views;\n\n// Only return if video is \"viral\" (more than 1000 views/hour)\nconst VIRAL_THRESHOLD = 1000;\n\nif (viralScore >= VIRAL_THRESHOLD) {\n  return [{\n    json: {\n      ...videoData,\n      views,\n      likes,\n      comments,\n      viral_score: viralScore,\n      hours_old: Math.round(hoursOld)\n    }\n  }];\n}\n\nreturn []; // Not viral enough, skip"
+      },
+      "id": "calculate-viral-score",
+      "name": "Calculate Viral Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "notes": "Calcula score viral (views/hora) e filtra vídeos com score >= 1000"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.video_id }}",
+              "value2": ""
+            }
+          ]
+        }
+      },
+      "id": "filter-empty",
+      "name": "Filter Empty Results",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/viral-webhook",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"user_id\": \"{{ $env.TARGET_USER_ID }}\",\n  \"video_id\": \"{{ $json.video_id }}\",\n  \"video_url\": \"{{ $json.video_url }}\",\n  \"title\": \"{{ $json.title }}\",\n  \"thumbnail_url\": \"{{ $json.thumbnail_url }}\",\n  \"channel_name\": \"{{ $json.channel_name }}\",\n  \"channel_url\": \"{{ $json.channel_url }}\",\n  \"views\": {{ $json.views }},\n  \"likes\": {{ $json.likes }},\n  \"comments\": {{ $json.comments }},\n  \"published_at\": \"{{ $json.published_at }}\",\n  \"viral_score\": {{ $json.viral_score }},\n  \"niche\": \"{{ $json.niche }}\"\n}"
+      },
+      "id": "send-to-webhook",
+      "name": "Send to Viral Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 200],
+      "notes": "Envia vídeo viral para o sistema"
+    },
+    {
+      "parameters": {},
+      "id": "no-op",
+      "name": "No Viral Videos",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1560, 400]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search YouTube Videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search YouTube Videos": {
+      "main": [
+        [
+          {
+            "node": "Parse Video Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Video Data": {
+      "main": [
+        [
+          {
+            "node": "Get Video Statistics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video Statistics": {
+      "main": [
+        [
+          {
+            "node": "Calculate Viral Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Viral Score": {
+      "main": [
+        [
+          {
+            "node": "Filter Empty Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Empty Results": {
+      "main": [
+        [
+          {
+            "node": "Send to Viral Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Viral Videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["viral", "youtube", "monitoring"],
+  "triggerCount": 1,
+  "meta": {
+    "templateId": "viral-video-detection-v1"
+  }
+}
