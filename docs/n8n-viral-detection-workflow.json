@@ -1,28 +1,21 @@
 {
-  "name": "🔥 Detecção de Vídeos Virais",
+  "name": "🔥 Detecção de Vídeos Virais v6 (Multi-User)",
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "hours",
-              "hoursInterval": 1
-            }
-          ]
-        }
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] }
       },
       "id": "schedule-trigger",
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 300],
+      "position": [-240, 300],
       "notes": "Executa a cada 1 hora"
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "https://kabnbvnephjifeazaiis.supabase.co/rest/v1/user_api_settings?user_id=eq.57d1e620-a5d4-4d2a-a063-2f0c59aac42d&select=youtube_api_key",
+        "url": "https://kabnbvnephjifeazaiis.supabase.co/functions/v1/get-viral-monitoring-configs",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -38,23 +31,46 @@
         },
         "options": {}
       },
-      "id": "fetch-api-key",
-      "name": "Fetch API Key",
+      "id": "fetch-configs",
+      "name": "Fetch User Configs",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [220, 300],
-      "notes": "Busca a YouTube API Key do usuário"
+      "position": [0, 300],
+      "notes": "Busca todas as configs de monitoramento viral ativas"
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst apiKey = Array.isArray(data) ? data[0]?.youtube_api_key : data?.youtube_api_key;\n\nif (!apiKey) {\n  throw new Error('YouTube API key não configurada. Vá em Configurações > APIs no app.');\n}\n\nconst niche = 'dark channel';\nconst publishedAfter = new Date();\npublishedAfter.setDate(publishedAfter.getDate() - 7);\n\nreturn [{\n  json: {\n    apiKey,\n    niche,\n    publishedAfter: publishedAfter.toISOString(),\n    searchUrl: `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(niche)}&type=video&order=viewCount&publishedAfter=${publishedAfter.toISOString()}&maxResults=50&key=${apiKey}`\n  }\n}];"
+        "jsCode": "const response = $input.first().json;\n\nif (!response.success || !response.configs || response.configs.length === 0) {\n  return [{ json: { hasConfigs: false, message: 'No active configs found' } }];\n}\n\nreturn response.configs.map(config => ({\n  json: {\n    hasConfigs: true,\n    user_id: config.user_id,\n    niches: config.niches,\n    viral_threshold: config.viral_threshold,\n    youtube_api_key: config.youtube_api_key\n  }\n}));"
       },
-      "id": "prepare-config",
-      "name": "Prepare Config",
+      "id": "prepare-configs",
+      "name": "Prepare Configs",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 300],
-      "notes": "Altere 'dark channel' para o nicho desejado"
+      "position": [220, 300],
+      "notes": "Prepara configs para processamento em loop"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [{ "value1": "={{ $json.hasConfigs }}", "value2": true }]
+        }
+      },
+      "id": "has-configs",
+      "name": "Has Configs?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst niches = item.niches;\nconst youtubeApiKey = item.youtube_api_key;\nconst userId = item.user_id;\nconst viralThreshold = item.viral_threshold || 1000;\n\nconst publishedAfter = new Date();\npublishedAfter.setDate(publishedAfter.getDate() - 7);\nconst publishedAfterISO = publishedAfter.toISOString();\n\nconst searchUrls = niches.map(niche => ({\n  niche: niche,\n  url: `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=viewCount&maxResults=15&publishedAfter=${publishedAfterISO}&q=${encodeURIComponent(niche)}&key=${youtubeApiKey}`\n}));\n\nreturn searchUrls.map(item => ({\n  json: {\n    user_id: userId,\n    viral_threshold: viralThreshold,\n    youtube_api_key: youtubeApiKey,\n    niche: item.niche,\n    searchUrl: item.url\n  }\n}));"
+      },
+      "id": "prepare-searches",
+      "name": "Prepare Search URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 200],
+      "notes": "Gera URL de busca para cada nicho do usuário"
     },
     {
       "parameters": {
@@ -62,50 +78,34 @@
         "url": "={{ $json.searchUrl }}",
         "options": {}
       },
-      "id": "youtube-search",
-      "name": "Search YouTube Videos",
+      "id": "search-youtube",
+      "name": "Search YouTube",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [660, 300]
+      "position": [880, 200],
+      "notes": "Busca vídeos no YouTube para o nicho"
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.first().json.items || [];\nconst config = $('Prepare Config').first().json;\n\nif (items.length === 0) {\n  return [{ json: { empty: true } }];\n}\n\nconst videos = items.map(item => ({\n  videoId: item.id.videoId,\n  title: item.snippet.title,\n  channelTitle: item.snippet.channelTitle,\n  channelId: item.snippet.channelId,\n  publishedAt: item.snippet.publishedAt,\n  thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,\n  niche: config.niche\n}));\n\nconst videoIds = videos.map(v => v.videoId).join(',');\nconst statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${config.apiKey}`;\n\nreturn [{ json: { videos, statsUrl, apiKey: config.apiKey, empty: false } }];"
+        "jsCode": "const item = $input.first();\nconst prevData = $('Prepare Search URLs').first().json;\nconst searchResult = item.json;\n\nif (!searchResult.items || searchResult.items.length === 0) {\n  return [{ json: { hasVideos: false, user_id: prevData.user_id, niche: prevData.niche } }];\n}\n\nconst videoIds = searchResult.items.map(item => item.id.videoId).join(',');\nconst statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${videoIds}&key=${prevData.youtube_api_key}`;\n\nreturn [{\n  json: {\n    hasVideos: true,\n    user_id: prevData.user_id,\n    niche: prevData.niche,\n    viral_threshold: prevData.viral_threshold,\n    videos: searchResult.items,\n    statsUrl: statsUrl\n  }\n}];"
       },
-      "id": "parse-videos",
-      "name": "Parse Video Data",
+      "id": "parse-search",
+      "name": "Parse Search Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 300]
+      "position": [1100, 200]
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "check-empty",
-              "leftValue": "={{ $json.empty }}",
-              "rightValue": false,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+          "boolean": [{ "value1": "={{ $json.hasVideos }}", "value2": true }]
+        }
       },
-      "id": "check-videos",
+      "id": "has-videos",
       "name": "Has Videos?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1100, 300]
+      "position": [1320, 200]
     },
     {
       "parameters": {
@@ -113,51 +113,35 @@
         "url": "={{ $json.statsUrl }}",
         "options": {}
       },
-      "id": "get-statistics",
+      "id": "get-stats",
       "name": "Get Video Statistics",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1320, 200]
+      "position": [1540, 100],
+      "notes": "Busca estatísticas dos vídeos encontrados"
     },
     {
       "parameters": {
-        "jsCode": "const statsItems = $input.first().json.items || [];\nconst videosData = $('Parse Video Data').first().json.videos;\nconst VIRAL_THRESHOLD = 1000;\n\nconst statsMap = {};\nstatsItems.forEach(item => {\n  statsMap[item.id] = {\n    views: parseInt(item.statistics.viewCount || 0),\n    likes: parseInt(item.statistics.likeCount || 0),\n    comments: parseInt(item.statistics.commentCount || 0)\n  };\n});\n\nconst viralVideos = videosData.map(video => {\n  const stats = statsMap[video.videoId] || { views: 0, likes: 0, comments: 0 };\n  const publishedAt = new Date(video.publishedAt);\n  const hours = (Date.now() - publishedAt.getTime()) / (1000 * 60 * 60);\n  const viralScore = Math.round(stats.views / Math.max(hours, 1));\n  \n  return { ...video, ...stats, viralScore };\n}).filter(v => v.viralScore >= VIRAL_THRESHOLD);\n\nif (viralVideos.length === 0) {\n  return [{ json: { hasResults: false } }];\n}\n\nreturn [{ json: { videos: viralVideos, hasResults: true } }];"
+        "jsCode": "const item = $input.first();\nconst prevData = $('Parse Search Results').first().json;\nconst statsResult = item.json;\n\nconst viralThreshold = prevData.viral_threshold;\n\nconst viralVideos = statsResult.items\n  .map(video => {\n    const views = parseInt(video.statistics.viewCount || '0');\n    const likes = parseInt(video.statistics.likeCount || '0');\n    const comments = parseInt(video.statistics.commentCount || '0');\n    const publishedAt = new Date(video.snippet.publishedAt);\n    const hoursAgo = (Date.now() - publishedAt.getTime()) / (1000 * 60 * 60);\n    const viewsPerHour = hoursAgo > 0 ? views / hoursAgo : 0;\n    \n    return {\n      video_id: video.id,\n      title: video.snippet.title,\n      channel_name: video.snippet.channelTitle,\n      channel_url: 'https://www.youtube.com/channel/' + video.snippet.channelId,\n      video_url: 'https://www.youtube.com/watch?v=' + video.id,\n      thumbnail_url: video.snippet.thumbnails?.high?.url || video.snippet.thumbnails?.default?.url,\n      views: views,\n      likes: likes,\n      comments: comments,\n      published_at: video.snippet.publishedAt,\n      viral_score: Math.round(viewsPerHour),\n      niche: prevData.niche,\n      hours_ago: Math.round(hoursAgo)\n    };\n  })\n  .filter(video => video.viral_score >= viralThreshold)\n  .sort((a, b) => b.viral_score - a.viral_score)\n  .slice(0, 5);\n\nif (viralVideos.length === 0) {\n  return [{ json: { hasVirals: false, user_id: prevData.user_id, niche: prevData.niche } }];\n}\n\nreturn [{\n  json: {\n    hasVirals: true,\n    user_id: prevData.user_id,\n    niche: prevData.niche,\n    viralVideos: viralVideos\n  }\n}];"
       },
-      "id": "calculate-score",
+      "id": "calculate-viral",
       "name": "Calculate Viral Score",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1540, 200],
-      "notes": "Threshold: 1000 views/hora = viral"
+      "position": [1760, 100],
+      "notes": "Calcula viral score (views/hora) e filtra vídeos virais"
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "has-results",
-              "leftValue": "={{ $json.hasResults }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+          "boolean": [{ "value1": "={{ $json.hasVirals }}", "value2": true }]
+        }
       },
-      "id": "filter-empty",
-      "name": "Filter Empty Results",
+      "id": "has-virals",
+      "name": "Has Virals?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1760, 200]
+      "position": [1980, 100]
     },
     {
       "parameters": {
@@ -173,74 +157,80 @@
             {
               "name": "Content-Type",
               "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthYm5idm5lcGhqaWZlYXphaWlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxNDU0ODksImV4cCI6MjA4MjcyMTQ4OX0.usAoqnQCFqrxCujKBqrBTmxp_MmVY-w_LhzKAa7Nm5I"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"videos\": {{ JSON.stringify($json.videos.map(v => ({\n    user_id: \"57d1e620-a5d4-4d2a-a063-2f0c59aac42d\",\n    video_id: v.videoId,\n    video_url: 'https://www.youtube.com/watch?v=' + v.videoId,\n    title: v.title,\n    thumbnail_url: v.thumbnailUrl,\n    channel_name: v.channelTitle,\n    channel_url: 'https://www.youtube.com/channel/' + v.channelId,\n    views: v.views,\n    likes: v.likes,\n    comments: v.comments,\n    published_at: v.publishedAt,\n    viral_score: v.viralScore,\n    niche: v.niche\n  }))) }}\n}",
+        "jsonBody": "={{ JSON.stringify({ user_id: $json.user_id, videos: $json.viralVideos }) }}",
         "options": {}
       },
       "id": "send-webhook",
       "name": "Send to Viral Webhook",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1980, 100],
+      "position": [2200, 0],
       "notes": "Envia vídeos virais para o sistema"
     },
     {
       "parameters": {},
-      "id": "no-viral",
-      "name": "No Viral Videos",
+      "id": "no-configs",
+      "name": "No Active Configs",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1980, 300]
+      "position": [660, 400]
     },
     {
       "parameters": {},
-      "id": "no-videos-found",
+      "id": "no-videos",
       "name": "No Videos Found",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1320, 400]
+      "position": [1540, 300]
+    },
+    {
+      "parameters": {},
+      "id": "no-virals",
+      "name": "No Viral Videos",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2200, 200]
     }
   ],
   "connections": {
-    "Schedule Trigger": {
-      "main": [[{ "node": "Fetch API Key", "type": "main", "index": 0 }]]
+    "Schedule Trigger": { "main": [[{ "node": "Fetch User Configs", "type": "main", "index": 0 }]] },
+    "Fetch User Configs": { "main": [[{ "node": "Prepare Configs", "type": "main", "index": 0 }]] },
+    "Prepare Configs": { "main": [[{ "node": "Has Configs?", "type": "main", "index": 0 }]] },
+    "Has Configs?": {
+      "main": [
+        [{ "node": "Prepare Search URLs", "type": "main", "index": 0 }],
+        [{ "node": "No Active Configs", "type": "main", "index": 0 }]
+      ]
     },
-    "Fetch API Key": {
-      "main": [[{ "node": "Prepare Config", "type": "main", "index": 0 }]]
-    },
-    "Prepare Config": {
-      "main": [[{ "node": "Search YouTube Videos", "type": "main", "index": 0 }]]
-    },
-    "Search YouTube Videos": {
-      "main": [[{ "node": "Parse Video Data", "type": "main", "index": 0 }]]
-    },
-    "Parse Video Data": {
-      "main": [[{ "node": "Has Videos?", "type": "main", "index": 0 }]]
-    },
+    "Prepare Search URLs": { "main": [[{ "node": "Search YouTube", "type": "main", "index": 0 }]] },
+    "Search YouTube": { "main": [[{ "node": "Parse Search Results", "type": "main", "index": 0 }]] },
+    "Parse Search Results": { "main": [[{ "node": "Has Videos?", "type": "main", "index": 0 }]] },
     "Has Videos?": {
       "main": [
         [{ "node": "Get Video Statistics", "type": "main", "index": 0 }],
         [{ "node": "No Videos Found", "type": "main", "index": 0 }]
       ]
     },
-    "Get Video Statistics": {
-      "main": [[{ "node": "Calculate Viral Score", "type": "main", "index": 0 }]]
-    },
-    "Calculate Viral Score": {
-      "main": [[{ "node": "Filter Empty Results", "type": "main", "index": 0 }]]
-    },
-    "Filter Empty Results": {
+    "Get Video Statistics": { "main": [[{ "node": "Calculate Viral Score", "type": "main", "index": 0 }]] },
+    "Calculate Viral Score": { "main": [[{ "node": "Has Virals?", "type": "main", "index": 0 }]] },
+    "Has Virals?": {
       "main": [
         [{ "node": "Send to Viral Webhook", "type": "main", "index": 0 }],
         [{ "node": "No Viral Videos", "type": "main", "index": 0 }]
       ]
     }
   },
+  "active": false,
   "settings": { "executionOrder": "v1" },
-  "tags": ["viral", "youtube"],
-  "meta": { "templateId": "viral-detection-v5" }
+  "tags": ["viral", "youtube", "multi-user"],
+  "meta": { "templateId": "viral-detection-v6-multiuser" }
 }
