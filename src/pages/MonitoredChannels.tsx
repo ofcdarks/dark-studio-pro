@@ -173,18 +173,24 @@ const MonitoredChannels = () => {
     enabled: !!user,
   });
 
-  // Fetch viral monitoring config to get user's niches
-  const { data: viralConfig } = useQuery({
-    queryKey: ["viral-monitoring-config", user?.id],
+  // Fetch viral monitoring config to get user's niches and click limits
+  const { data: viralConfig, refetch: refetchViralConfig } = useQuery({
+    queryKey: ["viral-monitoring-config-full", user?.id],
     queryFn: async () => {
       if (!user) return null;
       const { data, error } = await supabase
         .from("viral_monitoring_config")
-        .select("niches")
+        .select("id, niches, scheduled_time, daily_clicks_count, daily_clicks_date")
         .eq("user_id", user.id)
         .maybeSingle();
       if (error) throw error;
-      return data as { niches: string[] } | null;
+      return data as { 
+        id: string;
+        niches: string[]; 
+        scheduled_time: string | null;
+        daily_clicks_count: number | null;
+        daily_clicks_date: string | null;
+      } | null;
     },
     enabled: !!user,
   });
@@ -446,22 +452,78 @@ const MonitoredChannels = () => {
     },
   });
 
-  // Check new videos mutation
+  // Check remaining clicks for today
+  const today = new Date().toISOString().split('T')[0];
+  const dailyClicksCount = viralConfig?.daily_clicks_date === today 
+    ? (viralConfig?.daily_clicks_count || 0) 
+    : 0;
+  const remainingClicks = 5 - dailyClicksCount;
+
+  // Check new videos mutation - now triggers n8n workflow
   const [checkingVideos, setCheckingVideos] = useState(false);
   const checkNewVideosMutation = useMutation({
     mutationFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+      
+      // Check click limit
+      const currentDate = new Date().toISOString().split('T')[0];
+      let currentClickCount = 0;
+      
+      if (viralConfig?.daily_clicks_date === currentDate) {
+        currentClickCount = viralConfig?.daily_clicks_count || 0;
+      }
+      
+      if (currentClickCount >= 5) {
+        throw new Error("Você atingiu o limite de 5 verificações manuais por dia");
+      }
+      
       setCheckingVideos(true);
-      const { data, error } = await supabase.functions.invoke("check-new-videos");
-      if (error) throw error;
-      return data;
+      
+      // Update click count in database
+      if (viralConfig?.id) {
+        await supabase
+          .from("viral_monitoring_config")
+          .update({ 
+            daily_clicks_count: currentClickCount + 1,
+            daily_clicks_date: currentDate
+          })
+          .eq("id", viralConfig.id);
+      }
+      
+      // Execute n8n workflow
+      const response = await fetch('https://lovableagencia.app.n8n.cloud/mcp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          method: 'tools/call',
+          params: {
+            name: 'execute_workflow',
+            arguments: {
+              workflowId: '3GWL4qH_KSMPJ_Iof7ORH'
+            }
+          }
+        })
+      });
+      
+      if (!response.ok) {
+        // Fallback to edge function if MCP fails
+        const { data, error } = await supabase.functions.invoke("check-new-videos");
+        if (error) throw error;
+        return data;
+      }
+      
+      return { success: true, message: "Workflow executado" };
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       setCheckingVideos(false);
+      refetchViralConfig();
       queryClient.invalidateQueries({ queryKey: ["video-notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["monitored-channels"] });
+      queryClient.invalidateQueries({ queryKey: ["viral-videos"] });
       toast({
-        title: "Verificação concluída",
-        description: `${data.newVideosFound || 0} novo(s) vídeo(s) encontrado(s)`,
+        title: "Verificação iniciada",
+        description: "Buscando vídeos virais nos seus nichos...",
       });
     },
     onError: (error: Error) => {
@@ -512,52 +574,49 @@ const MonitoredChannels = () => {
     enabled: !!user,
   });
 
-  // Update check frequency mutation
-  const updateFrequencyMutation = useMutation({
-    mutationFn: async (frequency: string) => {
+  // Generate time options (every hour from 00:00 to 23:00)
+  const timeOptions = Array.from({ length: 24 }, (_, i) => {
+    const hour = i.toString().padStart(2, '0');
+    return { value: `${hour}:00`, label: `${hour}:00` };
+  });
+
+  // Update scheduled time mutation
+  const updateScheduledTimeMutation = useMutation({
+    mutationFn: async (time: string) => {
       if (!user) throw new Error("User not authenticated");
       
-      // Check if settings exist
-      const { data: existing } = await supabase
-        .from("user_api_settings")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (existing) {
+      if (viralConfig?.id) {
         const { error } = await supabase
-          .from("user_api_settings")
-          .update({ video_check_frequency: frequency })
-          .eq("user_id", user.id);
+          .from("viral_monitoring_config")
+          .update({ scheduled_time: time })
+          .eq("id", viralConfig.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from("user_api_settings")
-          .insert({ user_id: user.id, video_check_frequency: frequency });
+          .from("viral_monitoring_config")
+          .insert({ 
+            user_id: user.id, 
+            scheduled_time: time,
+            niches: []
+          });
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["api-settings"] });
+      refetchViralConfig();
       toast({
-        title: "Frequência atualizada",
-        description: "A frequência de verificação foi alterada",
+        title: "Horário atualizado",
+        description: "O horário de verificação automática foi alterado",
       });
     },
     onError: () => {
       toast({
         title: "Erro",
-        description: "Não foi possível alterar a frequência",
+        description: "Não foi possível alterar o horário",
         variant: "destructive",
       });
     },
   });
-
-  const frequencyOptions = [
-    { value: "30", label: "A cada 30 minutos" },
-    { value: "60", label: "A cada 1 hora" },
-    { value: "360", label: "A cada 6 horas" },
-  ];
   const fetchChannelVideos = async (channelId: string, channelUrlToFetch: string) => {
     if (!apiSettings?.youtube_api_key) {
       toast({
@@ -686,18 +745,18 @@ const MonitoredChannels = () => {
             </div>
             <div className="flex items-center gap-3">
               <TutorialHelpButton onClick={openTutorial} />
-              {/* Frequency selector */}
+              {/* Scheduled time selector */}
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-muted-foreground" />
                 <Select
-                  value={apiSettings?.video_check_frequency || "60"}
-                  onValueChange={(value) => updateFrequencyMutation.mutate(value)}
+                  value={viralConfig?.scheduled_time || "09:00"}
+                  onValueChange={(value) => updateScheduledTimeMutation.mutate(value)}
                 >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Frequência" />
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Horário" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {frequencyOptions.map((option) => (
+                  <SelectContent className="max-h-[200px]">
+                    {timeOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -707,12 +766,13 @@ const MonitoredChannels = () => {
               </div>
               <Button
                 onClick={() => checkNewVideosMutation.mutate()}
-                disabled={checkingVideos}
+                disabled={checkingVideos || remainingClicks <= 0}
                 variant="outline"
                 className="flex items-center gap-2"
+                title={remainingClicks <= 0 ? "Limite diário atingido" : `${remainingClicks} verificações restantes hoje`}
               >
                 <RefreshCw className={`w-4 h-4 ${checkingVideos ? "animate-spin" : ""}`} />
-                Verificar Agora
+                Carregar ({remainingClicks}/5)
               </Button>
             </div>
           </div>
