@@ -964,28 +964,32 @@ const MonitoredChannels = () => {
 
                 {viralVideos && viralVideos.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {viralVideos.map((video) => (
-                      <ViralVideoCard
-                        key={video.id}
-                        video={video}
-                        isPinned={pinnedVideos?.some((p) => p.video_id === video.video_id) || false}
-                        onAnalyze={() => {
-                          markViralAsReadMutation.mutate(video.id);
-                          handleAnalyzeVideo(video.video_url, {
-                            title: video.title || undefined,
-                            thumbnail: video.thumbnail_url || undefined,
-                            views: video.views,
-                            likes: video.likes,
-                            comments: video.comments,
-                            channel: video.channel_name || undefined,
-                            publishedAt: video.published_at || undefined,
-                          });
-                        }}
-                        onPin={() => pinViralVideoMutation.mutate(video)}
-                        onDelete={() => deleteViralMutation.mutate(video.id)}
-                        onMarkRead={() => markViralAsReadMutation.mutate(video.id)}
-                      />
-                    ))}
+                    {viralVideos.map((video) => {
+                      const pinnedVideo = pinnedVideos?.find((p) => p.video_id === video.video_id);
+                      return (
+                        <ViralVideoCard
+                          key={video.id}
+                          video={video}
+                          isPinned={!!pinnedVideo}
+                          onAnalyze={() => {
+                            markViralAsReadMutation.mutate(video.id);
+                            handleAnalyzeVideo(video.video_url, {
+                              title: video.title || undefined,
+                              thumbnail: video.thumbnail_url || undefined,
+                              views: video.views,
+                              likes: video.likes,
+                              comments: video.comments,
+                              channel: video.channel_name || undefined,
+                              publishedAt: video.published_at || undefined,
+                            });
+                          }}
+                          onPin={() => pinViralVideoMutation.mutate(video)}
+                          onUnpin={pinnedVideo ? () => unpinVideoMutation.mutate(pinnedVideo.id) : undefined}
+                          onDelete={() => deleteViralMutation.mutate(video.id)}
+                          onMarkRead={() => markViralAsReadMutation.mutate(video.id)}
+                        />
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-12">
@@ -1016,28 +1020,32 @@ const MonitoredChannels = () => {
 
                     {nicheVideos.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {nicheVideos.map((video) => (
-                          <ViralVideoCard
-                            key={video.id}
-                            video={video}
-                            isPinned={pinnedVideos?.some(p => p.video_id === video.video_id) || false}
-                            onAnalyze={() => {
-                              markViralAsReadMutation.mutate(video.id);
-                              handleAnalyzeVideo(video.video_url, {
-                                title: video.title || undefined,
-                                thumbnail: video.thumbnail_url || undefined,
-                                views: video.views,
-                                likes: video.likes,
-                                comments: video.comments,
-                                channel: video.channel_name || undefined,
-                                publishedAt: video.published_at || undefined,
-                              });
-                            }}
-                            onPin={() => pinViralVideoMutation.mutate(video)}
-                            onDelete={() => deleteViralMutation.mutate(video.id)}
-                            onMarkRead={() => markViralAsReadMutation.mutate(video.id)}
-                          />
-                        ))}
+                        {nicheVideos.map((video) => {
+                          const pinnedVideo = pinnedVideos?.find((p) => p.video_id === video.video_id);
+                          return (
+                            <ViralVideoCard
+                              key={video.id}
+                              video={video}
+                              isPinned={!!pinnedVideo}
+                              onAnalyze={() => {
+                                markViralAsReadMutation.mutate(video.id);
+                                handleAnalyzeVideo(video.video_url, {
+                                  title: video.title || undefined,
+                                  thumbnail: video.thumbnail_url || undefined,
+                                  views: video.views,
+                                  likes: video.likes,
+                                  comments: video.comments,
+                                  channel: video.channel_name || undefined,
+                                  publishedAt: video.published_at || undefined,
+                                });
+                              }}
+                              onPin={() => pinViralVideoMutation.mutate(video)}
+                              onUnpin={pinnedVideo ? () => unpinVideoMutation.mutate(pinnedVideo.id) : undefined}
+                              onDelete={() => deleteViralMutation.mutate(video.id)}
+                              onMarkRead={() => markViralAsReadMutation.mutate(video.id)}
+                            />
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-center py-12">
@@ -1331,6 +1339,7 @@ interface ViralVideoCardProps {
   onDelete: () => void;
   onMarkRead: () => void;
   onPin: () => void;
+  onUnpin?: () => void;
   isPinned: boolean;
 }
 
@@ -1366,16 +1375,32 @@ const getVideoDaysOld = (dateString: string | null): number | null => {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 };
 
-const ViralVideoCard = ({ video, onAnalyze, onDelete, onMarkRead, onPin, isPinned }: ViralVideoCardProps) => {
+const ViralVideoCard = ({ video, onAnalyze, onDelete, onMarkRead, onPin, onUnpin, isPinned }: ViralVideoCardProps) => {
   const videoDays = getVideoDaysOld(video.published_at);
   
+  const handlePinToggle = () => {
+    if (isPinned && onUnpin) {
+      onUnpin();
+    } else {
+      onPin();
+    }
+  };
+  
   return (
-    <Card className={`overflow-hidden relative ${!video.is_read ? 'ring-2 ring-primary/50' : ''}`}>
+    <Card className={`overflow-hidden relative ${!video.is_read ? 'ring-2 ring-primary/50' : ''} ${isPinned ? 'ring-2 ring-yellow-500/50' : ''}`}>
       {!video.is_read && (
         <div className="absolute top-2 left-2 z-10">
           <Badge variant="destructive" className="flex items-center gap-1">
             <Flame className="w-3 h-3" />
             Novo
+          </Badge>
+        </div>
+      )}
+      {isPinned && (
+        <div className="absolute top-2 left-2 z-10">
+          <Badge className="bg-yellow-500 text-black flex items-center gap-1">
+            <Pin className="w-3 h-3" />
+            Fixado
           </Badge>
         </div>
       )}
@@ -1444,14 +1469,13 @@ const ViralVideoCard = ({ video, onAnalyze, onDelete, onMarkRead, onPin, isPinne
             Analisar
           </Button>
           <Button
-            onClick={onPin}
+            onClick={handlePinToggle}
             size="sm"
-            variant="outline"
-            disabled={isPinned}
-            className="px-3"
-            title={isPinned ? "Já fixado" : "Fixar vídeo"}
+            variant={isPinned ? "default" : "outline"}
+            className={`px-3 ${isPinned ? "bg-yellow-500 hover:bg-yellow-600 text-black" : ""}`}
+            title={isPinned ? "Desfixar vídeo" : "Fixar vídeo"}
           >
-            <Pin className={`w-4 h-4 ${isPinned ? "text-primary" : ""}`} />
+            <Pin className="w-4 h-4" />
           </Button>
           <Button
             onClick={onDelete}
