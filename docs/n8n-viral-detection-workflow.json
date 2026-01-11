@@ -1,5 +1,5 @@
 {
-  "name": "🔥 Viral Video Detection",
+  "name": "🔥 Detecção de Vídeos Virais",
   "nodes": [
     {
       "parameters": {
@@ -13,7 +13,7 @@
         }
       },
       "id": "schedule-trigger",
-      "name": "Schedule Trigger",
+      "name": "Gatilho de agendamento",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [0, 300],
@@ -39,18 +39,18 @@
         "options": {}
       },
       "id": "fetch-user-api-key",
-      "name": "Fetch User YouTube API Key",
+      "name": "Buscar API Key do Usuário",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [220, 300],
-      "notes": "Busca a API key do YouTube das configurações do usuário"
+      "notes": "Busca a API key do YouTube das configurações do usuário no Supabase"
     },
     {
       "parameters": {
-        "jsCode": "const settings = $input.first().json;\nconst apiKey = Array.isArray(settings) ? settings[0]?.youtube_api_key : settings?.youtube_api_key;\n\nif (!apiKey) {\n  throw new Error('YouTube API key not found for user. Configure in Settings > APIs.');\n}\n\nconst niche = $env.SEARCH_NICHE || 'dark channel';\nconst publishedAfter = new Date();\npublishedAfter.setDate(publishedAfter.getDate() - 7);\n\nreturn [{\n  json: {\n    apiKey,\n    niche,\n    publishedAfter: publishedAfter.toISOString()\n  }\n}];"
+        "jsCode": "const settings = $input.first().json;\nconst apiKey = Array.isArray(settings) ? settings[0]?.youtube_api_key : settings?.youtube_api_key;\n\nif (!apiKey) {\n  throw new Error('API key do YouTube não encontrada. Configure em Configurações > APIs.');\n}\n\nconst niche = $env.SEARCH_NICHE || 'dark channel';\nconst publishedAfter = new Date();\npublishedAfter.setDate(publishedAfter.getDate() - 7);\n\nreturn [{\n  json: {\n    apiKey,\n    niche,\n    publishedAfter: publishedAfter.toISOString()\n  }\n}];"
       },
       "id": "prepare-search",
-      "name": "Prepare Search",
+      "name": "Preparar Busca",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [440, 300],
@@ -96,7 +96,7 @@
         "options": {}
       },
       "id": "youtube-search",
-      "name": "Search YouTube Videos",
+      "name": "Pesquisar vídeos do YouTube",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [660, 300],
@@ -104,10 +104,10 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.first().json.items || [];\nconst apiKey = $('Prepare Search').first().json.apiKey;\nconst niche = $('Prepare Search').first().json.niche;\n\nconst videos = items.map(item => ({\n  videoId: item.id.videoId,\n  title: item.snippet.title,\n  channelTitle: item.snippet.channelTitle,\n  channelId: item.snippet.channelId,\n  publishedAt: item.snippet.publishedAt,\n  thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,\n  niche\n}));\n\nreturn [{ json: { videos, apiKey } }];"
+        "jsCode": "const items = $input.first().json.items || [];\nconst apiKey = $('Preparar Busca').first().json.apiKey;\nconst niche = $('Preparar Busca').first().json.niche;\n\nconst videos = items.map(item => ({\n  videoId: item.id.videoId,\n  title: item.snippet.title,\n  channelTitle: item.snippet.channelTitle,\n  channelId: item.snippet.channelId,\n  publishedAt: item.snippet.publishedAt,\n  thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,\n  niche\n}));\n\nreturn [{ json: { videos, apiKey } }];"
       },
       "id": "parse-videos",
-      "name": "Parse Video Data",
+      "name": "Analisar dados de vídeo",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [880, 300],
@@ -137,7 +137,7 @@
         "options": {}
       },
       "id": "get-statistics",
-      "name": "Get Video Statistics",
+      "name": "Obtenha as estatísticas do vídeo",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [1100, 300],
@@ -145,14 +145,43 @@
     },
     {
       "parameters": {
-        "jsCode": "const statsItems = $input.first().json.items || [];\nconst videos = $('Parse Video Data').first().json.videos;\nconst VIRAL_THRESHOLD = 1000; // views por hora\n\nconst statsMap = {};\nstatsItems.forEach(item => {\n  statsMap[item.id] = {\n    views: parseInt(item.statistics.viewCount || 0),\n    likes: parseInt(item.statistics.likeCount || 0),\n    comments: parseInt(item.statistics.commentCount || 0)\n  };\n});\n\nconst viralVideos = videos.map(video => {\n  const stats = statsMap[video.videoId] || { views: 0, likes: 0, comments: 0 };\n  const publishedAt = new Date(video.publishedAt);\n  const hoursSincePublished = (Date.now() - publishedAt.getTime()) / (1000 * 60 * 60);\n  const viralScore = Math.round(stats.views / Math.max(hoursSincePublished, 1));\n  \n  return {\n    ...video,\n    ...stats,\n    viralScore,\n    hoursSincePublished: Math.round(hoursSincePublished)\n  };\n}).filter(v => v.viralScore >= VIRAL_THRESHOLD);\n\nif (viralVideos.length === 0) {\n  return []; // Nenhum vídeo viral encontrado\n}\n\nreturn [{ json: { videos: viralVideos } }];"
+        "jsCode": "const statsItems = $input.first().json.items || [];\nconst videos = $('Analisar dados de vídeo').first().json.videos;\nconst VIRAL_THRESHOLD = 1000; // views por hora\n\nconst statsMap = {};\nstatsItems.forEach(item => {\n  statsMap[item.id] = {\n    views: parseInt(item.statistics.viewCount || 0),\n    likes: parseInt(item.statistics.likeCount || 0),\n    comments: parseInt(item.statistics.commentCount || 0)\n  };\n});\n\nconst viralVideos = videos.map(video => {\n  const stats = statsMap[video.videoId] || { views: 0, likes: 0, comments: 0 };\n  const publishedAt = new Date(video.publishedAt);\n  const hoursSincePublished = (Date.now() - publishedAt.getTime()) / (1000 * 60 * 60);\n  const viralScore = Math.round(stats.views / Math.max(hoursSincePublished, 1));\n  \n  return {\n    ...video,\n    ...stats,\n    viralScore,\n    hoursSincePublished: Math.round(hoursSincePublished)\n  };\n}).filter(v => v.viralScore >= VIRAL_THRESHOLD);\n\nif (viralVideos.length === 0) {\n  return [{ json: { hasResults: false } }];\n}\n\nreturn [{ json: { videos: viralVideos, hasResults: true } }];"
       },
       "id": "calculate-viral-score",
-      "name": "Calculate Viral Score",
+      "name": "Calcular pontuação viral",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1320, 300],
       "notes": "Calcula score viral (views/hora) e filtra >= 1000"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-1",
+              "leftValue": "={{ $json.hasResults }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-results",
+      "name": "Filtrar Resultados Vazios",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1540, 300]
     },
     {
       "parameters": {
@@ -177,85 +206,111 @@
         "options": {}
       },
       "id": "send-to-webhook",
-      "name": "Send to Viral Webhook",
+      "name": "Enviar para Webhook Viral",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1540, 300],
-      "notes": "Envia vídeos virais para o sistema (batch)"
+      "position": [1760, 200],
+      "notes": "Envia vídeos virais para o sistema"
+    },
+    {
+      "parameters": {},
+      "id": "no-op",
+      "name": "Sem vídeos virais",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1760, 400]
     }
   ],
   "connections": {
-    "Schedule Trigger": {
+    "Gatilho de agendamento": {
       "main": [
         [
           {
-            "node": "Fetch User YouTube API Key",
+            "node": "Buscar API Key do Usuário",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Fetch User YouTube API Key": {
+    "Buscar API Key do Usuário": {
       "main": [
         [
           {
-            "node": "Prepare Search",
+            "node": "Preparar Busca",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Prepare Search": {
+    "Preparar Busca": {
       "main": [
         [
           {
-            "node": "Search YouTube Videos",
+            "node": "Pesquisar vídeos do YouTube",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Search YouTube Videos": {
+    "Pesquisar vídeos do YouTube": {
       "main": [
         [
           {
-            "node": "Parse Video Data",
+            "node": "Analisar dados de vídeo",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Parse Video Data": {
+    "Analisar dados de vídeo": {
       "main": [
         [
           {
-            "node": "Get Video Statistics",
+            "node": "Obtenha as estatísticas do vídeo",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get Video Statistics": {
+    "Obtenha as estatísticas do vídeo": {
       "main": [
         [
           {
-            "node": "Calculate Viral Score",
+            "node": "Calcular pontuação viral",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Calculate Viral Score": {
+    "Calcular pontuação viral": {
       "main": [
         [
           {
-            "node": "Send to Viral Webhook",
+            "node": "Filtrar Resultados Vazios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Resultados Vazios": {
+      "main": [
+        [
+          {
+            "node": "Enviar para Webhook Viral",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sem vídeos virais",
             "type": "main",
             "index": 0
           }
@@ -267,7 +322,7 @@
     "executionOrder": "v1"
   },
   "staticData": null,
-  "tags": ["viral", "youtube", "monitoring"],
+  "tags": ["viral", "youtube", "monitoramento"],
   "triggerCount": 1,
   "meta": {
     "templateId": "viral-video-detection-v2"
