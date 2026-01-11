@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useCredits } from "@/hooks/useCredits";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Reorder, useDragControls } from "framer-motion";
 import logo from "@/assets/logo.gif";
 
 // Prefetch routes on hover for faster navigation
@@ -80,65 +79,12 @@ const defaultNavItems: NavItem[] = [
   { id: "settings", icon: Settings, label: "Configurações", href: "/settings", category: "organizacao" },
 ];
 
-// Wrapper to use hook inside map
-function NavItemWrapper({ 
-  item, 
-  collapsed, 
-  isActive, 
-  onNavigate 
-}: { 
-  item: NavItem; 
-  collapsed: boolean; 
-  isActive: boolean;
-  onNavigate: (href: string) => void;
-}) {
-  const dragControls = useDragControls();
-
-  return (
-    <Reorder.Item
-      value={item}
-      dragListener={false}
-      dragControls={dragControls}
-      className="list-none"
-      initial={false}
-      transition={{ duration: 0 }}
-    >
-      <Link
-        to={item.href}
-        onMouseEnter={() => prefetchRoute(item.href)}
-        onClick={(e) => {
-          e.preventDefault();
-          onNavigate(item.href);
-        }}
-        className={cn(
-          "flex items-center gap-2 px-3 py-2.5 rounded-lg transition-colors duration-100",
-          isActive
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
-        )}
-      >
-        {!collapsed && (
-          <div
-            onPointerDown={(e) => {
-              e.preventDefault();
-              dragControls.start(e);
-            }}
-            className="cursor-grab active:cursor-grabbing touch-none"
-          >
-            <GripVertical className="w-4 h-4 flex-shrink-0 opacity-30 hover:opacity-70" />
-          </div>
-        )}
-        <item.icon className="w-5 h-5 flex-shrink-0" />
-        {!collapsed && <span className="text-sm font-medium text-left flex-1">{item.label}</span>}
-      </Link>
-    </Reorder.Item>
-  );
-}
-
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [navItems, setNavItems] = useState<NavItem[]>(defaultNavItems);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const dragOverId = useRef<string | null>(null);
   
   const { signOut } = useAuth();
   const { role } = useProfile();
@@ -173,9 +119,31 @@ export function Sidebar() {
     }
   }, [sidebarOrder, prefsLoading, reorderItems]);
 
-  const handleReorder = (newOrder: NavItem[]) => {
-    setNavItems(newOrder);
-    saveSidebarOrder(newOrder.map(i => i.id));
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    dragOverId.current = id;
+  };
+
+  const handleDragEnd = () => {
+    if (draggedId && dragOverId.current && draggedId !== dragOverId.current) {
+      const draggedIndex = navItems.findIndex(item => item.id === draggedId);
+      const overIndex = navItems.findIndex(item => item.id === dragOverId.current);
+      
+      if (draggedIndex !== -1 && overIndex !== -1) {
+        const newItems = [...navItems];
+        const [removed] = newItems.splice(draggedIndex, 1);
+        newItems.splice(overIndex, 0, removed);
+        setNavItems(newItems);
+        saveSidebarOrder(newItems.map(i => i.id));
+      }
+    }
+    setDraggedId(null);
+    dragOverId.current = null;
   };
 
   const resetOrder = () => {
@@ -251,22 +219,44 @@ export function Sidebar() {
           </div>
         )}
         
-        <Reorder.Group 
-          axis="y" 
-          values={navItems} 
-          onReorder={handleReorder}
-          className="space-y-0.5"
-        >
-          {navItems.map((item) => (
-            <NavItemWrapper
-              key={item.id}
-              item={item}
-              collapsed={collapsed}
-              isActive={location.pathname === item.href || (item.href === "/" && location.pathname === "/dashboard")}
-              onNavigate={navigate}
-            />
-          ))}
-        </Reorder.Group>
+        <div className="space-y-0.5">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.href || (item.href === "/" && location.pathname === "/dashboard");
+            const Icon = item.icon;
+            
+            return (
+              <div
+                key={item.id}
+                draggable={!collapsed}
+                onDragStart={(e) => handleDragStart(e, item.id)}
+                onDragOver={(e) => handleDragOver(e, item.id)}
+                onDragEnd={handleDragEnd}
+                className={cn(
+                  draggedId === item.id && "opacity-50"
+                )}
+              >
+                <Link
+                  to={item.href}
+                  onMouseEnter={() => prefetchRoute(item.href)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2.5 rounded-lg transition-colors duration-100",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                  )}
+                >
+                  {!collapsed && (
+                    <div className="cursor-grab active:cursor-grabbing touch-none">
+                      <GripVertical className="w-4 h-4 flex-shrink-0 opacity-30 hover:opacity-70" />
+                    </div>
+                  )}
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {!collapsed && <span className="text-sm font-medium text-left flex-1">{item.label}</span>}
+                </Link>
+              </div>
+            );
+          })}
+        </div>
       </nav>
 
       {/* Bottom Section */}
@@ -274,9 +264,9 @@ export function Sidebar() {
         {/* Credits Section - Compact */}
         {!collapsed ? (
           <div className={cn(
-            "p-2 rounded-lg bg-secondary/50 border space-y-1.5 transition-all",
+            "p-2 rounded-lg bg-secondary/50 border space-y-1.5",
             isLowCredits 
-              ? "border-primary/50 animate-pulse shadow-[0_0_10px_hsl(var(--primary)/0.2)]" 
+              ? "border-primary/50 shadow-[0_0_10px_hsl(var(--primary)/0.2)]" 
               : "border-border"
           )}>
             <div className="flex items-center justify-between">
@@ -315,7 +305,7 @@ export function Sidebar() {
             <button onClick={() => setHistoryModalOpen(true)}>
               <Coins className={cn(
                 "w-5 h-5 cursor-pointer hover:scale-110 transition-transform",
-                isLowCredits ? "text-destructive animate-pulse" : "text-primary"
+                isLowCredits ? "text-destructive" : "text-primary"
               )} />
             </button>
           </div>
